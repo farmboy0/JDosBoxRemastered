@@ -18,236 +18,125 @@ public class Drive_fat extends Dos_Drive {
     static private final int FAT12 = 0;
     static private final int FAT16 = 1;
     static private final int FAT32 = 2;
-
-    private /*Bit8u*/ byte[] fatSectBuffer = new byte[1024];
-    private Ptr pfatSectBuffer = new Ptr(fatSectBuffer, 0);
+    public Bios_disk.imageDisk loadedDisk;
+    public boolean created_successfully;
     /*Bit32u*/ long curFatSect;
+    String[] srchInfo = new String[DOS_Drive_Cache.MAX_OPENDIRS];
+    private final /*Bit8u*/ byte[] fatSectBuffer = new byte[1024];
+    private final Ptr pfatSectBuffer = new Ptr(fatSectBuffer, 0);
+    private final Allocation allocation = new Allocation();
+    private final Bootstrap bootbuffer = new Bootstrap();
+    private /*Bit8u*/ short fattype;
+    private /*Bit32u*/ long CountOfClusters;
+    private /*Bit32u*/ long partSectOff;
+    private /*Bit32u*/ long firstDataSector;
+    private /*Bit32u*/ long firstRootDirSect;
+    private /*Bit32u*/ long cwdDirCluster;
+    private /*Bit32u*/ long dirPosition; /* Position in directory search */
+    public Drive_fat(String sysFilename, /*Bit32u*/long bytesector, /*Bit32u*/long cylsector, /*Bit32u*/long headscyl, /*Bit32u*/long cylinders, /*Bit32u*/long startSector) {
+        created_successfully = true;
+        FileIO diskfile;
+        /*Bit32u*/
+        long filesize;
+        PartTable mbrData = new PartTable();
 
-    static public class fatFile extends DOS_File {
-        public fatFile(String name, /*Bit32u*/long startCluster, /*Bit32u*/long fileLen, Drive_fat useDrive) {
-            /*Bit32u*/
-            LongRef seekto = new LongRef(0);
-            firstCluster = startCluster;
-            myDrive = useDrive;
-            filelength = fileLen;
-            open = true;
-            loadedSector = false;
-            curSectOff = 0;
-            seekpos = 0;
-            this.name = name;
-            if (filelength > 0) {
-                Seek(seekto, Dos_files.DOS_SEEK_SET);
-                myDrive.loadedDisk.Read_AbsoluteSector(currentSector, sectorBuffer, 0);
-                loadedSector = true;
-            }
+        if (Bios_disk.imgDTASeg == 0) {
+            Bios_disk.imgDTASeg = Dos_tables.DOS_GetMemory(2);
+            Bios_disk.imgDTAPtr = Memory.RealMake(Bios_disk.imgDTASeg, 0);
+            Bios_disk.imgDTA = new Dos_DTA(Bios_disk.imgDTAPtr);
+        }
+        try {
+            diskfile = FileIOFactory.open(sysFilename, FileIOFactory.MODE_READ | FileIOFactory.MODE_WRITE);
+            filesize = diskfile.length() / 1024L;
+        } catch (Exception e) {
+            created_successfully = false;
+            return;
         }
 
-        public boolean Read(byte[] data,/*Bit16u*/IntRef size) {
-            if ((flags & 0xf) == Dos_files.OPEN_WRITE) {    // check if file opened in write-only mode
-                Dos.DOS_SetError(Dos.DOSERR_ACCESS_DENIED);
-                return false;
-            }
-            /*Bit16u*/
-            int sizedec, sizecount;
-            if (seekpos >= filelength) {
-                size.value = 0;
-                return true;
-            }
+        /* Load disk image */
+        loadedDisk = new Bios_disk.imageDisk(diskfile, sysFilename, filesize, (filesize > 2880));
 
-            if (!loadedSector) {
-                currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
-                if (currentSector == 0) {
-                    /* EOC reached before EOF */
-                    size.value = 0;
-                    loadedSector = false;
-                    return true;
-                }
-                curSectOff = 0;
-                myDrive.loadedDisk.Read_AbsoluteSector(currentSector, sectorBuffer, 0);
-                loadedSector = true;
-            }
+        byte[] d = new byte[(int) loadedDisk.sector_size];
 
-            sizedec = size.value;
-            sizecount = 0;
-            while (sizedec != 0) {
-                if (seekpos >= filelength) {
-                    size.value = sizecount;
-                    return true;
-                }
-                data[sizecount++] = sectorBuffer[curSectOff++];
-                seekpos++;
-                if (curSectOff >= myDrive.getSectorSize()) {
-                    currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
-                    if (currentSector == 0) {
-                        /* EOC reached before EOF */
-                        //LOG_MSG("EOC reached before EOF, seekpos %d, filelen %d", seekpos, filelength);
-                        size.value = sizecount;
-                        loadedSector = false;
-                        return true;
-                    }
-                    curSectOff = 0;
-                    myDrive.loadedDisk.Read_AbsoluteSector(currentSector, sectorBuffer, 0);
-                    loadedSector = true;
-                    //LOG_MSG("Reading absolute sector at %d for seekpos %d", currentSector, seekpos);
-                }
-                --sizedec;
-            }
-            size.value = sizecount;
-            return true;
-        }
+        if (filesize > 2880) {
+            /* Set user specified harddrive parameters */
+            loadedDisk.Set_Geometry(headscyl, cylinders, cylsector, bytesector);
 
-        public boolean Write(byte[] data,/*Bit16u*/IntRef size) {
-            /* TODO: Check for read-only bit */
+            loadedDisk.Read_Sector(0, 0, 1, d);
+            mbrData.load(d);
 
-            if ((this.flags & 0xf) == Dos_files.OPEN_READ) {    // check if file opened in read-only mode
-                Dos.DOS_SetError(Dos.DOSERR_ACCESS_DENIED);
-                return false;
-            }
+            if (mbrData.magic1 != 0x55 || mbrData.magic2 != (byte) 0xaa)
+                Log.log_msg("Possibly invalid partition table in disk image.");
 
-            DirEntry tmpentry = new DirEntry();
-            /*Bit16u*/
-            int sizedec, sizecount;
-            sizedec = size.value;
-            sizecount = 0;
-            boolean finalizeWrite = false;
-            while (sizedec != 0) {
-                /* Increase filesize if necessary */
-                if (seekpos >= filelength) {
-                    if (filelength == 0) {
-                        firstCluster = myDrive.getFirstFreeClust();
-                        myDrive.allocateCluster(firstCluster, 0);
-                        currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
-                        myDrive.loadedDisk.Read_AbsoluteSector(currentSector, sectorBuffer, 0);
-                        loadedSector = true;
-                    }
-                    filelength = seekpos + 1;
-                    if (!loadedSector) {
-                        currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
-                        if (currentSector == 0) {
-                            /* EOC reached before EOF - try to increase file allocation */
-                            myDrive.appendCluster(firstCluster);
-                            /* Try getting sector again */
-                            currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
-                            if (currentSector == 0) {
-                                /* No can do. lets give up and go home.  We must be out of room */
-                                finalizeWrite = true;
-                                break;
-                            }
-                        }
-                        curSectOff = 0;
-                        myDrive.loadedDisk.Read_AbsoluteSector(currentSector, sectorBuffer, 0);
-
-                        loadedSector = true;
-                    }
-                }
-                sectorBuffer[curSectOff++] = data[sizecount++];
-                seekpos++;
-                if (curSectOff >= myDrive.getSectorSize()) {
-                    if (loadedSector) myDrive.loadedDisk.Write_AbsoluteSector(currentSector, sectorBuffer, 0);
-
-                    currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
-                    if (currentSector == 0) {
-                        /* EOC reached before EOF - try to increase file allocation */
-                        myDrive.appendCluster(firstCluster);
-                        /* Try getting sector again */
-                        currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
-                        if (currentSector == 0) {
-                            /* No can do. lets give up and go home.  We must be out of room */
-                            loadedSector = false;
-                            finalizeWrite = true;
-                            break;
-                        }
-                    }
-                    curSectOff = 0;
-                    myDrive.loadedDisk.Read_AbsoluteSector(currentSector, sectorBuffer, 0);
-
-                    loadedSector = true;
-                }
-                --sizedec;
-            }
-            if (!finalizeWrite)
-                if (curSectOff > 0 && loadedSector)
-                    myDrive.loadedDisk.Write_AbsoluteSector(currentSector, sectorBuffer, 0);
-
-            //finalizeWrite:
-            myDrive.directoryBrowse(dirCluster, tmpentry, (int) dirIndex);
-            tmpentry.entrysize = filelength;
-            tmpentry.loFirstClust = (/*Bit16u*/int) firstCluster;
-            myDrive.directoryChange(dirCluster, tmpentry, (int) dirIndex);
-
-            size.value = sizecount;
-            return true;
-        }
-
-        public boolean Seek(/*Bit32u*/LongRef pos,/*Bit32u*/int type) {
-            /*Bit32s*/
-            int seekto = 0;
-
-            switch (type) {
-                case Dos_files.DOS_SEEK_SET:
-                    seekto = (/*Bit32s*/int) pos.value;
+            startSector = 63;
+            int m;
+            for (m = 0; m < 4; m++) {
+                /* Pick the first available partition */
+                if (mbrData.pentry[m].partSize != 0x00) {
+                    Log.log_msg("Using partition " + m + " on drive; skipping " + mbrData.pentry[m].absSectStart + " sectors");
+                    startSector = mbrData.pentry[m].absSectStart;
                     break;
-                case Dos_files.DOS_SEEK_CUR:
-                    /* Is this relative seek signed? */
-                    seekto = (/*Bit32s*/int) pos.value + (/*Bit32s*/int) seekpos;
-                    break;
-                case Dos_files.DOS_SEEK_END:
-                    seekto = (/*Bit32s*/int) filelength + (/*Bit32s*/int) pos.value;
-                    break;
+                }
             }
-            //	LOG_MSG("Seek to %d with type %d (absolute value %d)", *pos, type, seekto);
 
-            if ((/*Bit32u*/long) seekto > filelength) seekto = (/*Bit32s*/int) filelength;
-            if (seekto < 0) seekto = 0;
-            seekpos = (/*Bit32u*/long) seekto;
-            currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
-            if (currentSector == 0) {
-                /* not within file size, thus no sector is available */
-                loadedSector = false;
-            } else {
-                loadedSector = true;
-                curSectOff = (int) (seekpos % myDrive.getSectorSize());
-                myDrive.loadedDisk.Read_AbsoluteSector(currentSector, sectorBuffer, 0);
-            }
-            pos.value = seekpos;
-            return true;
+            if (m == 4) Log.log_msg("No good partiton found in image.");
+
+            partSectOff = startSector;
+        } else {
+            /* Floppy disks don't have partitions */
+            partSectOff = 0;
         }
 
-        public boolean Close() {
-            /* Flush buffer */
-            if (loadedSector) myDrive.loadedDisk.Write_AbsoluteSector(currentSector, sectorBuffer, 0);
-
-            return false;
+        loadedDisk.Read_AbsoluteSector(0 + partSectOff, d, 0);
+        bootbuffer.load(d);
+        if ((bootbuffer.magic1 != 0x55) || (bootbuffer.magic2 != (byte) 0xaa)) {
+            /* Not a FAT filesystem */
+            Log.log_msg("Loaded image has no valid magicnumbers at the end!");
         }
 
-        public /*Bit16u*/int GetInformation() {
-            return 0;
+        if (bootbuffer.sectorsperfat == 0) {
+            /* FAT32 not implemented yet */
+            created_successfully = false;
+            return;
         }
 
-        public boolean UpdateDateTimeFromHost() {
-            return true;
+
+        /* Determine FAT format, 12, 16 or 32 */
+
+        /* Get size of root dir in sectors */
+        /* TODO: Get 32-bit total sector count if needed */
+        /*Bit32u*/
+        long RootDirSectors = ((bootbuffer.rootdirentries * 32) + (bootbuffer.bytespersector - 1)) / bootbuffer.bytespersector;
+        /*Bit32u*/
+        long DataSectors;
+        if (bootbuffer.totalsectorcount != 0) {
+            DataSectors = bootbuffer.totalsectorcount - (bootbuffer.reservedsectors + (bootbuffer.fatcopies * bootbuffer.sectorsperfat) + RootDirSectors);
+        } else {
+            DataSectors = bootbuffer.totalsecdword - (bootbuffer.reservedsectors + (bootbuffer.fatcopies * bootbuffer.sectorsperfat) + RootDirSectors);
+
+        }
+        CountOfClusters = DataSectors / bootbuffer.sectorspercluster;
+
+        firstDataSector = (bootbuffer.reservedsectors + (bootbuffer.fatcopies * bootbuffer.sectorsperfat) + RootDirSectors) + partSectOff;
+        firstRootDirSect = bootbuffer.reservedsectors + (bootbuffer.fatcopies * bootbuffer.sectorsperfat) + partSectOff;
+
+        if (CountOfClusters < 4085) {
+            /* Volume is FAT12 */
+            Log.log_msg("Mounted FAT volume is FAT12 with " + CountOfClusters + " clusters");
+            fattype = FAT12;
+        } else if (CountOfClusters < 65525) {
+            Log.log_msg("Mounted FAT volume is FAT16 with " + CountOfClusters + " clusters");
+            fattype = FAT16;
+        } else {
+            Log.log_msg("Mounted FAT volume is FAT32 with " + CountOfClusters + " clusters");
+            fattype = FAT32;
         }
 
-        public /*Bit32u*/ long firstCluster;
-        public /*Bit32u*/ long seekpos;
-        public /*Bit32u*/ long filelength;
-        public /*Bit32u*/ long currentSector;
-        public /*Bit32u*/ int curSectOff;
-        public /*Bit8u*/ byte[] sectorBuffer = new byte[512];
-        /* Record of where in the directory structure this file is located */
-        public /*Bit32u*/ long dirCluster;
-        public /*Bit32u*/ long dirIndex;
+        /* There is no cluster 0, this means we are in the root directory */
+        cwdDirCluster = 0;
 
-        public boolean loadedSector;
-        public Drive_fat myDrive;
-
-        private final static int NONE = 0;
-        private final static int READ = 1;
-        private final static int WRITE = 2;
-        private int last_action;
-        private /*Bit16u*/ int info;
+        curFatSect = 0xffffffffl;
     }
-
 
     /* IN - char * filename: Name in regular filename format, e.g. bob.txt */
     /* OUT - char * filearray: Name in DOS directory format, eleven char, e.g. bob     txt */
@@ -268,31 +157,6 @@ public class Drive_fat extends Dos_Drive {
             }
         }
     }
-
-    String[] srchInfo = new String[DOS_Drive_Cache.MAX_OPENDIRS];
-
-    static private class Allocation {
-        /*Bit16u*/ int bytes_sector;
-        /*Bit8u*/ short sectors_cluster;
-        /*Bit16u*/ int total_clusters;
-        /*Bit16u*/ int free_clusters;
-        /*Bit8u*/ short mediaid;
-    }
-
-    private Allocation allocation = new Allocation();
-
-    private Bootstrap bootbuffer = new Bootstrap();
-    private /*Bit8u*/ short fattype;
-    private /*Bit32u*/ long CountOfClusters;
-    private /*Bit32u*/ long partSectOff;
-    private /*Bit32u*/ long firstDataSector;
-    private /*Bit32u*/ long firstRootDirSect;
-
-    private /*Bit32u*/ long cwdDirCluster;
-    private /*Bit32u*/ long dirPosition; /* Position in directory search */
-
-    public Bios_disk.imageDisk loadedDisk;
-    public boolean created_successfully;
 
     private /*Bit32u*/long getClustFirstSect(/*Bit32u*/long clustNum) {
         return ((clustNum - 2) * bootbuffer.sectorspercluster) + firstDataSector;
@@ -459,7 +323,8 @@ public class Drive_fat extends Dos_Drive {
         if (!FindNextInternal(currentClust, Bios_disk.imgDTA, foundEntry, findFile)) return false;
 
         useEntry.copy(foundEntry);
-        dirClust.value = (/*Bit32u*/long) currentClust;
+        /*Bit32u*/
+        dirClust.value = currentClust;
         subEntry.value = ((/*Bit32u*/long) Bios_disk.imgDTA.GetDirID() - 1);
         return true;
     }
@@ -637,111 +502,6 @@ public class Drive_fat extends Dos_Drive {
         return true;
     }
 
-    public Drive_fat(String sysFilename, /*Bit32u*/long bytesector, /*Bit32u*/long cylsector, /*Bit32u*/long headscyl, /*Bit32u*/long cylinders, /*Bit32u*/long startSector) {
-        created_successfully = true;
-        FileIO diskfile;
-        /*Bit32u*/
-        long filesize;
-        PartTable mbrData = new PartTable();
-
-        if (Bios_disk.imgDTASeg == 0) {
-            Bios_disk.imgDTASeg = Dos_tables.DOS_GetMemory(2);
-            Bios_disk.imgDTAPtr = Memory.RealMake(Bios_disk.imgDTASeg, 0);
-            Bios_disk.imgDTA = new Dos_DTA(Bios_disk.imgDTAPtr);
-        }
-        try {
-            diskfile = FileIOFactory.open(sysFilename, FileIOFactory.MODE_READ | FileIOFactory.MODE_WRITE);
-            filesize = diskfile.length() / 1024L;
-        } catch (Exception e) {
-            created_successfully = false;
-            return;
-        }
-
-        /* Load disk image */
-        loadedDisk = new Bios_disk.imageDisk(diskfile, sysFilename, filesize, (filesize > 2880));
-
-        byte[] d = new byte[(int) loadedDisk.sector_size];
-
-        if (filesize > 2880) {
-            /* Set user specified harddrive parameters */
-            loadedDisk.Set_Geometry(headscyl, cylinders, cylsector, bytesector);
-
-            loadedDisk.Read_Sector(0, 0, 1, d);
-            mbrData.load(d);
-
-            if (mbrData.magic1 != 0x55 || mbrData.magic2 != (byte) 0xaa)
-                Log.log_msg("Possibly invalid partition table in disk image.");
-
-            startSector = 63;
-            int m;
-            for (m = 0; m < 4; m++) {
-                /* Pick the first available partition */
-                if (mbrData.pentry[m].partSize != 0x00) {
-                    Log.log_msg("Using partition " + m + " on drive; skipping " + mbrData.pentry[m].absSectStart + " sectors");
-                    startSector = mbrData.pentry[m].absSectStart;
-                    break;
-                }
-            }
-
-            if (m == 4) Log.log_msg("No good partiton found in image.");
-
-            partSectOff = startSector;
-        } else {
-            /* Floppy disks don't have partitions */
-            partSectOff = 0;
-        }
-
-        loadedDisk.Read_AbsoluteSector(0 + partSectOff, d, 0);
-        bootbuffer.load(d);
-        if ((bootbuffer.magic1 != 0x55) || (bootbuffer.magic2 != (byte) 0xaa)) {
-            /* Not a FAT filesystem */
-            Log.log_msg("Loaded image has no valid magicnumbers at the end!");
-        }
-
-        if (bootbuffer.sectorsperfat == 0) {
-            /* FAT32 not implemented yet */
-            created_successfully = false;
-            return;
-        }
-
-
-        /* Determine FAT format, 12, 16 or 32 */
-
-        /* Get size of root dir in sectors */
-        /* TODO: Get 32-bit total sector count if needed */
-        /*Bit32u*/
-        long RootDirSectors = ((bootbuffer.rootdirentries * 32) + (bootbuffer.bytespersector - 1)) / bootbuffer.bytespersector;
-        /*Bit32u*/
-        long DataSectors;
-        if (bootbuffer.totalsectorcount != 0) {
-            DataSectors = bootbuffer.totalsectorcount - (bootbuffer.reservedsectors + (bootbuffer.fatcopies * bootbuffer.sectorsperfat) + RootDirSectors);
-        } else {
-            DataSectors = bootbuffer.totalsecdword - (bootbuffer.reservedsectors + (bootbuffer.fatcopies * bootbuffer.sectorsperfat) + RootDirSectors);
-
-        }
-        CountOfClusters = DataSectors / bootbuffer.sectorspercluster;
-
-        firstDataSector = (bootbuffer.reservedsectors + (bootbuffer.fatcopies * bootbuffer.sectorsperfat) + RootDirSectors) + partSectOff;
-        firstRootDirSect = bootbuffer.reservedsectors + (bootbuffer.fatcopies * bootbuffer.sectorsperfat) + partSectOff;
-
-        if (CountOfClusters < 4085) {
-            /* Volume is FAT12 */
-            Log.log_msg("Mounted FAT volume is FAT12 with " + CountOfClusters + " clusters");
-            fattype = FAT12;
-        } else if (CountOfClusters < 65525) {
-            Log.log_msg("Mounted FAT volume is FAT16 with " + CountOfClusters + " clusters");
-            fattype = FAT16;
-        } else {
-            Log.log_msg("Mounted FAT volume is FAT32 with " + CountOfClusters + " clusters");
-            fattype = FAT32;
-        }
-
-        /* There is no cluster 0, this means we are in the root directory */
-        cwdDirCluster = 0;
-
-        curFatSect = 0xffffffffl;
-    }
-
     public boolean AllocationInfo(/*Bit16u*/IntRef _bytes_sector,/*Bit8u*/ShortRef _sectors_cluster,/*Bit16u*/IntRef _total_clusters,/*Bit16u*/IntRef _free_clusters) {
         /*Bit32u*/
         LongRef hs = new LongRef(0), cy = new LongRef(0), sect = new LongRef(0), sectsize = new LongRef(0);
@@ -844,8 +604,7 @@ public class Drive_fat extends Dos_Drive {
         DirEntry fileEntry = new DirEntry();
         /*Bit32u*/
         LongRef dummy1 = new LongRef(0), dummy2 = new LongRef(0);
-        if (!getFileDirEntry(name, fileEntry, dummy1, dummy2)) return false;
-        return true;
+        return getFileDirEntry(name, fileEntry, dummy1, dummy2);
     }
 
     public DOS_File FileOpen(String name,/*Bit32u*/int flags) {
@@ -1066,7 +825,7 @@ public class Drive_fat extends Dos_Drive {
             if ((~attrs.value & sectbuf[entryoffset].attrib & (Dos_system.DOS_ATTR_DIRECTORY | Dos_system.DOS_ATTR_HIDDEN | Dos_system.DOS_ATTR_SYSTEM)) != 0)
                 continue;
             if (!Drives.WildFileCmp(find_name, srch_pattern.value)) {
-                if ((longFileName.length()!=0 && longName!=null && longFileName.equalsIgnoreCase(longName)))
+                if ((longFileName.length() != 0 && longName != null && longFileName.equalsIgnoreCase(longName)))
                     break;
                 continue;
             }
@@ -1102,13 +861,13 @@ public class Drive_fat extends Dos_Drive {
             /*Bit32s*/
             int fileidx = 2;
             if (dirClust.value == 0) fileidx = 0;    // root directory
-            int last_idx=0;
+            int last_idx = 0;
             while (directoryBrowse(dirClust.value, fileEntry, fileidx, last_idx)) {
                 if (StringHelper.memcmp(fileEntry.entryname, pathName, 11) == 0) {
                     attr.value = fileEntry.attrib;
                     return true;
                 }
-                last_idx=fileidx;
+                last_idx = fileidx;
                 fileidx++;
             }
             return false;
@@ -1129,10 +888,11 @@ public class Drive_fat extends Dos_Drive {
         /*Bit32u*/
         long tmpsector;
         /*Bit16u*/
-        if ((start<0) || (start>65535)) return false;
-        /*Bit16u*/int dirPos = start;
-        if (entNum<start) return false;
-        entNum-=start;
+        if ((start < 0) || (start > 65535)) return false;
+        /*Bit16u*/
+        int dirPos = start;
+        if (entNum < start) return false;
+        entNum -= start;
 
         for (int i = 0; i < sectbuf.length; i++)
             sectbuf[i] = new DirEntry();
@@ -1376,9 +1136,7 @@ public class Drive_fat extends Dos_Drive {
             fileidx++;
         }
 
-        if (!found) return false;
-
-        return true;
+        return found;
     }
 
     public boolean Rename(String oldname, String newname) {
@@ -1426,6 +1184,238 @@ public class Drive_fat extends Dos_Drive {
         /*Bit32u*/
         LongRef dummyClust = new LongRef(0);
         return getDirClustNum(dir, dummyClust, false);
+    }
+
+    static public class fatFile extends DOS_File {
+        private final static int NONE = 0;
+        private final static int READ = 1;
+        private final static int WRITE = 2;
+        public /*Bit32u*/ long firstCluster;
+        public /*Bit32u*/ long seekpos;
+        public /*Bit32u*/ long filelength;
+        public /*Bit32u*/ long currentSector;
+        public /*Bit32u*/ int curSectOff;
+        public /*Bit8u*/ byte[] sectorBuffer = new byte[512];
+        /* Record of where in the directory structure this file is located */
+        public /*Bit32u*/ long dirCluster;
+        public /*Bit32u*/ long dirIndex;
+        public boolean loadedSector;
+        public Drive_fat myDrive;
+        private int last_action;
+        private /*Bit16u*/ int info;
+
+        public fatFile(String name, /*Bit32u*/long startCluster, /*Bit32u*/long fileLen, Drive_fat useDrive) {
+            /*Bit32u*/
+            LongRef seekto = new LongRef(0);
+            firstCluster = startCluster;
+            myDrive = useDrive;
+            filelength = fileLen;
+            open = true;
+            loadedSector = false;
+            curSectOff = 0;
+            seekpos = 0;
+            this.name = name;
+            if (filelength > 0) {
+                Seek(seekto, Dos_files.DOS_SEEK_SET);
+                myDrive.loadedDisk.Read_AbsoluteSector(currentSector, sectorBuffer, 0);
+                loadedSector = true;
+            }
+        }
+
+        public boolean Read(byte[] data,/*Bit16u*/IntRef size) {
+            if ((flags & 0xf) == Dos_files.OPEN_WRITE) {    // check if file opened in write-only mode
+                Dos.DOS_SetError(Dos.DOSERR_ACCESS_DENIED);
+                return false;
+            }
+            /*Bit16u*/
+            int sizedec, sizecount;
+            if (seekpos >= filelength) {
+                size.value = 0;
+                return true;
+            }
+
+            if (!loadedSector) {
+                currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
+                if (currentSector == 0) {
+                    /* EOC reached before EOF */
+                    size.value = 0;
+                    loadedSector = false;
+                    return true;
+                }
+                curSectOff = 0;
+                myDrive.loadedDisk.Read_AbsoluteSector(currentSector, sectorBuffer, 0);
+                loadedSector = true;
+            }
+
+            sizedec = size.value;
+            sizecount = 0;
+            while (sizedec != 0) {
+                if (seekpos >= filelength) {
+                    size.value = sizecount;
+                    return true;
+                }
+                data[sizecount++] = sectorBuffer[curSectOff++];
+                seekpos++;
+                if (curSectOff >= myDrive.getSectorSize()) {
+                    currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
+                    if (currentSector == 0) {
+                        /* EOC reached before EOF */
+                        //LOG_MSG("EOC reached before EOF, seekpos %d, filelen %d", seekpos, filelength);
+                        size.value = sizecount;
+                        loadedSector = false;
+                        return true;
+                    }
+                    curSectOff = 0;
+                    myDrive.loadedDisk.Read_AbsoluteSector(currentSector, sectorBuffer, 0);
+                    loadedSector = true;
+                    //LOG_MSG("Reading absolute sector at %d for seekpos %d", currentSector, seekpos);
+                }
+                --sizedec;
+            }
+            size.value = sizecount;
+            return true;
+        }
+
+        public boolean Write(byte[] data,/*Bit16u*/IntRef size) {
+            /* TODO: Check for read-only bit */
+
+            if ((this.flags & 0xf) == Dos_files.OPEN_READ) {    // check if file opened in read-only mode
+                Dos.DOS_SetError(Dos.DOSERR_ACCESS_DENIED);
+                return false;
+            }
+
+            DirEntry tmpentry = new DirEntry();
+            /*Bit16u*/
+            int sizedec, sizecount;
+            sizedec = size.value;
+            sizecount = 0;
+            boolean finalizeWrite = false;
+            while (sizedec != 0) {
+                /* Increase filesize if necessary */
+                if (seekpos >= filelength) {
+                    if (filelength == 0) {
+                        firstCluster = myDrive.getFirstFreeClust();
+                        myDrive.allocateCluster(firstCluster, 0);
+                        currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
+                        myDrive.loadedDisk.Read_AbsoluteSector(currentSector, sectorBuffer, 0);
+                        loadedSector = true;
+                    }
+                    filelength = seekpos + 1;
+                    if (!loadedSector) {
+                        currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
+                        if (currentSector == 0) {
+                            /* EOC reached before EOF - try to increase file allocation */
+                            myDrive.appendCluster(firstCluster);
+                            /* Try getting sector again */
+                            currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
+                            if (currentSector == 0) {
+                                /* No can do. lets give up and go home.  We must be out of room */
+                                finalizeWrite = true;
+                                break;
+                            }
+                        }
+                        curSectOff = 0;
+                        myDrive.loadedDisk.Read_AbsoluteSector(currentSector, sectorBuffer, 0);
+
+                        loadedSector = true;
+                    }
+                }
+                sectorBuffer[curSectOff++] = data[sizecount++];
+                seekpos++;
+                if (curSectOff >= myDrive.getSectorSize()) {
+                    if (loadedSector) myDrive.loadedDisk.Write_AbsoluteSector(currentSector, sectorBuffer, 0);
+
+                    currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
+                    if (currentSector == 0) {
+                        /* EOC reached before EOF - try to increase file allocation */
+                        myDrive.appendCluster(firstCluster);
+                        /* Try getting sector again */
+                        currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
+                        if (currentSector == 0) {
+                            /* No can do. lets give up and go home.  We must be out of room */
+                            loadedSector = false;
+                            finalizeWrite = true;
+                            break;
+                        }
+                    }
+                    curSectOff = 0;
+                    myDrive.loadedDisk.Read_AbsoluteSector(currentSector, sectorBuffer, 0);
+
+                    loadedSector = true;
+                }
+                --sizedec;
+            }
+            if (!finalizeWrite)
+                if (curSectOff > 0 && loadedSector)
+                    myDrive.loadedDisk.Write_AbsoluteSector(currentSector, sectorBuffer, 0);
+
+            //finalizeWrite:
+            myDrive.directoryBrowse(dirCluster, tmpentry, (int) dirIndex);
+            tmpentry.entrysize = filelength;
+            tmpentry.loFirstClust = (/*Bit16u*/int) firstCluster;
+            myDrive.directoryChange(dirCluster, tmpentry, (int) dirIndex);
+
+            size.value = sizecount;
+            return true;
+        }
+
+        public boolean Seek(/*Bit32u*/LongRef pos,/*Bit32u*/int type) {
+            /*Bit32s*/
+            int seekto = 0;
+
+            switch (type) {
+                case Dos_files.DOS_SEEK_SET:
+                    seekto = (/*Bit32s*/int) pos.value;
+                    break;
+                case Dos_files.DOS_SEEK_CUR:
+                    /* Is this relative seek signed? */
+                    seekto = (/*Bit32s*/int) pos.value + (/*Bit32s*/int) seekpos;
+                    break;
+                case Dos_files.DOS_SEEK_END:
+                    seekto = (/*Bit32s*/int) filelength + (/*Bit32s*/int) pos.value;
+                    break;
+            }
+            //	LOG_MSG("Seek to %d with type %d (absolute value %d)", *pos, type, seekto);
+
+            if ((/*Bit32u*/long) seekto > filelength) seekto = (/*Bit32s*/int) filelength;
+            if (seekto < 0) seekto = 0;
+            /*Bit32u*/
+            seekpos = seekto;
+            currentSector = myDrive.getAbsoluteSectFromBytePos(firstCluster, seekpos);
+            if (currentSector == 0) {
+                /* not within file size, thus no sector is available */
+                loadedSector = false;
+            } else {
+                loadedSector = true;
+                curSectOff = (int) (seekpos % myDrive.getSectorSize());
+                myDrive.loadedDisk.Read_AbsoluteSector(currentSector, sectorBuffer, 0);
+            }
+            pos.value = seekpos;
+            return true;
+        }
+
+        public boolean Close() {
+            /* Flush buffer */
+            if (loadedSector) myDrive.loadedDisk.Write_AbsoluteSector(currentSector, sectorBuffer, 0);
+
+            return false;
+        }
+
+        public /*Bit16u*/int GetInformation() {
+            return 0;
+        }
+
+        public boolean UpdateDateTimeFromHost() {
+            return true;
+        }
+    }
+
+    static private class Allocation {
+        /*Bit16u*/ int bytes_sector;
+        /*Bit8u*/ short sectors_cluster;
+        /*Bit16u*/ int total_clusters;
+        /*Bit16u*/ int free_clusters;
+        /*Bit8u*/ short mediaid;
     }
 
 }

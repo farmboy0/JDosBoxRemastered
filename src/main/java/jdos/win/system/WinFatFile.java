@@ -9,9 +9,7 @@ import jdos.win.Win;
 
 
 public class WinFatFile extends WinFile {
-    static public WinFile create(String name, Drive_fat.fatFile file, int shareMode, int attributes) {
-        return new WinFatFile(nextObjectId(), name, file, shareMode, attributes);
-    }
+    private Drive_fat.fatFile fatFile = null;
 
     public WinFatFile(int handle, String name, Drive_fat.fatFile file, int shareMode, int attributes) {
         super(FILE_TYPE_DISK, handle);
@@ -19,6 +17,10 @@ public class WinFatFile extends WinFile {
         this.name = name;
         this.shareMode = shareMode;
         this.attributes = attributes;
+    }
+
+    static public WinFile create(String name, Drive_fat.fatFile file, int shareMode, int attributes) {
+        return new WinFatFile(nextObjectId(), name, file, shareMode, attributes);
     }
 
     public long size() {
@@ -72,6 +74,4 @@ public class WinFatFile extends WinFile {
     protected void onFree() {
         fatFile.Close();
     }
-
-    private Drive_fat.fatFile fatFile = null;
 }

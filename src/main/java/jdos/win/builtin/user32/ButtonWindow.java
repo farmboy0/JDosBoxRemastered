@@ -14,50 +14,17 @@ import jdos.win.system.WinRect;
 import jdos.win.utils.StringUtil;
 
 public class ButtonWindow extends WinAPI {
-    static public void registerClass(WinProcess process) {
-        WinClass winClass = WinClass.create();
-        winClass.className = "BUTTON";
-        winClass.style = CS_DBLCLKS | CS_VREDRAW | CS_HREDRAW | CS_PARENTDC;
-        winClass.hCursor = WinCursor.LoadCursorA(0, IDC_ARROW);
-        winClass.cbWndExtra = NB_EXTRA_BYTES;
-        int cb = WinCallback.addCallback(button_proc);
-        winClass.eip = process.loader.registerFunction(cb);
-        process.classNames.put(winClass.className.toLowerCase(), winClass);
-    }
-
-    static private Callback.Handler button_proc = new HandlerBase() {
-        public java.lang.String getName() {
-            return "BUTTON.proc";
-        }
-
-        public void onCall() {
-            int hWnd = CPU.CPU_Pop32();
-            int Msg = CPU.CPU_Pop32();
-            int wParam = CPU.CPU_Pop32();
-            int lParam = CPU.CPU_Pop32();
-            CPU_Regs.reg_eax.dword = ButtonWndProc_common(hWnd, Msg, wParam, lParam);
-        }
-    };
-
     /* GetWindowLong offsets for window extra information */
     static final private int STATE_GWL_OFFSET = 0;
     static final private int HFONT_GWL_OFFSET = 4;
     static final private int HIMAGE_GWL_OFFSET = 8;
     static final private int NB_EXTRA_BYTES = 12;
-
     /* undocumented flags */
     static final private int BUTTON_NSTATES = 0x0F;
     static final private int BUTTON_BTNPRESSED = 0x40;
     static final private int BUTTON_UNKNOWN2 = 0x20;
     static final private int BUTTON_UNKNOWN3 = 0x10;
-
-    static private void BUTTON_NOTIFY_PARENT(int hWnd, int code) {
-        /* Notify parent which has created this button control */
-        Message.SendMessageA(WinWindow.GetParent(hWnd), WM_COMMAND, MAKEWPARAM(WinWindow.GetWindowLongA((hWnd), GWLP_ID), (code)), hWnd);
-    }
-
     static final private int MAX_BTN_TYPE = 16;
-
     static final private int[] maxCheckState = new int[]
             {
                     BST_UNCHECKED,      /* BS_PUSHBUTTON */
@@ -73,12 +40,392 @@ public class ButtonWindow extends WinAPI {
                     BST_UNCHECKED,      /* BS_PUSHBOX */
                     BST_UNCHECKED       /* BS_OWNERDRAW */
             };
+    static private int checkBoxWidth = 0, checkBoxHeight = 0;
+    static private final Callback.Handler button_proc = new HandlerBase() {
+        public java.lang.String getName() {
+            return "BUTTON.proc";
+        }
 
-    static private interface ButtonPaint {
-        public void paint(int hWnd, int hdc, int action);
+        public void onCall() {
+            int hWnd = CPU.CPU_Pop32();
+            int Msg = CPU.CPU_Pop32();
+            int wParam = CPU.CPU_Pop32();
+            int lParam = CPU.CPU_Pop32();
+            CPU_Regs.reg_eax.dword = ButtonWndProc_common(hWnd, Msg, wParam, lParam);
+        }
+    };
+    /**
+     * *******************************************************************
+     * Push Button Functions
+     */
+    static private final ButtonPaint PB_Paint = new ButtonPaint() {
+        public void paint(int hWnd, int hdc, int action) {
+            WinRect rc = new WinRect();
+            int state = get_button_state(hWnd);
+            int style = WinWindow.GetWindowLongA(hWnd, GWL_STYLE);
+            boolean pushedState = (state & BST_PUSHED) != 0;
+
+            WinPos.WIN_GetClientRect(hWnd, rc);
+
+            /* Send WM_CTLCOLOR to allow changing the font (the colors are fixed) */
+            int hFont = get_button_font(hWnd);
+            if (hFont != 0)
+                WinDC.SelectObject(hdc, hFont);
+            int parent = WinWindow.GetParent(hWnd);
+            if (parent == 0) parent = hWnd;
+            Message.SendMessageA(parent, WM_CTLCOLORBTN, hdc, hWnd);
+
+            int hrgn = UiTools.set_control_clipping(hdc, rc);
+
+            int hOldPen = WinDC.SelectObject(hdc, SysParams.GetSysColorPen(COLOR_WINDOWFRAME));
+            int hOldBrush = WinDC.SelectObject(hdc, SysParams.GetSysColorBrush(COLOR_BTNFACE));
+            int oldBkMode = WinDC.SetBkMode(hdc, TRANSPARENT);
+
+            if (get_button_type(style) == BS_DEFPUSHBUTTON) {
+                if (action != ODA_FOCUS)
+                    Painting.Rectangle(hdc, rc.left, rc.top, rc.right, rc.bottom);
+                rc.inflate(-1, -1);
+            }
+            try {
+                /* completely skip the drawing if only focus has changed */
+                if (action != ODA_FOCUS) {
+                    int uState = DFCS_BUTTONPUSH;
+
+                    if ((style & BS_FLAT) != 0)
+                        uState |= DFCS_MONO;
+                    else if (pushedState) {
+                        if (get_button_type(style) == BS_DEFPUSHBUTTON)
+                            uState |= DFCS_FLAT;
+                        else
+                            uState |= DFCS_PUSHED;
+                    }
+
+                    if ((state & (BST_CHECKED | BST_INDETERMINATE)) != 0)
+                        uState |= DFCS_CHECKED;
+
+                    UiTools.DrawFrameControl(hdc, rc.allocTemp(), DFC_BUTTON, uState);
+
+                    /* draw button label */
+                    WinRect r = new WinRect(rc);
+                    int dtFlags = BUTTON_CalcLabelRect(hWnd, hdc, r);
+
+                    if (dtFlags == -1)
+                        return;
+
+                    if (pushedState)
+                        r.offset(1, 1);
+
+                    int oldTxtColor = WinDC.SetTextColor(hdc, SysParams.GetSysColor(COLOR_BTNTEXT));
+                    BUTTON_DrawLabel(hWnd, hdc, dtFlags, r);
+                    WinDC.SetTextColor(hdc, oldTxtColor);
+                }
+                // draw_focus:
+                if (action == ODA_FOCUS || (state & BST_FOCUS) != 0) {
+                    rc.inflate(-2, -2);
+                    UiTools.DrawFocusRect(hdc, rc.allocTemp());
+                }
+            } finally {
+                WinDC.SelectObject(hdc, hOldPen);
+                WinDC.SelectObject(hdc, hOldBrush);
+                WinDC.SetBkMode(hdc, oldBkMode);
+                WinDC.SelectClipRgn(hdc, hrgn);
+                if (hrgn != 0) GdiObj.DeleteObject(hrgn);
+            }
+        }
+    };
+    /**
+     * *******************************************************************
+     * Check Box & Radio Button Functions
+     */
+    static private final ButtonPaint CB_Paint = new ButtonPaint() {
+        public void paint(int hWnd, int hdc, int action) {
+            int state = get_button_state(hWnd);
+            int style = WinWindow.GetWindowLongA(hWnd, GWL_STYLE);
+
+            if ((style & BS_PUSHLIKE) != 0) {
+                PB_Paint.paint(hWnd, hdc, action);
+                return;
+            }
+
+            WinRect client = new WinRect();
+            WinPos.WIN_GetClientRect(hWnd, client);
+            WinRect rbox = new WinRect(client);
+            WinRect rtext = new WinRect(client);
+            int hFont = get_button_font(hWnd);
+
+            if (hFont != 0)
+                WinDC.SelectObject(hdc, hFont);
+
+            int parent = WinWindow.GetParent(hWnd);
+            if (parent == 0)
+                parent = hWnd;
+            int hBrush = Message.SendMessageA(parent, WM_CTLCOLORSTATIC, hdc, hWnd);
+            if (hBrush == 0) /* did the app forget to call defwindowproc ? */
+                hBrush = DefWnd.DefWindowProcA(parent, WM_CTLCOLORSTATIC, hdc, hWnd);
+            int hrgn = UiTools.set_control_clipping(hdc, client);
+
+            if ((style & BS_LEFTTEXT) != 0) {
+                /* magic +4 is what CTL3D expects */
+                rtext.right -= checkBoxWidth + 4;
+                rbox.left = rbox.right - checkBoxWidth;
+            } else {
+                rtext.left += checkBoxWidth + 4;
+                rbox.right = checkBoxWidth;
+            }
+
+            /* Since WM_ERASEBKGND does nothing, first prepare background */
+            if (action == ODA_SELECT)
+                WinDC.FillRect(hdc, rbox.allocTemp(), hBrush);
+            if (action == ODA_DRAWENTIRE)
+                WinDC.FillRect(hdc, client.allocTemp(), hBrush);
+
+            /* Draw label */
+            client.copy(rtext);
+            int dtFlags = BUTTON_CalcLabelRect(hWnd, hdc, rtext);
+
+            /* Only adjust rbox when rtext is valid */
+            if (dtFlags != -1) {
+                rbox.top = rtext.top;
+                rbox.bottom = rtext.bottom;
+            }
+
+            /* Draw the check-box bitmap */
+            if (action == ODA_DRAWENTIRE || action == ODA_SELECT) {
+                int flags;
+
+                if ((get_button_type(style) == BS_RADIOBUTTON) || (get_button_type(style) == BS_AUTORADIOBUTTON))
+                    flags = DFCS_BUTTONRADIO;
+                else if ((state & BST_INDETERMINATE) != 0)
+                    flags = DFCS_BUTTON3STATE;
+                else
+                    flags = DFCS_BUTTONCHECK;
+
+                if ((state & (BST_CHECKED | BST_INDETERMINATE)) != 0)
+                    flags |= DFCS_CHECKED;
+                if ((state & BST_PUSHED) != 0)
+                    flags |= DFCS_PUSHED;
+
+                if ((style & WS_DISABLED) != 0)
+                    flags |= DFCS_INACTIVE;
+
+                /* rbox must have the correct height */
+                int delta = rbox.bottom - rbox.top - checkBoxHeight;
+
+                if ((style & BS_TOP) != 0) {
+                    if (delta > 0) {
+                        rbox.bottom = rbox.top + checkBoxHeight;
+                    } else {
+                        rbox.top -= -delta / 2 + 1;
+                        rbox.bottom = rbox.top + checkBoxHeight;
+                    }
+                } else if ((style & BS_BOTTOM) != 0) {
+                    if (delta > 0) {
+                        rbox.top = rbox.bottom - checkBoxHeight;
+                    } else {
+                        rbox.bottom += -delta / 2 + 1;
+                        rbox.top = rbox.bottom - checkBoxHeight;
+                    }
+                } else { /* Default */
+                    if (delta > 0) {
+                        int ofs = (delta / 2);
+                        rbox.bottom -= ofs + 1;
+                        rbox.top = rbox.bottom - checkBoxHeight;
+                    } else if (delta < 0) {
+                        int ofs = (-delta / 2);
+                        rbox.top -= ofs + 1;
+                        rbox.bottom = rbox.top + checkBoxHeight;
+                    }
+                }
+
+                UiTools.DrawFrameControl(hdc, rbox.allocTemp(), DFC_BUTTON, flags);
+            }
+
+            if (dtFlags == -1L) /* Noting to draw */
+                return;
+
+            if (action == ODA_DRAWENTIRE)
+                BUTTON_DrawLabel(hWnd, hdc, dtFlags, rtext);
+
+            /* ... and focus */
+            if (action == ODA_FOCUS || (state & BST_FOCUS) != 0) {
+                rtext.left--;
+                rtext.right++;
+                rtext.intersect(rtext, client);
+                UiTools.DrawFocusRect(hdc, rtext.allocTemp());
+            }
+            WinDC.SelectClipRgn(hdc, hrgn);
+            if (hrgn != 0)
+                GdiObj.DeleteObject(hrgn);
+        }
+    };
+    /**
+     * *******************************************************************
+     * Group Box Functions
+     */
+
+    static private final ButtonPaint GB_Paint = new ButtonPaint() {
+        public void paint(int hWnd, int hdc, int action) {
+            int style = WinWindow.GetWindowLongA(hWnd, GWL_STYLE);
+
+            int hFont = get_button_font(hWnd);
+            if (hFont != 0)
+                WinDC.SelectObject(hdc, hFont);
+            /* GroupBox acts like static control, so it sends CTLCOLORSTATIC */
+            int parent = WinWindow.GetParent(hWnd);
+            if (parent == 0)
+                parent = hWnd;
+            int hbr = Message.SendMessageA(parent, WM_CTLCOLORSTATIC, hdc, hWnd);
+            if (hbr == 0) /* did the app forget to call defwindowproc ? */
+                hbr = DefWnd.DefWindowProcA(parent, WM_CTLCOLORSTATIC, hdc, hWnd);
+            WinRect rc = new WinRect();
+            WinPos.WIN_GetClientRect(hWnd, rc);
+            WinRect rcFrame = new WinRect(rc);
+            int hrgn = UiTools.set_control_clipping(hdc, rc);
+
+            int pTm = getTempBuffer(TEXTMETRIC.SIZE);
+            WinFont.GetTextMetricsA(hdc, pTm);
+            TEXTMETRIC tm = new TEXTMETRIC(pTm);
+
+            rcFrame.top += (tm.tmHeight / 2) - 1;
+            UiTools.DrawEdge(hdc, rcFrame.allocTemp(), EDGE_ETCHED, BF_RECT | ((style & BS_FLAT) != 0 ? BF_FLAT : 0));
+
+            rc.inflate(-7, 1);
+            int dtFlags = BUTTON_CalcLabelRect(hWnd, hdc, rc);
+
+            if (dtFlags != -1) {
+                /* Because buttons have CS_PARENTDC class style, there is a chance
+                 * that label will be drawn out of client rect.
+                 * But Windows doesn't clip label's rect, so do I.
+                 */
+
+                /* There is 1-pixel margin at the left, right, and bottom */
+                rc.left--;
+                rc.right++;
+                rc.bottom++;
+                WinDC.FillRect(hdc, rc.allocTemp(), hbr);
+                rc.left++;
+                rc.right--;
+                rc.bottom--;
+
+                BUTTON_DrawLabel(hWnd, hdc, dtFlags, rc);
+            }
+            WinDC.SelectClipRgn(hdc, hrgn);
+            if (hrgn != 0)
+                GdiObj.DeleteObject(hrgn);
+        }
+    };
+    /**
+     * *******************************************************************
+     * User Button Functions
+     */
+
+    static private final ButtonPaint UB_Paint = new ButtonPaint() {
+        public void paint(int hWnd, int hdc, int action) {
+            int state = get_button_state(hWnd);
+
+            WinRect rc = new WinRect();
+            WinPos.WIN_GetClientRect(hWnd, rc);
+
+            int hFont = get_button_font(hWnd);
+            if (hFont != 0)
+                WinDC.SelectObject(hdc, hFont);
+
+            int parent = WinWindow.GetParent(hWnd);
+            if (parent == 0)
+                parent = hWnd;
+            int hBrush = Message.SendMessageA(parent, WM_CTLCOLORBTN, hdc, hWnd);
+            if (hBrush == 0) /* did the app forget to call defwindowproc ? */
+                hBrush = DefWnd.DefWindowProcA(parent, WM_CTLCOLORBTN, hdc, hWnd);
+
+            WinDC.FillRect(hdc, rc.allocTemp(), hBrush);
+            if (action == ODA_FOCUS || (state & BST_FOCUS) != 0)
+                UiTools.DrawFocusRect(hdc, rc.allocTemp());
+
+            switch (action) {
+                case ODA_FOCUS:
+                    BUTTON_NOTIFY_PARENT(hWnd, (state & BST_FOCUS) != 0 ? BN_SETFOCUS : BN_KILLFOCUS);
+                    break;
+
+                case ODA_SELECT:
+                    BUTTON_NOTIFY_PARENT(hWnd, (state & BST_PUSHED) != 0 ? BN_HILITE : BN_UNHILITE);
+                    break;
+
+                default:
+                    BUTTON_NOTIFY_PARENT(hWnd, BN_PAINT);
+                    break;
+            }
+        }
+    };
+    /**
+     * *******************************************************************
+     * Ownerdrawn Button Functions
+     */
+    static private final ButtonPaint OB_Paint = new ButtonPaint() {
+        public void paint(int hWnd, int hdc, int action) {
+            int state = get_button_state(hWnd);
+            DRAWITEMSTRUCT dis = new DRAWITEMSTRUCT();
+            int id = WinWindow.GetWindowLongA(hWnd, GWLP_ID);
+
+            dis.CtlType = ODT_BUTTON;
+            dis.CtlID = id;
+            dis.itemID = 0;
+            dis.itemAction = action;
+            dis.itemState = ((state & BST_FOCUS) != 0 ? ODS_FOCUS : 0) | ((state & BST_PUSHED) != 0 ? ODS_SELECTED : 0) | (WinWindow.IsWindowEnabled(hWnd) != 0 ? 0 : ODS_DISABLED);
+            dis.hwndItem = hWnd;
+            dis.hDC = hdc;
+            dis.itemData = 0;
+            WinPos.WIN_GetClientRect(hWnd, dis.rcItem);
+
+            int hFont = get_button_font(hWnd);
+            int hPrevFont = 0;
+            if (hFont != 0)
+                hPrevFont = WinDC.SelectObject(hdc, hFont);
+            int parent = WinWindow.GetParent(hWnd);
+            if (parent == 0)
+                parent = hWnd;
+            Message.SendMessageA(parent, WM_CTLCOLORBTN, hdc, hWnd);
+
+            int hrgn = UiTools.set_control_clipping(hdc, dis.rcItem);
+
+            Message.SendMessageA(WinWindow.GetParent(hWnd), WM_DRAWITEM, id, dis.allocTemp());
+            if (hPrevFont != 0)
+                WinDC.SelectObject(hdc, hPrevFont);
+            WinDC.SelectClipRgn(hdc, hrgn);
+            if (hrgn != 0)
+                GdiObj.DeleteObject(hrgn);
+        }
+    };
+    static private final ButtonPaint[] btnPaintFunc = new ButtonPaint[]
+            {
+                    PB_Paint,    /* BS_PUSHBUTTON */
+                    PB_Paint,    /* BS_DEFPUSHBUTTON */
+                    CB_Paint,    /* BS_CHECKBOX */
+                    CB_Paint,    /* BS_AUTOCHECKBOX */
+                    CB_Paint,    /* BS_RADIOBUTTON */
+                    CB_Paint,    /* BS_3STATE */
+                    CB_Paint,    /* BS_AUTO3STATE */
+                    GB_Paint,    /* BS_GROUPBOX */
+                    UB_Paint,    /* BS_USERBUTTON */
+                    CB_Paint,    /* BS_AUTORADIOBUTTON */
+                    null,        /* BS_PUSHBOX */
+                    OB_Paint     /* BS_OWNERDRAW */
+            };
+
+    static public void registerClass(WinProcess process) {
+        WinClass winClass = WinClass.create();
+        winClass.className = "BUTTON";
+        winClass.style = CS_DBLCLKS | CS_VREDRAW | CS_HREDRAW | CS_PARENTDC;
+        winClass.hCursor = WinCursor.LoadCursorA(0, IDC_ARROW);
+        winClass.cbWndExtra = NB_EXTRA_BYTES;
+        int cb = WinCallback.addCallback(button_proc);
+        winClass.eip = process.loader.registerFunction(cb);
+        process.classNames.put(winClass.className.toLowerCase(), winClass);
     }
 
-    static private int checkBoxWidth = 0, checkBoxHeight = 0;
+    static private void BUTTON_NOTIFY_PARENT(int hWnd, int code) {
+        /* Notify parent which has created this button control */
+        Message.SendMessageA(WinWindow.GetParent(hWnd), WM_COMMAND, MAKEWPARAM(WinWindow.GetWindowLongA((hWnd), GWLP_ID), (code)), hWnd);
+    }
 
     static private int get_button_state(int hwnd) {
         return WinWindow.GetWindowLongA(hwnd, STATE_GWL_OFFSET);
@@ -445,8 +792,8 @@ public class ButtonWindow extends WinAPI {
         if ((ex_style & WS_EX_RIGHT) != 0) dtStyle = DT_RIGHT | (dtStyle & ~(DT_LEFT | DT_CENTER));
 
         /* DrawText ignores vertical alignment for multiline text,
-        * but we use these flags to align label manually.
-        */
+         * but we use these flags to align label manually.
+         */
         if (get_button_type(style) != BS_GROUPBOX) {
             switch (style & BS_VCENTER) {
                 case BS_TOP:     /* DT_TOP is 0 */
@@ -526,10 +873,10 @@ public class ButtonWindow extends WinAPI {
         }
 
         /* Position label inside bounding rectangle according to
-        * alignment flags. (calculated rect is always left-top aligned).
-        * If label is aligned to any side - shift label in opposite
-        * direction to leave extra space for focus rectangle.
-        */
+         * alignment flags. (calculated rect is always left-top aligned).
+         * If label is aligned to any side - shift label in opposite
+         * direction to leave extra space for focus rectangle.
+         */
         int n;
         switch (dtStyle & (DT_CENTER | DT_RIGHT)) {
             case DT_LEFT:
@@ -569,7 +916,6 @@ public class ButtonWindow extends WinAPI {
         return dtStyle;
     }
 
-
     /**
      * *******************************************************************
      * BUTTON_DrawTextCallback
@@ -581,7 +927,6 @@ public class ButtonWindow extends WinAPI {
         WinText.DrawTextA(hdc, lp, -1, rc.allocTemp(), wp);
         return TRUE;
     }
-
 
     /**
      * *******************************************************************
@@ -599,9 +944,9 @@ public class ButtonWindow extends WinAPI {
         int style = WinWindow.GetWindowLongA(hwnd, GWL_STYLE);
 
         /* FIXME: To draw disabled label in Win31 look-and-feel, we probably
-        * must use DSS_MONO flag and COLOR_GRAYTEXT brush (or maybe DSS_UNION).
-        * I don't have Win31 on hand to verify that, so I leave it as is.
-        */
+         * must use DSS_MONO flag and COLOR_GRAYTEXT brush (or maybe DSS_UNION).
+         * I don't have Win31 on hand to verify that, so I leave it as is.
+         */
 
         if ((style & BS_PUSHLIKE) != 0 && (state & BST_INDETERMINATE) != 0) {
             hbr = SysParams.GetSysColorBrush(COLOR_GRAYTEXT);
@@ -638,212 +983,6 @@ public class ButtonWindow extends WinAPI {
 
     /**
      * *******************************************************************
-     * Push Button Functions
-     */
-    static private ButtonPaint PB_Paint = new ButtonPaint() {
-        public void paint(int hWnd, int hdc, int action) {
-            WinRect rc = new WinRect();
-            int state = get_button_state(hWnd);
-            int style = WinWindow.GetWindowLongA(hWnd, GWL_STYLE);
-            boolean pushedState = (state & BST_PUSHED) != 0;
-
-            WinPos.WIN_GetClientRect(hWnd, rc);
-
-            /* Send WM_CTLCOLOR to allow changing the font (the colors are fixed) */
-            int hFont = get_button_font(hWnd);
-            if (hFont != 0)
-                WinDC.SelectObject(hdc, hFont);
-            int parent = WinWindow.GetParent(hWnd);
-            if (parent == 0) parent = hWnd;
-            Message.SendMessageA(parent, WM_CTLCOLORBTN, hdc, hWnd);
-
-            int hrgn = UiTools.set_control_clipping(hdc, rc);
-
-            int hOldPen = WinDC.SelectObject(hdc, SysParams.GetSysColorPen(COLOR_WINDOWFRAME));
-            int hOldBrush = WinDC.SelectObject(hdc, SysParams.GetSysColorBrush(COLOR_BTNFACE));
-            int oldBkMode = WinDC.SetBkMode(hdc, TRANSPARENT);
-
-            if (get_button_type(style) == BS_DEFPUSHBUTTON) {
-                if (action != ODA_FOCUS)
-                    Painting.Rectangle(hdc, rc.left, rc.top, rc.right, rc.bottom);
-                rc.inflate(-1, -1);
-            }
-            try {
-                /* completely skip the drawing if only focus has changed */
-                if (action != ODA_FOCUS) {
-                    int uState = DFCS_BUTTONPUSH;
-
-                    if ((style & BS_FLAT) != 0)
-                        uState |= DFCS_MONO;
-                    else if (pushedState) {
-                        if (get_button_type(style) == BS_DEFPUSHBUTTON)
-                            uState |= DFCS_FLAT;
-                        else
-                            uState |= DFCS_PUSHED;
-                    }
-
-                    if ((state & (BST_CHECKED | BST_INDETERMINATE)) != 0)
-                        uState |= DFCS_CHECKED;
-
-                    UiTools.DrawFrameControl(hdc, rc.allocTemp(), DFC_BUTTON, uState);
-
-                    /* draw button label */
-                    WinRect r = new WinRect(rc);
-                    int dtFlags = BUTTON_CalcLabelRect(hWnd, hdc, r);
-
-                    if (dtFlags == -1)
-                        return;
-
-                    if (pushedState)
-                        r.offset(1, 1);
-
-                    int oldTxtColor = WinDC.SetTextColor(hdc, SysParams.GetSysColor(COLOR_BTNTEXT));
-                    BUTTON_DrawLabel(hWnd, hdc, dtFlags, r);
-                    WinDC.SetTextColor(hdc, oldTxtColor);
-                }
-                // draw_focus:
-                if (action == ODA_FOCUS || (state & BST_FOCUS) != 0) {
-                    rc.inflate(-2, -2);
-                    UiTools.DrawFocusRect(hdc, rc.allocTemp());
-                }
-            } finally {
-                WinDC.SelectObject(hdc, hOldPen);
-                WinDC.SelectObject(hdc, hOldBrush);
-                WinDC.SetBkMode(hdc, oldBkMode);
-                WinDC.SelectClipRgn(hdc, hrgn);
-                if (hrgn != 0) GdiObj.DeleteObject(hrgn);
-            }
-        }
-    };
-
-    /**
-     * *******************************************************************
-     * Check Box & Radio Button Functions
-     */
-    static private ButtonPaint CB_Paint = new ButtonPaint() {
-        public void paint(int hWnd, int hdc, int action) {
-            int state = get_button_state(hWnd);
-            int style = WinWindow.GetWindowLongA(hWnd, GWL_STYLE);
-
-            if ((style & BS_PUSHLIKE) != 0) {
-                PB_Paint.paint(hWnd, hdc, action);
-                return;
-            }
-
-            WinRect client = new WinRect();
-            WinPos.WIN_GetClientRect(hWnd, client);
-            WinRect rbox = new WinRect(client);
-            WinRect rtext = new WinRect(client);
-            int hFont = get_button_font(hWnd);
-
-            if (hFont != 0)
-                WinDC.SelectObject(hdc, hFont);
-
-            int parent = WinWindow.GetParent(hWnd);
-            if (parent == 0)
-                parent = hWnd;
-            int hBrush = Message.SendMessageA(parent, WM_CTLCOLORSTATIC, hdc, hWnd);
-            if (hBrush == 0) /* did the app forget to call defwindowproc ? */
-                hBrush = DefWnd.DefWindowProcA(parent, WM_CTLCOLORSTATIC, hdc, hWnd);
-            int hrgn = UiTools.set_control_clipping(hdc, client);
-
-            if ((style & BS_LEFTTEXT) != 0) {
-                /* magic +4 is what CTL3D expects */
-                rtext.right -= checkBoxWidth + 4;
-                rbox.left = rbox.right - checkBoxWidth;
-            } else {
-                rtext.left += checkBoxWidth + 4;
-                rbox.right = checkBoxWidth;
-            }
-
-            /* Since WM_ERASEBKGND does nothing, first prepare background */
-            if (action == ODA_SELECT)
-                WinDC.FillRect(hdc, rbox.allocTemp(), hBrush);
-            if (action == ODA_DRAWENTIRE)
-                WinDC.FillRect(hdc, client.allocTemp(), hBrush);
-
-            /* Draw label */
-            client.copy(rtext);
-            int dtFlags = BUTTON_CalcLabelRect(hWnd, hdc, rtext);
-
-            /* Only adjust rbox when rtext is valid */
-            if (dtFlags != -1) {
-                rbox.top = rtext.top;
-                rbox.bottom = rtext.bottom;
-            }
-
-            /* Draw the check-box bitmap */
-            if (action == ODA_DRAWENTIRE || action == ODA_SELECT) {
-                int flags;
-
-                if ((get_button_type(style) == BS_RADIOBUTTON) || (get_button_type(style) == BS_AUTORADIOBUTTON))
-                    flags = DFCS_BUTTONRADIO;
-                else if ((state & BST_INDETERMINATE) != 0)
-                    flags = DFCS_BUTTON3STATE;
-                else
-                    flags = DFCS_BUTTONCHECK;
-
-                if ((state & (BST_CHECKED | BST_INDETERMINATE)) != 0)
-                    flags |= DFCS_CHECKED;
-                if ((state & BST_PUSHED) != 0)
-                    flags |= DFCS_PUSHED;
-
-                if ((style & WS_DISABLED) != 0)
-                    flags |= DFCS_INACTIVE;
-
-                /* rbox must have the correct height */
-                int delta = rbox.bottom - rbox.top - checkBoxHeight;
-
-                if ((style & BS_TOP) != 0) {
-                    if (delta > 0) {
-                        rbox.bottom = rbox.top + checkBoxHeight;
-                    } else {
-                        rbox.top -= -delta / 2 + 1;
-                        rbox.bottom = rbox.top + checkBoxHeight;
-                    }
-                } else if ((style & BS_BOTTOM) != 0) {
-                    if (delta > 0) {
-                        rbox.top = rbox.bottom - checkBoxHeight;
-                    } else {
-                        rbox.bottom += -delta / 2 + 1;
-                        rbox.top = rbox.bottom - checkBoxHeight;
-                    }
-                } else { /* Default */
-                    if (delta > 0) {
-                        int ofs = (delta / 2);
-                        rbox.bottom -= ofs + 1;
-                        rbox.top = rbox.bottom - checkBoxHeight;
-                    } else if (delta < 0) {
-                        int ofs = (-delta / 2);
-                        rbox.top -= ofs + 1;
-                        rbox.bottom = rbox.top + checkBoxHeight;
-                    }
-                }
-
-                UiTools.DrawFrameControl(hdc, rbox.allocTemp(), DFC_BUTTON, flags);
-            }
-
-            if (dtFlags == -1L) /* Noting to draw */
-                return;
-
-            if (action == ODA_DRAWENTIRE)
-                BUTTON_DrawLabel(hWnd, hdc, dtFlags, rtext);
-
-            /* ... and focus */
-            if (action == ODA_FOCUS || (state & BST_FOCUS) != 0) {
-                rtext.left--;
-                rtext.right++;
-                rtext.intersect(rtext, client);
-                UiTools.DrawFocusRect(hdc, rtext.allocTemp());
-            }
-            WinDC.SelectClipRgn(hdc, hrgn);
-            if (hrgn != 0)
-                GdiObj.DeleteObject(hrgn);
-        }
-    };
-
-    /**
-     * *******************************************************************
      * BUTTON_CheckAutoRadioButton
      * <p/>
      * hwnd is checked, uncheck every other auto radio button in group
@@ -861,162 +1000,7 @@ public class ButtonWindow extends WinAPI {
         } while (sibling != start);
     }
 
-
-    /**
-     * *******************************************************************
-     * Group Box Functions
-     */
-
-    static private ButtonPaint GB_Paint = new ButtonPaint() {
-        public void paint(int hWnd, int hdc, int action) {
-            int style = WinWindow.GetWindowLongA(hWnd, GWL_STYLE);
-
-            int hFont = get_button_font(hWnd);
-            if (hFont != 0)
-                WinDC.SelectObject(hdc, hFont);
-            /* GroupBox acts like static control, so it sends CTLCOLORSTATIC */
-            int parent = WinWindow.GetParent(hWnd);
-            if (parent == 0)
-                parent = hWnd;
-            int hbr = Message.SendMessageA(parent, WM_CTLCOLORSTATIC, hdc, hWnd);
-            if (hbr == 0) /* did the app forget to call defwindowproc ? */
-                hbr = DefWnd.DefWindowProcA(parent, WM_CTLCOLORSTATIC, hdc, hWnd);
-            WinRect rc = new WinRect();
-            WinPos.WIN_GetClientRect(hWnd, rc);
-            WinRect rcFrame = new WinRect(rc);
-            int hrgn = UiTools.set_control_clipping(hdc, rc);
-
-            int pTm = getTempBuffer(TEXTMETRIC.SIZE);
-            WinFont.GetTextMetricsA(hdc, pTm);
-            TEXTMETRIC tm = new TEXTMETRIC(pTm);
-
-            rcFrame.top += (tm.tmHeight / 2) - 1;
-            UiTools.DrawEdge(hdc, rcFrame.allocTemp(), EDGE_ETCHED, BF_RECT | ((style & BS_FLAT) != 0 ? BF_FLAT : 0));
-
-            rc.inflate(-7, 1);
-            int dtFlags = BUTTON_CalcLabelRect(hWnd, hdc, rc);
-
-            if (dtFlags != -1) {
-                /* Because buttons have CS_PARENTDC class style, there is a chance
-                 * that label will be drawn out of client rect.
-                 * But Windows doesn't clip label's rect, so do I.
-                 */
-
-                /* There is 1-pixel margin at the left, right, and bottom */
-                rc.left--;
-                rc.right++;
-                rc.bottom++;
-                WinDC.FillRect(hdc, rc.allocTemp(), hbr);
-                rc.left++;
-                rc.right--;
-                rc.bottom--;
-
-                BUTTON_DrawLabel(hWnd, hdc, dtFlags, rc);
-            }
-            WinDC.SelectClipRgn(hdc, hrgn);
-            if (hrgn != 0)
-                GdiObj.DeleteObject(hrgn);
-        }
-    };
-
-
-    /**
-     * *******************************************************************
-     * User Button Functions
-     */
-
-    static private ButtonPaint UB_Paint = new ButtonPaint() {
-        public void paint(int hWnd, int hdc, int action) {
-            int state = get_button_state(hWnd);
-
-            WinRect rc = new WinRect();
-            WinPos.WIN_GetClientRect(hWnd, rc);
-
-            int hFont = get_button_font(hWnd);
-            if (hFont != 0)
-                WinDC.SelectObject(hdc, hFont);
-
-            int parent = WinWindow.GetParent(hWnd);
-            if (parent == 0)
-                parent = hWnd;
-            int hBrush = Message.SendMessageA(parent, WM_CTLCOLORBTN, hdc, hWnd);
-            if (hBrush == 0) /* did the app forget to call defwindowproc ? */
-                hBrush = DefWnd.DefWindowProcA(parent, WM_CTLCOLORBTN, hdc, hWnd);
-
-            WinDC.FillRect(hdc, rc.allocTemp(), hBrush);
-            if (action == ODA_FOCUS || (state & BST_FOCUS) != 0)
-                UiTools.DrawFocusRect(hdc, rc.allocTemp());
-
-            switch (action) {
-                case ODA_FOCUS:
-                    BUTTON_NOTIFY_PARENT(hWnd, (state & BST_FOCUS) != 0 ? BN_SETFOCUS : BN_KILLFOCUS);
-                    break;
-
-                case ODA_SELECT:
-                    BUTTON_NOTIFY_PARENT(hWnd, (state & BST_PUSHED) != 0 ? BN_HILITE : BN_UNHILITE);
-                    break;
-
-                default:
-                    BUTTON_NOTIFY_PARENT(hWnd, BN_PAINT);
-                    break;
-            }
-        }
-    };
-
-
-    /**
-     * *******************************************************************
-     * Ownerdrawn Button Functions
-     */
-    static private ButtonPaint OB_Paint = new ButtonPaint() {
-        public void paint(int hWnd, int hdc, int action) {
-            int state = get_button_state(hWnd);
-            DRAWITEMSTRUCT dis = new DRAWITEMSTRUCT();
-            int id = WinWindow.GetWindowLongA(hWnd, GWLP_ID);
-
-            dis.CtlType = ODT_BUTTON;
-            dis.CtlID = id;
-            dis.itemID = 0;
-            dis.itemAction = action;
-            dis.itemState = ((state & BST_FOCUS) != 0 ? ODS_FOCUS : 0) | ((state & BST_PUSHED) != 0 ? ODS_SELECTED : 0) | (WinWindow.IsWindowEnabled(hWnd) != 0 ? 0 : ODS_DISABLED);
-            dis.hwndItem = hWnd;
-            dis.hDC = hdc;
-            dis.itemData = 0;
-            WinPos.WIN_GetClientRect(hWnd, dis.rcItem);
-
-            int hFont = get_button_font(hWnd);
-            int hPrevFont = 0;
-            if (hFont != 0)
-                hPrevFont = WinDC.SelectObject(hdc, hFont);
-            int parent = WinWindow.GetParent(hWnd);
-            if (parent == 0)
-                parent = hWnd;
-            Message.SendMessageA(parent, WM_CTLCOLORBTN, hdc, hWnd);
-
-            int hrgn = UiTools.set_control_clipping(hdc, dis.rcItem);
-
-            Message.SendMessageA(WinWindow.GetParent(hWnd), WM_DRAWITEM, id, dis.allocTemp());
-            if (hPrevFont != 0)
-                WinDC.SelectObject(hdc, hPrevFont);
-            WinDC.SelectClipRgn(hdc, hrgn);
-            if (hrgn != 0)
-                GdiObj.DeleteObject(hrgn);
-        }
-    };
-
-    static private final ButtonPaint[] btnPaintFunc = new ButtonPaint[]
-    {
-            PB_Paint,    /* BS_PUSHBUTTON */
-            PB_Paint,    /* BS_DEFPUSHBUTTON */
-            CB_Paint,    /* BS_CHECKBOX */
-            CB_Paint,    /* BS_AUTOCHECKBOX */
-            CB_Paint,    /* BS_RADIOBUTTON */
-            CB_Paint,    /* BS_3STATE */
-            CB_Paint,    /* BS_AUTO3STATE */
-            GB_Paint,    /* BS_GROUPBOX */
-            UB_Paint,    /* BS_USERBUTTON */
-            CB_Paint,    /* BS_AUTORADIOBUTTON */
-            null,        /* BS_PUSHBOX */
-            OB_Paint     /* BS_OWNERDRAW */
-    };
+    private interface ButtonPaint {
+        void paint(int hWnd, int hdc, int action);
+    }
 }

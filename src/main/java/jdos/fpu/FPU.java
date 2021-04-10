@@ -12,8 +12,23 @@ import jdos.types.LogTypes;
 
 public class FPU {
     static public final boolean shouldInline = true;
+    public static final int ROUND_Nearest = 0;
+    public static final int ROUND_Down = 1;
+    public static final int ROUND_Up = 2;
+    public static final int ROUND_Chop = 3;
+    //get pi from a real library
+    public static final double PI = 3.14159265358979323846;
+    public static final double L2E = 1.4426950408889634;
+    public static final double L2T = 3.3219280948873623;
+    public static final double LN2 = 0.69314718055994531;
+    public static final double LG2 = 0.3010299956639812;
     static private final boolean LOG = false;
-
+    private static final int TAG_Valid = 0;
+    private static final int TAG_Zero = 1;
+    private static final int TAG_Weird = 2;
+    private static final int TAG_Empty = 3;
+    static private final int BIAS80 = 16383;
+    static private final int BIAS64 = 1023;
     public static double[] regs = new double[9];
     public static int[] tags = new int[9];
     public static int cw;
@@ -21,33 +36,15 @@ public class FPU {
     public static int sw;
     public static int top;
     public static int round;
-
-    private static class FPU_P_Reg {
-        /*Bit32u*/ long m1;
-        /*Bit32u*/ long m2;
-        /*Bit16u*/ int m3;
-
-        /*Bit16u*/ int d1;
-        /*Bit32u*/ long d2;
-    }
-
-    private static final int TAG_Valid = 0;
-    private static final int TAG_Zero = 1;
-    private static final int TAG_Weird = 2;
-    private static final int TAG_Empty = 3;
-
-    public static final int ROUND_Nearest = 0;
-    public static final int ROUND_Down = 1;
-    public static final int ROUND_Up = 2;
-    public static final int ROUND_Chop = 3;
-
-    //get pi from a real library
-    public static final double PI = 3.14159265358979323846;
-    public static final double L2E = 1.4426950408889634;
-    public static final double L2T = 3.3219280948873623;
-    public static final double LN2 = 0.69314718055994531;
-    public static final double LG2 = 0.3010299956639812;
-
+    public static boolean softFPU = false;
+    public static Section.SectionFunction FPU_Init = new Section.SectionFunction() {
+        public void call(Section configuration) {
+            FPU_FINIT();
+            SoftFPU.FPU_FINIT();
+            Section_prop section = (Section_prop) configuration;
+            softFPU = section.Get_bool("softfpu");
+        }
+    };
 
     //#define TOP fpu.top
     static private int STV(int i) {
@@ -61,7 +58,8 @@ public class FPU {
 
     static private void FPU_SetCW(/*Bitu*/int word) {
         cw = word;
-        cw_mask_all = (/*Bit16u*/int) (word | 0x3f);
+        /*Bit16u*/
+        cw_mask_all = word | 0x3f;
         round = ((word >>> 10) & 3);
     }
 
@@ -73,7 +71,6 @@ public class FPU {
         sw &= ~0x3800;
         sw |= (val & 7) << 11;
     }
-
 
     static private void FPU_SET_C0(/*Bitu*/int C) {
         sw &= ~0x0100;
@@ -154,9 +151,6 @@ public class FPU {
         }
     }
 
-    static private final int BIAS80 = 16383;
-    static private final int BIAS64 = 1023;
-
     static private /*Real64*/double FPU_FLD80(long eind, int begin) {
         /*Bit64s*/
         long exp64 = (((begin & 0x7fff) - BIAS80));
@@ -210,7 +204,6 @@ public class FPU {
         Memory.mem_writew(addr + 8, (int) ((sign80 << 15) | (exp80final)));
     }
 
-
     static private void FPU_FLD_F32(/*PhysPt*/int value,/*Bitu*/int store_to) {
         regs[store_to] = Float.intBitsToFloat(value);
     }
@@ -259,7 +252,6 @@ public class FPU {
         if ((in & 0x80) != 0) temp *= -1.0;
         regs[store_to] = temp;
     }
-
 
     static private void FPU_FLD_F32_EA(/*PhysPt*/int addr) {
         FPU_FLD_F32(Memory.mem_readd(addr), 8);
@@ -548,7 +540,6 @@ public class FPU {
         }
     }
 
-
     static private void FPU_F2XM1() {
         regs[top] = Math.pow(2.0, regs[top]) - 1;
     }
@@ -689,7 +680,6 @@ public class FPU {
         tags[top] = TAG_Zero;
     }
 
-
     static private void FPU_FADD_EA(/*Bitu*/int op1) {
         FPU_FADD(op1, 8);
     }
@@ -724,6 +714,11 @@ public class FPU {
         FPU_SetCW(temp);
     }
 
+/* WATCHIT : ALWAYS UPDATE REGISTERS BEFORE AND AFTER USING THEM
+            STATUS WORD =>	FPU_SET_TOP(fpu.top) BEFORE a read
+			fpu.top=FPU_GET_TOP() after a write;
+			*/
+
     static private /*Bit16u*/int FPU_GetTag() {
         /*Bit16u*/
         int tag = 0;
@@ -731,11 +726,6 @@ public class FPU {
             tag |= ((tags[i] & 3) << (2 * i));
         return tag;
     }
-
-/* WATCHIT : ALWAYS UPDATE REGISTERS BEFORE AND AFTER USING THEM
-            STATUS WORD =>	FPU_SET_TOP(fpu.top) BEFORE a read
-			fpu.top=FPU_GET_TOP() after a write;
-			*/
 
     static public void FADD_SINGLE_REAL(int addr) {
         FPU_FLD_F32_EA(addr);
@@ -1272,35 +1262,35 @@ public class FPU {
         }
         int group = (rm >> 3) & 7;
         switch (group) {
-            case 0x00:	/* FADD */
+            case 0x00:    /* FADD */
                 FADD_SINGLE_REAL(addr);
                 if (LOG) System.out.println("FADD_SINGLE_REAL");
                 break;
-            case 0x01:	/* FMUL  */
+            case 0x01:    /* FMUL  */
                 FMUL_SINGLE_REAL(addr);
                 if (LOG) System.out.println("FMUL_SINGLE_REAL");
                 break;
-            case 0x02:	/* FCOM */
+            case 0x02:    /* FCOM */
                 FCOM_SINGLE_REAL(addr, false);
                 if (LOG) System.out.println("FCOM_SINGLE_REAL");
                 break;
-            case 0x03:	/* FCOMP */
+            case 0x03:    /* FCOMP */
                 FCOM_SINGLE_REAL(addr, true);
                 if (LOG) System.out.println("FCOMP_SINGLE_REAL");
                 break;
-            case 0x04:	/* FSUB */
+            case 0x04:    /* FSUB */
                 FSUB_SINGLE_REAL(addr);
                 if (LOG) System.out.println("FSUB_SINGLE_REAL");
                 break;
-            case 0x05:	/* FSUBR */
+            case 0x05:    /* FSUBR */
                 FSUBR_SINGLE_REAL(addr);
                 if (LOG) System.out.println("FSUBR_SINGLE_REAL");
                 break;
-            case 0x06:	/* FDIV */
+            case 0x06:    /* FDIV */
                 FDIV_SINGLE_REAL(addr);
                 if (LOG) System.out.println("FDIV_SINGLE_REAL");
                 break;
-            case 0x07:	/* FDIVR */
+            case 0x07:    /* FDIVR */
                 FDIVR_SINGLE_REAL(addr);
                 if (LOG) System.out.println("FDIVR_SINGLE_REAL");
                 break;
@@ -1493,35 +1483,35 @@ public class FPU {
                 break;
             case 0x06:
                 switch (sub) {
-                    case 0x00:	/* F2XM1 */
+                    case 0x00:    /* F2XM1 */
                         F2XM1();
                         if (LOG) System.out.println("F2XM1");
                         break;
-                    case 0x01:	/* FYL2X */
+                    case 0x01:    /* FYL2X */
                         FYL2X();
                         if (LOG) System.out.println("FYL2X");
                         break;
-                    case 0x02:	/* FPTAN  */
+                    case 0x02:    /* FPTAN  */
                         FPTAN();
                         if (LOG) System.out.println("FPTAN");
                         break;
-                    case 0x03:	/* FPATAN */
+                    case 0x03:    /* FPATAN */
                         FPATAN();
                         if (LOG) System.out.println("FPATAN");
                         break;
-                    case 0x04:	/* FXTRACT */
+                    case 0x04:    /* FXTRACT */
                         FXTRACT();
                         if (LOG) System.out.println("FXTRACT");
                         break;
-                    case 0x05:	/* FPREM1 */
+                    case 0x05:    /* FPREM1 */
                         FPREM(true);
                         if (LOG) System.out.println("FPREM1 nearest");
                         break;
-                    case 0x06:	/* FDECSTP */
+                    case 0x06:    /* FDECSTP */
                         FDECSTP();
                         if (LOG) System.out.println("FDECSTP");
                         break;
-                    case 0x07:	/* FINCSTP */
+                    case 0x07:    /* FINCSTP */
                         FINCSTP();
                         if (LOG) System.out.println("FINCSTP");
                         break;
@@ -1533,35 +1523,35 @@ public class FPU {
                 break;
             case 0x07:
                 switch (sub) {
-                    case 0x00:		/* FPREM */
+                    case 0x00:        /* FPREM */
                         FPREM(false);
                         if (LOG) System.out.println("FPREM");
                         break;
-                    case 0x01:		/* FYL2XP1 */
+                    case 0x01:        /* FYL2XP1 */
                         FYL2XP1();
                         if (LOG) System.out.println("FYL2XP1");
                         break;
-                    case 0x02:		/* FSQRT */
+                    case 0x02:        /* FSQRT */
                         FSQRT();
                         if (LOG) System.out.println("FSQRT");
                         break;
-                    case 0x03:		/* FSINCOS */
+                    case 0x03:        /* FSINCOS */
                         FSINCOS();
                         if (LOG) System.out.println("FSINCOS");
                         break;
-                    case 0x04:		/* FRNDINT */
+                    case 0x04:        /* FRNDINT */
                         FRNDINT();
                         if (LOG) System.out.println("FRNDINT");
                         break;
-                    case 0x05:		/* FSCALE */
+                    case 0x05:        /* FSCALE */
                         FSCALE();
                         if (LOG) System.out.println("FSCALE");
                         break;
-                    case 0x06:		/* FSIN */
+                    case 0x06:        /* FSIN */
                         FSIN();
                         if (LOG) System.out.println("FSIN");
                         break;
-                    case 0x07:		/* FCOS */
+                    case 0x07:        /* FCOS */
                         FCOS();
                         if (LOG) System.out.println("FCOS");
                         break;
@@ -1577,7 +1567,6 @@ public class FPU {
         }
     }
 
-
     static public void FPU_ESC2_EA(/*Bitu*/int rm,/*PhysPt*/int addr) {
         if (softFPU) {
             SoftFPU.FPU_ESC2_EA(rm, addr);
@@ -1585,35 +1574,35 @@ public class FPU {
         }
         int group = (rm >> 3) & 7;
         switch (group) {
-            case 0x00:	/* FADD */
+            case 0x00:    /* FADD */
                 FIADD_DWORD_INTEGER(addr);
                 if (LOG) System.out.println("FIADD_DWORD_INTEGER");
                 break;
-            case 0x01:	/* FMUL  */
+            case 0x01:    /* FMUL  */
                 FIMUL_DWORD_INTEGER(addr);
                 if (LOG) System.out.println("FIMUL_DWORD_INTEGER");
                 break;
-            case 0x02:	/* FCOM */
+            case 0x02:    /* FCOM */
                 FICOM_DWORD_INTEGER(addr, false);
                 if (LOG) System.out.println("FICOM_DWORD_INTEGER");
                 break;
-            case 0x03:	/* FCOMP */
+            case 0x03:    /* FCOMP */
                 FICOM_DWORD_INTEGER(addr, true);
                 if (LOG) System.out.println("FICOMP_DWORD_INTEGER");
                 break;
-            case 0x04:	/* FSUB */
+            case 0x04:    /* FSUB */
                 FISUB_DWORD_INTEGER(addr);
                 if (LOG) System.out.println("FISUB_DWORD_INTEGER");
                 break;
-            case 0x05:	/* FSUBR */
+            case 0x05:    /* FSUBR */
                 FISUBR_DWORD_INTEGER(addr);
                 if (LOG) System.out.println("FISUBR_DWORD_INTEGER");
                 break;
-            case 0x06:	/* FDIV */
+            case 0x06:    /* FDIV */
                 FIDIV_DWORD_INTEGER(addr);
                 if (LOG) System.out.println("FIDIV_DWORD_INTEGER");
                 break;
-            case 0x07:	/* FDIVR */
+            case 0x07:    /* FDIVR */
                 FIDIVR_DWORD_INTEGER(addr);
                 if (LOG) System.out.println("FIDIVR_DWORD_INTEGER");
                 break;
@@ -1648,7 +1637,7 @@ public class FPU {
                 break;
             case 0x05:
                 switch (sub) {
-                    case 0x01:		/* FUCOMPP */
+                    case 0x01:        /* FUCOMPP */
                         FUCOMPP();
                         if (LOG) System.out.println("FUCOMPP");
                         break;
@@ -1665,7 +1654,6 @@ public class FPU {
         }
     }
 
-
     static public void FPU_ESC3_EA(/*Bitu*/int rm,/*PhysPt*/int addr) {
         if (softFPU) {
             SoftFPU.FPU_ESC3_EA(rm, addr);
@@ -1674,27 +1662,27 @@ public class FPU {
         int group = (rm >> 3) & 7;
         int sub = (rm & 7);
         switch (group) {
-            case 0x00:	/* FILD */
+            case 0x00:    /* FILD */
                 FILD_DWORD_INTEGER(addr);
                 if (LOG) System.out.println("FILD_DWORD_INTEGER");
                 break;
-            case 0x01:	/* FISTTP */
+            case 0x01:    /* FISTTP */
                 FISTTP32(addr);
                 if (LOG) System.out.println("FISTTP32");
                 break;
-            case 0x02:	/* FIST */
+            case 0x02:    /* FIST */
                 FIST_DWORD_INTEGER(addr, false);
                 if (LOG) System.out.println("FIST_DWORD_INTEGER");
                 break;
-            case 0x03:	/* FISTP */
+            case 0x03:    /* FISTP */
                 FIST_DWORD_INTEGER(addr, true);
                 if (LOG) System.out.println("FISTP_DWORD_INTEGER");
                 break;
-            case 0x05:	/* FLD 80 Bits Real */
+            case 0x05:    /* FLD 80 Bits Real */
                 FLD_EXTENDED_REAL(addr);
                 if (LOG) System.out.println("FLD_EXTENDED_REAL");
                 break;
-            case 0x07:	/* FSTP 80 Bits Real */
+            case 0x07:    /* FSTP 80 Bits Real */
                 FSTP_EXTENDED_REAL(addr);
                 if (LOG) System.out.println("FSTP_EXTENDED_REAL");
                 break;
@@ -1763,7 +1751,6 @@ public class FPU {
         }
     }
 
-
     static public void FPU_ESC4_EA(/*Bitu*/int rm,/*PhysPt*/int addr) {
         if (softFPU) {
             SoftFPU.FPU_ESC4_EA(rm, addr);
@@ -1771,35 +1758,35 @@ public class FPU {
         }
         int group = (rm >> 3) & 7;
         switch (group) {
-            case 0x00:	/* FADD */
+            case 0x00:    /* FADD */
                 FADD_DOUBLE_REAL(addr);
                 if (LOG) System.out.println("FADD_DOUBLE_REAL");
                 break;
-            case 0x01:	/* FMUL  */
+            case 0x01:    /* FMUL  */
                 FMUL_DOUBLE_REAL(addr);
                 if (LOG) System.out.println("FMUL_DOUBLE_REAL");
                 break;
-            case 0x02:	/* FCOM */
+            case 0x02:    /* FCOM */
                 FCOM_DOUBLE_REAL(addr, false);
                 if (LOG) System.out.println("FCOM_DOUBLE_REAL");
                 break;
-            case 0x03:	/* FCOMP */
+            case 0x03:    /* FCOMP */
                 FCOM_DOUBLE_REAL(addr, true);
                 if (LOG) System.out.println("FCOMP_DOUBLE_REAL");
                 break;
-            case 0x04:	/* FSUB */
+            case 0x04:    /* FSUB */
                 FSUB_DOUBLE_REAL(addr);
                 if (LOG) System.out.println("FSUB_DOUBLE_REAL");
                 break;
-            case 0x05:	/* FSUBR */
+            case 0x05:    /* FSUBR */
                 FSUBR_DOUBLE_REAL(addr);
                 if (LOG) System.out.println("FSUBR_DOUBLE_REAL");
                 break;
-            case 0x06:	/* FDIV */
+            case 0x06:    /* FDIV */
                 FDIV_DOUBLE_REAL(addr);
                 if (LOG) System.out.println("FDIV_DOUBLE_REAL");
                 break;
-            case 0x07:	/* FDIVR */
+            case 0x07:    /* FDIVR */
                 FDIVR_DOUBLE_REAL(addr);
                 if (LOG) System.out.println("FDIVR_DOUBLE_REAL");
                 break;
@@ -1816,11 +1803,11 @@ public class FPU {
         int group = (rm >> 3) & 7;
         int sub = (rm & 7);
         switch (group) {
-            case 0x00:	/* FADD STi,ST*/
+            case 0x00:    /* FADD STi,ST*/
                 FADD_STi_ST0(sub, false);
                 if (LOG) System.out.println("FADD_STi_ST0");
                 break;
-            case 0x01:	/* FMUL STi,ST*/
+            case 0x01:    /* FMUL STi,ST*/
                 FMUL_STi_ST0(sub, false);
                 if (LOG) System.out.println("FMUL_STi_ST0");
                 break;
@@ -1873,15 +1860,15 @@ public class FPU {
                 FST_DOUBLE_REAL(addr, false);
                 if (LOG) System.out.println("FST_DOUBLE_REAL");
                 break;
-            case 0x03:	/* FSTP double real*/
+            case 0x03:    /* FSTP double real*/
                 FST_DOUBLE_REAL(addr, true);
                 if (LOG) System.out.println("FSTP_DOUBLE_REAL");
                 break;
-            case 0x04:	/* FRSTOR */
+            case 0x04:    /* FRSTOR */
                 FRSTOR(addr);
                 if (LOG) System.out.println("FRSTOR");
                 break;
-            case 0x06:	/* FSAVE */
+            case 0x06:    /* FSAVE */
                 FNSAVE(addr);
                 if (LOG) System.out.println("FSAVE");
                 break;
@@ -1919,11 +1906,11 @@ public class FPU {
                 FST_STi(sub, true);
                 if (LOG) System.out.println("FSTP_STi");
                 break;
-            case 0x04:	/* FUCOM STi */
+            case 0x04:    /* FUCOM STi */
                 FUCOM_STi(sub, false);
                 if (LOG) System.out.println("FUCOM_STi");
                 break;
-            case 0x05:	/*FUCOMP STi */
+            case 0x05:    /*FUCOMP STi */
                 FUCOM_STi(sub, true);
                 if (LOG) System.out.println("FUCOMP_STi");
                 break;
@@ -1941,35 +1928,35 @@ public class FPU {
         }
         int group = (rm >> 3) & 7;
         switch (group) {
-            case 0x00:	/* FADD */
+            case 0x00:    /* FADD */
                 FIADD_WORD_INTEGER(addr);
                 if (LOG) System.out.println("FIADD_WORD_INTEGER");
                 break;
-            case 0x01:	/* FMUL  */
+            case 0x01:    /* FMUL  */
                 FIMUL_WORD_INTEGER(addr);
                 if (LOG) System.out.println("FIMUL_WORD_INTEGER");
                 break;
-            case 0x02:	/* FCOM */
+            case 0x02:    /* FCOM */
                 FICOM_WORD_INTEGER(addr, false);
                 if (LOG) System.out.println("FICOM_WORD_INTEGER");
                 break;
-            case 0x03:	/* FCOMP */
+            case 0x03:    /* FCOMP */
                 FICOM_WORD_INTEGER(addr, true);
                 if (LOG) System.out.println("FICOMP_WORD_INTEGER");
                 break;
-            case 0x04:	/* FSUB */
+            case 0x04:    /* FSUB */
                 FISUB_WORD_INTEGER(addr);
                 if (LOG) System.out.println("FISUB_WORD_INTEGER");
                 break;
-            case 0x05:	/* FSUBR */
+            case 0x05:    /* FSUBR */
                 FISUBR_WORD_INTEGER(addr);
                 if (LOG) System.out.println("FISUBR_WORD_INTEGER");
                 break;
-            case 0x06:	/* FDIV */
+            case 0x06:    /* FDIV */
                 FIDIV_WORD_INTEGER(addr);
                 if (LOG) System.out.println("FIDIV_WORD_INTEGER");
                 break;
-            case 0x07:	/* FDIVR */
+            case 0x07:    /* FDIVR */
                 FIDIVR_WORD_INTEGER(addr);
                 if (LOG) System.out.println("FIDIVR_WORD_INTEGER");
                 break;
@@ -1987,18 +1974,18 @@ public class FPU {
         int group = (rm >> 3) & 7;
         int sub = (rm & 7);
         switch (group) {
-            case 0x00:	/*FADDP STi,ST*/
+            case 0x00:    /*FADDP STi,ST*/
                 FADD_STi_ST0(rm, true);
                 if (LOG) System.out.println("FADDP_STi_ST0");
                 break;
-            case 0x01:	/* FMULP STi,ST*/
+            case 0x01:    /* FMULP STi,ST*/
                 FMUL_STi_ST0(rm, true);
                 if (LOG) System.out.println("FMULP_STi_ST0");
                 break;
             case 0x02:  /* FCOMP5*/
                 FCOM_STi(rm, true);
                 if (LOG) System.out.println("FCOMP_STi");
-                break;	/* TODO IS THIS ALLRIGHT ????????? */
+                break;    /* TODO IS THIS ALLRIGHT ????????? */
             case 0x03:  /*FCOMPP*/
                 if (sub != 1) {
                     if (Log.level <= LogSeverities.LOG_WARN)
@@ -2016,7 +2003,7 @@ public class FPU {
                 FSUB_STi_ST0(rm, true);
                 if (LOG) System.out.println("FSUBP_STi_ST0");
                 break;
-            case 0x06:	/* FDIVRP STi,ST*/
+            case 0x06:    /* FDIVRP STi,ST*/
                 FDIVR_STi_ST0(rm, true);
                 if (LOG) System.out.println("FDIVRP_STi_ST0");
                 break;
@@ -2028,7 +2015,6 @@ public class FPU {
                 break;
         }
     }
-
 
     static public void FPU_ESC7_EA(/*Bitu*/int rm,/*PhysPt*/int addr) {
         if (softFPU) {
@@ -2050,7 +2036,7 @@ public class FPU {
                 FIST_WORD_INTEGER(addr, false);
                 if (LOG) System.out.println("FIST_WORD_INTEGER");
                 break;
-            case 0x03:	/* FISTP Bit16s */
+            case 0x03:    /* FISTP Bit16s */
                 FIST_WORD_INTEGER(addr, true);
                 if (LOG) System.out.println("FISTP_WORD_INTEGER");
                 break;
@@ -2062,7 +2048,7 @@ public class FPU {
                 FILD_QWORD_INTEGER(addr);
                 if (LOG) System.out.println("FILD_QWORD_INTEGER");
                 break;
-            case 0x06:	/* FBSTP packed BCD */
+            case 0x06:    /* FBSTP packed BCD */
                 FBSTP_PACKED_BCD(addr);
                 if (LOG) System.out.println("FBSTP_PACKED_BCD");
                 break;
@@ -2083,7 +2069,7 @@ public class FPU {
             return;
         }
         int group = (rm >> 3) & 7;
-                    /*Bitu*/
+        /*Bitu*/
         int sub = (rm & 7);
         switch (group) {
             case 0x00: /* FFREEP STi*/
@@ -2126,14 +2112,12 @@ public class FPU {
         }
     }
 
-    public static boolean softFPU = false;
+    private static class FPU_P_Reg {
+        /*Bit32u*/ long m1;
+        /*Bit32u*/ long m2;
+        /*Bit16u*/ int m3;
 
-    public static Section.SectionFunction FPU_Init = new Section.SectionFunction() {
-        public void call(Section configuration) {
-            FPU_FINIT();
-            SoftFPU.FPU_FINIT();
-            Section_prop section = (Section_prop) configuration;
-            softFPU = section.Get_bool("softfpu");
-        }
-    };
+        /*Bit16u*/ int d1;
+        /*Bit32u*/ long d2;
+    }
 }

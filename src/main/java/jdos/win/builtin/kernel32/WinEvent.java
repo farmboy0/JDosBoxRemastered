@@ -6,6 +6,16 @@ import jdos.win.builtin.WinAPI;
 import jdos.win.system.WinObject;
 
 public class WinEvent extends WaitObject {
+    public boolean manual;
+    public boolean set;
+
+    public WinEvent(int handle, String name, boolean manual, boolean set) {
+        super(handle);
+        this.name = name;
+        this.manual = set;
+        this.set = set;
+    }
+
     static public WinEvent create(String name, boolean manual, boolean set) {
         return new WinEvent(nextObjectId(), name, manual, set);
     }
@@ -14,14 +24,7 @@ public class WinEvent extends WaitObject {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinEvent))
             return null;
-        return (WinEvent)object;
-    }
-
-    public WinEvent(int handle, String name, boolean manual, boolean set) {
-        super(handle);
-        this.name = name;
-        this.manual = set;
-        this.set = set;
+        return (WinEvent) object;
     }
 
     public int set() {
@@ -51,14 +54,14 @@ public class WinEvent extends WaitObject {
             return 0;
         }
         CPU_Regs.reg_eax.dword = WAIT_TIMEOUT;
-        if (timeout !=0) {
+        if (timeout != 0) {
             return internalWait(thread, timeout);
         }
         return 0;
     }
 
     public void release() {
-        for (int i=0;i<waiting.size();i++) {
+        for (int i = 0; i < waiting.size(); i++) {
             if (waiting.get(i).released()) {
                 i--; // released will remove the wait object from waiting
                 if (!manual) {
@@ -75,7 +78,4 @@ public class WinEvent extends WaitObject {
         //    set = false;
         //}
     }
-
-    public boolean manual;
-    public boolean set;
 }

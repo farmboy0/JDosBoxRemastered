@@ -9,11 +9,11 @@ public class Mapping extends WinAPI {
         if (dc == null)
             return FALSE;
         if (lpPoint != 0) {
-            writed(lpPoint, dc.x-dc.clipX);
-            writed(lpPoint+4, dc.y-dc.clipY);
+            writed(lpPoint, dc.x - dc.clipX);
+            writed(lpPoint + 4, dc.y - dc.clipY);
         }
-        dc.x+=nXOffset;
-        dc.y+=nYOffset;
+        dc.x += nXOffset;
+        dc.y += nYOffset;
         return TRUE;
     }
 }

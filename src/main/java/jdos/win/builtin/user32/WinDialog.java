@@ -12,6 +12,9 @@ import jdos.win.utils.StringUtil;
 import java.util.Iterator;
 
 public class WinDialog extends WinAPI {
+    static final int DIALOG_CLASS_ATOM = 32770;
+    private static int units = 0;
+
     // HWND WINAPI CreateDialogIndirectParam(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND hWndParent, DLGPROC lpDialogFunc, LPARAM lParamInit)
     public static int CreateDialogIndirectParamA(int hInstance, int lpTemplate, int hWndParent, int lpDialogFunc, int lParamInit) {
         return DIALOG_CreateIndirect(hInstance, lpTemplate, hWndParent, lpDialogFunc, lParamInit, false, false);
@@ -167,8 +170,6 @@ public class WinDialog extends WinAPI {
         return FALSE;
     }
 
-    private static int units = 0;
-
     // LONG WINAPI GetDialogBaseUnits(void)
     public static int GetDialogBaseUnits() {
         if (units != 0)
@@ -198,8 +199,8 @@ public class WinDialog extends WinAPI {
 
     // LRESULT WINAPI SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam)
     static public int SendDlgItemMessageA(int hwnd, int id, int msg, int wParam, int lParam) {
-        int hwndCtrl = GetDlgItem( hwnd, id );
-        if (hwndCtrl!=0) return Message.SendMessageA(hwndCtrl, msg, wParam, lParam);
+        int hwndCtrl = GetDlgItem(hwnd, id);
+        if (hwndCtrl != 0) return Message.SendMessageA(hwndCtrl, msg, wParam, lParam);
         else return 0;
     }
 
@@ -207,8 +208,6 @@ public class WinDialog extends WinAPI {
     public static int SetDlgItemTextA(int hDlg, int nIDDlgItem, int lpString) {
         return SendDlgItemMessageA(hDlg, nIDDlgItem, WM_SETTEXT, 0, lpString);
     }
-
-    static final int DIALOG_CLASS_ATOM = 32770;
 
     static public void registerClass(User32 dll, WinProcess process) {
         WinClass winClass = WinClass.create(DIALOG_CLASS_ATOM);
@@ -280,25 +279,6 @@ public class WinDialog extends WinAPI {
                 return child.handle;
         }
         return 0;
-    }
-
-    static private class DLG_TEMPLATE {
-        int style;
-        int exStyle;
-        int helpId;
-        int nbItems;
-        int x;
-        int y;
-        int cx;
-        int cy;
-        int menuName;
-        int className;
-        int caption;
-        int pointSize;
-        int weight;
-        boolean italic;
-        int faceName;
-        boolean dialogEx;
     }
 
     /**
@@ -437,20 +417,6 @@ public class WinDialog extends WinAPI {
             return true;
         } else
             return false;
-    }
-
-    static private class DialogControlInfo {
-        int style;
-        int exStyle;
-        int helpId;
-        int x;
-        int y;
-        int cx;
-        int cy;
-        int id;
-        int className;
-        int windowName;
-        int data;
     }
 
     static private int DIALOG_GetControl32(int p, DialogControlInfo info, boolean dialogEx) {
@@ -797,5 +763,38 @@ public class WinDialog extends WinAPI {
         if (modal && ownerEnabled) DIALOG_EnableOwner(owner);
         if (WinWindow.IsWindow(hwnd) != 0) WinWindow.DestroyWindow(hwnd);
         return 0;
+    }
+
+    static private class DLG_TEMPLATE {
+        int style;
+        int exStyle;
+        int helpId;
+        int nbItems;
+        int x;
+        int y;
+        int cx;
+        int cy;
+        int menuName;
+        int className;
+        int caption;
+        int pointSize;
+        int weight;
+        boolean italic;
+        int faceName;
+        boolean dialogEx;
+    }
+
+    static private class DialogControlInfo {
+        int style;
+        int exStyle;
+        int helpId;
+        int x;
+        int y;
+        int cx;
+        int cy;
+        int id;
+        int className;
+        int windowName;
+        int data;
     }
 }

@@ -6,7 +6,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class HomeDirectory {
-    static final Pattern p = Pattern.compile( " \\([A-Za-z]:\\)" );
+    static final Pattern p = Pattern.compile(" \\([A-Za-z]:\\)");
 
     static public String get() {
         String result = System.getenv("USERPROFILE");
@@ -15,7 +15,7 @@ public class HomeDirectory {
             if (result != null) {
                 String drive = System.getenv("HOMEDRIVE");
                 if (drive != null) {
-                    result = drive+result;
+                    result = drive + result;
                 }
             }
         }
@@ -24,17 +24,16 @@ public class HomeDirectory {
         if (result == null)
             result = System.getProperty("user.home");
         if (result.endsWith("\\") || result.endsWith("/")) {
-            result = result.substring(0, result.length()-1);
+            result = result.substring(0, result.length() - 1);
         }
-        if (result.length()==0)
-            result=".";
+        if (result.length() == 0)
+            result = ".";
         return result;
     }
 
-    public static String getVolumeLabel(String path)
-    {
+    public static String getVolumeLabel(String path) {
         File file = new File(path);
-        while (file.getParentFile()!=null) {
+        while (file.getParentFile() != null) {
             file = file.getParentFile();
         }
         FileSystemView v = FileSystemView.getFileSystemView();
@@ -43,11 +42,10 @@ public class HomeDirectory {
         // Remove the trailing _(X:)
         final String chopped;
 
-        final Matcher m = p.matcher( full );
-        if ( m.find() ) {
-            chopped = full.substring( 0, m.start() ).trim();
-        }
-        else {
+        final Matcher m = p.matcher(full);
+        if (m.find()) {
+            chopped = full.substring(0, m.start()).trim();
+        } else {
             chopped = full.trim();
         }
         return chopped;

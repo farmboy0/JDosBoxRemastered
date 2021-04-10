@@ -2,6 +2,9 @@ package jdos.gui;
 
 import jdos.Dosbox;
 import jdos.ints.Mouse;
+import jdos.misc.Cross;
+import jdos.misc.setup.Property;
+import jdos.misc.setup.Section_prop;
 import jdos.sdl.GUI;
 
 import javax.swing.*;
@@ -13,23 +16,26 @@ import java.awt.image.MemoryImageSource;
 import java.lang.reflect.Method;
 
 public class MainFrame implements GUI {
+    static Robot robot;
+    static BufferedImage tmpImage;
+    static private boolean eatNextMouseMove = false;
+    static private int last_x;
+    static private int last_y;
+    static private boolean fullscreen = false;
+    static private int fullscreen_cx = 0;
+    static private int fullscreen_cy = 0;
+    static private int fullscreen_cx_offset = 0;
+    private static Thread mainThread;
+    protected static JFrame frame;
+    private static JPanel panel;
     int[] pixels = new int[16 * 16];
     Image image = Toolkit.getDefaultToolkit().createImage(new MemoryImageSource(16, 16, pixels, 0, 16));
     Cursor transparentCursor = Toolkit.getDefaultToolkit().createCustomCursor(image, new Point(0, 0), "invisibleCursor");
 
-    static Robot robot;
-    static private boolean eatNextMouseMove = false;
-    static private int last_x;
-    static private int last_y;
-
-    public void showProgress(String msg, int percent) {
-        
-    }
-
     static public void robotMouse(MouseEvent e, Point rel, int offX, int offY) {
         if (eatNextMouseMove) {
-            last_x = e.getX()-offX;
-            last_y = e.getY()-offY;
+            last_x = e.getX() - offX;
+            last_y = e.getY() - offY;
             eatNextMouseMove = false;
             return;
         }
@@ -38,84 +44,16 @@ public class MainFrame implements GUI {
         else {
             int rel_x = e.getX() - last_x - offX;
             int rel_y = e.getY() - last_y - offY;
-            float abs_x = (Mouse.mouse.x+rel_x* Main.mouse_sensitivity/100.0f)/(Mouse.mouse.max_x);
-            float abs_y = (Mouse.mouse.y+rel_y* Main.mouse_sensitivity/100.0f)/(Mouse.mouse.max_y);
+            float abs_x = (Mouse.mouse.x + rel_x * Main.mouse_sensitivity / 100.0f) / (Mouse.mouse.max_x);
+            float abs_y = (Mouse.mouse.y + rel_y * Main.mouse_sensitivity / 100.0f) / (Mouse.mouse.max_y);
             Main.addMouseEvent(new Main.MouseEvent2(e, rel_x, rel_y, abs_x, abs_y, offX, offY));
             robotCenter(rel);
         }
     }
+
     static public void robotCenter(Point rel) {
         eatNextMouseMove = true;
-        robot.mouseMove(rel.x+200, rel.y+200);
-    }
-
-    public void captureMouse(boolean on) {
-        if (robot != null) {
-            robotCenter(panel.getLocationOnScreen());
-        }
-    }
-    public void showCursor(boolean on) {
-        if (on)
-            frame.setCursor(Cursor.getDefaultCursor());
-        else
-            frame.setCursor(transparentCursor);
-    }
-    public void setCursor(Cursor cursor) {
-        if (cursor == null)
-            cursor = transparentCursor;
-        frame.setCursor(cursor);
-    }
-
-    static private boolean fullscreen = false;
-    static private int fullscreen_cx = 0;
-    static private int fullscreen_cy = 0;
-    static private int fullscreen_cx_offset = 0;
-
-    public void fullScreenToggle() {
-        if (fullscreen) {
-            frame.dispose();
-            frame.setVisible(false);
-            fullscreen = false;
-            frame.setUndecorated(false);
-            frame.setExtendedState(Frame.NORMAL);
-            setSize(Main.screen_width, Main.screen_height);
-        } else {
-            Toolkit tk = Toolkit.getDefaultToolkit();
-            fullscreen_cx = ((int) tk.getScreenSize().getWidth());
-            fullscreen_cy = ((int) tk.getScreenSize().getHeight());
-            frame.dispose();
-            frame.setVisible(false);
-            frame.setUndecorated(true);
-            frame.setResizable(false);
-            frame.setExtendedState(Frame.MAXIMIZED_BOTH);
-            setSize(fullscreen_cx, fullscreen_cy);
-            fullscreen_cx_offset = 0;
-            if ((float)fullscreen_cx/fullscreen_cy > 4.0/3.0) {
-                int new_fullscreen_cx = fullscreen_cy*4/3;
-                fullscreen_cx_offset = (fullscreen_cx - new_fullscreen_cx)/2;
-                fullscreen_cx = new_fullscreen_cx;
-            }
-            fullscreen = true;
-        }
-    }
-
-    public void setSize(int width, int height) {
-        if (fullscreen)
-            return;
-        panel.setMinimumSize(new Dimension(width, height));
-        panel.setMaximumSize(new Dimension(width, height));
-        panel.setPreferredSize(new Dimension(width, height));
-        frame.getContentPane().doLayout();
-        frame.pack();
-        if (!frame.isVisible())
-            frame.setVisible(true);
-    }
-    public void dopaint() {
-        panel.repaint();
-    }
-    public void setTitle(String title) {
-        if (frame != null)
-            frame.setTitle(title);
+        robot.mouseMove(rel.x + 200, rel.y + 200);
     }
 
     public static GraphicsConfiguration getDefaultConfiguration() {
@@ -123,8 +61,6 @@ public class MainFrame implements GUI {
         GraphicsDevice gd = ge.getDefaultScreenDevice();
         return gd.getDefaultConfiguration();
     }
-
-    static BufferedImage tmpImage;
 
     public static BufferedImage resizeImage(BufferedImage source, int destWidth, int destHeight, Object interpolation) {
         if (source == null)
@@ -165,10 +101,10 @@ public class MainFrame implements GUI {
     }
 
     public static void main(final String[] args) {
-        if (args.length>1 && args[0].equalsIgnoreCase("-pcap")) {
+        if (args.length > 1 && args[0].equalsIgnoreCase("-pcap")) {
             String nic = args[1];
             int port = 15654;
-            if (args.length>3 && args[2].equalsIgnoreCase("-pcapport")) {
+            if (args.length > 3 && args[2].equalsIgnoreCase("-pcapport")) {
                 try {
                     port = Integer.parseInt(args[3]);
                 } catch (Exception e) {
@@ -176,65 +112,87 @@ public class MainFrame implements GUI {
             }
             try {
                 Class c = Class.forName("jdos.host.FowardPCapEthernet");
-                Method method = c.getDeclaredMethod("startServer", new Class[] {String.class, Integer.TYPE});
-                method.invoke(null, new Object[]{nic, new Integer(port)});
+                Method method = c.getDeclaredMethod("startServer", String.class, Integer.TYPE);
+                method.invoke(null, nic, new Integer(port));
             } catch (Exception e) {
                 e.printStackTrace();
             }
             return;
         }
-        try {robot = new Robot();} catch (Throwable e) {System.out.println("Applet is not signed, mouse capture will not work");}
+        try {
+            robot = new Robot();
+        } catch (Throwable e) {
+            System.out.println("Applet is not signed, mouse capture will not work");
+        }
 
         frame = new MyFrame();
         frame.setFocusTraversalKeysEnabled(false);
         frame.addFocusListener(new FocusListener() {
-                private final KeyEventDispatcher altDisabler = new KeyEventDispatcher() {
-                    public boolean dispatchKeyEvent(KeyEvent e) {
-                        if (e.getKeyCode() == 18) {
-                            Main.addEvent(e);
-                            return true;
-                        }
-                        return false;
+            private final KeyEventDispatcher altDisabler = new KeyEventDispatcher() {
+                public boolean dispatchKeyEvent(KeyEvent e) {
+                    if (e.getKeyCode() == 18) {
+                        Main.addEvent(e);
+                        return true;
                     }
-                };
-
-                public void focusGained(FocusEvent e) {
-                    KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(altDisabler);
+                    return false;
                 }
+            };
 
-                public void focusLost(FocusEvent e) {
-                    KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(altDisabler);
-                }
-            });
+            public void focusGained(FocusEvent e) {
+                KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(altDisabler);
+            }
+
+            public void focusLost(FocusEvent e) {
+                KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(altDisabler);
+            }
+        });
 
         panel = new JPanel() {
             public void paint(Graphics g) {
                 if (Main.buffer2[Main.front] != null) {
                     synchronized (Main.paintMutex) {
                         if (fullscreen) {
-                            g.drawImage(Main.buffer2[Main.front], fullscreen_cx_offset, 0, fullscreen_cx+fullscreen_cx_offset,  fullscreen_cy, 0, 0, Main.buffer_width, Main.buffer_height, null);
+                            g.drawImage(Main.buffer2[Main.front], fullscreen_cx_offset, 0, fullscreen_cx + fullscreen_cx_offset, fullscreen_cy, 0, 0, Main.buffer_width, Main.buffer_height, null);
                         } else {
-                            if (Render.render.aspect && (Main.screen_height % Main.buffer_height)!=0) {
-                                BufferedImage resized = resizeImage(Main.buffer2[Main.front], Main.screen_width, Main.screen_height,RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-                                g.drawImage(resized, 0, 0, Main.screen_width,  Main.screen_height, 0, 0, Main.screen_width, Main.screen_height, null);
+                            if (Render.render.aspect && (Main.screen_height % Main.buffer_height) != 0) {
+                                BufferedImage resized = resizeImage(Main.buffer2[Main.front], Main.screen_width, Main.screen_height, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                                g.drawImage(resized, 0, 0, Main.screen_width, Main.screen_height, 0, 0, Main.screen_width, Main.screen_height, null);
                             } else {
-                                g.drawImage(Main.buffer2[Main.front], 0, 0, Main.screen_width,  Main.screen_height, 0, 0, Main.buffer_width, Main.buffer_height, null);
+                                g.drawImage(Main.buffer2[Main.front], 0, 0, Main.screen_width, Main.screen_height, 0, 0, Main.buffer_width, Main.buffer_height, null);
                             }
                         }
                     }
                 }
             }
         };
-        panel.addMouseMotionListener((MyFrame)frame);
-        panel.addMouseListener((MyFrame)frame);
+        panel.addMouseMotionListener((MyFrame) frame);
+        panel.addMouseListener((MyFrame) frame);
         frame.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
                 synchronized (Main.pauseMutex) {
                     Main.pauseMutex.notify();
                 }
                 Main.addEvent(null);
-                try {mainThread.join(5000);} catch (Exception e1) {}
+                try {
+                    mainThread.join(5000);
+                } catch (Exception e1) {
+                }
                 if (!Dosbox.applet) {
+                    Property xprop = ((Section_prop) Dosbox.control.GetSection("sdl")).byname("posx");
+                    if (xprop == null) {
+                        ((Section_prop) Dosbox.control.GetSection("sdl")).Add_int("posx", Property.Changeable.Always, (int) frame.getLocation().getX());
+                    } else {
+                        xprop.SetValue(String.valueOf((int) frame.getLocation().getX()));
+                    }
+                    Property yprop = ((Section_prop) Dosbox.control.GetSection("sdl")).byname("posy");
+                    if (yprop == null) {
+                        ((Section_prop) Dosbox.control.GetSection("sdl")).Add_int("posy", Property.Changeable.Always, (int) frame.getLocation().getY());
+                    } else {
+                        yprop.SetValue(String.valueOf((int) frame.getLocation().getY()));
+                    }
+
+                    String path = Cross.CreatePlatformConfigDir() + Cross.GetPlatformConfigName();
+                    Dosbox.control.PrintConfig(path);
                     System.exit(0);
                 }
             }
@@ -245,15 +203,83 @@ public class MainFrame implements GUI {
         mainThread = new Thread(new Runnable() {
             public void run() {
                 Main.main(new MainFrame(), args);
-                System.exit(0);
+//                System.exit(0);
             }
         });
         mainThread.start();
     }
 
-    private static Thread mainThread;
-    private static JFrame frame;
-    private static JPanel panel;
+    public void showProgress(String msg, int percent) {
+
+    }
+
+    public void captureMouse(boolean on) {
+        if (robot != null) {
+            robotCenter(panel.getLocationOnScreen());
+        }
+    }
+
+    public void showCursor(boolean on) {
+        if (on)
+            frame.setCursor(Cursor.getDefaultCursor());
+        else
+            frame.setCursor(transparentCursor);
+    }
+
+    public void setCursor(Cursor cursor) {
+        if (cursor == null)
+            cursor = transparentCursor;
+        frame.setCursor(cursor);
+    }
+
+    public void fullScreenToggle() {
+        if (fullscreen) {
+            frame.dispose();
+            frame.setVisible(false);
+            fullscreen = false;
+            frame.setUndecorated(false);
+            frame.setExtendedState(Frame.NORMAL);
+            setSize(Main.screen_width, Main.screen_height);
+        } else {
+            Toolkit tk = Toolkit.getDefaultToolkit();
+            fullscreen_cx = ((int) tk.getScreenSize().getWidth());
+            fullscreen_cy = ((int) tk.getScreenSize().getHeight());
+            frame.dispose();
+            frame.setVisible(false);
+            frame.setUndecorated(true);
+            frame.setResizable(false);
+            frame.setExtendedState(Frame.MAXIMIZED_BOTH);
+            setSize(fullscreen_cx, fullscreen_cy);
+            fullscreen_cx_offset = 0;
+            if ((float) fullscreen_cx / fullscreen_cy > 4.0 / 3.0) {
+                int new_fullscreen_cx = fullscreen_cy * 4 / 3;
+                fullscreen_cx_offset = (fullscreen_cx - new_fullscreen_cx) / 2;
+                fullscreen_cx = new_fullscreen_cx;
+            }
+            fullscreen = true;
+        }
+    }
+
+    public void setSize(int width, int height) {
+        if (fullscreen)
+            return;
+        panel.setMinimumSize(new Dimension(width, height));
+        panel.setMaximumSize(new Dimension(width, height));
+        panel.setPreferredSize(new Dimension(width, height));
+        frame.getContentPane().doLayout();
+        frame.pack();
+        if (!frame.isVisible())
+            frame.setVisible(true);
+    }
+
+    public void dopaint() {
+        panel.repaint();
+    }
+
+    public void setTitle(String title) {
+        if (frame != null)
+            frame.setTitle(title);
+    }
 
     private static class MyFrame extends JFrame implements KeyListener, WindowFocusListener, WindowListener, MouseListener, MouseMotionListener {
         public MyFrame() {
@@ -261,16 +287,21 @@ public class MainFrame implements GUI {
             addWindowFocusListener(this);
             addWindowListener(this);
         }
+
         public void keyTyped(KeyEvent e) {
 
         }
 
-        /** Handle the key pressed event from the text field. */
+        /**
+         * Handle the key pressed event from the text field.
+         */
         public void keyPressed(KeyEvent e) {
             Main.addKeyEvent(e);
         }
 
-        /** Handle the key released event from the text field. */
+        /**
+         * Handle the key released event from the text field.
+         */
         public void keyReleased(KeyEvent e) {
             Main.addKeyEvent(e);
         }
@@ -324,7 +355,7 @@ public class MainFrame implements GUI {
         }
 
         public void mouseClicked(MouseEvent e) {
-            if (e.getClickCount()==2 && e.getButton() == MouseEvent.BUTTON3) {
+            if (e.getClickCount() == 2 && e.getButton() == MouseEvent.BUTTON3) {
                 Main.GFX_CaptureMouse();
             }
         }

@@ -3,88 +3,12 @@ package jdos.dos;
 import jdos.util.IntRef;
 
 public class Dos_keyboard_layout {
-	static public final int KEYB_NOERROR=0;
-	static public final int KEYB_FILENOTFOUND=1;
-	static public final int KEYB_INVALIDFILE=2;
-	static public final int KEYB_LAYOUTNOTFOUND=3;
-	static public final int KEYB_INVALIDCPFILE=4;
-
-//    static private RandomAccessFile OpenDosboxFile(String name) {
-//        ShortRef drive = new ShortRef();
-//        StringRef fullname = new StringRef();
-//
-//        localDrive ldp=0;
-//        // try to build dos name
-//        if (Dos_files.DOS_MakeName(name,fullname,&drive)) {
-//            try {
-//                // try to open file on mounted drive first
-//                ldp=Dos_files.Drives[drive.value];
-//                if (ldp) {
-//                    FILE *tmpfile=ldp->GetSystemFilePtr(fullname, "rb");
-//                    if (tmpfile != NULL) return tmpfile;
-//                }
-//            }
-//            catch(...) {}
-//        }
-//        FILE *tmpfile=fopen(name, "rb");
-//        return tmpfile;
-//    }
-//
-//
-    static private class keyboard_layout {
-//    public:
-//        keyboard_layout() {
-//            this->reset();
-//            language_codes=NULL;
-//            use_foreign_layout=false;
-//            sprintf(current_keyboard_file_name, "none");
-//        };
-//
-//        ~keyboard_layout();
-//
-//        // read in a codepage from a .cpi-file
-//        Bitu read_codepage_file(const char* codepage_file_name, Bit32s codepage_id);
-//        Bit16u extract_codepage(const char* keyboard_file_name);
-//        // read in a keyboard layout from a .kl-file
-//        Bitu read_keyboard_file(const char* keyboard_file_name, Bit32s req_cp);
-//
-//        // call layout_key to apply the current language layout
-//        bool layout_key(Bitu key, Bit8u flags1, Bit8u flags2, Bit8u flags3);
-//
-//        Bitu switch_keyboard_layout(const char* new_layout, keyboard_layout* &created_layout, Bit32s& tried_cp);
-//        void switch_foreign_layout();
-//        const char* get_layout_name();
-//        const char* main_language_code();
-//
-//
-//    private:
-//        static const Bit8u layout_pages=12;
-//        Bit16u current_layout[(MAX_SCAN_CODE+1)*layout_pages];
-//        struct {
-//            Bit16u required_flags,forbidden_flags;
-//            Bit16u required_userflags,forbidden_userflags;
-//        } current_layout_planes[layout_pages-4];
-//        Bit8u additional_planes,used_lock_modifiers;
-//
-//        // diacritics table
-//        Bit8u diacritics[2048];
-//        Bit16u diacritics_entries;
-//        Bit16u diacritics_character;
-//        Bit16u user_keys;
-//
-//        char current_keyboard_file_name[256];
-//        bool use_foreign_layout;
-//
-//        // language code storage used when switching layouts
-//        char** language_codes;
-//        Bitu language_code_count;
-//
-//        void reset();
-//        void read_keyboard_file(Bit32s specific_layout);
-//        Bitu read_keyboard_file(const char* keyboard_file_name, Bit32s specific_layout, Bit32s requested_codepage);
-//        bool map_key(Bitu key, Bit16u layouted_key, bool is_command, bool is_keypair);
-    }
-//
+    static public final int KEYB_NOERROR = 0;
+    static public final int KEYB_FILENOTFOUND = 1;
+    static public final int KEYB_INVALIDFILE = 2;
+    static public final int KEYB_LAYOUTNOTFOUND = 3;
+    static public final int KEYB_INVALIDCPFILE = 4;
+    //
 //
 //    keyboard_layout::~keyboard_layout() {
 //        if (language_codes) {
@@ -1004,8 +928,9 @@ public class Dos_keyboard_layout {
 //    }
 //
 //
-    static private keyboard_layout loaded_layout=null;
-//
+    static private final keyboard_layout loaded_layout = null;
+
+    //
 //// CTRL-ALT-F2 switches between foreign and US-layout using this function
 ///* static void switch_keyboard_layout(bool pressed) {
 //	if (!pressed)
@@ -1037,7 +962,8 @@ public class Dos_keyboard_layout {
 //        loaded_layout=temp_layout;
         return KEYB_NOERROR;
     }
-//
+
+    //
     static public /*Bitu*/int DOS_SwitchKeyboardLayout(String new_layout, /*Bit32s*/IntRef tried_cp) {
         if (loaded_layout != null) {
 //            keyboard_layout* changed_layout=NULL;
@@ -1051,13 +977,90 @@ public class Dos_keyboard_layout {
             return 0xff; // :TODO: remove
         } else return 0xff;
     }
-//
+
+    //
 // get currently loaded layout name (NULL if no layout is loaded)
     static public String DOS_GetLoadedLayout() {
 //        if (loaded_layout) {
 //            return loaded_layout->get_layout_name();
 //        }
         return null;
+    }
+
+    //    static private RandomAccessFile OpenDosboxFile(String name) {
+//        ShortRef drive = new ShortRef();
+//        StringRef fullname = new StringRef();
+//
+//        localDrive ldp=0;
+//        // try to build dos name
+//        if (Dos_files.DOS_MakeName(name,fullname,&drive)) {
+//            try {
+//                // try to open file on mounted drive first
+//                ldp=Dos_files.Drives[drive.value];
+//                if (ldp) {
+//                    FILE *tmpfile=ldp->GetSystemFilePtr(fullname, "rb");
+//                    if (tmpfile != NULL) return tmpfile;
+//                }
+//            }
+//            catch(...) {}
+//        }
+//        FILE *tmpfile=fopen(name, "rb");
+//        return tmpfile;
+//    }
+//
+//
+    static private class keyboard_layout {
+//    public:
+//        keyboard_layout() {
+//            this->reset();
+//            language_codes=NULL;
+//            use_foreign_layout=false;
+//            sprintf(current_keyboard_file_name, "none");
+//        };
+//
+//        ~keyboard_layout();
+//
+//        // read in a codepage from a .cpi-file
+//        Bitu read_codepage_file(const char* codepage_file_name, Bit32s codepage_id);
+//        Bit16u extract_codepage(const char* keyboard_file_name);
+//        // read in a keyboard layout from a .kl-file
+//        Bitu read_keyboard_file(const char* keyboard_file_name, Bit32s req_cp);
+//
+//        // call layout_key to apply the current language layout
+//        bool layout_key(Bitu key, Bit8u flags1, Bit8u flags2, Bit8u flags3);
+//
+//        Bitu switch_keyboard_layout(const char* new_layout, keyboard_layout* &created_layout, Bit32s& tried_cp);
+//        void switch_foreign_layout();
+//        const char* get_layout_name();
+//        const char* main_language_code();
+//
+//
+//    private:
+//        static const Bit8u layout_pages=12;
+//        Bit16u current_layout[(MAX_SCAN_CODE+1)*layout_pages];
+//        struct {
+//            Bit16u required_flags,forbidden_flags;
+//            Bit16u required_userflags,forbidden_userflags;
+//        } current_layout_planes[layout_pages-4];
+//        Bit8u additional_planes,used_lock_modifiers;
+//
+//        // diacritics table
+//        Bit8u diacritics[2048];
+//        Bit16u diacritics_entries;
+//        Bit16u diacritics_character;
+//        Bit16u user_keys;
+//
+//        char current_keyboard_file_name[256];
+//        bool use_foreign_layout;
+//
+//        // language code storage used when switching layouts
+//        char** language_codes;
+//        Bitu language_code_count;
+//
+//        void reset();
+//        void read_keyboard_file(Bit32s specific_layout);
+//        Bitu read_keyboard_file(const char* keyboard_file_name, Bit32s specific_layout, Bit32s requested_codepage);
+//        bool map_key(Bitu key, Bit16u layouted_key, bool is_command, bool is_keypair);
     }
 //
 //

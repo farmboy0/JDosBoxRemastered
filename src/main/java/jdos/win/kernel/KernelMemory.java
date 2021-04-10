@@ -11,11 +11,47 @@ import jdos.win.builtin.kernel32.WinProcess;
 
 public class KernelMemory {
     static final private int PLACEMENT_START = 0x100000; // map the first meg for dos  :TODO: research not wasting 1MB per process
+    static private final int KHEAP_INITIAL_SIZE = 0x10000;
     int placement_address = PLACEMENT_START;
     KernelHeap heap = null;
-    static private final int KHEAP_INITIAL_SIZE = 0x10000;
-    private long KHEAP_START = WinProcess.ADDRESS_KHEAP_START;
-    private long KHEAP_END = WinProcess.ADDRESS_KHEAP_END;
+    int[] frames = null;
+    int nframes = 0;
+    int kernel_directory = 0;
+    int current_directory = 0;
+    Callback.Handler pageFaultHandler = new Callback.Handler() {
+        public int call() {
+            System.out.println("Page Fault");
+            System.exit(0);
+            return 0;
+        }
+
+        public String getName() {
+            return "PageFault";
+        }
+    };
+    private final long KHEAP_START = WinProcess.ADDRESS_KHEAP_START;
+    private final long KHEAP_END = WinProcess.ADDRESS_KHEAP_END;
+
+    static private int INDEX_FROM_BIT(int a) {
+        return a / (8 * 4);
+    }
+
+    static private int OFFSET_FROM_BIT(int a) {
+        return a % (8 * 4);
+    }
+
+    static public void clearPage(int pagePtr) {
+        Memory.mem_writed(pagePtr, 0);
+    }
+
+    static public void setPage(int pagePtr, int frame, boolean is_kernel, boolean is_writeable) {
+        int page = Memory.mem_readd(pagePtr);
+        page = Page.set(page, true, Page.PRESENT_MASK); // Mark it as present.
+        page = Page.set(page, is_writeable, Page.RW_MASK); // Should the page be writeable?
+        page = Page.set(page, !is_kernel, Page.RW_MASK); // Should the page be user-mode?
+        page = Page.setFrame(page, frame);
+        Memory.mem_writed(pagePtr, page);
+    }
 
     public int kmalloc(int sz) {
         return kmalloc(sz, false, null);
@@ -47,74 +83,6 @@ public class KernelMemory {
             placement_address += sz;
             return tmp;
         }
-    }
-
-    static class Page {
-        private static final int PRESENT_MASK = 0x01; // Page present in memory
-        private static final int RW_MASK = 0x02; // Read-only if clear, readwrite if set
-        private static final int USER_MASK = 0x04; // Supervisor level only if clear
-        private static final int ACCESSED_MASK = 0x08; // Has the page been accessed since last refresh?
-        private static final int DIRTY_MASK = 0x10; // // Has the page been written to since last refresh?
-
-        static public int set(int page, boolean b, int mask) {
-            page &= ~mask;
-            if (b)
-                page |= mask;
-            return page;
-        }
-
-        static public boolean get(int page, int mask) {
-            return (page & mask) != 0;
-        }
-
-        static public int getFrame(int page) {
-            return page >>> 12;
-        }
-
-        static public int setFrame(int page, int frame) {
-            page |= frame << 12;
-            return page;
-        }
-    }
-
-    static class PageDirectory {
-        public static final int PAGE_TABLE_COUNT = 1024;
-        public static final int TABLES_ENTRY_SIZE = 4;
-        public static final int TABLES_PHYSICAL_SIZE = 4;
-        public static final int SIZE = 4096 + 4096 + 4;
-        public static final int TABLES_OFFSET = 0;
-        public static final int TABLES_PHYSICAL_OFFSET = 4096;
-
-        /*
-           Array of pointers to pagetables.
-        */
-        public int[][] tables = new int[1024][];
-
-        /*
-            Array of pointers to the pagetables above, but gives their *physical*
-            location, for loading into the CR3 register.
-        */
-        public int[] tablesPhysical = new int[1024];
-
-        /*
-            The physical address of tablesPhysical. This comes into play
-            when we get our kernel heap allocated and the directory
-            may be in a different location in virtual memory.
-        */
-        public int physicalAddr;
-    }
-
-    int[] frames = null;
-    int nframes = 0;
-    int kernel_directory = 0;
-    int current_directory = 0;
-
-    static private int INDEX_FROM_BIT(int a) {
-        return a / (8 * 4);
-    }
-
-    static private int OFFSET_FROM_BIT(int a) {
-        return a % (8 * 4);
     }
 
     private void set_frame(int frame) {
@@ -175,8 +143,9 @@ public class KernelMemory {
         IntRef used = new IntRef(0);
 
         getInfo(free, used);
-        System.out.print((used.value*4)+"/"+((used.value+free.value)*4)+"KB");
+        System.out.print((used.value * 4) + "/" + ((used.value + free.value) * 4) + "KB");
     }
+
     public int getNextFrame() {
         int frame = first_frame();
         if (frame == -1) {
@@ -188,19 +157,6 @@ public class KernelMemory {
 
     public void freeFrame(int frame) {
         clear_frame(frame);
-    }
-
-    static public void clearPage(int pagePtr) {
-        Memory.mem_writed(pagePtr,0);
-    }
-
-    static public void setPage(int pagePtr, int frame, boolean is_kernel, boolean is_writeable) {
-        int page = Memory.mem_readd(pagePtr);
-        page = Page.set(page, true, Page.PRESENT_MASK); // Mark it as present.
-        page = Page.set(page, is_writeable, Page.RW_MASK); // Should the page be writeable?
-        page = Page.set(page, !is_kernel, Page.RW_MASK); // Should the page be user-mode?
-        page = Page.setFrame(page, frame);
-        Memory.mem_writed(pagePtr, page);
     }
 
     // Function to allocate a frame.
@@ -237,7 +193,7 @@ public class KernelMemory {
         IntRef result = new IntRef(0);
         int vresult = kmalloc(PageDirectory.SIZE, true, result);
         Memory.mem_zero(vresult, PageDirectory.SIZE);
-        for (int i=0;i<1024;i++) {
+        for (int i = 0; i < 1024; i++) {
             int tablePtr = Memory.phys_readd(kernel_directory + PageDirectory.TABLES_OFFSET + i * PageDirectory.TABLES_ENTRY_SIZE);
             if (tablePtr != 0) {
                 int physicalPtr = Memory.phys_readd(kernel_directory + PageDirectory.TABLES_PHYSICAL_OFFSET + i * PageDirectory.TABLES_PHYSICAL_SIZE);
@@ -268,23 +224,23 @@ public class KernelMemory {
         // by calling kmalloc(). A while loop causes this to be
         // computed on-the-fly rather than once at the start.
         long i = 0;
-        while (i < placement_address+0x1000) {
+        while (i < placement_address + 0x1000) {
             // Kernel code is readable but not writeable from userspace.
-            alloc_frame(get_page((int)i, true, kernel_directory), false, false);
+            alloc_frame(get_page((int) i, true, kernel_directory), false, false);
             i += 0x1000;
         }
         int oldPlacement = placement_address;
-        for (i = KHEAP_START;i<KHEAP_START+KHEAP_INITIAL_SIZE;i+=0x1000) {
-            alloc_frame(get_page((int)i, true, kernel_directory), false, false);
+        for (i = KHEAP_START; i < KHEAP_START + KHEAP_INITIAL_SIZE; i += 0x1000) {
+            alloc_frame(get_page((int) i, true, kernel_directory), false, false);
         }
-        if (placement_address>oldPlacement+0x1000) {
+        if (placement_address > oldPlacement + 0x1000) {
             System.out.println("Kernel Heap padding was not large enough");
             System.exit(0);
         }
         // Now, enable paging!
         switch_page_directory(kernel_directory);
 
-        heap = new KernelHeap(this, kernel_directory, KHEAP_START, KHEAP_START+KHEAP_INITIAL_SIZE, KHEAP_END, false, false);
+        heap = new KernelHeap(this, kernel_directory, KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, KHEAP_END, false, false);
     }
 
     public void switch_page_directory(int dir) {
@@ -319,15 +275,58 @@ public class KernelMemory {
         interrupts.registerHandler(Interrupts.IRQ14, pageFaultHandler);
     }
 
-    Callback.Handler pageFaultHandler = new Callback.Handler() {
-        public int call() {
-            System.out.println("Page Fault");
-            System.exit(0);
-            return 0;
+    static class Page {
+        private static final int PRESENT_MASK = 0x01; // Page present in memory
+        private static final int RW_MASK = 0x02; // Read-only if clear, readwrite if set
+        private static final int USER_MASK = 0x04; // Supervisor level only if clear
+        private static final int ACCESSED_MASK = 0x08; // Has the page been accessed since last refresh?
+        private static final int DIRTY_MASK = 0x10; // // Has the page been written to since last refresh?
+
+        static public int set(int page, boolean b, int mask) {
+            page &= ~mask;
+            if (b)
+                page |= mask;
+            return page;
         }
 
-        public String getName() {
-            return "PageFault";
+        static public boolean get(int page, int mask) {
+            return (page & mask) != 0;
         }
-    };
+
+        static public int getFrame(int page) {
+            return page >>> 12;
+        }
+
+        static public int setFrame(int page, int frame) {
+            page |= frame << 12;
+            return page;
+        }
+    }
+
+    static class PageDirectory {
+        public static final int PAGE_TABLE_COUNT = 1024;
+        public static final int TABLES_ENTRY_SIZE = 4;
+        public static final int TABLES_PHYSICAL_SIZE = 4;
+        public static final int SIZE = 4096 + 4096 + 4;
+        public static final int TABLES_OFFSET = 0;
+        public static final int TABLES_PHYSICAL_OFFSET = 4096;
+
+        /*
+           Array of pointers to pagetables.
+        */
+        public int[][] tables = new int[1024][];
+
+        /*
+            Array of pointers to the pagetables above, but gives their *physical*
+            location, for loading into the CR3 register.
+        */
+        public int[] tablesPhysical = new int[1024];
+
+        /*
+            The physical address of tablesPhysical. This comes into play
+            when we get our kernel heap allocated and the directory
+            may be in a different location in virtual memory.
+        */
+        public int physicalAddr;
+    }
 }

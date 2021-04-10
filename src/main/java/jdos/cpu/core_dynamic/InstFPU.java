@@ -1413,6 +1413,7 @@ public class InstFPU {
 
     final static public class FADD_STi_ST0 extends FpuOpNormal {
         boolean pop;
+
         public FADD_STi_ST0(int rm, boolean pop) {
             super(rm);
             this.pop = pop;
@@ -1431,6 +1432,7 @@ public class InstFPU {
 
     final static public class FMUL_STi_ST0 extends FpuOpNormal {
         boolean pop;
+
         public FMUL_STi_ST0(int rm, boolean pop) {
             super(rm);
             this.pop = pop;
@@ -1449,6 +1451,7 @@ public class InstFPU {
 
     final static public class FSUBR_STi_ST0 extends FpuOpNormal {
         boolean pop;
+
         public FSUBR_STi_ST0(int rm, boolean pop) {
             super(rm);
             this.pop = pop;
@@ -1467,6 +1470,7 @@ public class InstFPU {
 
     final static public class FSUB_STi_ST0 extends FpuOpNormal {
         boolean pop;
+
         public FSUB_STi_ST0(int rm, boolean pop) {
             super(rm);
             this.pop = pop;
@@ -1485,6 +1489,7 @@ public class InstFPU {
 
     final static public class FDIVR_STi_ST0 extends FpuOpNormal {
         boolean pop;
+
         public FDIVR_STi_ST0(int rm, boolean pop) {
             super(rm);
             this.pop = pop;
@@ -1503,6 +1508,7 @@ public class InstFPU {
 
     final static public class FDIV_STi_ST0 extends FpuOpNormal {
         boolean pop;
+
         public FDIV_STi_ST0(int rm, boolean pop) {
             super(rm);
             this.pop = pop;
@@ -1553,6 +1559,7 @@ public class InstFPU {
 
     final static public class FST_DOUBLE_REAL extends FpuOpEA {
         boolean pop;
+
         public FST_DOUBLE_REAL(int rm, boolean pop) {
             super(rm);
             this.pop = pop;
@@ -1635,6 +1642,7 @@ public class InstFPU {
 
     final static public class FUCOM_STi extends FpuOpNormal {
         boolean pop;
+
         public FUCOM_STi(int rm, boolean pop) {
             super(rm);
             this.pop = pop;

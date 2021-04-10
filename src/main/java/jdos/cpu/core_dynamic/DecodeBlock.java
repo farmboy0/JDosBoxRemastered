@@ -10,32 +10,16 @@ import jdos.hardware.Memory;
 import jdos.hardware.RAM;
 
 final public class DecodeBlock extends Op {
+    static public int compileThreshold = 0;
+    public static boolean smc = false;
     public Op op;
     public boolean active = true;
     public int codeStart;
     public int codeLen;
     public int runCount = 0;
-    static public int compileThreshold = 0;
-
-    public static boolean smc = false;
-    private boolean compiled = false;
     public CacheBlockDynRec parent;
     public Op compiledOp = null;
-
-    public boolean throwsException() {return false;}
-    public boolean accessesMemory() {return false;}
-    public boolean usesEip() {return false;}
-    public boolean setsEip() {return false;}
-
-    static private byte[] getOpCode(int start, int len) {
-        byte[] opCode = new byte[len];
-        int src = Paging.getDirectIndexRO(start);
-        if (src>=0)
-            RAM.memcpy(opCode, 0, src, len);
-        else
-            Memory.MEM_BlockRead(start, opCode, len);
-        return opCode;
-    }
+    private boolean compiled = false;
 
     public DecodeBlock(CacheBlockDynRec parent, Op op, int start, int len) {
         this.parent = parent;
@@ -52,22 +36,49 @@ final public class DecodeBlock extends Op {
             }
         }
     }
+
+    static private byte[] getOpCode(int start, int len) {
+        byte[] opCode = new byte[len];
+        int src = Paging.getDirectIndexRO(start);
+        if (src >= 0)
+            RAM.memcpy(opCode, 0, src, len);
+        else
+            Memory.MEM_BlockRead(start, opCode, len);
+        return opCode;
+    }
+
+    public boolean throwsException() {
+        return false;
+    }
+
+    public boolean accessesMemory() {
+        return false;
+    }
+
+    public boolean usesEip() {
+        return false;
+    }
+
+    public boolean setsEip() {
+        return false;
+    }
+
     final public int call() {
         if (Compiler.ENABLED) {
             runCount++;
-            if (runCount==compileThreshold && !compiled && Dosbox.allPrivileges) {
+            if (runCount == compileThreshold && !compiled && Dosbox.allPrivileges) {
                 compiled = true;
                 jdos.cpu.core_dynamic.Compiler.compile(this);
             }
-            if (compiledOp!=null) {
+            if (compiledOp != null) {
                 parent.code = compiledOp;
                 return compiledOp.call();
             }
         }
-        Core.base_ds= CPU_Regs.reg_dsPhys.dword;
-        Core.base_ss=CPU_Regs.reg_ssPhys.dword;
-        Core.base_val_ds= CPU_Regs.ds;
-        CPU.CPU_Cycles-=op.cycle;
+        Core.base_ds = CPU_Regs.reg_dsPhys.dword;
+        Core.base_ss = CPU_Regs.reg_ssPhys.dword;
+        Core.base_val_ds = CPU_Regs.ds;
+        CPU.CPU_Cycles -= op.cycle;
         try {
             return op.call();
         } catch (NullPointerException e) {

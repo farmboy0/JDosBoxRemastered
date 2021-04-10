@@ -21,6 +21,134 @@ public class Mmio extends WinAPI {
     static final public int MMIOM_CLOSE = 4;       /* close file */
     static final public int MMIOM_WRITEFLUSH = 5;       /* write and flush */
     static final public int MMIOM_RENAME = 6;       /* rename specified file */
+    static private final Hashtable<Integer, IOProc> defaultProcs = new Hashtable<Integer, IOProc>();
+    static private final IOProc mmioDosIOProc = new IOProc() {
+        public int proc(MMIOINFO lpmmioinfo, int uMessage, int lParam1, int lParam2) {
+            int ret = MMSYSERR_NOERROR;
+
+            switch (uMessage) {
+                case MMIOM_OPEN: {
+                    /* Parameters:
+                     * lParam1 = szFileName parameter from mmioOpen
+                     * lParam2 = reserved
+                     * Returns: zero on success, error code on error
+                     * NOTE: lDiskOffset automatically set to zero
+                     */
+                    int szFileName = lParam1;
+
+                    if ((lpmmioinfo.dwFlags & MMIO_GETTEMP) != 0) {
+                        warn("MMIO_GETTEMP not implemented\n");
+                        return MMIOERR_CANNOTOPEN;
+                    }
+
+                    /* if filename NULL, assume open file handle in adwInfo[0] */
+                    if (szFileName != 0) {
+                        String name = StringUtil.getString(szFileName);
+                        FilePath file = WinSystem.getCurrentProcess().getFile(name);
+                        lpmmioinfo.adwInfo[0] = HFILE_ERROR;
+                        if (file.exists()) {
+                            try {
+                                WinFile winFile = WinFile.create(file, false, 0, 0);
+                                if (winFile != null)
+                                    lpmmioinfo.adwInfo[0] = winFile.handle;
+                            } catch (Exception e) {
+                            }
+                        }
+                    }
+                    if (lpmmioinfo.adwInfo[0] == HFILE_ERROR)
+                        return MMIOERR_FILENOTFOUND;
+                }
+                break;
+
+                case MMIOM_CLOSE:
+                    /* Parameters:
+                     * lParam1 = wFlags parameter from mmioClose
+                     * lParam2 = unused
+                     * Returns: zero on success, error code on error
+                     */
+                    if ((lParam1 & MMIO_FHOPEN) == 0) {
+                        WinFile file = WinFile.get(lpmmioinfo.adwInfo[0]);
+                        if (file != null) {
+                            file.close();
+                        }
+                    }
+                    break;
+
+                case MMIOM_READ:
+                    /* Parameters:
+                     * lParam1 = huge pointer to read buffer
+                     * lParam2 = number of bytes to read
+                     * Returns: number of bytes read, 0 for EOF, -1 for error (error code
+                     *	   in wErrorRet)
+                     */
+                {
+                    WinFile file = WinFile.get(lpmmioinfo.adwInfo[0]);
+                    if (file != null) {
+                        ret = file.read(lParam1, lParam2);
+                        if (ret != -1)
+                            lpmmioinfo.lDiskOffset += ret;
+                    }
+                }
+                break;
+
+                case MMIOM_WRITE:
+                case MMIOM_WRITEFLUSH:
+                    /* no internal buffering, so WRITEFLUSH handled same as WRITE */
+
+                    /* Parameters:
+                     * lParam1 = huge pointer to write buffer
+                     * lParam2 = number of bytes to write
+                     * Returns: number of bytes written, -1 for error (error code in
+                     *		wErrorRet)
+                     */
+                {
+                    WinFile file = WinFile.get(lpmmioinfo.adwInfo[0]);
+                    if (file != null) {
+                        ret = file.write(lParam1, lParam2);
+                        if (ret != -1)
+                            lpmmioinfo.lDiskOffset += ret;
+                    }
+                }
+                break;
+
+                case MMIOM_SEEK:
+                    /* Parameters:
+                     * lParam1 = new position
+                     * lParam2 = from whence to seek (SEEK_SET, SEEK_CUR, SEEK_END)
+                     * Returns: new file postion, -1 on error
+                     */
+                {
+                    WinFile file = WinFile.get(lpmmioinfo.adwInfo[0]);
+                    if (file != null) {
+                        ret = (int) file.seek(lParam1, lParam2);
+                        if (ret != -1)
+                            lpmmioinfo.lDiskOffset = ret;
+                    }
+                }
+                return ret;
+
+                case MMIOM_RENAME:
+                    /* Parameters:
+                     * lParam1 = old name
+                     * lParam2 = new name
+                     * Returns: zero on success, non-zero on failure
+                     */
+                    if (WinPath.MoveFileA(lParam1, lParam2) == 0)
+                        ret = MMIOERR_FILENOTFOUND;
+                    break;
+
+                default:
+                    warn("unexpected MMIO message " + uMessage);
+                    return 0;
+            }
+
+            return ret;
+        }
+    };
+
+    static {
+        defaultProcs.put(FOURCC_DOS, mmioDosIOProc);
+    }
 
     // MMRESULT mmioAdvance(HMMIO hmmio, LPMMIOINFO lpmmioinfo, UINT wFlags)
     static public int mmioAdvance(int hmmio, int p, int uFlags) {
@@ -356,7 +484,6 @@ public class Mmio extends WinAPI {
         return count;
     }
 
-
     static public int mmioSeek(int hmmio, int lOffset, int iOrigin) {
         WinMMIO wm = WinMMIO.get(hmmio);
         if (wm == null)
@@ -411,7 +538,7 @@ public class Mmio extends WinAPI {
         return offset;
     }
 
-    // MMRESULT mmioSetInfo( HMMIO hmmio, LPMMIOINFO lpmmioinfo, UINT wFlags)    
+    // MMRESULT mmioSetInfo( HMMIO hmmio, LPMMIOINFO lpmmioinfo, UINT wFlags)
     static public int mmioSetInfo(int hmmio, int p, int uFlags) {
         WinMMIO wm = WinMMIO.get(hmmio);
         if (wm == null)
@@ -515,151 +642,6 @@ public class Mmio extends WinAPI {
         return mmioFOURCC(data[0], data[1], data[2], data[3]);
     }
 
-    static public interface IOProc {
-        public int proc(MMIOINFO lpmmioinfo, int uMessage, int lParam1, int lParam2);
-    }
-
-    static private Hashtable<Integer, IOProc> defaultProcs = new Hashtable<Integer, IOProc>();
-
-    static private class CustomIOProc implements IOProc {
-        int pIOProc;
-
-        public CustomIOProc(int pIOProc) {
-            this.pIOProc = pIOProc;
-        }
-
-        public int proc(MMIOINFO lpmmioinfo, int uMessage, int lParam1, int lParam2) {
-            int p = lpmmioinfo.allocTemp();
-            WinSystem.call(p, uMessage, lParam1, lParam2);
-            lpmmioinfo.read(p);
-            return CPU_Regs.reg_eax.dword;
-        }
-    }
-
-    static private IOProc mmioDosIOProc = new IOProc() {
-        public int proc(MMIOINFO lpmmioinfo, int uMessage, int lParam1, int lParam2) {
-            int ret = MMSYSERR_NOERROR;
-
-            switch (uMessage) {
-                case MMIOM_OPEN: {
-                    /* Parameters:
-                    * lParam1 = szFileName parameter from mmioOpen
-                    * lParam2 = reserved
-                    * Returns: zero on success, error code on error
-                    * NOTE: lDiskOffset automatically set to zero
-                    */
-                    int szFileName = lParam1;
-
-                    if ((lpmmioinfo.dwFlags & MMIO_GETTEMP) != 0) {
-                        warn("MMIO_GETTEMP not implemented\n");
-                        return MMIOERR_CANNOTOPEN;
-                    }
-
-                    /* if filename NULL, assume open file handle in adwInfo[0] */
-                    if (szFileName != 0) {
-                        String name = StringUtil.getString(szFileName);
-                        FilePath file = WinSystem.getCurrentProcess().getFile(name);
-                        lpmmioinfo.adwInfo[0] = HFILE_ERROR;
-                        if (file.exists()) {
-                            try {
-                                WinFile winFile = WinFile.create(file, false, 0, 0);
-                                if (winFile != null)
-                                    lpmmioinfo.adwInfo[0] = winFile.handle;
-                            } catch (Exception e) {
-                            }
-                        }
-                    }
-                    if (lpmmioinfo.adwInfo[0] == HFILE_ERROR)
-                        return MMIOERR_FILENOTFOUND;
-                }
-                break;
-
-                case MMIOM_CLOSE:
-                    /* Parameters:
-                    * lParam1 = wFlags parameter from mmioClose
-                    * lParam2 = unused
-                    * Returns: zero on success, error code on error
-                    */
-                    if ((lParam1 & MMIO_FHOPEN) == 0) {
-                        WinFile file = WinFile.get(lpmmioinfo.adwInfo[0]);
-                        if (file != null) {
-                            file.close();
-                        }
-                    }
-                    break;
-
-                case MMIOM_READ:
-                    /* Parameters:
-                    * lParam1 = huge pointer to read buffer
-                    * lParam2 = number of bytes to read
-                    * Returns: number of bytes read, 0 for EOF, -1 for error (error code
-                    *	   in wErrorRet)
-                    */
-                {
-                    WinFile file = WinFile.get(lpmmioinfo.adwInfo[0]);
-                    if (file != null) {
-                        ret = file.read(lParam1, lParam2);
-                        if (ret != -1)
-                            lpmmioinfo.lDiskOffset += ret;
-                    }
-                }
-                break;
-
-                case MMIOM_WRITE:
-                case MMIOM_WRITEFLUSH:
-                    /* no internal buffering, so WRITEFLUSH handled same as WRITE */
-
-                    /* Parameters:
-                    * lParam1 = huge pointer to write buffer
-                    * lParam2 = number of bytes to write
-                    * Returns: number of bytes written, -1 for error (error code in
-                    *		wErrorRet)
-                    */
-                {
-                    WinFile file = WinFile.get(lpmmioinfo.adwInfo[0]);
-                    if (file != null) {
-                        ret = file.write(lParam1, lParam2);
-                        if (ret != -1)
-                            lpmmioinfo.lDiskOffset += ret;
-                    }
-                }
-                break;
-
-                case MMIOM_SEEK:
-                    /* Parameters:
-                    * lParam1 = new position
-                    * lParam2 = from whence to seek (SEEK_SET, SEEK_CUR, SEEK_END)
-                    * Returns: new file postion, -1 on error
-                    */
-                {
-                    WinFile file = WinFile.get(lpmmioinfo.adwInfo[0]);
-                    if (file != null) {
-                        ret = (int) file.seek(lParam1, lParam2);
-                        if (ret != -1)
-                            lpmmioinfo.lDiskOffset = ret;
-                    }
-                }
-                return ret;
-
-                case MMIOM_RENAME:
-                    /* Parameters:
-                    * lParam1 = old name
-                    * lParam2 = new name
-                    * Returns: zero on success, non-zero on failure
-                    */
-                    if (WinPath.MoveFileA(lParam1, lParam2) == 0)
-                        ret = MMIOERR_FILENOTFOUND;
-                    break;
-
-                default:
-                    warn("unexpected MMIO message " + uMessage);
-                    return 0;
-            }
-
-            return ret;
-        }
-    };
-
     static int MMIO_SetBuffer(WinMMIO wm, int pchBuffer, int cchBuffer, int uFlags) {
         if (cchBuffer > 0xFFFF)
             warn("Untested handling of huge mmio buffers (" + cchBuffer + " >= 64k)\n");
@@ -727,7 +709,22 @@ public class Mmio extends WinAPI {
         return MMSYSERR_NOERROR;
     }
 
-    static {
-        defaultProcs.put(FOURCC_DOS, mmioDosIOProc);
+    public interface IOProc {
+        int proc(MMIOINFO lpmmioinfo, int uMessage, int lParam1, int lParam2);
+    }
+
+    static private class CustomIOProc implements IOProc {
+        int pIOProc;
+
+        public CustomIOProc(int pIOProc) {
+            this.pIOProc = pIOProc;
+        }
+
+        public int proc(MMIOINFO lpmmioinfo, int uMessage, int lParam1, int lParam2) {
+            int p = lpmmioinfo.allocTemp();
+            WinSystem.call(p, uMessage, lParam1, lParam2);
+            lpmmioinfo.read(p);
+            return CPU_Regs.reg_eax.dword;
+        }
     }
 }

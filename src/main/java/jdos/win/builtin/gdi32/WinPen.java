@@ -7,6 +7,12 @@ import jdos.win.utils.Ptr;
 import java.awt.*;
 
 public class WinPen extends WinGDI {
+    public EXTLOGPEN logpen = new EXTLOGPEN();
+
+    public WinPen(int id) {
+        super(id);
+    }
+
     static public WinPen create(int style, int width, int color) {
         return WinPen.get(CreatePen(style, width, color));
     }
@@ -28,9 +34,9 @@ public class WinPen extends WinGDI {
         WinPen penPtr = new WinPen(nextObjectId());
 
         if ((fnPenStyle & PS_JOIN_MASK) == 0)
-            fnPenStyle|=PS_JOIN_MITER;
+            fnPenStyle |= PS_JOIN_MITER;
         if ((fnPenStyle & PS_ENDCAP_MASK) == 0)
-            fnPenStyle|=PS_ENDCAP_FLAT;
+            fnPenStyle |= PS_ENDCAP_FLAT;
 
         if (fnPenStyle == PS_USERSTYLE || fnPenStyle == PS_ALTERNATE)
             penPtr.logpen.elpPenStyle = PS_SOLID;
@@ -121,12 +127,6 @@ public class WinPen extends WinGDI {
         return penPtr.handle;
     }
 
-    public EXTLOGPEN logpen = new EXTLOGPEN();
-
-    public WinPen(int id) {
-        super(id);
-    }
-
     public boolean setStroke(WinDC dc, Graphics2D g) {
         if ((logpen.elpPenStyle & PS_STYLE_MASK) == PS_NULL) {
             return false;
@@ -136,27 +136,27 @@ public class WinPen extends WinGDI {
         int join = 0;
 
         float[] dash;
-        float dashSize=3.0f*logpen.elpWidth;
-        float dotOnSize=1.0f*logpen.elpWidth;
-        float dotOffSize=1.0f*logpen.elpWidth;
+        float dashSize = 3.0f * logpen.elpWidth;
+        float dotOnSize = 1.0f * logpen.elpWidth;
+        float dotOffSize = 1.0f * logpen.elpWidth;
 
-        if ((logpen.elpPenStyle & PS_ENDCAP_SQUARE)!=0) {
+        if ((logpen.elpPenStyle & PS_ENDCAP_SQUARE) != 0) {
             cap = BasicStroke.CAP_SQUARE;
-            dashSize-=logpen.elpWidth;
-            dotOffSize+=logpen.elpWidth;
-            dotOnSize-=logpen.elpWidth;
-        } else if ((logpen.elpPenStyle & PS_ENDCAP_FLAT)!=0) {
+            dashSize -= logpen.elpWidth;
+            dotOffSize += logpen.elpWidth;
+            dotOnSize -= logpen.elpWidth;
+        } else if ((logpen.elpPenStyle & PS_ENDCAP_FLAT) != 0) {
             cap = BasicStroke.CAP_BUTT;
         } else { // PS_ENDCAP_ROUND
             cap = BasicStroke.CAP_ROUND;
-            dashSize-=logpen.elpWidth;
-            dotOffSize+=logpen.elpWidth;
-            dotOnSize-=logpen.elpWidth;
+            dashSize -= logpen.elpWidth;
+            dotOffSize += logpen.elpWidth;
+            dotOnSize -= logpen.elpWidth;
         }
 
-        if ((logpen.elpPenStyle & PS_JOIN_BEVEL)!=0) {
+        if ((logpen.elpPenStyle & PS_JOIN_BEVEL) != 0) {
             join = BasicStroke.JOIN_BEVEL;
-        } else if ((logpen.elpPenStyle & PS_JOIN_MITER)!=0) {
+        } else if ((logpen.elpPenStyle & PS_JOIN_MITER) != 0) {
             join = BasicStroke.JOIN_MITER;
         } else { // PS_JOIN_ROUND
             join = BasicStroke.JOIN_ROUND;
@@ -164,20 +164,20 @@ public class WinPen extends WinGDI {
 
         switch (logpen.elpPenStyle & PS_STYLE_MASK) {
             case PS_DASH:
-                dash = new float[] {dashSize, dotOffSize};
+                dash = new float[]{dashSize, dotOffSize};
                 break;
             case PS_DOT:
-                dash = new float[] {dotOnSize, dotOffSize};
+                dash = new float[]{dotOnSize, dotOffSize};
                 break;
             case PS_DASHDOT:
-                dash = new float[] {dashSize, dotOffSize, dotOnSize, dotOffSize};
+                dash = new float[]{dashSize, dotOffSize, dotOnSize, dotOffSize};
                 break;
             case PS_DASHDOTDOT:
-                dash = new float[] {dashSize, dotOffSize, dotOnSize, dotOffSize, dotOnSize, dotOffSize};
+                dash = new float[]{dashSize, dotOffSize, dotOnSize, dotOffSize, dotOnSize, dotOffSize};
                 break;
             case PS_USERSTYLE:
                 dash = new float[logpen.elpNumEntries];
-                for (int i=0;i<dash.length;i++)
+                for (int i = 0; i < dash.length; i++)
                     dash[i] = logpen.elpStyleEntry[i];
                 break;
             default:

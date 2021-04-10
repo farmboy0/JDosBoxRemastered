@@ -24,6 +24,10 @@ public class FilePath {
         faked.add("\\windows\\system32\\");
         faked.add("\\windows\\");
     }
+
+    public String path;
+    private FilePathInterface delagate;
+
     public FilePath(String path) {
         this.path = path;
         String driveLetter = path.substring(0, 1).toUpperCase();
@@ -31,7 +35,7 @@ public class FilePath {
         if (drive instanceof String)
             this.delagate = new JavaPath(path);
         else if (drive instanceof Drive_fat)
-            this.delagate = new FatPath((Drive_fat)drive, path);
+            this.delagate = new FatPath((Drive_fat) drive, path);
     }
 
     public FilePath getParentFile() {
@@ -42,7 +46,7 @@ public class FilePath {
         boolean result = delagate.exists();
         if (!result) {
             int pos = path.toLowerCase().indexOf("\\windows\\");
-            if (pos>=0)
+            if (pos >= 0)
                 result = faked.contains(path.toLowerCase().substring(pos));
         }
         return result;
@@ -120,8 +124,47 @@ public class FilePath {
         delagate.close();
     }
 
-    public String path;
-    private FilePathInterface delagate;
+    private interface FilePathInterface {
+        FilePath getParentFile();
+
+        boolean exists();
+
+        String getName();
+
+        boolean mkdirs();
+
+        boolean delete();
+
+        boolean createNewFile();
+
+        FilePath[] listFiles(FileFilter filter);
+
+        long lastModified();
+
+        long length();
+
+        boolean isDirectory();
+
+        boolean renameTo(FilePath path);
+
+        String getAbsolutePath();
+
+        InputStream getInputStream();
+
+        boolean open(boolean write);
+
+        void seek(long pos);
+
+        void skipBytes(int count);
+
+        long getFilePointer();
+
+        int read(byte[] buffer);
+
+        void write(byte[] buffer);
+
+        void close();
+    }
 
     static private class FatPath implements FilePathInterface {
         String fullPath;
@@ -146,8 +189,8 @@ public class FilePath {
 
         public FilePath getParentFile() {
             int pos = fullPath.lastIndexOf("\\");
-            if (pos>=0)
-                return new FilePath(fullPath.substring(0, pos+1));
+            if (pos >= 0)
+                return new FilePath(fullPath.substring(0, pos + 1));
             return null;
         }
 
@@ -159,7 +202,7 @@ public class FilePath {
 
         public String getName() {
             int pos = fullPath.lastIndexOf("\\");
-            return fullPath.substring(pos+1);
+            return fullPath.substring(pos + 1);
         }
 
         public boolean mkdirs() {
@@ -171,9 +214,7 @@ public class FilePath {
                 }
             }
             DOS_File file = drive.FileCreate(path, Dos_system.DOS_ATTR_DIRECTORY);
-            if (file == null)
-                return false;
-            return true;
+            return file != null;
         }
 
         public boolean delete() {
@@ -181,7 +222,7 @@ public class FilePath {
         }
 
         public boolean createNewFile() {
-            DOS_File file =  drive.FileCreate(path, Dos_system.DOS_ATTR_ARCHIVE);
+            DOS_File file = drive.FileCreate(path, Dos_system.DOS_ATTR_ARCHIVE);
             if (file == null)
                 return false;
             file.Close();
@@ -214,7 +255,7 @@ public class FilePath {
 
         public InputStream getInputStream() {
             return new InputStream() {
-                byte[] buf = new byte[1];
+                final byte[] buf = new byte[1];
 
                 public int read() throws IOException {
 
@@ -280,13 +321,18 @@ public class FilePath {
             }
         }
     }
+
     static private class JavaPath implements FilePathInterface {
         File file;
         RandomAccessFile openFile;
 
+        public JavaPath(String path) {
+            file = new File(path);
+        }
+
         public boolean open(boolean write) {
             try {
-                openFile = new RandomAccessFile(file, write?"rw":"r");
+                openFile = new RandomAccessFile(file, write ? "rw" : "r");
                 return true;
             } catch (Exception e) {
                 return false;
@@ -350,9 +396,6 @@ public class FilePath {
             }
         }
 
-        public JavaPath(String path) {
-            file = new File(path);
-        }
         public FilePath getParentFile() {
             return new FilePath(file.getParent());
         }
@@ -384,7 +427,7 @@ public class FilePath {
         public FilePath[] listFiles(FileFilter filter) {
             File[] files = file.listFiles(filter);
             FilePath[] result = new FilePath[files.length];
-            for (int i=0;i<files.length;i++)
+            for (int i = 0; i < files.length; i++)
                 result[i] = new FilePath(files[i].getPath());
             return result;
         }
@@ -416,29 +459,5 @@ public class FilePath {
                 return null;
             }
         }
-    }
-
-    private static interface FilePathInterface {
-        public FilePath getParentFile();
-        public boolean exists();
-        public String getName();
-        public boolean mkdirs();
-        public boolean delete();
-        public boolean createNewFile();
-        public FilePath[] listFiles(FileFilter filter);
-        public long lastModified();
-        public long length();
-        public boolean isDirectory();
-        public boolean renameTo(FilePath path);
-        public String getAbsolutePath();
-        public InputStream getInputStream();
-
-        public boolean open(boolean write);
-        public void seek(long pos);
-        public void skipBytes(int count);
-        public long getFilePointer();
-        public int read(byte[] buffer);
-        public void write(byte[] buffer);
-        public void close();
     }
 }

@@ -63,7 +63,7 @@ public class IDEBus extends Module_base {
             irq = IDE_default_IRQs[index];
         }
 
-        for (int i=0;i< ifs.length;i++)
+        for (int i = 0; i < ifs.length; i++)
             ifs[i] = new Internal.IDEState();
 
         IDE.ide_init2(this, irq);

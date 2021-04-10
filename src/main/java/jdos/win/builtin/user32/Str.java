@@ -16,7 +16,7 @@ public class Str extends WinAPI {
     static public int CharUpperBuffA(int lpsz, int cchLength) {
         String value = StringUtil.getString(lpsz, cchLength);
         byte[] b = value.getBytes();
-        if (b.length<cchLength)
+        if (b.length < cchLength)
             cchLength = b.length;
         Memory.mem_memcpy(lpsz, b, 0, cchLength);
         return cchLength;

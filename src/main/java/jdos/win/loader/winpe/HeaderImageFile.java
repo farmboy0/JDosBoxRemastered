@@ -8,15 +8,15 @@ import java.io.OutputStream;
 
 // From Wine project
 public class HeaderImageFile {
-    final static public int SIZE=20;
+    final static public int SIZE = 20;
 
-    public int  Machine;
-    public int  NumberOfSections;
+    public int Machine;
+    public int NumberOfSections;
     public long TimeDateStamp;
     public long PointerToSymbolTable;
     public long NumberOfSymbols;
-    public int  SizeOfOptionalHeader;
-    public int  Characteristics;
+    public int SizeOfOptionalHeader;
+    public int Characteristics;
 
     public void load(OutputStream os, WinFile fis) throws IOException {
         byte[] buffer = new byte[SIZE];

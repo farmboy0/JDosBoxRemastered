@@ -9,10 +9,13 @@ import jdos.win.loader.winpe.HeaderImageImportDescriptor;
 import java.util.Vector;
 
 public abstract class Module extends WinAPI {
-    private int handle;
+    public static final int DLL_PROCESS_DETACH = 0;
+    public static final int DLL_PROCESS_ATTACH = 1;
+    public static final int DLL_THREAD_ATTACH = 2;
+    public static final int DLL_THREAD_DETACH = 3;
     public String name;
     protected boolean threadLibraryCalls = true;
-
+    private final int handle;
     public Module(int handle) {
         this.handle = handle;
     }
@@ -25,21 +28,27 @@ public abstract class Module extends WinAPI {
         threadLibraryCalls = false;
     }
 
-    public static final int DLL_PROCESS_DETACH = 0;
-    public static final int DLL_PROCESS_ATTACH = 1;
-    public static final int DLL_THREAD_ATTACH = 2;
-    public static final int DLL_THREAD_DETACH = 3;
-
     abstract public boolean RtlImageDirectoryEntryToData(int dir, LongRef address, LongRef size);
+
     abstract public Vector getImportDescriptors(long address);
+
     abstract public String getVirtualString(long address);
+
     abstract public long[] getImportList(HeaderImageImportDescriptor desc);
+
     abstract public long findNameExport(long exportAddress, long exportsSize, String name, int hint);
+
     abstract public long findOrdinalExport(long exportAddress, long exportsSize, int ordinal);
+
     abstract public void getImportFunctionName(long address, StringRef name, IntRef hint);
+
     abstract public void writeThunk(HeaderImageImportDescriptor desc, int index, long value);
+
     abstract public void unload();
+
     abstract public int getProcAddress(String name, boolean loadFake);
+
     abstract public String getFileName(boolean fullPath);
+
     abstract public void callDllMain(int dwReason);
 }

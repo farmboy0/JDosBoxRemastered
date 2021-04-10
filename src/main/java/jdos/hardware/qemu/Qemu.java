@@ -39,19 +39,19 @@ public class Qemu {
             }
             if (!videoBiosFound) {
                 FileIO fileIO = FileIOFactory.open("jar://vgabios.bin", FileIOFactory.MODE_READ);
-                fileIO.read(videoData, 0, (int)fileIO.length());
+                fileIO.read(videoData, 0, (int) fileIO.length());
                 fileIO.close();
             }
             int address = 0xC0000;
-            for(int i=0;i<videoData.length;i++)
+            for (int i = 0; i < videoData.length; i++)
                 RAM.writeb(address + i, videoData[i]);
             if (registerBochsPorts) {
-                IoHandler.IO_WriteHandler vga_write  = new IoHandler.IO_WriteHandler() {
+                IoHandler.IO_WriteHandler vga_write = new IoHandler.IO_WriteHandler() {
                     public void call(/*Bitu*/int port, /*Bitu*/int val, /*Bitu*/int iolen) {
                         if (port == 0x500 || port == 0x503) {
-                            System.out.print((char)val);
+                            System.out.print((char) val);
                         } else if (port == 0x501 || port == 0x502) {
-                            System.out.println("panic in vgabios at line "+val);
+                            System.out.println("panic in vgabios at line " + val);
                         }
                     }
                 };

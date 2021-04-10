@@ -11,7 +11,7 @@ public class Prefix_none extends Helper {
         ops[0x00] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Addb_reg(Mod.eb(rm), Mod.gb(rm));
                 } else {
                     prev.next = new Inst1.AddEbGb_mem(Mod.getEaa(rm), Mod.gb(rm));
@@ -26,7 +26,7 @@ public class Prefix_none extends Helper {
         ops[0x01] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Addw_reg(Mod.ew(rm), Mod.gw(rm));
                 } else {
                     prev.next = new Inst1.AddEwGw_mem(Mod.getEaa(rm), Mod.gw(rm));
@@ -39,7 +39,7 @@ public class Prefix_none extends Helper {
         ops[0x02] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                 if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Addb_reg(Mod.gb(rm), Mod.eb(rm));
                 } else {
                     prev.next = new Inst1.AddGbEb_mem(Mod.gb(rm), Mod.getEaa(rm));
@@ -53,7 +53,7 @@ public class Prefix_none extends Helper {
         ops[0x03] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Addw_reg(Mod.gw(rm), Mod.ew(rm));
                 } else {
                     prev.next = new Inst1.AddGwEw_mem(Mod.gw(rm), Mod.getEaa(rm));
@@ -99,7 +99,7 @@ public class Prefix_none extends Helper {
         ops[0x08] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Orb_reg(Mod.eb(rm), Mod.gb(rm));
                 } else {
                     prev.next = new Inst1.OrEbGb_mem(Mod.getEaa(rm), Mod.gb(rm));
@@ -114,7 +114,7 @@ public class Prefix_none extends Helper {
         ops[0x09] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Orw_reg(Mod.ew(rm), Mod.gw(rm));
                 } else {
                     prev.next = new Inst1.OrEwGw_mem(Mod.getEaa(rm), Mod.gw(rm));
@@ -127,7 +127,7 @@ public class Prefix_none extends Helper {
         ops[0x0a] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                 if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Orb_reg(Mod.gb(rm), Mod.eb(rm));
                 } else {
                     prev.next = new Inst1.OrGbEb_mem(Mod.gb(rm), Mod.getEaa(rm));
@@ -141,7 +141,7 @@ public class Prefix_none extends Helper {
         ops[0x0b] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Orw_reg(Mod.gw(rm), Mod.ew(rm));
                 } else {
                     prev.next = new Inst1.OrGwEw_mem(Mod.gw(rm), Mod.getEaa(rm));
@@ -178,7 +178,7 @@ public class Prefix_none extends Helper {
         /* 2 byte opcodes*/
         ops[0x0f] = new Decode() {
             final public int call(Op prev) {
-                opcode_index|=OPCODE_0F;
+                opcode_index |= OPCODE_0F;
                 return RESULT_CONTINUE;
             }
         };
@@ -188,7 +188,7 @@ public class Prefix_none extends Helper {
         ops[0x10] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Adcb_reg(Mod.eb(rm), Mod.gb(rm));
                 } else {
                     prev.next = new Inst1.AdcEbGb_mem(Mod.getEaa(rm), Mod.gb(rm));
@@ -203,7 +203,7 @@ public class Prefix_none extends Helper {
         ops[0x11] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Adcw_reg(Mod.ew(rm), Mod.gw(rm));
                 } else {
                     prev.next = new Inst1.AdcEwGw_mem(Mod.getEaa(rm), Mod.gw(rm));
@@ -216,7 +216,7 @@ public class Prefix_none extends Helper {
         ops[0x12] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                 if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Adcb_reg(Mod.gb(rm), Mod.eb(rm));
                 } else {
                     prev.next = new Inst1.AdcGbEb_mem(Mod.gb(rm), Mod.getEaa(rm));
@@ -230,7 +230,7 @@ public class Prefix_none extends Helper {
         ops[0x13] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Adcw_reg(Mod.gw(rm), Mod.ew(rm));
                 } else {
                     prev.next = new Inst1.AdcGwEw_mem(Mod.gw(rm), Mod.getEaa(rm));
@@ -276,7 +276,7 @@ public class Prefix_none extends Helper {
         ops[0x18] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Sbbb_reg(Mod.eb(rm), Mod.gb(rm));
                 } else {
                     prev.next = new Inst1.SbbEbGb_mem(Mod.getEaa(rm), Mod.gb(rm));
@@ -290,7 +290,7 @@ public class Prefix_none extends Helper {
         ops[0x19] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Sbbw_reg(Mod.ew(rm), Mod.gw(rm));
                 } else {
                     prev.next = new Inst1.SbbEwGw_mem(Mod.getEaa(rm), Mod.gw(rm));
@@ -303,7 +303,7 @@ public class Prefix_none extends Helper {
         ops[0x1a] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                 if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Sbbb_reg(Mod.gb(rm), Mod.eb(rm));
                 } else {
                     prev.next = new Inst1.SbbGbEb_mem(Mod.gb(rm), Mod.getEaa(rm));
@@ -317,7 +317,7 @@ public class Prefix_none extends Helper {
         ops[0x1b] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Sbbw_reg(Mod.gw(rm), Mod.ew(rm));
                 } else {
                     prev.next = new Inst1.SbbGwEw_mem(Mod.gw(rm), Mod.getEaa(rm));
@@ -363,7 +363,7 @@ public class Prefix_none extends Helper {
         ops[0x20] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Andb_reg(Mod.eb(rm), Mod.gb(rm));
                 } else {
                     prev.next = new Inst1.AndEbGb_mem(Mod.getEaa(rm), Mod.gb(rm));
@@ -377,7 +377,7 @@ public class Prefix_none extends Helper {
         ops[0x21] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Andw_reg(Mod.ew(rm), Mod.gw(rm));
                 } else {
                     prev.next = new Inst1.AndEwGw_mem(Mod.getEaa(rm), Mod.gw(rm));
@@ -390,7 +390,7 @@ public class Prefix_none extends Helper {
         ops[0x22] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                 if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Andb_reg(Mod.gb(rm), Mod.eb(rm));
                 } else {
                     prev.next = new Inst1.AndGbEb_mem(Mod.gb(rm), Mod.getEaa(rm));
@@ -404,7 +404,7 @@ public class Prefix_none extends Helper {
         ops[0x23] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Andw_reg(Mod.gw(rm), Mod.ew(rm));
                 } else {
                     prev.next = new Inst1.AndGwEw_mem(Mod.gw(rm), Mod.getEaa(rm));
@@ -452,7 +452,7 @@ public class Prefix_none extends Helper {
         ops[0x28] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Subb_reg(Mod.eb(rm), Mod.gb(rm));
                 } else {
                     prev.next = new Inst1.SubEbGb_mem(Mod.getEaa(rm), Mod.gb(rm));
@@ -466,7 +466,7 @@ public class Prefix_none extends Helper {
         ops[0x29] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Subw_reg(Mod.ew(rm), Mod.gw(rm));
                 } else {
                     prev.next = new Inst1.SubEwGw_mem(Mod.getEaa(rm), Mod.gw(rm));
@@ -479,7 +479,7 @@ public class Prefix_none extends Helper {
         ops[0x2a] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                 if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Subb_reg(Mod.gb(rm), Mod.eb(rm));
                 } else {
                     prev.next = new Inst1.SubGbEb_mem(Mod.gb(rm), Mod.getEaa(rm));
@@ -493,7 +493,7 @@ public class Prefix_none extends Helper {
         ops[0x2b] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Subw_reg(Mod.gw(rm), Mod.ew(rm));
                 } else {
                     prev.next = new Inst1.SubGwEw_mem(Mod.gw(rm), Mod.getEaa(rm));
@@ -541,7 +541,7 @@ public class Prefix_none extends Helper {
         ops[0x30] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Xorb_reg(Mod.eb(rm), Mod.gb(rm));
                 } else {
                     prev.next = new Inst1.XorEbGb_mem(Mod.getEaa(rm), Mod.gb(rm));
@@ -556,7 +556,7 @@ public class Prefix_none extends Helper {
         ops[0x31] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Xorw_reg(Mod.ew(rm), Mod.gw(rm));
                 } else {
                     prev.next = new Inst1.XorEwGw_mem(Mod.getEaa(rm), Mod.gw(rm));
@@ -569,7 +569,7 @@ public class Prefix_none extends Helper {
         ops[0x32] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                 if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Xorb_reg(Mod.gb(rm), Mod.eb(rm));
                 } else {
                     prev.next = new Inst1.XorGbEb_mem(Mod.gb(rm), Mod.getEaa(rm));
@@ -583,7 +583,7 @@ public class Prefix_none extends Helper {
         ops[0x33] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Xorw_reg(Mod.gw(rm), Mod.ew(rm));
                 } else {
                     prev.next = new Inst1.XorGwEw_mem(Mod.gw(rm), Mod.getEaa(rm));
@@ -631,7 +631,7 @@ public class Prefix_none extends Helper {
         ops[0x38] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Cmpb_reg(Mod.eb(rm), Mod.gb(rm));
                 } else {
                     prev.next = new Inst1.CmpEbGb_mem(Mod.getEaa(rm), Mod.gb(rm));
@@ -645,7 +645,7 @@ public class Prefix_none extends Helper {
         ops[0x39] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Cmpw_reg(Mod.ew(rm), Mod.gw(rm));
                 } else {
                     prev.next = new Inst1.CmpEwGw_mem(Mod.getEaa(rm), Mod.gw(rm));
@@ -658,7 +658,7 @@ public class Prefix_none extends Helper {
         ops[0x3a] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                 if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Cmpb_reg(Mod.gb(rm), Mod.eb(rm));
                 } else {
                     prev.next = new Inst1.CmpGbEb_mem(Mod.gb(rm), Mod.getEaa(rm));
@@ -672,7 +672,7 @@ public class Prefix_none extends Helper {
         ops[0x3b] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                if (rm >= 0xc0 ) {
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Cmpw_reg(Mod.gw(rm), Mod.ew(rm));
                 } else {
                     prev.next = new Inst1.CmpGwEw_mem(Mod.gw(rm), Mod.getEaa(rm));
@@ -999,8 +999,8 @@ public class Prefix_none extends Helper {
         /* ARPL Ew,Rw */
         ops[0x63] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.ArplEwRw_reg(rm);
                 } else {
                     prev.next = new Inst1.ArplEwRw_mem(rm);
@@ -1030,7 +1030,7 @@ public class Prefix_none extends Helper {
         /* Operand Size Prefix */
         ops[0x66] = new Decode() {
             final public int call(Op prev) {
-                opcode_index=(CPU.cpu.code.big?0:512);
+                opcode_index = (CPU.cpu.code.big ? 0 : 512);
                 return RESULT_CONTINUE;
             }
         };
@@ -1039,8 +1039,8 @@ public class Prefix_none extends Helper {
         /* Address Size Prefix */
         ops[0x67] = new Decode() {
             final public int call(Op prev) {
-                prefixes=(prefixes & ~Core.PREFIX_ADDR) |(CPU.cpu.code.big?0:1);
-                EA16 = (prefixes&1)==0;
+                prefixes = (prefixes & ~Core.PREFIX_ADDR) | (CPU.cpu.code.big ? 0 : 1);
+                EA16 = (prefixes & 1) == 0;
                 return RESULT_CONTINUE;
             }
         };
@@ -1057,11 +1057,10 @@ public class Prefix_none extends Helper {
         /* IMUL Gw,Ew,Iw */
         ops[0x69] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.IMULGwEwIw_reg(rm);
-                }
-                else {
+                } else {
                     prev.next = new Inst1.IMULGwEwIw_mem(rm);
                 }
                 return RESULT_HANDLED;
@@ -1079,11 +1078,10 @@ public class Prefix_none extends Helper {
         /* IMUL Gw,Ew,Ib */
         ops[0x6b] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.IMULGwEwIb_reg(rm);
-                }
-                else {
+                } else {
                     prev.next = new Inst1.IMULGwEwIb_mem(rm);
                 }
                 return RESULT_HANDLED;
@@ -1255,29 +1253,61 @@ public class Prefix_none extends Helper {
         /* Grpl Eb,Ib */
         ops[0x80] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                int which=(rm>>3)&7;
-                if (rm>= 0xc0) {
+                int rm = decode_fetchb();
+                int which = (rm >> 3) & 7;
+                if (rm >= 0xc0) {
                     switch (which) {
-                    case 0x00:prev.next = new Inst1.GrplEbIb_reg_add(rm);break;
-                    case 0x01:prev.next = new Inst1.GrplEbIb_reg_or(rm);break;
-                    case 0x02:prev.next = new Inst1.GrplEbIb_reg_adc(rm);break;
-                    case 0x03:prev.next = new Inst1.GrplEbIb_reg_sbb(rm);break;
-                    case 0x04:prev.next = new Inst1.GrplEbIb_reg_and(rm);break;
-                    case 0x05:prev.next = new Inst1.GrplEbIb_reg_sub(rm);break;
-                    case 0x06:prev.next = new Inst1.GrplEbIb_reg_xor(rm);break;
-                    case 0x07:prev.next = new Inst1.GrplEbIb_reg_cmp(rm);break;
+                        case 0x00:
+                            prev.next = new Inst1.GrplEbIb_reg_add(rm);
+                            break;
+                        case 0x01:
+                            prev.next = new Inst1.GrplEbIb_reg_or(rm);
+                            break;
+                        case 0x02:
+                            prev.next = new Inst1.GrplEbIb_reg_adc(rm);
+                            break;
+                        case 0x03:
+                            prev.next = new Inst1.GrplEbIb_reg_sbb(rm);
+                            break;
+                        case 0x04:
+                            prev.next = new Inst1.GrplEbIb_reg_and(rm);
+                            break;
+                        case 0x05:
+                            prev.next = new Inst1.GrplEbIb_reg_sub(rm);
+                            break;
+                        case 0x06:
+                            prev.next = new Inst1.GrplEbIb_reg_xor(rm);
+                            break;
+                        case 0x07:
+                            prev.next = new Inst1.GrplEbIb_reg_cmp(rm);
+                            break;
                     }
                 } else {
                     switch (which) {
-                    case 0x00:prev.next = new Inst1.GrplEbIb_mem_add(rm);break;
-                    case 0x01:prev.next = new Inst1.GrplEbIb_mem_or(rm);break;
-                    case 0x02:prev.next = new Inst1.GrplEbIb_mem_adc(rm);break;
-                    case 0x03:prev.next = new Inst1.GrplEbIb_mem_sbb(rm);break;
-                    case 0x04:prev.next = new Inst1.GrplEbIb_mem_and(rm);break;
-                    case 0x05:prev.next = new Inst1.GrplEbIb_mem_sub(rm);break;
-                    case 0x06:prev.next = new Inst1.GrplEbIb_mem_xor(rm);break;
-                    case 0x07:prev.next = new Inst1.GrplEbIb_mem_cmp(rm);break;
+                        case 0x00:
+                            prev.next = new Inst1.GrplEbIb_mem_add(rm);
+                            break;
+                        case 0x01:
+                            prev.next = new Inst1.GrplEbIb_mem_or(rm);
+                            break;
+                        case 0x02:
+                            prev.next = new Inst1.GrplEbIb_mem_adc(rm);
+                            break;
+                        case 0x03:
+                            prev.next = new Inst1.GrplEbIb_mem_sbb(rm);
+                            break;
+                        case 0x04:
+                            prev.next = new Inst1.GrplEbIb_mem_and(rm);
+                            break;
+                        case 0x05:
+                            prev.next = new Inst1.GrplEbIb_mem_sub(rm);
+                            break;
+                        case 0x06:
+                            prev.next = new Inst1.GrplEbIb_mem_xor(rm);
+                            break;
+                        case 0x07:
+                            prev.next = new Inst1.GrplEbIb_mem_cmp(rm);
+                            break;
                     }
                 }
                 return RESULT_HANDLED;
@@ -1292,29 +1322,61 @@ public class Prefix_none extends Helper {
         /* Grpl Ew,Iw */
         ops[0x81] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                int which=(rm>>3)&7;
-                if (rm>= 0xc0) {
+                int rm = decode_fetchb();
+                int which = (rm >> 3) & 7;
+                if (rm >= 0xc0) {
                     switch (which) {
-                    case 0x00:prev.next = new Inst1.GrplEwIw_reg_add(rm, false);break;
-                    case 0x01:prev.next = new Inst1.GrplEwIw_reg_or(rm, false);break;
-                    case 0x02:prev.next = new Inst1.GrplEwIw_reg_adc(rm, false);break;
-                    case 0x03:prev.next = new Inst1.GrplEwIw_reg_sbb(rm, false);break;
-                    case 0x04:prev.next = new Inst1.GrplEwIw_reg_and(rm, false);break;
-                    case 0x05:prev.next = new Inst1.GrplEwIw_reg_sub(rm, false);break;
-                    case 0x06:prev.next = new Inst1.GrplEwIw_reg_xor(rm, false);break;
-                    case 0x07:prev.next = new Inst1.GrplEwIw_reg_cmp(rm, false);break;
+                        case 0x00:
+                            prev.next = new Inst1.GrplEwIw_reg_add(rm, false);
+                            break;
+                        case 0x01:
+                            prev.next = new Inst1.GrplEwIw_reg_or(rm, false);
+                            break;
+                        case 0x02:
+                            prev.next = new Inst1.GrplEwIw_reg_adc(rm, false);
+                            break;
+                        case 0x03:
+                            prev.next = new Inst1.GrplEwIw_reg_sbb(rm, false);
+                            break;
+                        case 0x04:
+                            prev.next = new Inst1.GrplEwIw_reg_and(rm, false);
+                            break;
+                        case 0x05:
+                            prev.next = new Inst1.GrplEwIw_reg_sub(rm, false);
+                            break;
+                        case 0x06:
+                            prev.next = new Inst1.GrplEwIw_reg_xor(rm, false);
+                            break;
+                        case 0x07:
+                            prev.next = new Inst1.GrplEwIw_reg_cmp(rm, false);
+                            break;
                     }
                 } else {
                     switch (which) {
-                    case 0x00:prev.next = new Inst1.GrplEwIw_mem_add(rm, false);break;
-                    case 0x01:prev.next = new Inst1.GrplEwIw_mem_or(rm, false);break;
-                    case 0x02:prev.next = new Inst1.GrplEwIw_mem_adc(rm, false);break;
-                    case 0x03:prev.next = new Inst1.GrplEwIw_mem_sbb(rm, false);break;
-                    case 0x04:prev.next = new Inst1.GrplEwIw_mem_and(rm, false);break;
-                    case 0x05:prev.next = new Inst1.GrplEwIw_mem_sub(rm, false);break;
-                    case 0x06:prev.next = new Inst1.GrplEwIw_mem_xor(rm, false);break;
-                    case 0x07:prev.next = new Inst1.GrplEwIw_mem_cmp(rm, false);break;
+                        case 0x00:
+                            prev.next = new Inst1.GrplEwIw_mem_add(rm, false);
+                            break;
+                        case 0x01:
+                            prev.next = new Inst1.GrplEwIw_mem_or(rm, false);
+                            break;
+                        case 0x02:
+                            prev.next = new Inst1.GrplEwIw_mem_adc(rm, false);
+                            break;
+                        case 0x03:
+                            prev.next = new Inst1.GrplEwIw_mem_sbb(rm, false);
+                            break;
+                        case 0x04:
+                            prev.next = new Inst1.GrplEwIw_mem_and(rm, false);
+                            break;
+                        case 0x05:
+                            prev.next = new Inst1.GrplEwIw_mem_sub(rm, false);
+                            break;
+                        case 0x06:
+                            prev.next = new Inst1.GrplEwIw_mem_xor(rm, false);
+                            break;
+                        case 0x07:
+                            prev.next = new Inst1.GrplEwIw_mem_cmp(rm, false);
+                            break;
                     }
                 }
                 return RESULT_HANDLED;
@@ -1324,29 +1386,61 @@ public class Prefix_none extends Helper {
         /* Grpl Ew,Ix */
         ops[0x83] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                int which=(rm>>3)&7;
-                if (rm>= 0xc0) {
+                int rm = decode_fetchb();
+                int which = (rm >> 3) & 7;
+                if (rm >= 0xc0) {
                     switch (which) {
-                    case 0x00:prev.next = new Inst1.GrplEwIw_reg_add(rm, true);break;
-                    case 0x01:prev.next = new Inst1.GrplEwIw_reg_or(rm, true);break;
-                    case 0x02:prev.next = new Inst1.GrplEwIw_reg_adc(rm, true);break;
-                    case 0x03:prev.next = new Inst1.GrplEwIw_reg_sbb(rm, true);break;
-                    case 0x04:prev.next = new Inst1.GrplEwIw_reg_and(rm, true);break;
-                    case 0x05:prev.next = new Inst1.GrplEwIw_reg_sub(rm, true);break;
-                    case 0x06:prev.next = new Inst1.GrplEwIw_reg_xor(rm, true);break;
-                    case 0x07:prev.next = new Inst1.GrplEwIw_reg_cmp(rm, true);break;
+                        case 0x00:
+                            prev.next = new Inst1.GrplEwIw_reg_add(rm, true);
+                            break;
+                        case 0x01:
+                            prev.next = new Inst1.GrplEwIw_reg_or(rm, true);
+                            break;
+                        case 0x02:
+                            prev.next = new Inst1.GrplEwIw_reg_adc(rm, true);
+                            break;
+                        case 0x03:
+                            prev.next = new Inst1.GrplEwIw_reg_sbb(rm, true);
+                            break;
+                        case 0x04:
+                            prev.next = new Inst1.GrplEwIw_reg_and(rm, true);
+                            break;
+                        case 0x05:
+                            prev.next = new Inst1.GrplEwIw_reg_sub(rm, true);
+                            break;
+                        case 0x06:
+                            prev.next = new Inst1.GrplEwIw_reg_xor(rm, true);
+                            break;
+                        case 0x07:
+                            prev.next = new Inst1.GrplEwIw_reg_cmp(rm, true);
+                            break;
                     }
                 } else {
                     switch (which) {
-                    case 0x00:prev.next = new Inst1.GrplEwIw_mem_add(rm, true);break;
-                    case 0x01:prev.next = new Inst1.GrplEwIw_mem_or(rm, true);break;
-                    case 0x02:prev.next = new Inst1.GrplEwIw_mem_adc(rm, true);break;
-                    case 0x03:prev.next = new Inst1.GrplEwIw_mem_sbb(rm, true);break;
-                    case 0x04:prev.next = new Inst1.GrplEwIw_mem_and(rm, true);break;
-                    case 0x05:prev.next = new Inst1.GrplEwIw_mem_sub(rm, true);break;
-                    case 0x06:prev.next = new Inst1.GrplEwIw_mem_xor(rm, true);break;
-                    case 0x07:prev.next = new Inst1.GrplEwIw_mem_cmp(rm, true);break;
+                        case 0x00:
+                            prev.next = new Inst1.GrplEwIw_mem_add(rm, true);
+                            break;
+                        case 0x01:
+                            prev.next = new Inst1.GrplEwIw_mem_or(rm, true);
+                            break;
+                        case 0x02:
+                            prev.next = new Inst1.GrplEwIw_mem_adc(rm, true);
+                            break;
+                        case 0x03:
+                            prev.next = new Inst1.GrplEwIw_mem_sbb(rm, true);
+                            break;
+                        case 0x04:
+                            prev.next = new Inst1.GrplEwIw_mem_and(rm, true);
+                            break;
+                        case 0x05:
+                            prev.next = new Inst1.GrplEwIw_mem_sub(rm, true);
+                            break;
+                        case 0x06:
+                            prev.next = new Inst1.GrplEwIw_mem_xor(rm, true);
+                            break;
+                        case 0x07:
+                            prev.next = new Inst1.GrplEwIw_mem_cmp(rm, true);
+                            break;
                     }
                 }
                 return RESULT_HANDLED;
@@ -1356,11 +1450,10 @@ public class Prefix_none extends Helper {
         /* TEST Eb,Gb */
         ops[0x84] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.TestEbGb_reg(rm);
-                }
-                else {
+                } else {
                     prev.next = new Inst1.TestEbGb_mem(rm);
                 }
                 return RESULT_HANDLED;
@@ -1371,11 +1464,10 @@ public class Prefix_none extends Helper {
         /* TEST Ew,Gw */
         ops[0x85] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.TestEwGw_reg(rm);
-                }
-                else {
+                } else {
                     prev.next = new Inst1.TestEwGw_mem(rm);
                 }
                 return RESULT_HANDLED;
@@ -1385,8 +1477,8 @@ public class Prefix_none extends Helper {
         /* XCHG Eb,Gb */
         ops[0x86] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.XchgEbGb_reg(rm);
                 } else {
                     prev.next = new Inst1.XchgEbGb_mem(rm);
@@ -1399,8 +1491,8 @@ public class Prefix_none extends Helper {
         /* XCHG Ew,Gw */
         ops[0x87] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.XchgEwGw_reg(rm);
                 } else {
                     prev.next = new Inst1.XchgEwGw_mem(rm);
@@ -1412,8 +1504,8 @@ public class Prefix_none extends Helper {
         /* MOV Eb,Gb */
         ops[0x88] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.MovEbGb_reg(rm);
                 } else {
                     if (rm == 5)
@@ -1429,8 +1521,8 @@ public class Prefix_none extends Helper {
         /* MOV Ew,Gw */
         ops[0x89] = new Decode() {
             final public int call(Op prev) {
-                 int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.MovEwGw_reg(rm);
                 } else {
                     prev.next = new Inst1.MovEwGw_mem(rm);
@@ -1442,8 +1534,8 @@ public class Prefix_none extends Helper {
         /* MOV Gb,Eb */
         ops[0x8a] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.MovGbEb_reg(rm);
                 } else {
                     prev.next = new Inst1.MovGbEb_mem(rm);
@@ -1456,8 +1548,8 @@ public class Prefix_none extends Helper {
         /* MOV Gw,Ew */
         ops[0x8b] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.MovGwEw_reg(rm);
                 } else {
                     prev.next = new Inst1.MovGwEw_mem(rm);
@@ -1469,54 +1561,54 @@ public class Prefix_none extends Helper {
         /* Mov Ew,Sw */
         ops[0x8c] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                int which=(rm>>3)&7;
+                int rm = decode_fetchb();
+                int which = (rm >> 3) & 7;
                 switch (which) {
-                case 0x00:					/* MOV Ew,ES */
-                    if (rm >= 0xC0) {
-                        prev.next = new Inst1.MovEwEs_reg(rm);
-                    } else {
-                        prev.next = new Inst1.MovEwEs_mem(rm);
-                    }
-                    break;
-                case 0x01:					/* MOV Ew,CS */
-                    if (rm >= 0xC0) {
-                        prev.next = new Inst1.MovEwCs_reg(rm);
-                    } else {
-                        prev.next = new Inst1.MovEwCs_mem(rm);
-                    }
-                    break;
-                case 0x02:					/* MOV Ew,SS */
-                    if (rm >= 0xC0) {
-                        prev.next = new Inst1.MovEwSs_reg(rm);
-                    } else {
-                        prev.next = new Inst1.MovEwSs_mem(rm);
-                    }
-                    break;
-                case 0x03:					/* MOV Ew,DS */
-                    if (rm >= 0xC0) {
-                        prev.next = new Inst1.MovEwDs_reg(rm);
-                    } else {
-                        prev.next = new Inst1.MovEwDs_mem(rm);
-                    }
-                    break;
-                case 0x04:					/* MOV Ew,FS */
-                    if (rm >= 0xC0) {
-                        prev.next = new Inst1.MovEwFs_reg(rm);
-                    } else {
-                        prev.next = new Inst1.MovEwFs_mem(rm);
-                    }
-                    break;
-                case 0x05:					/* MOV Ew,GS */
-                    if (rm >= 0xC0) {
-                        prev.next = new Inst1.MovEwGs_reg(rm);
-                    } else {
-                        prev.next = new Inst1.MovEwGs_mem(rm);
-                    }
-                    break;
-                default:
-                    prev.next = new Inst1.Illegal("CPU:8c:Illegal RM Byte");
-                    return RESULT_JUMP;
+                    case 0x00:                    /* MOV Ew,ES */
+                        if (rm >= 0xC0) {
+                            prev.next = new Inst1.MovEwEs_reg(rm);
+                        } else {
+                            prev.next = new Inst1.MovEwEs_mem(rm);
+                        }
+                        break;
+                    case 0x01:                    /* MOV Ew,CS */
+                        if (rm >= 0xC0) {
+                            prev.next = new Inst1.MovEwCs_reg(rm);
+                        } else {
+                            prev.next = new Inst1.MovEwCs_mem(rm);
+                        }
+                        break;
+                    case 0x02:                    /* MOV Ew,SS */
+                        if (rm >= 0xC0) {
+                            prev.next = new Inst1.MovEwSs_reg(rm);
+                        } else {
+                            prev.next = new Inst1.MovEwSs_mem(rm);
+                        }
+                        break;
+                    case 0x03:                    /* MOV Ew,DS */
+                        if (rm >= 0xC0) {
+                            prev.next = new Inst1.MovEwDs_reg(rm);
+                        } else {
+                            prev.next = new Inst1.MovEwDs_mem(rm);
+                        }
+                        break;
+                    case 0x04:                    /* MOV Ew,FS */
+                        if (rm >= 0xC0) {
+                            prev.next = new Inst1.MovEwFs_reg(rm);
+                        } else {
+                            prev.next = new Inst1.MovEwFs_mem(rm);
+                        }
+                        break;
+                    case 0x05:                    /* MOV Ew,GS */
+                        if (rm >= 0xC0) {
+                            prev.next = new Inst1.MovEwGs_reg(rm);
+                        } else {
+                            prev.next = new Inst1.MovEwGs_mem(rm);
+                        }
+                        break;
+                    default:
+                        prev.next = new Inst1.Illegal("CPU:8c:Illegal RM Byte");
+                        return RESULT_JUMP;
                 }
                 return RESULT_HANDLED;
             }
@@ -1525,8 +1617,8 @@ public class Prefix_none extends Helper {
         /* LEA Gw */
         ops[0x8d] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if ((prefixes & Core.PREFIX_ADDR)!=0) {
+                int rm = decode_fetchb();
+                if ((prefixes & Core.PREFIX_ADDR) != 0) {
                     prev.next = new Inst1.LeaGw_32(rm);
                 } else {
                     prev.next = new Inst1.LeaGw_16(rm);
@@ -1538,16 +1630,16 @@ public class Prefix_none extends Helper {
         /* MOV Sw,Ew */
         ops[0x8e] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                int which=(rm>>3)&7;
+                int rm = decode_fetchb();
+                int which = (rm >> 3) & 7;
                 switch (which) {
-                case 0x00:					/* MOV ES,Ew */
-                    if (rm >= 0xC0) {
-                        prev.next = new Inst1.MovEsEw_reg(rm);
-                    } else {
-                        prev.next = new Inst1.MovEsEw_mem(rm);
-                    }
-                    break;
+                    case 0x00:                    /* MOV ES,Ew */
+                        if (rm >= 0xC0) {
+                            prev.next = new Inst1.MovEsEw_reg(rm);
+                        } else {
+                            prev.next = new Inst1.MovEsEw_mem(rm);
+                        }
+                        break;
 //                case 0x01:					/* MOV CS,Ew */
 //                    if (rm >= 0xC0) {
 //                        prev.next = new Decoder2_instructions.MovCsEw_reg(rm);
@@ -1555,37 +1647,37 @@ public class Prefix_none extends Helper {
 //                        prev.next = new Decoder2_instructions.MovCsW_mem(rm);
 //                    }
 //                    break;
-                case 0x02:					/* MOV SS,Ew */
-                    if (rm >= 0xC0) {
-                        prev.next = new Inst1.MovSsEw_reg(rm);
-                    } else {
-                        prev.next = new Inst1.MovSsEw_mem(rm);
-                    }
-                    return RESULT_ANOTHER; //Always do another instruction
-                case 0x03:					/* MOV DS,Ew */
-                    if (rm >= 0xC0) {
-                        prev.next = new Inst1.MovDsEw_reg(rm);
-                    } else {
-                        prev.next = new Inst1.MovDsEw_mem(rm);
-                    }
-                    break;
-                case 0x04:					/* MOV FS,Ew */
-                    if (rm >= 0xC0) {
-                        prev.next = new Inst1.MovFsEw_reg(rm);
-                    } else {
-                        prev.next = new Inst1.MovFsEw_mem(rm);
-                    }
-                    break;
-                case 0x05:					/* MOV GS,Ew */
-                    if (rm >= 0xC0) {
-                        prev.next = new Inst1.MovGsEw_reg(rm);
-                    } else {
-                        prev.next = new Inst1.MovGsEw_mem(rm);
-                    }
-                    break;
-                default:
-                    prev.next = new Inst1.Illegal("CPU:8e:Illegal RM Byte");
-                    return RESULT_JUMP;
+                    case 0x02:                    /* MOV SS,Ew */
+                        if (rm >= 0xC0) {
+                            prev.next = new Inst1.MovSsEw_reg(rm);
+                        } else {
+                            prev.next = new Inst1.MovSsEw_mem(rm);
+                        }
+                        return RESULT_ANOTHER; //Always do another instruction
+                    case 0x03:                    /* MOV DS,Ew */
+                        if (rm >= 0xC0) {
+                            prev.next = new Inst1.MovDsEw_reg(rm);
+                        } else {
+                            prev.next = new Inst1.MovDsEw_mem(rm);
+                        }
+                        break;
+                    case 0x04:                    /* MOV FS,Ew */
+                        if (rm >= 0xC0) {
+                            prev.next = new Inst1.MovFsEw_reg(rm);
+                        } else {
+                            prev.next = new Inst1.MovFsEw_mem(rm);
+                        }
+                        break;
+                    case 0x05:                    /* MOV GS,Ew */
+                        if (rm >= 0xC0) {
+                            prev.next = new Inst1.MovGsEw_reg(rm);
+                        } else {
+                            prev.next = new Inst1.MovGsEw_mem(rm);
+                        }
+                        break;
+                    default:
+                        prev.next = new Inst1.Illegal("CPU:8e:Illegal RM Byte");
+                        return RESULT_JUMP;
                 }
                 return RESULT_HANDLED;
             }
@@ -1595,8 +1687,8 @@ public class Prefix_none extends Helper {
         /* POP Ew */
         ops[0x8f] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.PopEw_reg(rm);
                 } else {
                     prev.next = new Inst1.PopEw_mem(rm);
@@ -1689,8 +1781,8 @@ public class Prefix_none extends Helper {
         /* CALL Ap */
         ops[0x9a] = new Decode() {
             final public int call(Op prev) {
-                int newip=decode_fetchw();
-                int newcs=decode_fetchw();
+                int newip = decode_fetchw();
+                int newcs = decode_fetchw();
                 prev.next = new Inst1.CallAp(newcs, newip);
                 return RESULT_JUMP;
             }
@@ -1777,14 +1869,14 @@ public class Prefix_none extends Helper {
         /* MOVSB */
         ops[0xa4] = new Decode() {
             final public int call(Op prev) {
-                 if ((prefixes & Core.PREFIX_ADDR)==0) {
-                    if ((prefixes & Core.PREFIX_REP)==0) {
+                if ((prefixes & Core.PREFIX_ADDR) == 0) {
+                    if ((prefixes & Core.PREFIX_REP) == 0) {
                         prev.next = new Strings.Movsb16();
                     } else {
                         prev.next = new Strings.Movsb16r();
                     }
                 } else {
-                    if ((prefixes & Core.PREFIX_REP)==0) {
+                    if ((prefixes & Core.PREFIX_REP) == 0) {
                         prev.next = new Strings.Movsb32();
                     } else {
                         prev.next = new Strings.Movsb32r();
@@ -1798,14 +1890,14 @@ public class Prefix_none extends Helper {
         /* MOVSW */
         ops[0xa5] = new Decode() {
             final public int call(Op prev) {
-                if ((prefixes & Core.PREFIX_ADDR)==0) {
-                    if ((prefixes & Core.PREFIX_REP)==0) {
+                if ((prefixes & Core.PREFIX_ADDR) == 0) {
+                    if ((prefixes & Core.PREFIX_REP) == 0) {
                         prev.next = new Strings.Movsw16();
                     } else {
                         prev.next = new Strings.Movsw16r();
                     }
                 } else {
-                    if ((prefixes & Core.PREFIX_REP)==0) {
+                    if ((prefixes & Core.PREFIX_REP) == 0) {
                         prev.next = new Strings.Movsw32();
                     } else {
                         prev.next = new Strings.Movsw32r();
@@ -2039,32 +2131,60 @@ public class Prefix_none extends Helper {
         /* GRP2 Eb,Ib */
         ops[0xc0] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                int which=(rm>>3)&7;
+                int rm = decode_fetchb();
+                int which = (rm >> 3) & 7;
                 if (rm >= 0xc0) {
                     int val = decode_fetchb() & 0x1f;
-                    switch (which)	{
-                    case 0x00:prev.next = new Grp2.ROLB_reg(rm, val);break;
-                    case 0x01:prev.next = new Grp2.RORB_reg(rm, val);break;
-                    case 0x02:prev.next = new Grp2.RCLB_reg(rm, val);break;
-                    case 0x03:prev.next = new Grp2.RCRB_reg(rm, val);break;
-                    case 0x04:/* SHL and SAL are the same */
-                    case 0x06:prev.next = new Grp2.SHLB_reg(rm, val);break;
-                    case 0x05:prev.next = new Grp2.SHRB_reg(rm, val);break;
-                    case 0x07:prev.next = new Grp2.SARB_reg(rm, val);break;
+                    switch (which) {
+                        case 0x00:
+                            prev.next = new Grp2.ROLB_reg(rm, val);
+                            break;
+                        case 0x01:
+                            prev.next = new Grp2.RORB_reg(rm, val);
+                            break;
+                        case 0x02:
+                            prev.next = new Grp2.RCLB_reg(rm, val);
+                            break;
+                        case 0x03:
+                            prev.next = new Grp2.RCRB_reg(rm, val);
+                            break;
+                        case 0x04:/* SHL and SAL are the same */
+                        case 0x06:
+                            prev.next = new Grp2.SHLB_reg(rm, val);
+                            break;
+                        case 0x05:
+                            prev.next = new Grp2.SHRB_reg(rm, val);
+                            break;
+                        case 0x07:
+                            prev.next = new Grp2.SARB_reg(rm, val);
+                            break;
                     }
                 } else {
-                    EaaBase get_eaa= Mod.getEaa(rm);
+                    EaaBase get_eaa = Mod.getEaa(rm);
                     int val = decode_fetchb() & 0x1f;
                     switch (which) {
-                    case 0x00:prev.next = new Grp2.ROLB_mem(get_eaa, val);break;
-                    case 0x01:prev.next = new Grp2.RORB_mem(get_eaa, val);break;
-                    case 0x02:prev.next = new Grp2.RCLB_mem(get_eaa, val);break;
-                    case 0x03:prev.next = new Grp2.RCRB_mem(get_eaa, val);break;
-                    case 0x04:/* SHL and SAL are the same */
-                    case 0x06:prev.next = new Grp2.SHLB_mem(get_eaa, val);break;
-                    case 0x05:prev.next = new Grp2.SHRB_mem(get_eaa, val);break;
-                    case 0x07:prev.next = new Grp2.SARB_mem(get_eaa, val);break;
+                        case 0x00:
+                            prev.next = new Grp2.ROLB_mem(get_eaa, val);
+                            break;
+                        case 0x01:
+                            prev.next = new Grp2.RORB_mem(get_eaa, val);
+                            break;
+                        case 0x02:
+                            prev.next = new Grp2.RCLB_mem(get_eaa, val);
+                            break;
+                        case 0x03:
+                            prev.next = new Grp2.RCRB_mem(get_eaa, val);
+                            break;
+                        case 0x04:/* SHL and SAL are the same */
+                        case 0x06:
+                            prev.next = new Grp2.SHLB_mem(get_eaa, val);
+                            break;
+                        case 0x05:
+                            prev.next = new Grp2.SHRB_mem(get_eaa, val);
+                            break;
+                        case 0x07:
+                            prev.next = new Grp2.SARB_mem(get_eaa, val);
+                            break;
                     }
                 }
                 return RESULT_HANDLED;
@@ -2075,32 +2195,60 @@ public class Prefix_none extends Helper {
         /* GRP2 Ew,Ib */
         ops[0xc1] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                int which=(rm>>3)&7;
+                int rm = decode_fetchb();
+                int which = (rm >> 3) & 7;
                 if (rm >= 0xc0) {
                     int val = decode_fetchb() & 0x1f;
-                    switch (which)	{
-                    case 0x00:prev.next = new Grp2.ROLW_reg(rm, val);break;
-                    case 0x01:prev.next = new Grp2.RORW_reg(rm, val);break;
-                    case 0x02:prev.next = new Grp2.RCLW_reg(rm, val);break;
-                    case 0x03:prev.next = new Grp2.RCRW_reg(rm, val);break;
-                    case 0x04:/* SHL and SAL are the same */
-                    case 0x06:prev.next = new Grp2.SHLW_reg(rm, val);break;
-                    case 0x05:prev.next = new Grp2.SHRW_reg(rm, val);break;
-                    case 0x07:prev.next = new Grp2.SARW_reg(rm, val);break;
+                    switch (which) {
+                        case 0x00:
+                            prev.next = new Grp2.ROLW_reg(rm, val);
+                            break;
+                        case 0x01:
+                            prev.next = new Grp2.RORW_reg(rm, val);
+                            break;
+                        case 0x02:
+                            prev.next = new Grp2.RCLW_reg(rm, val);
+                            break;
+                        case 0x03:
+                            prev.next = new Grp2.RCRW_reg(rm, val);
+                            break;
+                        case 0x04:/* SHL and SAL are the same */
+                        case 0x06:
+                            prev.next = new Grp2.SHLW_reg(rm, val);
+                            break;
+                        case 0x05:
+                            prev.next = new Grp2.SHRW_reg(rm, val);
+                            break;
+                        case 0x07:
+                            prev.next = new Grp2.SARW_reg(rm, val);
+                            break;
                     }
                 } else {
-                    EaaBase get_eaa= Mod.getEaa(rm);
+                    EaaBase get_eaa = Mod.getEaa(rm);
                     int val = decode_fetchb() & 0x1f;
                     switch (which) {
-                    case 0x00:prev.next = new Grp2.ROLW_mem(get_eaa, val);break;
-                    case 0x01:prev.next = new Grp2.RORW_mem(get_eaa, val);break;
-                    case 0x02:prev.next = new Grp2.RCLW_mem(get_eaa, val);break;
-                    case 0x03:prev.next = new Grp2.RCRW_mem(get_eaa, val);break;
-                    case 0x04:/* SHL and SAL are the same */
-                    case 0x06:prev.next = new Grp2.SHLW_mem(get_eaa, val);break;
-                    case 0x05:prev.next = new Grp2.SHRW_mem(get_eaa, val);break;
-                    case 0x07:prev.next = new Grp2.SARW_mem(get_eaa, val);break;
+                        case 0x00:
+                            prev.next = new Grp2.ROLW_mem(get_eaa, val);
+                            break;
+                        case 0x01:
+                            prev.next = new Grp2.RORW_mem(get_eaa, val);
+                            break;
+                        case 0x02:
+                            prev.next = new Grp2.RCLW_mem(get_eaa, val);
+                            break;
+                        case 0x03:
+                            prev.next = new Grp2.RCRW_mem(get_eaa, val);
+                            break;
+                        case 0x04:/* SHL and SAL are the same */
+                        case 0x06:
+                            prev.next = new Grp2.SHLW_mem(get_eaa, val);
+                            break;
+                        case 0x05:
+                            prev.next = new Grp2.SHRW_mem(get_eaa, val);
+                            break;
+                        case 0x07:
+                            prev.next = new Grp2.SARW_mem(get_eaa, val);
+                            break;
                     }
                 }
                 return RESULT_HANDLED;
@@ -2126,7 +2274,7 @@ public class Prefix_none extends Helper {
         /* LES */
         ops[0xc4] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst1.Illegal("");
                 } else {
@@ -2139,7 +2287,7 @@ public class Prefix_none extends Helper {
         /* LDS */
         ops[0xc5] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst1.Illegal("");
                 } else {
@@ -2152,7 +2300,7 @@ public class Prefix_none extends Helper {
         /* MOV Eb,Ib */
         ops[0xc6] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst1.MovIb(Mod.eb(rm));
                 } else {
@@ -2166,7 +2314,7 @@ public class Prefix_none extends Helper {
         /* MOV EW,Iw */
         ops[0xc7] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst1.MovIw(Mod.ew(rm));
                 } else {
@@ -2246,30 +2394,58 @@ public class Prefix_none extends Helper {
         /* GRP2 Eb,1 */
         ops[0xd0] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                int which=(rm>>3)&7;
+                int rm = decode_fetchb();
+                int which = (rm >> 3) & 7;
                 if (rm >= 0xc0) {
-                    switch (which)	{
-                    case 0x00:prev.next = new Grp2.ROLB_reg(rm, 1);break;
-                    case 0x01:prev.next = new Grp2.RORB_reg(rm, 1);break;
-                    case 0x02:prev.next = new Grp2.RCLB_reg(rm, 1);break;
-                    case 0x03:prev.next = new Grp2.RCRB_reg(rm, 1);break;
-                    case 0x04:/* SHL and SAL are the same */
-                    case 0x06:prev.next = new Grp2.SHLB_reg(rm, 1);break;
-                    case 0x05:prev.next = new Grp2.SHRB_reg(rm, 1);break;
-                    case 0x07:prev.next = new Grp2.SARB_reg(rm, 1);break;
+                    switch (which) {
+                        case 0x00:
+                            prev.next = new Grp2.ROLB_reg(rm, 1);
+                            break;
+                        case 0x01:
+                            prev.next = new Grp2.RORB_reg(rm, 1);
+                            break;
+                        case 0x02:
+                            prev.next = new Grp2.RCLB_reg(rm, 1);
+                            break;
+                        case 0x03:
+                            prev.next = new Grp2.RCRB_reg(rm, 1);
+                            break;
+                        case 0x04:/* SHL and SAL are the same */
+                        case 0x06:
+                            prev.next = new Grp2.SHLB_reg(rm, 1);
+                            break;
+                        case 0x05:
+                            prev.next = new Grp2.SHRB_reg(rm, 1);
+                            break;
+                        case 0x07:
+                            prev.next = new Grp2.SARB_reg(rm, 1);
+                            break;
                     }
                 } else {
-                    EaaBase get_eaa= Mod.getEaa(rm);
+                    EaaBase get_eaa = Mod.getEaa(rm);
                     switch (which) {
-                    case 0x00:prev.next = new Grp2.ROLB_mem(get_eaa, 1);break;
-                    case 0x01:prev.next = new Grp2.RORB_mem(get_eaa, 1);break;
-                    case 0x02:prev.next = new Grp2.RCLB_mem(get_eaa, 1);break;
-                    case 0x03:prev.next = new Grp2.RCRB_mem(get_eaa, 1);break;
-                    case 0x04:/* SHL and SAL are the same */
-                    case 0x06:prev.next = new Grp2.SHLB_mem(get_eaa, 1);break;
-                    case 0x05:prev.next = new Grp2.SHRB_mem(get_eaa, 1);break;
-                    case 0x07:prev.next = new Grp2.SARB_mem(get_eaa, 1);break;
+                        case 0x00:
+                            prev.next = new Grp2.ROLB_mem(get_eaa, 1);
+                            break;
+                        case 0x01:
+                            prev.next = new Grp2.RORB_mem(get_eaa, 1);
+                            break;
+                        case 0x02:
+                            prev.next = new Grp2.RCLB_mem(get_eaa, 1);
+                            break;
+                        case 0x03:
+                            prev.next = new Grp2.RCRB_mem(get_eaa, 1);
+                            break;
+                        case 0x04:/* SHL and SAL are the same */
+                        case 0x06:
+                            prev.next = new Grp2.SHLB_mem(get_eaa, 1);
+                            break;
+                        case 0x05:
+                            prev.next = new Grp2.SHRB_mem(get_eaa, 1);
+                            break;
+                        case 0x07:
+                            prev.next = new Grp2.SARB_mem(get_eaa, 1);
+                            break;
                     }
                 }
                 return RESULT_HANDLED;
@@ -2280,31 +2456,59 @@ public class Prefix_none extends Helper {
         /* GRP2 Ew,1 */
         ops[0xd1] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                int which=(rm>>3)&7;
+                int rm = decode_fetchb();
+                int which = (rm >> 3) & 7;
                 int val = 1;
                 if (rm >= 0xc0) {
-                    switch (which)	{
-                    case 0x00:prev.next = new Grp2.ROLW_reg(rm, val);break;
-                    case 0x01:prev.next = new Grp2.RORW_reg(rm, val);break;
-                    case 0x02:prev.next = new Grp2.RCLW_reg(rm, val);break;
-                    case 0x03:prev.next = new Grp2.RCRW_reg(rm, val);break;
-                    case 0x04:/* SHL and SAL are the same */
-                    case 0x06:prev.next = new Grp2.SHLW_reg(rm, val);break;
-                    case 0x05:prev.next = new Grp2.SHRW_reg(rm, val);break;
-                    case 0x07:prev.next = new Grp2.SARW_reg(rm, val);break;
+                    switch (which) {
+                        case 0x00:
+                            prev.next = new Grp2.ROLW_reg(rm, val);
+                            break;
+                        case 0x01:
+                            prev.next = new Grp2.RORW_reg(rm, val);
+                            break;
+                        case 0x02:
+                            prev.next = new Grp2.RCLW_reg(rm, val);
+                            break;
+                        case 0x03:
+                            prev.next = new Grp2.RCRW_reg(rm, val);
+                            break;
+                        case 0x04:/* SHL and SAL are the same */
+                        case 0x06:
+                            prev.next = new Grp2.SHLW_reg(rm, val);
+                            break;
+                        case 0x05:
+                            prev.next = new Grp2.SHRW_reg(rm, val);
+                            break;
+                        case 0x07:
+                            prev.next = new Grp2.SARW_reg(rm, val);
+                            break;
                     }
                 } else {
-                    EaaBase get_eaa= Mod.getEaa(rm);
+                    EaaBase get_eaa = Mod.getEaa(rm);
                     switch (which) {
-                    case 0x00:prev.next = new Grp2.ROLW_mem(get_eaa, val);break;
-                    case 0x01:prev.next = new Grp2.RORW_mem(get_eaa, val);break;
-                    case 0x02:prev.next = new Grp2.RCLW_mem(get_eaa, val);break;
-                    case 0x03:prev.next = new Grp2.RCRW_mem(get_eaa, val);break;
-                    case 0x04:/* SHL and SAL are the same */
-                    case 0x06:prev.next = new Grp2.SHLW_mem(get_eaa, val);break;
-                    case 0x05:prev.next = new Grp2.SHRW_mem(get_eaa, val);break;
-                    case 0x07:prev.next = new Grp2.SARW_mem(get_eaa, val);break;
+                        case 0x00:
+                            prev.next = new Grp2.ROLW_mem(get_eaa, val);
+                            break;
+                        case 0x01:
+                            prev.next = new Grp2.RORW_mem(get_eaa, val);
+                            break;
+                        case 0x02:
+                            prev.next = new Grp2.RCLW_mem(get_eaa, val);
+                            break;
+                        case 0x03:
+                            prev.next = new Grp2.RCRW_mem(get_eaa, val);
+                            break;
+                        case 0x04:/* SHL and SAL are the same */
+                        case 0x06:
+                            prev.next = new Grp2.SHLW_mem(get_eaa, val);
+                            break;
+                        case 0x05:
+                            prev.next = new Grp2.SHRW_mem(get_eaa, val);
+                            break;
+                        case 0x07:
+                            prev.next = new Grp2.SARW_mem(get_eaa, val);
+                            break;
                     }
                 }
                 return RESULT_HANDLED;
@@ -2314,30 +2518,58 @@ public class Prefix_none extends Helper {
         /* GRP2 Eb,CL */
         ops[0xd2] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                int which=(rm>>3)&7;
+                int rm = decode_fetchb();
+                int which = (rm >> 3) & 7;
                 if (rm >= 0xc0) {
-                    switch (which)	{
-                    case 0x00:prev.next = new Grp2.ROLB_reg_cl(rm);break;
-                    case 0x01:prev.next = new Grp2.RORB_reg_cl(rm);break;
-                    case 0x02:prev.next = new Grp2.RCLB_reg_cl(rm);break;
-                    case 0x03:prev.next = new Grp2.RCRB_reg_cl(rm);break;
-                    case 0x04:/* SHL and SAL are the same */
-                    case 0x06:prev.next = new Grp2.SHLB_reg_cl(rm);break;
-                    case 0x05:prev.next = new Grp2.SHRB_reg_cl(rm);break;
-                    case 0x07:prev.next = new Grp2.SARB_reg_cl(rm);break;
+                    switch (which) {
+                        case 0x00:
+                            prev.next = new Grp2.ROLB_reg_cl(rm);
+                            break;
+                        case 0x01:
+                            prev.next = new Grp2.RORB_reg_cl(rm);
+                            break;
+                        case 0x02:
+                            prev.next = new Grp2.RCLB_reg_cl(rm);
+                            break;
+                        case 0x03:
+                            prev.next = new Grp2.RCRB_reg_cl(rm);
+                            break;
+                        case 0x04:/* SHL and SAL are the same */
+                        case 0x06:
+                            prev.next = new Grp2.SHLB_reg_cl(rm);
+                            break;
+                        case 0x05:
+                            prev.next = new Grp2.SHRB_reg_cl(rm);
+                            break;
+                        case 0x07:
+                            prev.next = new Grp2.SARB_reg_cl(rm);
+                            break;
                     }
                 } else {
-                    EaaBase get_eaa= Mod.getEaa(rm);
+                    EaaBase get_eaa = Mod.getEaa(rm);
                     switch (which) {
-                    case 0x00:prev.next = new Grp2.ROLB_mem_cl(get_eaa);break;
-                    case 0x01:prev.next = new Grp2.RORB_mem_cl(get_eaa);break;
-                    case 0x02:prev.next = new Grp2.RCLB_mem_cl(get_eaa);break;
-                    case 0x03:prev.next = new Grp2.RCRB_mem_cl(get_eaa);break;
-                    case 0x04:/* SHL and SAL are the same */
-                    case 0x06:prev.next = new Grp2.SHLB_mem_cl(get_eaa);break;
-                    case 0x05:prev.next = new Grp2.SHRB_mem_cl(get_eaa);break;
-                    case 0x07:prev.next = new Grp2.SARB_mem_cl(get_eaa);break;
+                        case 0x00:
+                            prev.next = new Grp2.ROLB_mem_cl(get_eaa);
+                            break;
+                        case 0x01:
+                            prev.next = new Grp2.RORB_mem_cl(get_eaa);
+                            break;
+                        case 0x02:
+                            prev.next = new Grp2.RCLB_mem_cl(get_eaa);
+                            break;
+                        case 0x03:
+                            prev.next = new Grp2.RCRB_mem_cl(get_eaa);
+                            break;
+                        case 0x04:/* SHL and SAL are the same */
+                        case 0x06:
+                            prev.next = new Grp2.SHLB_mem_cl(get_eaa);
+                            break;
+                        case 0x05:
+                            prev.next = new Grp2.SHRB_mem_cl(get_eaa);
+                            break;
+                        case 0x07:
+                            prev.next = new Grp2.SARB_mem_cl(get_eaa);
+                            break;
                     }
                 }
                 return RESULT_HANDLED;
@@ -2348,30 +2580,58 @@ public class Prefix_none extends Helper {
         /* GRP2 Ew,CL */
         ops[0xd3] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                int which=(rm>>3)&7;
+                int rm = decode_fetchb();
+                int which = (rm >> 3) & 7;
                 if (rm >= 0xc0) {
-                    switch (which)	{
-                    case 0x00:prev.next = new Grp2.ROLW_reg_cl(rm);break;
-                    case 0x01:prev.next = new Grp2.RORW_reg_cl(rm);break;
-                    case 0x02:prev.next = new Grp2.RCLW_reg_cl(rm);break;
-                    case 0x03:prev.next = new Grp2.RCRW_reg_cl(rm);break;
-                    case 0x04:/* SHL and SAL are the same */
-                    case 0x06:prev.next = new Grp2.SHLW_reg_cl(rm);break;
-                    case 0x05:prev.next = new Grp2.SHRW_reg_cl(rm);break;
-                    case 0x07:prev.next = new Grp2.SARW_reg_cl(rm);break;
+                    switch (which) {
+                        case 0x00:
+                            prev.next = new Grp2.ROLW_reg_cl(rm);
+                            break;
+                        case 0x01:
+                            prev.next = new Grp2.RORW_reg_cl(rm);
+                            break;
+                        case 0x02:
+                            prev.next = new Grp2.RCLW_reg_cl(rm);
+                            break;
+                        case 0x03:
+                            prev.next = new Grp2.RCRW_reg_cl(rm);
+                            break;
+                        case 0x04:/* SHL and SAL are the same */
+                        case 0x06:
+                            prev.next = new Grp2.SHLW_reg_cl(rm);
+                            break;
+                        case 0x05:
+                            prev.next = new Grp2.SHRW_reg_cl(rm);
+                            break;
+                        case 0x07:
+                            prev.next = new Grp2.SARW_reg_cl(rm);
+                            break;
                     }
                 } else {
-                    EaaBase get_eaa= Mod.getEaa(rm);
+                    EaaBase get_eaa = Mod.getEaa(rm);
                     switch (which) {
-                    case 0x00:prev.next = new Grp2.ROLW_mem_cl(get_eaa);break;
-                    case 0x01:prev.next = new Grp2.RORW_mem_cl(get_eaa);break;
-                    case 0x02:prev.next = new Grp2.RCLW_mem_cl(get_eaa);break;
-                    case 0x03:prev.next = new Grp2.RCRW_mem_cl(get_eaa);break;
-                    case 0x04:/* SHL and SAL are the same */
-                    case 0x06:prev.next = new Grp2.SHLW_mem_cl(get_eaa);break;
-                    case 0x05:prev.next = new Grp2.SHRW_mem_cl(get_eaa);break;
-                    case 0x07:prev.next = new Grp2.SARW_mem_cl(get_eaa);break;
+                        case 0x00:
+                            prev.next = new Grp2.ROLW_mem_cl(get_eaa);
+                            break;
+                        case 0x01:
+                            prev.next = new Grp2.RORW_mem_cl(get_eaa);
+                            break;
+                        case 0x02:
+                            prev.next = new Grp2.RCLW_mem_cl(get_eaa);
+                            break;
+                        case 0x03:
+                            prev.next = new Grp2.RCRW_mem_cl(get_eaa);
+                            break;
+                        case 0x04:/* SHL and SAL are the same */
+                        case 0x06:
+                            prev.next = new Grp2.SHLW_mem_cl(get_eaa);
+                            break;
+                        case 0x05:
+                            prev.next = new Grp2.SHRW_mem_cl(get_eaa);
+                            break;
+                        case 0x07:
+                            prev.next = new Grp2.SARW_mem_cl(get_eaa);
+                            break;
                     }
                 }
                 return RESULT_HANDLED;
@@ -2408,7 +2668,7 @@ public class Prefix_none extends Helper {
         /* XLAT */
         ops[0xd7] = new Decode() {
             final public int call(Op prev) {
-                if ((prefixes & Core.PREFIX_ADDR)!=0) {
+                if ((prefixes & Core.PREFIX_ADDR) != 0) {
                     prev.next = new Inst1.Xlat32();
                 } else {
                     prev.next = new Inst1.Xlat16();
@@ -2427,14 +2687,30 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU0_normal(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FADD_ST0_STj(rm); break;
-                            case 1: prev.next = new InstFPU.FMUL_ST0_STj(rm); break;
-                            case 2: prev.next = new InstFPU.FCOM_STi(rm, false); break;
-                            case 3: prev.next = new InstFPU.FCOM_STi(rm, true); break;
-                            case 4: prev.next = new InstFPU.FSUB_ST0_STj(rm); break;
-                            case 5: prev.next = new InstFPU.FSUBR_ST0_STj(rm); break;
-                            case 6: prev.next = new InstFPU.FDIV_ST0_STj(rm); break;
-                            case 7: prev.next = new InstFPU.FDIVR_ST0_STj(rm); break;
+                            case 0:
+                                prev.next = new InstFPU.FADD_ST0_STj(rm);
+                                break;
+                            case 1:
+                                prev.next = new InstFPU.FMUL_ST0_STj(rm);
+                                break;
+                            case 2:
+                                prev.next = new InstFPU.FCOM_STi(rm, false);
+                                break;
+                            case 3:
+                                prev.next = new InstFPU.FCOM_STi(rm, true);
+                                break;
+                            case 4:
+                                prev.next = new InstFPU.FSUB_ST0_STj(rm);
+                                break;
+                            case 5:
+                                prev.next = new InstFPU.FSUBR_ST0_STj(rm);
+                                break;
+                            case 6:
+                                prev.next = new InstFPU.FDIV_ST0_STj(rm);
+                                break;
+                            case 7:
+                                prev.next = new InstFPU.FDIVR_ST0_STj(rm);
+                                break;
                         }
                     }
                 } else {
@@ -2442,14 +2718,30 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU0_ea(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FADD_SINGLE_REAL(rm); break;
-                            case 1: prev.next = new InstFPU.FMUL_SINGLE_REAL(rm); break;
-                            case 2: prev.next = new InstFPU.FCOM_SINGLE_REAL(rm, false); break;
-                            case 3: prev.next = new InstFPU.FCOM_SINGLE_REAL(rm, true); break;
-                            case 4: prev.next = new InstFPU.FSUB_SINGLE_REAL(rm); break;
-                            case 5: prev.next = new InstFPU.FSUBR_SINGLE_REAL(rm); break;
-                            case 6: prev.next = new InstFPU.FDIV_SINGLE_REAL(rm); break;
-                            case 7: prev.next = new InstFPU.FDIVR_SINGLE_REAL(rm); break;
+                            case 0:
+                                prev.next = new InstFPU.FADD_SINGLE_REAL(rm);
+                                break;
+                            case 1:
+                                prev.next = new InstFPU.FMUL_SINGLE_REAL(rm);
+                                break;
+                            case 2:
+                                prev.next = new InstFPU.FCOM_SINGLE_REAL(rm, false);
+                                break;
+                            case 3:
+                                prev.next = new InstFPU.FCOM_SINGLE_REAL(rm, true);
+                                break;
+                            case 4:
+                                prev.next = new InstFPU.FSUB_SINGLE_REAL(rm);
+                                break;
+                            case 5:
+                                prev.next = new InstFPU.FSUBR_SINGLE_REAL(rm);
+                                break;
+                            case 6:
+                                prev.next = new InstFPU.FDIV_SINGLE_REAL(rm);
+                                break;
+                            case 7:
+                                prev.next = new InstFPU.FDIVR_SINGLE_REAL(rm);
+                                break;
                         }
                     }
                 }
@@ -2467,63 +2759,131 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU1_normal(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FLD_STi(rm); break;
-                            case 1: prev.next = new InstFPU.FXCH_STi(rm); break;
-                            case 2: prev.next = new InstFPU.FNOP(); break;
-                            case 3: prev.next = new InstFPU.FST_STi(rm, true); break;
-                            case 4:
-                            {
+                            case 0:
+                                prev.next = new InstFPU.FLD_STi(rm);
+                                break;
+                            case 1:
+                                prev.next = new InstFPU.FXCH_STi(rm);
+                                break;
+                            case 2:
+                                prev.next = new InstFPU.FNOP();
+                                break;
+                            case 3:
+                                prev.next = new InstFPU.FST_STi(rm, true);
+                                break;
+                            case 4: {
                                 switch (rm & 7) {
-                                    case 0: prev.next = new InstFPU.FCHS(); break;
-                                    case 1: prev.next = new InstFPU.FABS(); break;
-                                    case 2: prev.next = new Inst1.FPU1_normal(rm); break;
-                                    case 3: prev.next = new Inst1.FPU1_normal(rm); break;
-                                    case 4: prev.next = new InstFPU.FTST(); break;
-                                    case 5: prev.next = new InstFPU.FXAM(); break;
-                                    case 6: prev.next = new Inst1.FPU1_normal(rm); break;
-                                    case 7: prev.next = new Inst1.FPU1_normal(rm); break;
+                                    case 0:
+                                        prev.next = new InstFPU.FCHS();
+                                        break;
+                                    case 1:
+                                        prev.next = new InstFPU.FABS();
+                                        break;
+                                    case 2:
+                                        prev.next = new Inst1.FPU1_normal(rm);
+                                        break;
+                                    case 3:
+                                        prev.next = new Inst1.FPU1_normal(rm);
+                                        break;
+                                    case 4:
+                                        prev.next = new InstFPU.FTST();
+                                        break;
+                                    case 5:
+                                        prev.next = new InstFPU.FXAM();
+                                        break;
+                                    case 6:
+                                        prev.next = new Inst1.FPU1_normal(rm);
+                                        break;
+                                    case 7:
+                                        prev.next = new Inst1.FPU1_normal(rm);
+                                        break;
                                 }
                                 break;
                             }
-                            case 5:
-                            {
+                            case 5: {
                                 switch (rm & 7) {
-                                    case 0: prev.next = new InstFPU.FLD1(); break;
-                                    case 1: prev.next = new InstFPU.FLDL2T(); break;
-                                    case 2: prev.next = new InstFPU.FLDL2E(); break;
-                                    case 3: prev.next = new InstFPU.FLDPI(); break;
-                                    case 4: prev.next = new InstFPU.FLDLG2(); break;
-                                    case 5: prev.next = new InstFPU.FLDLN2(); break;
-                                    case 6: prev.next = new InstFPU.FLDZ(); break;
-                                    case 7: prev.next = new Inst1.FPU1_normal(rm); break;
+                                    case 0:
+                                        prev.next = new InstFPU.FLD1();
+                                        break;
+                                    case 1:
+                                        prev.next = new InstFPU.FLDL2T();
+                                        break;
+                                    case 2:
+                                        prev.next = new InstFPU.FLDL2E();
+                                        break;
+                                    case 3:
+                                        prev.next = new InstFPU.FLDPI();
+                                        break;
+                                    case 4:
+                                        prev.next = new InstFPU.FLDLG2();
+                                        break;
+                                    case 5:
+                                        prev.next = new InstFPU.FLDLN2();
+                                        break;
+                                    case 6:
+                                        prev.next = new InstFPU.FLDZ();
+                                        break;
+                                    case 7:
+                                        prev.next = new Inst1.FPU1_normal(rm);
+                                        break;
                                 }
                                 break;
                             }
-                            case 6:
-                            {
+                            case 6: {
                                 switch (rm & 7) {
-                                    case 0: prev.next = new InstFPU.F2XM1(); break;
-                                    case 1: prev.next = new InstFPU.FYL2X(); break;
-                                    case 2: prev.next = new InstFPU.FPTAN(); break;
-                                    case 3: prev.next = new InstFPU.FPATAN(); break;
-                                    case 4: prev.next = new InstFPU.FXTRACT(); break;
-                                    case 5: prev.next = new InstFPU.FPREM(true); break;
-                                    case 6: prev.next = new InstFPU.FDECSTP(); break;
-                                    case 7: prev.next = new InstFPU.FINCSTP(); break;
+                                    case 0:
+                                        prev.next = new InstFPU.F2XM1();
+                                        break;
+                                    case 1:
+                                        prev.next = new InstFPU.FYL2X();
+                                        break;
+                                    case 2:
+                                        prev.next = new InstFPU.FPTAN();
+                                        break;
+                                    case 3:
+                                        prev.next = new InstFPU.FPATAN();
+                                        break;
+                                    case 4:
+                                        prev.next = new InstFPU.FXTRACT();
+                                        break;
+                                    case 5:
+                                        prev.next = new InstFPU.FPREM(true);
+                                        break;
+                                    case 6:
+                                        prev.next = new InstFPU.FDECSTP();
+                                        break;
+                                    case 7:
+                                        prev.next = new InstFPU.FINCSTP();
+                                        break;
                                 }
                                 break;
                             }
-                            case 7:
-                            {
+                            case 7: {
                                 switch (rm & 7) {
-                                    case 0: prev.next = new InstFPU.FPREM(false); break;
-                                    case 1: prev.next = new InstFPU.FYL2XP1(); break;
-                                    case 2: prev.next = new InstFPU.FSQRT(); break;
-                                    case 3: prev.next = new InstFPU.FSINCOS(); break;
-                                    case 4: prev.next = new InstFPU.FRNDINT(); break;
-                                    case 5: prev.next = new InstFPU.FSCALE(); break;
-                                    case 6: prev.next = new InstFPU.FSIN(); break;
-                                    case 7: prev.next = new InstFPU.FCOS(); break;
+                                    case 0:
+                                        prev.next = new InstFPU.FPREM(false);
+                                        break;
+                                    case 1:
+                                        prev.next = new InstFPU.FYL2XP1();
+                                        break;
+                                    case 2:
+                                        prev.next = new InstFPU.FSQRT();
+                                        break;
+                                    case 3:
+                                        prev.next = new InstFPU.FSINCOS();
+                                        break;
+                                    case 4:
+                                        prev.next = new InstFPU.FRNDINT();
+                                        break;
+                                    case 5:
+                                        prev.next = new InstFPU.FSCALE();
+                                        break;
+                                    case 6:
+                                        prev.next = new InstFPU.FSIN();
+                                        break;
+                                    case 7:
+                                        prev.next = new InstFPU.FCOS();
+                                        break;
                                 }
                                 break;
                             }
@@ -2534,14 +2894,30 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU1_ea(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FLD_SINGLE_REAL(rm); break;
-                            case 1: prev.next = new Inst1.FPU2_ea(rm); break;
-                            case 2: prev.next = new InstFPU.FST_SINGLE_REAL(rm, false); break;
-                            case 3: prev.next = new InstFPU.FST_SINGLE_REAL(rm, true); break;
-                            case 4: prev.next = new InstFPU.FLDENV(rm); break;
-                            case 5: prev.next = new InstFPU.FLDCW(rm); break;
-                            case 6: prev.next = new InstFPU.FNSTENV(rm); break;
-                            case 7: prev.next = new InstFPU.FNSTCW(rm); break;
+                            case 0:
+                                prev.next = new InstFPU.FLD_SINGLE_REAL(rm);
+                                break;
+                            case 1:
+                                prev.next = new Inst1.FPU2_ea(rm);
+                                break;
+                            case 2:
+                                prev.next = new InstFPU.FST_SINGLE_REAL(rm, false);
+                                break;
+                            case 3:
+                                prev.next = new InstFPU.FST_SINGLE_REAL(rm, true);
+                                break;
+                            case 4:
+                                prev.next = new InstFPU.FLDENV(rm);
+                                break;
+                            case 5:
+                                prev.next = new InstFPU.FLDCW(rm);
+                                break;
+                            case 6:
+                                prev.next = new InstFPU.FNSTENV(rm);
+                                break;
+                            case 7:
+                                prev.next = new InstFPU.FNSTCW(rm);
+                                break;
                         }
                     }
                 }
@@ -2559,13 +2935,20 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU2_normal(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FCMOV_ST0_STj_CF(rm); break;
-                            case 1: prev.next = new InstFPU.FCMOV_ST0_STj_ZF(rm); break;
-                            case 2: prev.next = new InstFPU.FCMOV_ST0_STj_CF_OR_ZF(rm); break;
-                            case 3: prev.next = new InstFPU.FCMOV_ST0_STj_PF(rm); break;
-                            case 5:
-                            {
-                                if ((rm & 7)==5) {
+                            case 0:
+                                prev.next = new InstFPU.FCMOV_ST0_STj_CF(rm);
+                                break;
+                            case 1:
+                                prev.next = new InstFPU.FCMOV_ST0_STj_ZF(rm);
+                                break;
+                            case 2:
+                                prev.next = new InstFPU.FCMOV_ST0_STj_CF_OR_ZF(rm);
+                                break;
+                            case 3:
+                                prev.next = new InstFPU.FCMOV_ST0_STj_PF(rm);
+                                break;
+                            case 5: {
+                                if ((rm & 7) == 5) {
                                     prev.next = new InstFPU.FUCOMPP();
                                 } else {
                                     prev.next = new Inst1.FPU2_normal(rm);
@@ -2580,14 +2963,30 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU2_ea(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FIADD_DWORD_INTEGER(rm); break;
-                            case 1: prev.next = new InstFPU.FIMUL_DWORD_INTEGER(rm); break;
-                            case 2: prev.next = new InstFPU.FICOM_DWORD_INTEGER(rm, false); break;
-                            case 3: prev.next = new InstFPU.FICOM_DWORD_INTEGER(rm, true); break;
-                            case 4: prev.next = new InstFPU.FISUB_DWORD_INTEGER(rm); break;
-                            case 5: prev.next = new InstFPU.FISUBR_DWORD_INTEGER(rm); break;
-                            case 6: prev.next = new InstFPU.FIDIV_DWORD_INTEGER(rm); break;
-                            case 7: prev.next = new InstFPU.FIDIVR_DWORD_INTEGER(rm); break;
+                            case 0:
+                                prev.next = new InstFPU.FIADD_DWORD_INTEGER(rm);
+                                break;
+                            case 1:
+                                prev.next = new InstFPU.FIMUL_DWORD_INTEGER(rm);
+                                break;
+                            case 2:
+                                prev.next = new InstFPU.FICOM_DWORD_INTEGER(rm, false);
+                                break;
+                            case 3:
+                                prev.next = new InstFPU.FICOM_DWORD_INTEGER(rm, true);
+                                break;
+                            case 4:
+                                prev.next = new InstFPU.FISUB_DWORD_INTEGER(rm);
+                                break;
+                            case 5:
+                                prev.next = new InstFPU.FISUBR_DWORD_INTEGER(rm);
+                                break;
+                            case 6:
+                                prev.next = new InstFPU.FIDIV_DWORD_INTEGER(rm);
+                                break;
+                            case 7:
+                                prev.next = new InstFPU.FIDIVR_DWORD_INTEGER(rm);
+                                break;
                         }
                     }
                 }
@@ -2605,22 +3004,38 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU3_normal(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FCMOV_ST0_STj_NCF(rm); break;
-                            case 1: prev.next = new InstFPU.FCMOV_ST0_STj_NZF(rm); break;
-                            case 2: prev.next = new InstFPU.FCMOV_ST0_STj_NCF_AND_NZF(rm); break;
-                            case 3: prev.next = new InstFPU.FCMOV_ST0_STj_NPF(rm); break;
-                            case 4:
-                            {
+                            case 0:
+                                prev.next = new InstFPU.FCMOV_ST0_STj_NCF(rm);
+                                break;
+                            case 1:
+                                prev.next = new InstFPU.FCMOV_ST0_STj_NZF(rm);
+                                break;
+                            case 2:
+                                prev.next = new InstFPU.FCMOV_ST0_STj_NCF_AND_NZF(rm);
+                                break;
+                            case 3:
+                                prev.next = new InstFPU.FCMOV_ST0_STj_NPF(rm);
+                                break;
+                            case 4: {
                                 switch (rm & 7) {
-                                    case 2:prev.next = new InstFPU.FNCLEX(); break;
-                                    case 3:prev.next = new InstFPU.FNINIT(); break;
-                                    default:prev.next = new Inst1.FPU3_normal(rm);
+                                    case 2:
+                                        prev.next = new InstFPU.FNCLEX();
+                                        break;
+                                    case 3:
+                                        prev.next = new InstFPU.FNINIT();
+                                        break;
+                                    default:
+                                        prev.next = new Inst1.FPU3_normal(rm);
 
                                 }
                                 break;
                             }
-                            case 5: prev.next = new InstFPU.FUCOMI_ST0_STj(rm, false); break;
-                            case 6: prev.next = new InstFPU.FCOMI_ST0_STj(rm, false); break;
+                            case 5:
+                                prev.next = new InstFPU.FUCOMI_ST0_STj(rm, false);
+                                break;
+                            case 6:
+                                prev.next = new InstFPU.FCOMI_ST0_STj(rm, false);
+                                break;
                             default:
                                 prev.next = new Inst1.FPU3_normal(rm);
                         }
@@ -2630,14 +3045,30 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU3_ea(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FILD_DWORD_INTEGER(rm); break;
-                            case 1: prev.next = new InstFPU.FISTTP32(rm); break;
-                            case 2: prev.next = new InstFPU.FIST_DWORD_INTEGER(rm, false); break;
-                            case 3: prev.next = new InstFPU.FIST_DWORD_INTEGER(rm, true); break;
-                            case 4: prev.next = new Inst1.FPU3_ea(rm); break;
-                            case 5: prev.next = new InstFPU.FLD_EXTENDED_REAL(rm); break;
-                            case 6: prev.next = new Inst1.FPU3_ea(rm); break;
-                            case 7: prev.next = new InstFPU.FSTP_EXTENDED_REAL(rm); break;
+                            case 0:
+                                prev.next = new InstFPU.FILD_DWORD_INTEGER(rm);
+                                break;
+                            case 1:
+                                prev.next = new InstFPU.FISTTP32(rm);
+                                break;
+                            case 2:
+                                prev.next = new InstFPU.FIST_DWORD_INTEGER(rm, false);
+                                break;
+                            case 3:
+                                prev.next = new InstFPU.FIST_DWORD_INTEGER(rm, true);
+                                break;
+                            case 4:
+                                prev.next = new Inst1.FPU3_ea(rm);
+                                break;
+                            case 5:
+                                prev.next = new InstFPU.FLD_EXTENDED_REAL(rm);
+                                break;
+                            case 6:
+                                prev.next = new Inst1.FPU3_ea(rm);
+                                break;
+                            case 7:
+                                prev.next = new InstFPU.FSTP_EXTENDED_REAL(rm);
+                                break;
                         }
                     }
                 }
@@ -2655,14 +3086,30 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU4_normal(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FADD_STi_ST0(rm, false); break;
-                            case 1: prev.next = new InstFPU.FMUL_STi_ST0(rm, false); break;
-                            case 2: prev.next = new InstFPU.FCOM_STi(rm, false); break;
-                            case 3: prev.next = new InstFPU.FCOM_STi(rm, true); break;
-                            case 4: prev.next = new InstFPU.FSUBR_STi_ST0(rm, false); break;
-                            case 5: prev.next = new InstFPU.FSUB_STi_ST0(rm, false); break;
-                            case 6: prev.next = new InstFPU.FDIVR_STi_ST0(rm, false); break;
-                            case 7: prev.next = new InstFPU.FDIV_STi_ST0(rm, false); break;
+                            case 0:
+                                prev.next = new InstFPU.FADD_STi_ST0(rm, false);
+                                break;
+                            case 1:
+                                prev.next = new InstFPU.FMUL_STi_ST0(rm, false);
+                                break;
+                            case 2:
+                                prev.next = new InstFPU.FCOM_STi(rm, false);
+                                break;
+                            case 3:
+                                prev.next = new InstFPU.FCOM_STi(rm, true);
+                                break;
+                            case 4:
+                                prev.next = new InstFPU.FSUBR_STi_ST0(rm, false);
+                                break;
+                            case 5:
+                                prev.next = new InstFPU.FSUB_STi_ST0(rm, false);
+                                break;
+                            case 6:
+                                prev.next = new InstFPU.FDIVR_STi_ST0(rm, false);
+                                break;
+                            case 7:
+                                prev.next = new InstFPU.FDIV_STi_ST0(rm, false);
+                                break;
                         }
                     }
                 } else {
@@ -2670,14 +3117,30 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU4_ea(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FADD_DOUBLE_REAL(rm); break;
-                            case 1: prev.next = new InstFPU.FMUL_DOUBLE_REAL(rm); break;
-                            case 2: prev.next = new InstFPU.FCOM_DOUBLE_REAL(rm, false); break;
-                            case 3: prev.next = new InstFPU.FCOM_DOUBLE_REAL(rm, true); break;
-                            case 4: prev.next = new InstFPU.FSUB_DOUBLE_REAL(rm); break;
-                            case 5: prev.next = new InstFPU.FSUBR_DOUBLE_REAL(rm); break;
-                            case 6: prev.next = new InstFPU.FDIV_DOUBLE_REAL(rm); break;
-                            case 7: prev.next = new InstFPU.FDIVR_DOUBLE_REAL(rm); break;
+                            case 0:
+                                prev.next = new InstFPU.FADD_DOUBLE_REAL(rm);
+                                break;
+                            case 1:
+                                prev.next = new InstFPU.FMUL_DOUBLE_REAL(rm);
+                                break;
+                            case 2:
+                                prev.next = new InstFPU.FCOM_DOUBLE_REAL(rm, false);
+                                break;
+                            case 3:
+                                prev.next = new InstFPU.FCOM_DOUBLE_REAL(rm, true);
+                                break;
+                            case 4:
+                                prev.next = new InstFPU.FSUB_DOUBLE_REAL(rm);
+                                break;
+                            case 5:
+                                prev.next = new InstFPU.FSUBR_DOUBLE_REAL(rm);
+                                break;
+                            case 6:
+                                prev.next = new InstFPU.FDIV_DOUBLE_REAL(rm);
+                                break;
+                            case 7:
+                                prev.next = new InstFPU.FDIVR_DOUBLE_REAL(rm);
+                                break;
                         }
                     }
                 }
@@ -2695,13 +3158,26 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU5_normal(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FFREE_STi(rm); break;
-                            case 1: prev.next = new InstFPU.FXCH_STi(rm); break;
-                            case 2: prev.next = new InstFPU.FST_STi(rm, false); break;
-                            case 3: prev.next = new InstFPU.FST_STi(rm, true); break;
-                            case 4: prev.next = new InstFPU.FUCOM_STi(rm, false); break;
-                            case 5: prev.next = new InstFPU.FUCOM_STi(rm, true); break;
-                            default: prev.next = new Inst1.FPU5_normal(rm);
+                            case 0:
+                                prev.next = new InstFPU.FFREE_STi(rm);
+                                break;
+                            case 1:
+                                prev.next = new InstFPU.FXCH_STi(rm);
+                                break;
+                            case 2:
+                                prev.next = new InstFPU.FST_STi(rm, false);
+                                break;
+                            case 3:
+                                prev.next = new InstFPU.FST_STi(rm, true);
+                                break;
+                            case 4:
+                                prev.next = new InstFPU.FUCOM_STi(rm, false);
+                                break;
+                            case 5:
+                                prev.next = new InstFPU.FUCOM_STi(rm, true);
+                                break;
+                            default:
+                                prev.next = new Inst1.FPU5_normal(rm);
                         }
                     }
                 } else {
@@ -2709,14 +3185,30 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU5_ea(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FLD_DOUBLE_REAL(rm); break;
-                            case 1: prev.next = new InstFPU.FISTTP64(rm); break;
-                            case 2: prev.next = new InstFPU.FST_DOUBLE_REAL(rm, false); break;
-                            case 3: prev.next = new InstFPU.FST_DOUBLE_REAL(rm, true); break;
-                            case 4: prev.next = new InstFPU.FRSTOR(rm); break;
-                            case 5: prev.next = new Inst1.FPU5_ea(rm); break;
-                            case 6: prev.next = new InstFPU.FNSAVE(rm); break;
-                            case 7: prev.next = new InstFPU.FNSTSW(rm); break;
+                            case 0:
+                                prev.next = new InstFPU.FLD_DOUBLE_REAL(rm);
+                                break;
+                            case 1:
+                                prev.next = new InstFPU.FISTTP64(rm);
+                                break;
+                            case 2:
+                                prev.next = new InstFPU.FST_DOUBLE_REAL(rm, false);
+                                break;
+                            case 3:
+                                prev.next = new InstFPU.FST_DOUBLE_REAL(rm, true);
+                                break;
+                            case 4:
+                                prev.next = new InstFPU.FRSTOR(rm);
+                                break;
+                            case 5:
+                                prev.next = new Inst1.FPU5_ea(rm);
+                                break;
+                            case 6:
+                                prev.next = new InstFPU.FNSAVE(rm);
+                                break;
+                            case 7:
+                                prev.next = new InstFPU.FNSTSW(rm);
+                                break;
                         }
                     }
                 }
@@ -2734,21 +3226,34 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU6_normal(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FADD_STi_ST0(rm, true); break;
-                            case 1: prev.next = new InstFPU.FMUL_STi_ST0(rm, true); break;
-                            case 2: prev.next = new InstFPU.FCOM_STi(rm, true); break;
-                            case 3:
-                            {
+                            case 0:
+                                prev.next = new InstFPU.FADD_STi_ST0(rm, true);
+                                break;
+                            case 1:
+                                prev.next = new InstFPU.FMUL_STi_ST0(rm, true);
+                                break;
+                            case 2:
+                                prev.next = new InstFPU.FCOM_STi(rm, true);
+                                break;
+                            case 3: {
                                 if ((rm & 7) == 1)
                                     prev.next = new InstFPU.FCOMPP();
                                 else
                                     prev.next = new Inst1.FPU6_normal(rm);
                             }
                             break;
-                            case 4: prev.next = new InstFPU.FSUBR_STi_ST0(rm, true); break;
-                            case 5: prev.next = new InstFPU.FSUB_STi_ST0(rm, true); break;
-                            case 6: prev.next = new InstFPU.FDIVR_STi_ST0(rm, true); break;
-                            case 7: prev.next = new InstFPU.FDIV_STi_ST0(rm, true); break;
+                            case 4:
+                                prev.next = new InstFPU.FSUBR_STi_ST0(rm, true);
+                                break;
+                            case 5:
+                                prev.next = new InstFPU.FSUB_STi_ST0(rm, true);
+                                break;
+                            case 6:
+                                prev.next = new InstFPU.FDIVR_STi_ST0(rm, true);
+                                break;
+                            case 7:
+                                prev.next = new InstFPU.FDIV_STi_ST0(rm, true);
+                                break;
                         }
                     }
                 } else {
@@ -2756,14 +3261,30 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU6_ea(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FIADD_WORD_INTEGER(rm); break;
-                            case 1: prev.next = new InstFPU.FIMUL_WORD_INTEGER(rm); break;
-                            case 2: prev.next = new InstFPU.FICOM_WORD_INTEGER(rm, false); break;
-                            case 3: prev.next = new InstFPU.FICOM_WORD_INTEGER(rm, true); break;
-                            case 4: prev.next = new InstFPU.FISUB_WORD_INTEGER(rm); break;
-                            case 5: prev.next = new InstFPU.FISUBR_WORD_INTEGER(rm); break;
-                            case 6: prev.next = new InstFPU.FIDIV_WORD_INTEGER(rm); break;
-                            case 7: prev.next = new InstFPU.FIDIVR_WORD_INTEGER(rm); break;
+                            case 0:
+                                prev.next = new InstFPU.FIADD_WORD_INTEGER(rm);
+                                break;
+                            case 1:
+                                prev.next = new InstFPU.FIMUL_WORD_INTEGER(rm);
+                                break;
+                            case 2:
+                                prev.next = new InstFPU.FICOM_WORD_INTEGER(rm, false);
+                                break;
+                            case 3:
+                                prev.next = new InstFPU.FICOM_WORD_INTEGER(rm, true);
+                                break;
+                            case 4:
+                                prev.next = new InstFPU.FISUB_WORD_INTEGER(rm);
+                                break;
+                            case 5:
+                                prev.next = new InstFPU.FISUBR_WORD_INTEGER(rm);
+                                break;
+                            case 6:
+                                prev.next = new InstFPU.FIDIV_WORD_INTEGER(rm);
+                                break;
+                            case 7:
+                                prev.next = new InstFPU.FIDIVR_WORD_INTEGER(rm);
+                                break;
                         }
                     }
                 }
@@ -2781,21 +3302,32 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU7_normal(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FFREEP_STi(rm); break;
-                            case 1: prev.next = new InstFPU.FXCH_STi(rm); break;
+                            case 0:
+                                prev.next = new InstFPU.FFREEP_STi(rm);
+                                break;
+                            case 1:
+                                prev.next = new InstFPU.FXCH_STi(rm);
+                                break;
                             case 2:
-                            case 3: prev.next = new InstFPU.FST_STi(rm, true); break;
-                            case 4:
-                            {
-                                if ((rm & 7)==0)
+                            case 3:
+                                prev.next = new InstFPU.FST_STi(rm, true);
+                                break;
+                            case 4: {
+                                if ((rm & 7) == 0)
                                     prev.next = new InstFPU.FNSTSW_AX();
                                 else
                                     prev.next = new Inst1.FPU7_normal(rm);
                             }
                             break;
-                            case 5: prev.next = new InstFPU.FUCOMI_ST0_STj(rm, true); break;
-                            case 6: prev.next = new InstFPU.FCOMI_ST0_STj(rm, true); break;
-                            case 7: prev.next = new Inst1.FPU7_normal(rm); break;
+                            case 5:
+                                prev.next = new InstFPU.FUCOMI_ST0_STj(rm, true);
+                                break;
+                            case 6:
+                                prev.next = new InstFPU.FCOMI_ST0_STj(rm, true);
+                                break;
+                            case 7:
+                                prev.next = new Inst1.FPU7_normal(rm);
+                                break;
                         }
                     }
                 } else {
@@ -2803,14 +3335,30 @@ public class Prefix_none extends Helper {
                         prev.next = new Inst1.FPU7_ea(rm);
                     } else {
                         switch ((rm >> 3) & 7) {
-                            case 0: prev.next = new InstFPU.FILD_WORD_INTEGER(rm); break;
-                            case 1: prev.next = new InstFPU.FISTTP16(rm); break;
-                            case 2: prev.next = new InstFPU.FIST_WORD_INTEGER(rm, false); break;
-                            case 3: prev.next = new InstFPU.FIST_WORD_INTEGER(rm, true); break;
-                            case 4: prev.next = new InstFPU.FBLD_PACKED_BCD(rm); break;
-                            case 5: prev.next = new InstFPU.FILD_QWORD_INTEGER(rm); break;
-                            case 6: prev.next = new InstFPU.FBSTP_PACKED_BCD(rm); break;
-                            case 7: prev.next = new InstFPU.FISTP_QWORD_INTEGER(rm); break;
+                            case 0:
+                                prev.next = new InstFPU.FILD_WORD_INTEGER(rm);
+                                break;
+                            case 1:
+                                prev.next = new InstFPU.FISTTP16(rm);
+                                break;
+                            case 2:
+                                prev.next = new InstFPU.FIST_WORD_INTEGER(rm, false);
+                                break;
+                            case 3:
+                                prev.next = new InstFPU.FIST_WORD_INTEGER(rm, true);
+                                break;
+                            case 4:
+                                prev.next = new InstFPU.FBLD_PACKED_BCD(rm);
+                                break;
+                            case 5:
+                                prev.next = new InstFPU.FILD_QWORD_INTEGER(rm);
+                                break;
+                            case 6:
+                                prev.next = new InstFPU.FBSTP_PACKED_BCD(rm);
+                                break;
+                            case 7:
+                                prev.next = new InstFPU.FISTP_QWORD_INTEGER(rm);
+                                break;
                         }
                     }
                 }
@@ -2822,7 +3370,7 @@ public class Prefix_none extends Helper {
         /* LOOPNZ */
         ops[0xe0] = new Decode() {
             final public int call(Op prev) {
-                if ((prefixes & Core.PREFIX_ADDR)!=0) {
+                if ((prefixes & Core.PREFIX_ADDR) != 0) {
                     prev.next = new Inst1.Loopnz32();
                 } else {
                     prev.next = new Inst1.Loopnz16();
@@ -2834,7 +3382,7 @@ public class Prefix_none extends Helper {
         /* LOOPZ */
         ops[0xe1] = new Decode() {
             final public int call(Op prev) {
-                if ((prefixes & Core.PREFIX_ADDR)!=0) {
+                if ((prefixes & Core.PREFIX_ADDR) != 0) {
                     prev.next = new Inst1.Loopz32();
                 } else {
                     prev.next = new Inst1.Loopz16();
@@ -2846,7 +3394,7 @@ public class Prefix_none extends Helper {
         /* LOOP */
         ops[0xe2] = new Decode() {
             final public int call(Op prev) {
-                if ((prefixes & Core.PREFIX_ADDR)!=0) {
+                if ((prefixes & Core.PREFIX_ADDR) != 0) {
                     prev.next = new Inst1.Loop32();
                 } else {
                     prev.next = new Inst1.Loop16();
@@ -2984,7 +3532,7 @@ public class Prefix_none extends Helper {
         /* REPNZ */
         ops[0xf2] = new Decode() {
             final public int call(Op prev) {
-                prefixes|=Core.PREFIX_REP;
+                prefixes |= Core.PREFIX_REP;
                 Core.rep_zero = false;
                 return RESULT_CONTINUE;
             }
@@ -2994,7 +3542,7 @@ public class Prefix_none extends Helper {
         /* REPZ */
         ops[0xf3] = new Decode() {
             final public int call(Op prev) {
-                prefixes|=Core.PREFIX_REP;
+                prefixes |= Core.PREFIX_REP;
                 Core.rep_zero = true;
                 return RESULT_CONTINUE;
             }
@@ -3022,60 +3570,59 @@ public class Prefix_none extends Helper {
         /* GRP3 Eb(,Ib) */
         ops[0xf6] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                int which=(rm>>3)&7;
+                int rm = decode_fetchb();
+                int which = (rm >> 3) & 7;
                 switch (which) {
-                case 0x00:											/* TEST Eb,Ib */
-                case 0x01:											/* TEST Eb,Ib Undocumented*/
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Grp3.Testb_reg(rm);
-                    }
-                    else {
-                        prev.next = new Grp3.Testb_mem(rm);
-                    }
-                    break;
-                case 0x02:											/* NOT Eb */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Grp3.NotEb_reg(rm);
-                    } else {
-                        prev.next = new Grp3.NotEb_mem(rm);
-                    }
-                    break;
-                case 0x03:                                          /* NEG Eb */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Grp3.NegEb_reg(rm);
-                    } else {
-                        prev.next = new Grp3.NegEb_mem(rm);
-                    }
-                    break;
-                case 0x04:											/* MUL AL,Eb */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Grp3.MulAlEb_reg(rm);
-                    } else {
-                        prev.next = new Grp3.MulAlEb_mem(rm);
-                    }
-                    break;
-                case 0x05:											/* IMUL AL,Eb */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Grp3.IMulAlEb_reg(rm);
-                    } else {
-                        prev.next = new Grp3.IMulAlEb_mem(rm);
-                    }
-                    break;
-                case 0x06:											/* DIV Eb */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Grp3.DivAlEb_reg(rm);
-                    } else {
-                        prev.next = new Grp3.DivAlEb_mem(rm);
-                    }
-                    break;
-                case 0x07:											/* IDIV Eb */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Grp3.IDivAlEb_reg(rm);
-                    } else {
-                        prev.next = new Grp3.IDivAlEb_mem(rm);
-                    }
-                    break;
+                    case 0x00:                                            /* TEST Eb,Ib */
+                    case 0x01:                                            /* TEST Eb,Ib Undocumented*/
+                        if (rm >= 0xc0) {
+                            prev.next = new Grp3.Testb_reg(rm);
+                        } else {
+                            prev.next = new Grp3.Testb_mem(rm);
+                        }
+                        break;
+                    case 0x02:                                            /* NOT Eb */
+                        if (rm >= 0xc0) {
+                            prev.next = new Grp3.NotEb_reg(rm);
+                        } else {
+                            prev.next = new Grp3.NotEb_mem(rm);
+                        }
+                        break;
+                    case 0x03:                                          /* NEG Eb */
+                        if (rm >= 0xc0) {
+                            prev.next = new Grp3.NegEb_reg(rm);
+                        } else {
+                            prev.next = new Grp3.NegEb_mem(rm);
+                        }
+                        break;
+                    case 0x04:                                            /* MUL AL,Eb */
+                        if (rm >= 0xc0) {
+                            prev.next = new Grp3.MulAlEb_reg(rm);
+                        } else {
+                            prev.next = new Grp3.MulAlEb_mem(rm);
+                        }
+                        break;
+                    case 0x05:                                            /* IMUL AL,Eb */
+                        if (rm >= 0xc0) {
+                            prev.next = new Grp3.IMulAlEb_reg(rm);
+                        } else {
+                            prev.next = new Grp3.IMulAlEb_mem(rm);
+                        }
+                        break;
+                    case 0x06:                                            /* DIV Eb */
+                        if (rm >= 0xc0) {
+                            prev.next = new Grp3.DivAlEb_reg(rm);
+                        } else {
+                            prev.next = new Grp3.DivAlEb_mem(rm);
+                        }
+                        break;
+                    case 0x07:                                            /* IDIV Eb */
+                        if (rm >= 0xc0) {
+                            prev.next = new Grp3.IDivAlEb_reg(rm);
+                        } else {
+                            prev.next = new Grp3.IDivAlEb_mem(rm);
+                        }
+                        break;
                 }
                 return RESULT_HANDLED;
             }
@@ -3085,60 +3632,59 @@ public class Prefix_none extends Helper {
         /* GRP3 Ew(,Iw) */
         ops[0xf7] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                int which=(rm>>3)&7;
+                int rm = decode_fetchb();
+                int which = (rm >> 3) & 7;
                 switch (which) {
-                case 0x00:											/* TEST Ew,Iw */
-                case 0x01:											/* TEST Ew,Iw Undocumented*/
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Grp3.Testw_reg(rm);
-                    }
-                    else {
-                        prev.next = new Grp3.Testw_mem(rm);
-                    }
-                    break;
-                case 0x02:											/* NOT Ew */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Grp3.NotEw_reg(rm);
-                    } else {
-                        prev.next = new Grp3.NotEw_mem(rm);
-                    }
-                    break;
-                case 0x03:											/* NEG Ew */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Grp3.NegEw_reg(rm);
-                    } else {
-                        prev.next = new Grp3.NegEw_mem(rm);
-                    }
-                    break;
-                case 0x04:											/* MUL AX,Ew */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Grp3.MulAxEw_reg(rm);
-                    } else {
-                        prev.next = new Grp3.MulAxEw_mem(rm);
-                    }
-                    break;
-                case 0x05:											/* IMUL AX,Ew */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Grp3.IMulAxEw_reg(rm);
-                    } else {
-                        prev.next = new Grp3.IMulAxEw_mem(rm);
-                    }
-                    break;
-                case 0x06:											/* DIV Ew */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Grp3.DivAxEw_reg(rm);
-                    } else {
-                        prev.next = new Grp3.DivAxEw_mem(rm);
-                    }
-                    break;
-                case 0x07:											/* IDIV Ew */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Grp3.IDivAxEw_reg(rm);
-                    } else {
-                        prev.next = new Grp3.IDivAxEw_mem(rm);
-                    }
-                    break;
+                    case 0x00:                                            /* TEST Ew,Iw */
+                    case 0x01:                                            /* TEST Ew,Iw Undocumented*/
+                        if (rm >= 0xc0) {
+                            prev.next = new Grp3.Testw_reg(rm);
+                        } else {
+                            prev.next = new Grp3.Testw_mem(rm);
+                        }
+                        break;
+                    case 0x02:                                            /* NOT Ew */
+                        if (rm >= 0xc0) {
+                            prev.next = new Grp3.NotEw_reg(rm);
+                        } else {
+                            prev.next = new Grp3.NotEw_mem(rm);
+                        }
+                        break;
+                    case 0x03:                                            /* NEG Ew */
+                        if (rm >= 0xc0) {
+                            prev.next = new Grp3.NegEw_reg(rm);
+                        } else {
+                            prev.next = new Grp3.NegEw_mem(rm);
+                        }
+                        break;
+                    case 0x04:                                            /* MUL AX,Ew */
+                        if (rm >= 0xc0) {
+                            prev.next = new Grp3.MulAxEw_reg(rm);
+                        } else {
+                            prev.next = new Grp3.MulAxEw_mem(rm);
+                        }
+                        break;
+                    case 0x05:                                            /* IMUL AX,Ew */
+                        if (rm >= 0xc0) {
+                            prev.next = new Grp3.IMulAxEw_reg(rm);
+                        } else {
+                            prev.next = new Grp3.IMulAxEw_mem(rm);
+                        }
+                        break;
+                    case 0x06:                                            /* DIV Ew */
+                        if (rm >= 0xc0) {
+                            prev.next = new Grp3.DivAxEw_reg(rm);
+                        } else {
+                            prev.next = new Grp3.DivAxEw_mem(rm);
+                        }
+                        break;
+                    case 0x07:                                            /* IDIV Ew */
+                        if (rm >= 0xc0) {
+                            prev.next = new Grp3.IDivAxEw_reg(rm);
+                        } else {
+                            prev.next = new Grp3.IDivAxEw_mem(rm);
+                        }
+                        break;
                 }
                 return RESULT_HANDLED;
             }
@@ -3201,31 +3747,29 @@ public class Prefix_none extends Helper {
         /* GRP4 Eb */
         ops[0xfe] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                int which=(rm>>3)&7;
+                int rm = decode_fetchb();
+                int which = (rm >> 3) & 7;
                 switch (which) {
-                case 0x00:										/* INC Eb */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Inst1.Incb_reg(rm);
-                    }
-                    else {
-                        prev.next = new Inst1.Incb_mem(rm);
-                    }
-                    break;
-                case 0x01:										/* DEC Eb */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Inst1.Decb_reg(rm);
-                    }
-                    else {
-                        prev.next = new Inst1.Decb_mem(rm);
-                    }
-                    break;
-                case 0x07:										/* CallBack */
-                    prev.next = new Inst1.Callback(decode_fetchw());
-                    return RESULT_CALLBACK;
-                default:
-                    prev.next = new Inst1.Illegal("Illegal GRP4 Call "+((rm>>3) & 7));
-                    return RESULT_JUMP;
+                    case 0x00:                                        /* INC Eb */
+                        if (rm >= 0xc0) {
+                            prev.next = new Inst1.Incb_reg(rm);
+                        } else {
+                            prev.next = new Inst1.Incb_mem(rm);
+                        }
+                        break;
+                    case 0x01:                                        /* DEC Eb */
+                        if (rm >= 0xc0) {
+                            prev.next = new Inst1.Decb_reg(rm);
+                        } else {
+                            prev.next = new Inst1.Decb_mem(rm);
+                        }
+                        break;
+                    case 0x07:                                        /* CallBack */
+                        prev.next = new Inst1.Callback(decode_fetchw());
+                        return RESULT_CALLBACK;
+                    default:
+                        prev.next = new Inst1.Illegal("Illegal GRP4 Call " + ((rm >> 3) & 7));
+                        return RESULT_JUMP;
                 }
                 return RESULT_HANDLED;
             }
@@ -3235,64 +3779,61 @@ public class Prefix_none extends Helper {
         /* GRP5 Ew */
         ops[0xff] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                int which=(rm>>3)&7;
+                int rm = decode_fetchb();
+                int which = (rm >> 3) & 7;
                 switch (which) {
-                case 0x00:										/* INC Ew */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Inst1.Incw_reg(rm);
-                    }
-                    else {
-                        prev.next = new Inst1.Incw_mem(rm);
-                    }
-                    break;
-                case 0x01:										/* DEC Ew */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Inst1.Decw_reg(rm);
-                    }
-                    else {
-                        prev.next = new Inst1.Decw_mem(rm);
-                    }
-                    break;
-                case 0x02:										/* CALL Ev */
-                    if (rm >= 0xc0 ) {
-                        prev.next = new Inst1.CallEv_reg(rm);
-                    }
-                    else {
-                        prev.next = new Inst1.CallEv_mem(rm);
-                    }
-                    return RESULT_JUMP;
-                case 0x03:										/* CALL Ep */
-                    if (rm >= 0xc0) {
-                        prev.next = new Inst1.Illegal("");
-                    } else {
-                        prev.next = new Inst1.CallEp(rm);
-                    }
-                    return RESULT_JUMP;
-                case 0x04:										/* JMP Ev */
-                    if (rm >= 0xc0) {
-                        prev.next = new Inst1.JmpEv_reg(rm);
-                    } else {
-                        prev.next = new Inst1.JmpEv_mem(rm);
-                    }
-                    return RESULT_JUMP;
-                case 0x05:										/* JMP Ep */
-                    if (rm >= 0xc0) {
-                        prev.next = new Inst1.Illegal("");
-                    } else {
-                        prev.next = new Inst1.JmpEp(rm);
-                    }
-                    return RESULT_JUMP;
-                case 0x06:										/* PUSH Ev */
-                    if (rm >= 0xc0) {
-                        prev.next = new Inst1.PushEv_reg(rm);
-                    } else {
-                        prev.next = new Inst1.PushEv_mem(rm);
-                    }
-                    break;
-                default:
-                    prev.next = new Inst1.Illegal("CPU:GRP5:Illegal Call "+Integer.toString(which,16));
-                    return RESULT_JUMP;
+                    case 0x00:                                        /* INC Ew */
+                        if (rm >= 0xc0) {
+                            prev.next = new Inst1.Incw_reg(rm);
+                        } else {
+                            prev.next = new Inst1.Incw_mem(rm);
+                        }
+                        break;
+                    case 0x01:                                        /* DEC Ew */
+                        if (rm >= 0xc0) {
+                            prev.next = new Inst1.Decw_reg(rm);
+                        } else {
+                            prev.next = new Inst1.Decw_mem(rm);
+                        }
+                        break;
+                    case 0x02:                                        /* CALL Ev */
+                        if (rm >= 0xc0) {
+                            prev.next = new Inst1.CallEv_reg(rm);
+                        } else {
+                            prev.next = new Inst1.CallEv_mem(rm);
+                        }
+                        return RESULT_JUMP;
+                    case 0x03:                                        /* CALL Ep */
+                        if (rm >= 0xc0) {
+                            prev.next = new Inst1.Illegal("");
+                        } else {
+                            prev.next = new Inst1.CallEp(rm);
+                        }
+                        return RESULT_JUMP;
+                    case 0x04:                                        /* JMP Ev */
+                        if (rm >= 0xc0) {
+                            prev.next = new Inst1.JmpEv_reg(rm);
+                        } else {
+                            prev.next = new Inst1.JmpEv_mem(rm);
+                        }
+                        return RESULT_JUMP;
+                    case 0x05:                                        /* JMP Ep */
+                        if (rm >= 0xc0) {
+                            prev.next = new Inst1.Illegal("");
+                        } else {
+                            prev.next = new Inst1.JmpEp(rm);
+                        }
+                        return RESULT_JUMP;
+                    case 0x06:                                        /* PUSH Ev */
+                        if (rm >= 0xc0) {
+                            prev.next = new Inst1.PushEv_reg(rm);
+                        } else {
+                            prev.next = new Inst1.PushEv_mem(rm);
+                        }
+                        break;
+                    default:
+                        prev.next = new Inst1.Illegal("CPU:GRP5:Illegal Call " + Integer.toString(which, 16));
+                        return RESULT_JUMP;
                 }
                 return RESULT_HANDLED;
             }

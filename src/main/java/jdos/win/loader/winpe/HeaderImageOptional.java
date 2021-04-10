@@ -9,7 +9,7 @@ import java.io.OutputStream;
 // From Wine project
 public class HeaderImageOptional {
     public final static int SIZE = 0xE0;
-         
+
     public final static int IMAGE_DIRECTORY_ENTRY_EXPORT = 0;
     public final static int IMAGE_DIRECTORY_ENTRY_IMPORT = 1;
     public final static int IMAGE_DIRECTORY_ENTRY_RESOURCE = 2;
@@ -25,12 +25,6 @@ public class HeaderImageOptional {
     public final static int IMAGE_DIRECTORY_ENTRY_IAT = 12;  /* Import Address Table */
     public final static int IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT = 13;
     public final static int IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR = 14;
-    
-    public static class ImageDataDirectory {
-        public long VirtualAddress;
-        public long Size;
-    }
-
     /* Standard fields */
     public int Magic; /* 0x10b or 0x107 */    /* 0x00 */
     public short MajorLinkerVersion;
@@ -41,7 +35,6 @@ public class HeaderImageOptional {
     public long AddressOfEntryPoint;            /* 0x10 */
     public long BaseOfCode;
     public long BaseOfData;
-
     /* NT additional fields */
     public long ImageBase;
     public long SectionAlignment;                /* 0x20 */
@@ -65,7 +58,6 @@ public class HeaderImageOptional {
     public long LoaderFlags;
     public long NumberOfRvaAndSizes;
     public ImageDataDirectory[] DataDirectory = new ImageDataDirectory[16]; /* 0x60 */
-    /* 0xE0 */
 
     public void load(OutputStream os, WinFile fis) throws IOException {
         byte[] buffer = new byte[SIZE];
@@ -102,10 +94,16 @@ public class HeaderImageOptional {
         SizeOfHeapCommit = is.readUnsignedInt();
         LoaderFlags = is.readUnsignedInt();
         NumberOfRvaAndSizes = is.readUnsignedInt();
-        for (int i=0;i<DataDirectory.length;i++) {
+        for (int i = 0; i < DataDirectory.length; i++) {
             DataDirectory[i] = new ImageDataDirectory();
             DataDirectory[i].VirtualAddress = is.readUnsignedInt();
             DataDirectory[i].Size = is.readUnsignedInt();
         }
+    }
+    /* 0xE0 */
+
+    public static class ImageDataDirectory {
+        public long VirtualAddress;
+        public long Size;
     }
 }

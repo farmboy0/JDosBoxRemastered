@@ -5,6 +5,8 @@ import jdos.win.builtin.WinAPI;
 
 public class WinSize extends WinAPI {
     public static final int SIZE = 8;
+    public int cx;
+    public int cy;
 
     public WinSize() {
     }
@@ -16,12 +18,12 @@ public class WinSize extends WinAPI {
 
     public void write(int address) {
         Memory.mem_writed(address, cx);
-        Memory.mem_writed(address+4, cy);
+        Memory.mem_writed(address + 4, cy);
     }
 
     public void copy(int address) {
         this.cx = Memory.mem_readd(address);
-        this.cy = Memory.mem_readd(address+4);
+        this.cy = Memory.mem_readd(address + 4);
     }
 
     public int allocTemp() {
@@ -29,7 +31,4 @@ public class WinSize extends WinAPI {
         write(p);
         return p;
     }
-
-    public int cx;
-    public int cy;
 }

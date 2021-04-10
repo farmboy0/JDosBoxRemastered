@@ -5,16 +5,15 @@ import jdos.win.utils.FilePath;
 import javax.sound.midi.*;
 
 public class WinMidi extends WinMCI {
-    static public WinMidi create() {
-        return new WinMidi(nextObjectId());
-    }
-
     private FilePath file;
     private Sequence sequence;
     private Sequencer sequencer;
-
     public WinMidi(int id) {
         super(id);
+    }
+
+    static public WinMidi create() {
+        return new WinMidi(nextObjectId());
     }
 
     public void play(int from, int to, int hWndCallback, boolean wait) {
@@ -47,7 +46,7 @@ public class WinMidi extends WinMCI {
             sequencer.setSequence(sequence);
             sequencer.addMetaEventListener(new MetaEventListener() {
                 public void meta(MetaMessage meta) {
-                    if ( meta.getType() == 47 ) {
+                    if (meta.getType() == 47) {
                         if (hWnd != 0)
                             sendNotification(MCI_NOTIFY_SUCCESSFUL);
                     }

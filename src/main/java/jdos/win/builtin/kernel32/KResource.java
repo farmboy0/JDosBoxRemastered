@@ -18,7 +18,7 @@ public class KResource extends WinAPI {
             hModule = WinSystem.getCurrentProcess().mainModule.getHandle();
         Module m = WinSystem.getCurrentProcess().loader.getModuleByHandle(hModule);
         if (m instanceof NativeModule) {
-            NativeModule module = (NativeModule)m;
+            NativeModule module = (NativeModule) m;
             return module.getAddressOfResource(lpType, lpName);
         } else {
             Win.panic("FindResourceA currently does not support loading a resource from a builtin module");

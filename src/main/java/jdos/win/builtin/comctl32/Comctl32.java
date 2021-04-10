@@ -9,6 +9,7 @@ public class Comctl32 extends BuiltinModule {
 
         add(Comctl32.class, "InitCommonControls", new String[0], 17);
     }
+
     // void InitCommonControls(void);
     public static void InitCommonControls() {
     }

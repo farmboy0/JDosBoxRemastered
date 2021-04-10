@@ -25,12 +25,14 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 public class BuiltinModule extends Module {
-    private Hashtable<String, Callback.Handler> functions = new Hashtable<String, Callback.Handler>();
-    private String fileName;
-    private Hashtable<String, Integer> registeredCallbacks = new Hashtable<String, Integer>();
+    public static int indent = 0;
+    public static boolean inPre = false;
+    private static long startTime;
     public Loader loader;
-    private Hashtable<Integer, String> ordinalToName = new Hashtable<Integer, String>();
-
+    private final Hashtable<String, Callback.Handler> functions = new Hashtable<String, Callback.Handler>();
+    private final String fileName;
+    private final Hashtable<String, Integer> registeredCallbacks = new Hashtable<String, Integer>();
+    private final Hashtable<Integer, String> ordinalToName = new Hashtable<Integer, String>();
     public BuiltinModule(Loader loader, String name, int handle) {
         super(handle);
         this.name = name.substring(0, name.lastIndexOf("."));
@@ -47,7 +49,7 @@ public class BuiltinModule extends Module {
         } else if (desc.startsWith("(STRING)")) {
             System.out.print(desc.substring(8));
             System.out.print("=");
-            if (IS_INTRESOURCE(value) || value==0) {
+            if (IS_INTRESOURCE(value) || value == 0) {
                 System.out.print(value.toString());
             } else {
                 System.out.print(StringUtil.getString(value));
@@ -58,7 +60,7 @@ public class BuiltinModule extends Module {
         } else if (desc.startsWith("(STRINGW)")) {
             System.out.print(desc.substring(9));
             System.out.print("=");
-            if (IS_INTRESOURCE(value) || value==0) {
+            if (IS_INTRESOURCE(value) || value == 0) {
                 System.out.print(value.toString());
             } else {
                 System.out.print(StringUtil.getStringW(value));
@@ -69,7 +71,7 @@ public class BuiltinModule extends Module {
         } else if (desc.startsWith("(STRINGN")) {
             System.out.print(desc.substring(10));
             System.out.print("=");
-            if (IS_INTRESOURCE(value) || value==0) {
+            if (IS_INTRESOURCE(value) || value == 0) {
                 System.out.print(value.toString());
             } else {
                 System.out.print(StringUtil.getString(value, fullArgs[Integer.parseInt(desc.substring(8, 9))]));
@@ -105,7 +107,7 @@ public class BuiltinModule extends Module {
                 System.out.print("(hWnd=");
                 System.out.print(readd(value));
                 System.out.print(" msg=0x");
-                System.out.print(Ptr.toString(readd(value+4)));
+                System.out.print(Ptr.toString(readd(value + 4)));
                 System.out.print(")@0x");
                 System.out.print(Ptr.toString(value));
             }
@@ -132,9 +134,9 @@ public class BuiltinModule extends Module {
                 System.out.print("(style=0x");
                 System.out.print(Ptr.toString(readd(value)));
                 System.out.print(" proc=0x");
-                System.out.print(Ptr.toString(readd(value+4)));
+                System.out.print(Ptr.toString(readd(value + 4)));
                 System.out.print(" name=");
-                System.out.print(StringUtil.getString(value+36));
+                System.out.print(StringUtil.getString(value + 36));
                 System.out.print(")@0x");
                 System.out.print(Ptr.toString(value));
             }
@@ -161,12 +163,12 @@ public class BuiltinModule extends Module {
                 System.out.print("(height=");
                 System.out.print(readd(value));
                 System.out.print(" weight=");
-                System.out.print(readd(value+16));
+                System.out.print(readd(value + 16));
                 System.out.print(" name=");
-                if (readd(value+52)==0)
+                if (readd(value + 52) == 0)
                     System.out.print("NULL");
                 else
-                    System.out.print(StringUtil.getString(value+52));
+                    System.out.print(StringUtil.getString(value + 52));
                 System.out.print(")@0x");
                 System.out.print(Ptr.toString(value));
             }
@@ -179,7 +181,7 @@ public class BuiltinModule extends Module {
                 System.out.print("(");
                 System.out.print(readd(value));
                 System.out.print(",");
-                System.out.print(readd(value+4));
+                System.out.print(readd(value + 4));
                 System.out.print(")@0x");
                 System.out.print(Ptr.toString(value));
             }
@@ -192,7 +194,7 @@ public class BuiltinModule extends Module {
                 System.out.print("(");
                 System.out.print(readd(value));
                 System.out.print(",");
-                System.out.print(readd(value+4));
+                System.out.print(readd(value + 4));
                 System.out.print(")@0x");
                 System.out.print(Ptr.toString(value));
             }
@@ -205,12 +207,12 @@ public class BuiltinModule extends Module {
                 System.out.print("(");
                 System.out.print(readd(value));
                 System.out.print(",");
-                System.out.print(readd(value+4));
+                System.out.print(readd(value + 4));
                 System.out.print(")-");
                 System.out.print("(");
-                System.out.print(readd(value+8));
+                System.out.print(readd(value + 8));
                 System.out.print(",");
-                System.out.print(readd(value+12));
+                System.out.print(readd(value + 12));
                 System.out.print(")@0x");
                 System.out.print(Ptr.toString(value));
             }
@@ -223,43 +225,40 @@ public class BuiltinModule extends Module {
                 System.out.print("(height=");
                 System.out.print(readd(value));
                 System.out.print(" ascent=");
-                System.out.print(readd(value+4));
+                System.out.print(readd(value + 4));
                 System.out.print(" descent=");
-                System.out.print(readd(value+8));
+                System.out.print(readd(value + 8));
                 System.out.print(" aveCharWidth");
-                System.out.print(readd(value+20));
+                System.out.print(readd(value + 20));
                 System.out.print(" maxCharWidth");
-                System.out.print(readd(value+24));
+                System.out.print(readd(value + 24));
                 System.out.print(" weight");
-                System.out.print(readd(value+28));
+                System.out.print(readd(value + 28));
                 System.out.print(")@0x");
                 System.out.print(Ptr.toString(value));
             }
-        }else {
+        } else {
             System.out.print(desc);
             System.out.print("=");
             System.out.print(value);
         }
     }
 
-    private static long startTime;
-    public static int indent = 0;
-    public static boolean inPre = false;
     private static void preLog(String name, Integer[] args, String[] params) {
         startTime = System.currentTimeMillis();
         if (inPre)
             System.out.println();
         inPre = true;
-        for (int i=0;i<indent;i++) {
+        for (int i = 0; i < indent; i++) {
             System.out.print("    ");
         }
         indent++;
         System.out.print(Ptr.toString(CPU_Regs.reg_eip));
         System.out.print(": ");
         System.out.print(name);
-        for (int i=0;i<args.length;i++) {
+        for (int i = 0; i < args.length; i++) {
             System.out.print(" ");
-            if (params != null && i<params.length) {
+            if (params != null && i < params.length) {
                 printParam(args[i], params[i], args);
             } else {
                 System.out.print(args[i].toString());
@@ -270,10 +269,10 @@ public class BuiltinModule extends Module {
     private static void postLog(String name, Integer result, String desc, Integer[] args, String[] params) {
         indent--;
         if (!inPre) {
-            for (int i=0;i<indent;i++) {
+            for (int i = 0; i < indent; i++) {
                 System.out.print("    ");
             }
-            System.out.print("RETURNED "+name);
+            System.out.print("RETURNED " + name);
         }
         inPre = false;
         if (result != null) {
@@ -281,158 +280,20 @@ public class BuiltinModule extends Module {
                 System.out.print(" ");
                 printParam(result, desc, null);
             } else {
-                System.out.print(" result="+result.toString());
+                System.out.print(" result=" + result.toString());
                 System.out.print("(");
                 System.out.print(Ptr.toString(result));
                 System.out.print(")");
             }
         }
         if (params != null && args != null) {
-            for (int i=args.length+1;i<params.length;i++) {
+            for (int i = args.length + 1; i < params.length; i++) {
                 String index = params[i].substring(0, 2);
                 System.out.print(" ");
                 printParam(args[Integer.parseInt(index)], params[i].substring(2), args);
             }
         }
-        System.out.println(" time="+(System.currentTimeMillis()-startTime));
-    }
-    public static class ReturnHandler extends ReturnHandlerBase {
-        Method method;
-        Integer[] args;
-        String name;
-        boolean pop;
-        String[] params;
-
-        public ReturnHandler(String name, Method method, boolean pop, String[] params) {
-            this.method = method;
-            args = new Integer[method.getParameterTypes().length];
-            this.name = name;
-            this.pop = pop;
-            this.params = params;
-        }
-
-        public int processReturn() {
-            for (int i=0;i<args.length;i++) {
-                if (pop)
-                    args[i] = CPU.CPU_Pop32();
-                else
-                    args[i] = CPU.CPU_Peek32(i);
-            }
-            try {
-                if (LOG && params != null)
-                    preLog(name, args, params);
-                Integer result = (Integer)method.invoke(null, args);
-                if (LOG && params != null)
-                    postLog(name, result, (params != null && params.length>args.length)?params[args.length]:null, args, params);
-                return result;
-            } catch (Exception e) {
-                e.printStackTrace();
-                Win.panic(getName() + " failed to execute: " + e.getMessage());
-                return 0;
-            }
-        }
-
-        public String getName() {
-            return name;
-        }
-    }
-
-    public static class NoReturnHandler extends HandlerBase {
-        Method method;
-        Integer[] args;
-        String name;
-        boolean pop;
-        String[] params;
-
-        public NoReturnHandler(String name, Method method, boolean pop, String params[]) {
-            this.method = method;
-            args = new Integer[method.getParameterTypes().length];
-            this.name = name;
-            this.pop = pop;
-            this.params = params;
-        }
-
-        public void onCall() {
-            for (int i=0;i<args.length;i++) {
-                if (pop)
-                    args[i] = CPU.CPU_Pop32();
-                else
-                    args[i] = CPU.CPU_Peek32(i);
-            }
-            try {
-                if (LOG && params != null)
-                    preLog(name, args, params);
-                method.invoke(null, args);
-                if (LOG && params != null)
-                    postLog(name, null, null, args, params);
-            } catch (Exception e) {
-                e.printStackTrace();
-                Win.panic(getName()+" failed to execute: "+e.getMessage());
-            }
-        }
-
-        public String getName() {
-            return name;
-        }
-    }
-
-    private static class WaitReturnHandler extends HandlerBase {
-        Method method;
-        Integer[] args;
-        String name;
-        boolean pop;
-        int eip;
-        int esp;
-        String[] params;
-
-        public WaitReturnHandler(String name, Method method, boolean pop, String[] params) {
-            this.method = method;
-            args = new Integer[method.getParameterTypes().length];
-            this.name = name;
-            this.pop = pop;
-            this.params = params;
-        }
-
-        public boolean preCall() {
-            eip = CPU_Regs.reg_eip-4; // -4 because the callback instruction called SAVEIP
-            esp = CPU_Regs.reg_esp.dword;
-            return true;
-        }
-
-        public void onCall() {
-            for (int i=0;i<args.length;i++) {
-                if (pop)
-                    args[i] = CPU.CPU_Pop32();
-                else
-                    args[i] = CPU.CPU_Peek32(i);
-            }
-            try {
-                wait = false;
-                if (LOG && params != null)
-                    preLog(name, args, params);
-                Integer result = (Integer)method.invoke(null, args);
-                if (wait) {
-                    if (LOG && params != null) {
-                        System.out.print(" THREAD PUT TO SLEEP, WILL TRY AGAIN LATER");
-                        indent--;
-                    }
-                    CPU_Regs.reg_eip = eip;
-                    CPU_Regs.reg_esp.dword = esp;
-                    Scheduler.wait(Scheduler.getCurrentThread());
-                } else {
-                    if (LOG && params != null)
-                        postLog(name, result, (params != null && params.length>args.length)?params[args.length]:null, args, params);
-                    CPU_Regs.reg_eax.dword = result;
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                Win.panic(getName()+" failed to execute: "+e.getMessage());
-            }
-        }
-
-        public String getName() {
-            return name;
-        }
+        System.out.println(" time=" + (System.currentTimeMillis() - startTime));
     }
 
     protected void add(Class c, String methodName) {
@@ -446,7 +307,7 @@ public class BuiltinModule extends Module {
 
     protected void add(Class c, String methodName, String[] params) {
         Method[] methods = c.getMethods();
-        for (Method method: methods) {
+        for (Method method : methods) {
             if (method.getName().equals(methodName)) {
                 if (method.getReturnType() == Integer.TYPE) {
                     add(new ReturnHandler(methodName, method, true, params));
@@ -456,7 +317,7 @@ public class BuiltinModule extends Module {
                 return;
             }
         }
-        Win.panic("Failed to find "+methodName);
+        Win.panic("Failed to find " + methodName);
     }
 
     protected void add_wait(Class c, String methodName) {
@@ -465,7 +326,7 @@ public class BuiltinModule extends Module {
 
     protected void add_wait(Class c, String methodName, String[] params) {
         Method[] methods = c.getMethods();
-        for (Method method: methods) {
+        for (Method method : methods) {
             if (method.getName().equals(methodName)) {
                 if (method.getReturnType() == Integer.TYPE) {
                     add(new WaitReturnHandler(methodName, method, true, params));
@@ -476,7 +337,7 @@ public class BuiltinModule extends Module {
                 return;
             }
         }
-        Win.panic("Failed to find "+methodName);
+        Win.panic("Failed to find " + methodName);
     }
 
     protected void add_cdecl(Class c, String methodName) {
@@ -485,7 +346,7 @@ public class BuiltinModule extends Module {
 
     protected void add_cdecl(Class c, String methodName, String[] params) {
         Method[] methods = c.getMethods();
-        for (Method method: methods) {
+        for (Method method : methods) {
             if (method.getName().equals(methodName)) {
                 if (method.getReturnType() == Integer.TYPE) {
                     add(new ReturnHandler(methodName, method, false, params));
@@ -495,8 +356,9 @@ public class BuiltinModule extends Module {
                 return;
             }
         }
-        Win.panic("Failed to find "+methodName);
+        Win.panic("Failed to find " + methodName);
     }
+
     protected void add(Callback.Handler handler) {
         if (handler.getName().toLowerCase().startsWith(name.toLowerCase()))
             functions.put(handler.getName().substring(name.length() + 1), handler);
@@ -509,6 +371,7 @@ public class BuiltinModule extends Module {
         functions.put(name, handler);
         ordinalToName.put(ordinal, name);
     }
+
     protected int addData(String name, int size) {
         int result = WinSystem.getCurrentProcess().heap.alloc(size, false);
         registeredCallbacks.put(name, result);
@@ -522,7 +385,7 @@ public class BuiltinModule extends Module {
 
         Callback.Handler handler = functions.get(functionName);
         if (handler == null) {
-            System.out.println("Unknown "+name+" function: "+functionName);
+            System.out.println("Unknown " + name + " function: " + functionName);
             if (loadFake) {
                 handler = new HandlerBase() {
                     public void onCall() {
@@ -530,14 +393,14 @@ public class BuiltinModule extends Module {
                     }
 
                     public String getName() {
-                        return name+" -> "+functionName;
+                        return name + " -> " + functionName;
                     }
                 };
             }
         }
         if (handler != null) {
             int cb = WinCallback.addCallback(handler);
-            int address =  loader.registerFunction(cb);
+            int address = loader.registerFunction(cb);
             registeredCallbacks.put(functionName, address);
             return address;
         }
@@ -546,7 +409,7 @@ public class BuiltinModule extends Module {
 
     public String getFileName(boolean fullPath) {
         if (fullPath)
-            return WinAPI.SYSTEM32_PATH+fileName;
+            return WinAPI.SYSTEM32_PATH + fileName;
         return fileName;
     }
 
@@ -557,9 +420,7 @@ public class BuiltinModule extends Module {
     }
 
     public boolean RtlImageDirectoryEntryToData(int dir, LongRef address, LongRef size) {
-        if (dir == HeaderImageOptional.IMAGE_DIRECTORY_ENTRY_EXPORT)
-            return true;
-        return false;
+        return dir == HeaderImageOptional.IMAGE_DIRECTORY_ENTRY_EXPORT;
     }
 
     public Vector getImportDescriptors(long address) {
@@ -589,5 +450,144 @@ public class BuiltinModule extends Module {
     }
 
     public void writeThunk(HeaderImageImportDescriptor desc, int index, long value) {
+    }
+
+    public static class ReturnHandler extends ReturnHandlerBase {
+        Method method;
+        Integer[] args;
+        String name;
+        boolean pop;
+        String[] params;
+
+        public ReturnHandler(String name, Method method, boolean pop, String[] params) {
+            this.method = method;
+            args = new Integer[method.getParameterTypes().length];
+            this.name = name;
+            this.pop = pop;
+            this.params = params;
+        }
+
+        public int processReturn() {
+            for (int i = 0; i < args.length; i++) {
+                if (pop)
+                    args[i] = CPU.CPU_Pop32();
+                else
+                    args[i] = CPU.CPU_Peek32(i);
+            }
+            try {
+                if (LOG && params != null)
+                    preLog(name, args, params);
+                Integer result = (Integer) method.invoke(null, args);
+                if (LOG && params != null)
+                    postLog(name, result, (params != null && params.length > args.length) ? params[args.length] : null, args, params);
+                return result;
+            } catch (Exception e) {
+                e.printStackTrace();
+                Win.panic(getName() + " failed to execute: " + e.getMessage());
+                return 0;
+            }
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
+    public static class NoReturnHandler extends HandlerBase {
+        Method method;
+        Integer[] args;
+        String name;
+        boolean pop;
+        String[] params;
+
+        public NoReturnHandler(String name, Method method, boolean pop, String[] params) {
+            this.method = method;
+            args = new Integer[method.getParameterTypes().length];
+            this.name = name;
+            this.pop = pop;
+            this.params = params;
+        }
+
+        public void onCall() {
+            for (int i = 0; i < args.length; i++) {
+                if (pop)
+                    args[i] = CPU.CPU_Pop32();
+                else
+                    args[i] = CPU.CPU_Peek32(i);
+            }
+            try {
+                if (LOG && params != null)
+                    preLog(name, args, params);
+                method.invoke(null, args);
+                if (LOG && params != null)
+                    postLog(name, null, null, args, params);
+            } catch (Exception e) {
+                e.printStackTrace();
+                Win.panic(getName() + " failed to execute: " + e.getMessage());
+            }
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
+    private static class WaitReturnHandler extends HandlerBase {
+        Method method;
+        Integer[] args;
+        String name;
+        boolean pop;
+        int eip;
+        int esp;
+        String[] params;
+
+        public WaitReturnHandler(String name, Method method, boolean pop, String[] params) {
+            this.method = method;
+            args = new Integer[method.getParameterTypes().length];
+            this.name = name;
+            this.pop = pop;
+            this.params = params;
+        }
+
+        public boolean preCall() {
+            eip = CPU_Regs.reg_eip - 4; // -4 because the callback instruction called SAVEIP
+            esp = CPU_Regs.reg_esp.dword;
+            return true;
+        }
+
+        public void onCall() {
+            for (int i = 0; i < args.length; i++) {
+                if (pop)
+                    args[i] = CPU.CPU_Pop32();
+                else
+                    args[i] = CPU.CPU_Peek32(i);
+            }
+            try {
+                wait = false;
+                if (LOG && params != null)
+                    preLog(name, args, params);
+                Integer result = (Integer) method.invoke(null, args);
+                if (wait) {
+                    if (LOG && params != null) {
+                        System.out.print(" THREAD PUT TO SLEEP, WILL TRY AGAIN LATER");
+                        indent--;
+                    }
+                    CPU_Regs.reg_eip = eip;
+                    CPU_Regs.reg_esp.dword = esp;
+                    Scheduler.wait(Scheduler.getCurrentThread());
+                } else {
+                    if (LOG && params != null)
+                        postLog(name, result, (params != null && params.length > args.length) ? params[args.length] : null, args, params);
+                    CPU_Regs.reg_eax.dword = result;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                Win.panic(getName() + " failed to execute: " + e.getMessage());
+            }
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 }

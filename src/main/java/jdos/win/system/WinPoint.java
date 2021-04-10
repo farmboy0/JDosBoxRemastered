@@ -5,6 +5,8 @@ import jdos.win.builtin.WinAPI;
 
 public class WinPoint extends WinAPI {
     static public final int SIZE = 8;
+    public int x;
+    public int y;
 
     public WinPoint() {
         x = 0;
@@ -14,14 +16,10 @@ public class WinPoint extends WinAPI {
     public WinPoint(int address) {
         copy(address);
     }
-
     public WinPoint(int x, int y) {
         this.x = x;
         this.y = y;
     }
-
-    public int x;
-    public int y;
 
     public WinPoint copy() {
         return new WinPoint(x, y);
@@ -33,18 +31,18 @@ public class WinPoint extends WinAPI {
     }
 
     public void offset(int x, int y) {
-        this.x+=x;
-        this.y+=y;
+        this.x += x;
+        this.y += y;
     }
 
     public void write(int address) {
         Memory.mem_writed(address, x);
-        Memory.mem_writed(address+4, y);
+        Memory.mem_writed(address + 4, y);
     }
 
     public void copy(int address) {
         this.x = Memory.mem_readd(address);
-        this.y = Memory.mem_readd(address+4);
+        this.y = Memory.mem_readd(address + 4);
     }
 
     public int allocTemp() {
@@ -54,6 +52,6 @@ public class WinPoint extends WinAPI {
     }
 
     public String toString() {
-        return "("+x+","+y+")";
+        return "(" + x + "," + y + ")";
     }
 }

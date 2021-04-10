@@ -10,7 +10,7 @@ public class Clipping extends WinAPI {
             return -1;
         if (dc.hClipRgn == 0)
             return 0;
-        if (WinRegion.CombineRgn(hrgn, dc.hClipRgn, 0, RGN_COPY)!=ERROR) {
+        if (WinRegion.CombineRgn(hrgn, dc.hClipRgn, 0, RGN_COPY) != ERROR) {
             return 1;
         }
         return -1;

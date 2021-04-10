@@ -11,6 +11,17 @@ import jdos.win.utils.Error;
 import java.util.Vector;
 
 public class Hook extends WinObject {
+    public int type;
+    public int threadId;
+    public int eip;
+
+    public Hook(int id, int type, int threadId, int eip) {
+        super(id);
+        this.type = type;
+        this.threadId = threadId;
+        this.eip = eip;
+    }
+
     static public Hook create(int type, int threadId, int eip) {
         return new Hook(nextObjectId(), type, threadId, eip);
     }
@@ -19,12 +30,12 @@ public class Hook extends WinObject {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof Hook))
             return null;
-        return (Hook)object;
+        return (Hook) object;
     }
 
     // LRESULT WINAPI CallNextHookEx(HHOOK hhk, int nCode, WPARAM wParam, LPARAM lParam)
     static public int CallNextHookEx(int hhk, int nCode, int wParam, int lParam) {
-        if (StaticData.currentHookIndex+1<StaticData.currentHookChain.size()) {
+        if (StaticData.currentHookIndex + 1 < StaticData.currentHookChain.size()) {
             StaticData.currentHookIndex++;
             Hook hook = StaticData.currentHookChain.elementAt(StaticData.currentHookIndex);
             WinSystem.call(hook.eip, nCode, wParam, lParam);
@@ -48,7 +59,7 @@ public class Hook extends WinObject {
         } else {
             /* system-global hook */
             if (dwThreadId == WH_KEYBOARD_LL || dwThreadId == WH_MOUSE_LL) hMod = 0;
-            else if (hMod==0) {
+            else if (hMod == 0) {
                 SetLastError(ERROR_HOOK_NEEDS_HMOD);
                 return 0;
             }
@@ -65,7 +76,7 @@ public class Hook extends WinObject {
                 return 0;
             }
         }
-        if (dwThreadId == 0 || hMod !=0) {
+        if (dwThreadId == 0 || hMod != 0) {
             Win.panic("Kernel32.SetWindowsHookExA not implemented yet for other processes");
         }
         if (idHook == WH_KEYBOARD_LL || idHook == WH_MOUSE_LL) {
@@ -81,21 +92,10 @@ public class Hook extends WinObject {
         return hook.handle;
     }
 
-    public Hook(int id, int type, int threadId, int eip) {
-        super(id);
-        this.type = type;
-        this.threadId = threadId;
-        this.eip = eip;
-    }
-
-    public int type;
-    public int threadId;
-    public int eip;
-
     static public int HOOK_CallHooks(int id, int code, int wparam, int lparam) {
         Vector hooks = StaticData.hooks.get(id);
-        if (hooks != null && hooks.size()>0) {
-            Hook hook = (Hook)hooks.elementAt(0);
+        if (hooks != null && hooks.size() > 0) {
+            Hook hook = (Hook) hooks.elementAt(0);
             StaticData.currentHookChain = hooks;
             StaticData.currentHookIndex = 0;
             WinSystem.call(hook.eip, code, wparam, lparam);

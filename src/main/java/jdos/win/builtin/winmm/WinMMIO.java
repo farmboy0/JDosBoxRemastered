@@ -3,6 +3,15 @@ package jdos.win.builtin.winmm;
 import jdos.win.system.WinObject;
 
 public class WinMMIO extends WinObject {
+    public MMIOINFO info = new MMIOINFO();
+    public boolean bTmpIOProc;
+    public Mmio.IOProc ioProc;
+    public boolean bBufferLoaded;
+    public int dwFileSize;
+    public WinMMIO(int id) {
+        super(id);
+    }
+
     static public WinMMIO create() {
         return new WinMMIO(nextObjectId());
     }
@@ -11,20 +20,10 @@ public class WinMMIO extends WinObject {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinMMIO))
             return null;
-        return (WinMMIO)object;
-    }
-
-    public WinMMIO(int id) {
-        super(id);
+        return (WinMMIO) object;
     }
 
     protected void onFree() {
         super.onFree();
     }
-
-    public MMIOINFO info = new MMIOINFO();
-    public boolean bTmpIOProc;
-    public Mmio.IOProc ioProc;
-    public boolean bBufferLoaded;
-    public int dwFileSize;
 }

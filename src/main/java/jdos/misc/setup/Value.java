@@ -10,39 +10,77 @@ import jdos.util.StringHelper;
  * in = 12 //works
  */
 public class Value {
+    public int type;
     private Hex _hex = new Hex();
     private boolean _bool;
     private int _int;
     private String _string;
     private double _double;
 
-    public class WrongType extends RuntimeException {}
-    public static final class Etype {
-        static final int V_NONE = 0;
-        static final int V_HEX = 1;
-        static final int V_BOOL = 2;
-        static final int V_INT = 3;
-        static final int V_STRING = 4;
-        static final int V_DOUBLE = 5;
-        static final int V_CURRENT = 6;
+    public Value() {
+        type = Etype.V_NONE;
     }
-    public int type;
 
-    public Value() { type = Etype.V_NONE;}
-    public Value(Hex in) { _hex = new Hex(in); type = Etype.V_HEX; }
-    public Value(boolean in) {_bool = in; type = Etype.V_BOOL; }
-    public Value(int in) {_int = in; type = Etype.V_INT; }
-    public Value(double in) {_double = in; type = Etype.V_DOUBLE; }
-    public Value(String in) {_string = in; type = Etype.V_STRING; }
-    public Value(Value in) {plaincopy(in);}
-    public Value(String in, int _t) { type = Etype.V_NONE; try {SetValue(in, _t);} catch (WrongType e){}}
+    public Value(Hex in) {
+        _hex = new Hex(in);
+        type = Etype.V_HEX;
+    }
 
-    public void set(Hex in) throws WrongType {copy(new Value(in));}
-    public void set(int in) throws WrongType {copy(new Value(in));}
-    public void set(boolean in) throws WrongType {copy(new Value(in));}
-    public void set(double in) throws WrongType {copy(new Value(in));}
-    public void set(String in) throws WrongType {copy(new Value(in));}
-    public void set(Value in) throws WrongType {copy(new Value(in));}
+    public Value(boolean in) {
+        _bool = in;
+        type = Etype.V_BOOL;
+    }
+
+    public Value(int in) {
+        _int = in;
+        type = Etype.V_INT;
+    }
+
+    public Value(double in) {
+        _double = in;
+        type = Etype.V_DOUBLE;
+    }
+
+    public Value(String in) {
+        _string = in;
+        type = Etype.V_STRING;
+    }
+
+    public Value(Value in) {
+        plaincopy(in);
+    }
+
+    public Value(String in, int _t) {
+        type = Etype.V_NONE;
+        try {
+            SetValue(in, _t);
+        } catch (WrongType e) {
+        }
+    }
+
+    public void set(Hex in) throws WrongType {
+        copy(new Value(in));
+    }
+
+    public void set(int in) throws WrongType {
+        copy(new Value(in));
+    }
+
+    public void set(boolean in) throws WrongType {
+        copy(new Value(in));
+    }
+
+    public void set(double in) throws WrongType {
+        copy(new Value(in));
+    }
+
+    public void set(String in) throws WrongType {
+        copy(new Value(in));
+    }
+
+    public void set(Value in) throws WrongType {
+        copy(new Value(in));
+    }
 
     public Hex getHex() throws WrongType {
         if (type != Etype.V_HEX)
@@ -136,7 +174,7 @@ public class Value {
         if (obj == this)
             return true;
         if (obj instanceof Value) {
-            Value other = (Value)obj;
+            Value other = (Value) obj;
             if (type != other.type)
                 return false;
             if (type == Etype.V_BOOL)
@@ -152,5 +190,18 @@ public class Value {
             throw new RuntimeException("comparing stuff that doesn't make sense");
         }
         return false;
+    }
+
+    public static final class Etype {
+        static final int V_NONE = 0;
+        static final int V_HEX = 1;
+        static final int V_BOOL = 2;
+        static final int V_INT = 3;
+        static final int V_STRING = 4;
+        static final int V_DOUBLE = 5;
+        static final int V_CURRENT = 6;
+    }
+
+    public class WrongType extends RuntimeException {
     }
 }

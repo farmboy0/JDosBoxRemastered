@@ -36,7 +36,7 @@ public class Win extends WinAPI {
         dos_sec.HandleInputline("xms=false");
         dos_sec.HandleInputline("ems=false");
         dos_sec.ExecuteInit(false);
-     }
+    }
 
     public static void panic(String msg) {
         log("PANIC: " + msg);
@@ -45,14 +45,17 @@ public class Win extends WinAPI {
 
     public static void exit() {
         Console.out("The Windows program has finished.  Rebooting in .. ");
-        for (int i=5;i>0;i--) {
+        for (int i = 5; i > 0; i--) {
             System.out.println(i);
-            try {Thread.sleep(1000);} catch (Exception e) {}
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {
+            }
         }
         throw new Dos_programs.RebootException();
     }
 
-    static public boolean run(Drive_fat drive, Drive_fat.fatFile fil,  String path) {
+    static public boolean run(Drive_fat drive, Drive_fat.fatFile fil, String path) {
         FilePath.disks.clear();
         FilePath.disks.put("C", drive);
         WinFile file = WinFile.createNoHandle(new FilePath(path), false, 0, 0);
@@ -60,27 +63,28 @@ public class Win extends WinAPI {
         if (!HeaderPE.fastCheckWinPE(file))
             return false;
         String name;
-        String winPath = path.substring(0, path.lastIndexOf("\\")+1);
+        String winPath = path.substring(0, path.lastIndexOf("\\") + 1);
         int pos = path.lastIndexOf("\\");
-        if (pos<0)
+        if (pos < 0)
             pos = path.lastIndexOf("/");
-        if (pos>=0) {
-            name=path.substring(pos+1);
-            path = path.substring(0, pos+1);
+        if (pos >= 0) {
+            name = path.substring(pos + 1);
+            path = path.substring(0, pos + 1);
         } else {
-            name=path;
+            name = path;
             path = "";
         }
         return internalRun(path, winPath, name);
     }
 
     static public boolean run(String path) {
-        /*Bit8u*/char drive=(char)(Dos_files.DOS_GetDefaultDrive()+'A');
+        /*Bit8u*/
+        char drive = (char) (Dos_files.DOS_GetDefaultDrive() + 'A');
         StringRef dir = new StringRef();
-        Dos_files.DOS_GetCurrentDir((short)0,dir);
-        String p = String.valueOf(drive)+":\\";
-        if (dir.value.length()>0) {
-            p+=dir.value+"\\";
+        Dos_files.DOS_GetCurrentDir((short) 0, dir);
+        String p = drive + ":\\";
+        if (dir.value.length() > 0) {
+            p += dir.value + "\\";
         }
         String winPath = p;
         String name;
@@ -100,13 +104,13 @@ public class Win extends WinAPI {
         }
 
         int pos = path.lastIndexOf("\\");
-        if (pos<0)
+        if (pos < 0)
             pos = path.lastIndexOf("/");
-        if (pos>=0) {
-            name=path.substring(pos+1);
-            path = path.substring(0, pos+1);
+        if (pos >= 0) {
+            name = path.substring(pos + 1);
+            path = path.substring(0, pos + 1);
         } else {
-            name=path;
+            name = path;
             path = "";
         }
         return internalRun(path, winPath, name);
@@ -116,9 +120,9 @@ public class Win extends WinAPI {
         Vector paths = new Vector();
         paths.add(new Path(path, winPath));
 
-        path = path.substring(0, path.length()-winPath.length()+3);
+        path = path.substring(0, path.length() - winPath.length() + 3);
         paths.add(new Path(path, "c:\\"));
-        paths.add(new Path(path+"windows\\", "c:\\windows\\"));
+        paths.add(new Path(path + "windows\\", "c:\\windows\\"));
         // This references old callbacks, like video card timers, etc
         Pic.PIC_Destroy.call(null);
         Pic.PIC_Init.call(null);
@@ -130,8 +134,8 @@ public class Win extends WinAPI {
         Memory.clear();
 
         int videoMemory = Memory.MEM_ExtraPages();
-        VideoMemory.SIZE = videoMemory*4096/1024/1024/2*2;
-        if (VideoMemory.SIZE<2) {
+        VideoMemory.SIZE = videoMemory * 4096 / 1024 / 1024 / 2 * 2;
+        if (VideoMemory.SIZE < 2) {
             panic("Video memory needs to be at least 2MB");
         }
         Paging.PageHandler handler = new Paging.PageHandler() {

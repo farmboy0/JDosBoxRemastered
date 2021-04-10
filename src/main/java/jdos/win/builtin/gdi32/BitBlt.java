@@ -24,7 +24,7 @@ public class BitBlt extends WinAPI {
             Win.panic("StretchBlt only supports SRCCOPY");
         }
         Graphics2D g = dest.getGraphics();
-        StretchBlt2D(g, dest.x+nXOriginDest, dest.y+nYOriginDest, nWidthDest, nHeightDest, src.getImage(), nXOriginSrc, nYOriginSrc, nWidthSrc, nHeightSrc, dwRop);
+        StretchBlt2D(g, dest.x + nXOriginDest, dest.y + nYOriginDest, nWidthDest, nHeightDest, src.getImage(), nXOriginSrc, nYOriginSrc, nWidthSrc, nHeightSrc, dwRop);
         g.dispose();
         return TRUE;
     }
@@ -33,7 +33,7 @@ public class BitBlt extends WinAPI {
         if (dwRop != SRCCOPY) {
             Win.panic("StretchBlt only supports SRCCOPY");
         }
-        graphics.drawImage(src, nXOriginDest, nYOriginDest, nXOriginDest+nWidthDest, nYOriginDest+nHeightDest, nXOriginSrc, nYOriginSrc, nXOriginSrc+nWidthSrc, nYOriginSrc+nHeightSrc, null);
+        graphics.drawImage(src, nXOriginDest, nYOriginDest, nXOriginDest + nWidthDest, nYOriginDest + nHeightDest, nXOriginSrc, nYOriginSrc, nXOriginSrc + nWidthSrc, nYOriginSrc + nHeightSrc, null);
     }
 
     static private boolean rop_uses_src(int rop) {

@@ -53,8 +53,8 @@ public class CpuState {
         ssPhys = CPU_Regs.reg_ssPhys.dword;
         fsPhys = CPU_Regs.reg_fsPhys.dword;
         gsPhys = CPU_Regs.reg_gsPhys.dword;
-        stackMask=CPU.cpu.stack.mask;
-        stackNotMask=CPU.cpu.stack.notmask;
+        stackMask = CPU.cpu.stack.mask;
+        stackNotMask = CPU.cpu.stack.notmask;
     }
 
     public void load() {

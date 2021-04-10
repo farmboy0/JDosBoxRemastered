@@ -9,6 +9,7 @@ public class Log {
     static public void log_msg(String msg) {
         System.out.println(msg);
     }
+
     static public void exit(String msg) {
         System.out.print(msg);
         try {
@@ -22,7 +23,8 @@ public class Log {
         else
             throw new RuntimeException("Exit");
     }
+
     static public void log(int type, int severity, String msg) {
-        System.out.println(msg);
+//        System.out.println(msg);
     }
 }

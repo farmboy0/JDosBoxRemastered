@@ -4,10 +4,15 @@ import jdos.win.builtin.WinAPI;
 
 public class WINDOWPOS extends WinAPI {
     public static final int SIZE = 28;
-
+    int hwnd;
+    int hwndInsertAfter;
+    int x;
+    int y;
+    int cx;
+    int cy;
+    int flags;
     public WINDOWPOS() {
     }
-
     public WINDOWPOS(int hwnd, int hwndInsertAfter, int x, int y, int cx, int cy, int flags) {
         this.hwnd = hwnd;
         this.hwndInsertAfter = hwndInsertAfter;
@@ -19,13 +24,20 @@ public class WINDOWPOS extends WinAPI {
     }
 
     public void write(int address) {
-        writed(address, hwnd); address+=4;
-        writed(address, hwndInsertAfter); address+=4;
-        writed(address, x); address+=4;
-        writed(address, y); address+=4;
-        writed(address, cx); address+=4;
-        writed(address, cy); address+=4;
-        writed(address, flags); address+=4;
+        writed(address, hwnd);
+        address += 4;
+        writed(address, hwndInsertAfter);
+        address += 4;
+        writed(address, x);
+        address += 4;
+        writed(address, y);
+        address += 4;
+        writed(address, cx);
+        address += 4;
+        writed(address, cy);
+        address += 4;
+        writed(address, flags);
+        address += 4;
     }
 
     public int allocTemp() {
@@ -33,12 +45,4 @@ public class WINDOWPOS extends WinAPI {
         write(result);
         return result;
     }
-
-    int hwnd;
-    int hwndInsertAfter;
-    int  x;
-    int  y;
-    int  cx;
-    int  cy;
-    int flags;
 }

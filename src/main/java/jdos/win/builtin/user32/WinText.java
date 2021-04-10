@@ -216,13 +216,6 @@ public class WinText extends WinAPI {
         return y - rect.top;
     }
 
-    static private class ellipsis_data {
-        int before;
-        int len;
-        int under;
-        int after;
-    }
-
     /**
      * ******************************************************************
      * Return next line of text from a string.
@@ -437,7 +430,6 @@ public class WinText extends WinAPI {
             return NULL;
     }
 
-
     /**
      * ********************************************************************
      * TEXT_DrawUnderscore
@@ -623,8 +615,8 @@ public class WinText extends WinAPI {
         if (len_str.value + len_ellipsis >= max_len)
             len_str.value = max_len - len_ellipsis - 1;
         /* Hopefully this will never happen, otherwise it would probably lose
-        * the wrong character
-        */
+         * the wrong character
+         */
         writeb(str + len_str.value, 0); /* to simplify things */
 
         int lastBkSlash = StringUtil.strrchr(str, BACK_SLASH);
@@ -919,7 +911,13 @@ public class WinText extends WinAPI {
         if (readb(str) == readb(str + 1)) return false;
         str++;
         if (readb(str) != CR && readb(str) != LF) return false;
-        if (--num_chars != 0) return false;
-        return true;
+        return --num_chars == 0;
+    }
+
+    static private class ellipsis_data {
+        int before;
+        int len;
+        int under;
+        int after;
     }
 }

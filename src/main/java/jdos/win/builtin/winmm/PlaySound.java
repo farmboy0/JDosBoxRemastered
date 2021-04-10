@@ -27,54 +27,57 @@ public class PlaySound extends WinAPI {
         Vector playSound = WinSystem.getCurrentProcess().playSound;
 
         /* SND_NOWAIT is ignored in w95/2k/xp. */
-        if ((fdwSound & SND_NOSTOP)!=0 && playSound.size()!=0)
+        if ((fdwSound & SND_NOSTOP) != 0 && playSound.size() != 0)
             return FALSE;
 
         /* alloc internal structure, if we need to play something */
-        if (pszSound!=0 && (fdwSound & SND_PURGE)==0) {
+        if (pszSound != 0 && (fdwSound & SND_PURGE) == 0) {
             ps = new ActivePlaySound(pszSound, hmod, fdwSound, bUnicode);
         }
 
-        for (int i=0;i<playSound.size();i++) {
-            ((ActivePlaySound)playSound.get(i)).stop();
+        for (int i = 0; i < playSound.size(); i++) {
+            ((ActivePlaySound) playSound.get(i)).stop();
         }
 
-        if (ps==null)
+        if (ps == null)
             return TRUE;
         return ps.start();
     }
 
     static private class ActivePlaySound implements Runnable {
+        public int pszSound;
+        public int hmod;
+        public int flags;
+        public boolean unicode;
+        public boolean loop = false;
+        byte[] data = null;
+        FilePath fileName = null;
+        Clip clip = null;
+        boolean bExit = false;
+        Vector playSound;
+        private Thread thread = null;
         public ActivePlaySound(int pszSound, int hmod, int flags, boolean unicode) {
             this.pszSound = pszSound;
             this.hmod = hmod;
             this.flags = flags;
             this.unicode = unicode;
         }
-        public int pszSound;
-        public int hmod;
-        public int flags;
-        public boolean unicode;
-        public boolean loop = false;
-        private Thread thread = null;
-        byte[] data = null;
-        FilePath fileName = null;
-        Clip clip = null;
-        boolean bExit = false;
-        Vector playSound;
 
         public void stop() {
             bExit = true;
             if (clip != null)
                 clip.stop();
             if (thread != null) {
-                try {thread.join();} catch (Exception e) {}
+                try {
+                    thread.join();
+                } catch (Exception e) {
+                }
             }
         }
 
         public int start() {
             playSound = WinSystem.getCurrentProcess().playSound;
-            if ((flags & SND_ASYNC)!=0) {
+            if ((flags & SND_ASYNC) != 0) {
                 loop = (flags & SND_LOOP) != 0;
                 int result = buildStream();
                 if (result == 0)
@@ -120,8 +123,8 @@ public class PlaySound extends WinAPI {
             int pData;
 
             if ((flags & SND_RESOURCE) == SND_RESOURCE) {
-                int	hRes;
-                int	hGlob;
+                int hRes;
+                int hGlob;
                 if ((hRes = KResource.FindResourceA(hmod, pszSound, StringUtil.allocateA("WAVE"))) == 0 || (hGlob = KResource.LoadResource(hmod, hRes)) == 0)
                     return FALSE;
                 if ((pData = KResource.LockResource(hGlob)) == NULL) {
@@ -132,16 +135,16 @@ public class PlaySound extends WinAPI {
             } else {
                 pData = pszSound;
             }
-            if ((flags & SND_MEMORY)!=0) { /* NOTE: SND_RESOURCE has the SND_MEMORY bit set */
+            if ((flags & SND_MEMORY) != 0) { /* NOTE: SND_RESOURCE has the SND_MEMORY bit set */
                 int header = readd(pData);
-                int size = readd(pData+4)+8;
-                int type = readd(pData+8);
+                int size = readd(pData + 4) + 8;
+                int type = readd(pData + 8);
                 data = new byte[size];
                 if (type != 0x45564157) // is this a WAVE file
                     return FALSE;
                 Memory.mem_memcpy(data, 0, pData, size);
                 return TRUE;
-            } else if ((flags & SND_ALIAS)!=0) {
+            } else if ((flags & SND_ALIAS) != 0) {
                 if ((flags & SND_ALIAS_ID) == SND_ALIAS_ID) {
                     flags &= ~(SND_ALIAS_ID ^ SND_ALIAS);
                     String sound;
@@ -167,13 +170,13 @@ public class PlaySound extends WinAPI {
 
                 //hmmio = get_mmioFromProfile(wps->fdwSound, wps->pszSound);
             }
-            if ((flags & SND_FILENAME)!=0) {
+            if ((flags & SND_FILENAME) != 0) {
                 fileName = WinSystem.getCurrentProcess().getFile(StringUtil.getString(pszSound));
                 if (fileName != null && !fileName.exists())
                     fileName = null;
                 return BOOL(fileName != null);
             }
-            if ((flags & (SND_FILENAME|SND_ALIAS|SND_MEMORY))==0) {
+            if ((flags & (SND_FILENAME | SND_ALIAS | SND_MEMORY)) == 0) {
 //                if ((hmmio = get_mmioFromProfile(flags | SND_NODEFAULT, pszSound)) == 0) {
 //                    if ((hmmio = get_mmioFromFile(StringUtil.getString(pszSound))) == 0) {
 //                        hmmio = get_mmioFromProfile(flags, pszSound);

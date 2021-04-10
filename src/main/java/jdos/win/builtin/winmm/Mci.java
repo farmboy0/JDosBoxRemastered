@@ -11,7 +11,7 @@ public class Mci extends WinAPI {
             return 0;
         if (command.equalsIgnoreCase("close avivideo"))
             return 0;
-        log("mciSendStringA "+command+" not supported yet");
+        log("mciSendStringA " + command + " not supported yet");
         return 1;
     }
 }

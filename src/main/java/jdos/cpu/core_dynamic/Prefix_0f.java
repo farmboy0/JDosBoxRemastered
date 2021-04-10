@@ -12,47 +12,47 @@ public class Prefix_0f extends Helper {
         ops[0x100] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                int which=(rm>>3)&7;
+                int which = (rm >> 3) & 7;
                 switch (which) {
-                case 0x00:	/* SLDT */
-                    if (rm>=0xC0)
-                        prev.next = new Inst2.Sldt_reg(rm);
-                    else
-                        prev.next = new Inst2.Sldt_mem(rm);
-                    break;
-                case 0x01:	/* STR */
-                    if (rm>=0xC0)
-                        prev.next = new Inst2.Str_reg(rm);
-                    else
-                        prev.next = new Inst2.Str_mem(rm);
-                    break;
-                case 0x02:
-                    if (rm>=0xC0)
-                        prev.next = new Inst2.Lldt_reg(rm);
-                    else
-                        prev.next = new Inst2.Lldt_mem(rm);
-                    break;
-                 case 0x03:
-                    if (rm>=0xC0)
-                        prev.next = new Inst2.Ltr_reg(rm);
-                    else
-                        prev.next = new Inst2.Ltr_mem(rm);
-                    break;
-                 case 0x04:
-                    if (rm>=0xC0)
-                        prev.next = new Inst2.Verr_reg(rm);
-                    else
-                        prev.next = new Inst2.Verr_mem(rm);
-                    break;
-                 case 0x05:
-                    if (rm>=0xC0)
-                        prev.next = new Inst2.Verw_reg(rm);
-                    else
-                        prev.next = new Inst2.Verw_mem(rm);
-                    break;
-                default:
-                    prev.next = new Inst1.Illegal("");
-                    return RESULT_JUMP;
+                    case 0x00:    /* SLDT */
+                        if (rm >= 0xC0)
+                            prev.next = new Inst2.Sldt_reg(rm);
+                        else
+                            prev.next = new Inst2.Sldt_mem(rm);
+                        break;
+                    case 0x01:    /* STR */
+                        if (rm >= 0xC0)
+                            prev.next = new Inst2.Str_reg(rm);
+                        else
+                            prev.next = new Inst2.Str_mem(rm);
+                        break;
+                    case 0x02:
+                        if (rm >= 0xC0)
+                            prev.next = new Inst2.Lldt_reg(rm);
+                        else
+                            prev.next = new Inst2.Lldt_mem(rm);
+                        break;
+                    case 0x03:
+                        if (rm >= 0xC0)
+                            prev.next = new Inst2.Ltr_reg(rm);
+                        else
+                            prev.next = new Inst2.Ltr_mem(rm);
+                        break;
+                    case 0x04:
+                        if (rm >= 0xC0)
+                            prev.next = new Inst2.Verr_reg(rm);
+                        else
+                            prev.next = new Inst2.Verr_mem(rm);
+                        break;
+                    case 0x05:
+                        if (rm >= 0xC0)
+                            prev.next = new Inst2.Verw_reg(rm);
+                        else
+                            prev.next = new Inst2.Verw_mem(rm);
+                        break;
+                    default:
+                        prev.next = new Inst1.Illegal("");
+                        return RESULT_JUMP;
                 }
                 return RESULT_HANDLED;
             }
@@ -62,48 +62,48 @@ public class Prefix_0f extends Helper {
         ops[0x101] = new Decode() {
             final public int call(Op prev) {
                 int rm = decode_fetchb();
-                int which=(rm>>3)&7;
-                if (rm < 0xc0)	{
+                int which = (rm >> 3) & 7;
+                if (rm < 0xc0) {
                     switch (which) {
-                    case 0x00:										/* SGDT */
-                        prev.next = new Inst2.Sgdt_mem(rm);
-                        break;
-                    case 0x01:										/* SIDT */
-                        prev.next = new Inst2.Sidt_mem(rm);
-                        break;
-                    case 0x02:										/* LGDT */
-                        prev.next = new Inst2.Lgdt_mem(rm);
-                        break;
-                    case 0x03:										/* LIDT */
-                        prev.next = new Inst2.Lidt_mem(rm);
-                        break;
-                    case 0x04:										/* SMSW */
-                        prev.next = new Inst2.Smsw_mem(rm);
-                        break;
-                    case 0x06:										/* LMSW */
-                        prev.next = new Inst2.Lmsw_mem(rm);
-                        break;
-                    case 0x07:										/* INVLPG */
-                        prev.next = new Inst2.Invlpg();
-                        break;
+                        case 0x00:                                        /* SGDT */
+                            prev.next = new Inst2.Sgdt_mem(rm);
+                            break;
+                        case 0x01:                                        /* SIDT */
+                            prev.next = new Inst2.Sidt_mem(rm);
+                            break;
+                        case 0x02:                                        /* LGDT */
+                            prev.next = new Inst2.Lgdt_mem(rm);
+                            break;
+                        case 0x03:                                        /* LIDT */
+                            prev.next = new Inst2.Lidt_mem(rm);
+                            break;
+                        case 0x04:                                        /* SMSW */
+                            prev.next = new Inst2.Smsw_mem(rm);
+                            break;
+                        case 0x06:                                        /* LMSW */
+                            prev.next = new Inst2.Lmsw_mem(rm);
+                            break;
+                        case 0x07:                                        /* INVLPG */
+                            prev.next = new Inst2.Invlpg();
+                            break;
                     }
                 } else {
                     switch (which) {
-                    case 0x02:										/* LGDT */
-                        prev.next = new Inst2.Lgdt_reg();
-                        break;
-                    case 0x03:										/* LIDT */
-                        prev.next = new Inst2.Lidt_reg();
-                        break;
-                    case 0x04:										/* SMSW */
-                        prev.next = new Inst2.Smsw_reg(rm);
-                        break;
-                    case 0x06:										/* LMSW */
-                        prev.next = new Inst2.Lmsw_reg(rm);
-                        break;
-                    default:
-                        prev.next = new Inst1.Illegal("");
-                        return RESULT_JUMP;
+                        case 0x02:                                        /* LGDT */
+                            prev.next = new Inst2.Lgdt_reg();
+                            break;
+                        case 0x03:                                        /* LIDT */
+                            prev.next = new Inst2.Lidt_reg();
+                            break;
+                        case 0x04:                                        /* SMSW */
+                            prev.next = new Inst2.Smsw_reg(rm);
+                            break;
+                        case 0x06:                                        /* LMSW */
+                            prev.next = new Inst2.Lmsw_reg(rm);
+                            break;
+                        default:
+                            prev.next = new Inst1.Illegal("");
+                            return RESULT_JUMP;
                     }
                 }
                 return RESULT_HANDLED;
@@ -148,7 +148,7 @@ public class Prefix_0f extends Helper {
         /* INVD */
         ops[0x108] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType< CPU.CPU_ARCHTYPE_486OLD) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_486OLD) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 } else {
@@ -178,11 +178,12 @@ public class Prefix_0f extends Helper {
         /* MOV Rd.CRx */
         ops[0x120] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm < 0xc0 ) {
-                    int which=(rm >> 3) & 7;
+                int rm = decode_fetchb();
+                if (rm < 0xc0) {
+                    int which = (rm >> 3) & 7;
                     rm |= 0xc0;
-                    if (Log.level<= LogSeverities.LOG_ERROR) Log.log(LogTypes.LOG_CPU, LogSeverities.LOG_ERROR,"MOV XXX,CR"+which+" with non-register");
+                    if (Log.level <= LogSeverities.LOG_ERROR)
+                        Log.log(LogTypes.LOG_CPU, LogSeverities.LOG_ERROR, "MOV XXX,CR" + which + " with non-register");
                 }
                 prev.next = new Inst2.MovRdCr(rm);
                 return RESULT_HANDLED;
@@ -193,11 +194,12 @@ public class Prefix_0f extends Helper {
         /* MOV Rd,DRx */
         ops[0x121] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm < 0xc0 ) {
-                    int which=(rm >> 3) & 7;
+                int rm = decode_fetchb();
+                if (rm < 0xc0) {
+                    int which = (rm >> 3) & 7;
                     rm |= 0xc0;
-                    if (Log.level<=LogSeverities.LOG_ERROR) Log.log(LogTypes.LOG_CPU,LogSeverities.LOG_ERROR,"MOV XXX,DR"+which+" with non-register");
+                    if (Log.level <= LogSeverities.LOG_ERROR)
+                        Log.log(LogTypes.LOG_CPU, LogSeverities.LOG_ERROR, "MOV XXX,DR" + which + " with non-register");
                 }
                 prev.next = new Inst2.MovRdDr(rm);
                 return RESULT_HANDLED;
@@ -208,11 +210,12 @@ public class Prefix_0f extends Helper {
         /* MOV CRx,Rd */
         ops[0x122] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm < 0xc0 ) {
-                    int which=(rm >> 3) & 7;
+                int rm = decode_fetchb();
+                if (rm < 0xc0) {
+                    int which = (rm >> 3) & 7;
                     rm |= 0xc0;
-                    if (Log.level<=LogSeverities.LOG_ERROR) Log.log(LogTypes.LOG_CPU,LogSeverities.LOG_ERROR,"MOV XXX,CR"+which+" with non-register");
+                    if (Log.level <= LogSeverities.LOG_ERROR)
+                        Log.log(LogTypes.LOG_CPU, LogSeverities.LOG_ERROR, "MOV XXX,CR" + which + " with non-register");
                 }
                 prev.next = new Inst2.MovCrRd(rm);
                 return RESULT_HANDLED;
@@ -223,11 +226,12 @@ public class Prefix_0f extends Helper {
         /* MOV DRx,Rd */
         ops[0x123] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm < 0xc0 ) {
-                    int which=(rm >> 3) & 7;
+                int rm = decode_fetchb();
+                if (rm < 0xc0) {
+                    int which = (rm >> 3) & 7;
                     rm |= 0xc0;
-                    if (Log.level<=LogSeverities.LOG_ERROR) Log.log(LogTypes.LOG_CPU,LogSeverities.LOG_ERROR,"MOV DR"+which+",XXX with non-register");
+                    if (Log.level <= LogSeverities.LOG_ERROR)
+                        Log.log(LogTypes.LOG_CPU, LogSeverities.LOG_ERROR, "MOV DR" + which + ",XXX with non-register");
                 }
                 prev.next = new Inst2.MovDrRd(rm);
                 return RESULT_HANDLED;
@@ -238,11 +242,12 @@ public class Prefix_0f extends Helper {
         /* MOV Rd,TRx */
         ops[0x124] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm < 0xc0 ) {
-                    int which=(rm >> 3) & 7;
+                int rm = decode_fetchb();
+                if (rm < 0xc0) {
+                    int which = (rm >> 3) & 7;
                     rm |= 0xc0;
-                    if (Log.level<=LogSeverities.LOG_ERROR) Log.log(LogTypes.LOG_CPU,LogSeverities.LOG_ERROR,"MOV XXX,TR"+which+" with non-register");
+                    if (Log.level <= LogSeverities.LOG_ERROR)
+                        Log.log(LogTypes.LOG_CPU, LogSeverities.LOG_ERROR, "MOV XXX,TR" + which + " with non-register");
                 }
                 prev.next = new Inst2.MovRdTr(rm);
                 return RESULT_HANDLED;
@@ -253,11 +258,12 @@ public class Prefix_0f extends Helper {
         /* MOV TRx,Rd */
         ops[0x126] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm < 0xc0 ) {
-                    int which=(rm >> 3) & 7;
+                int rm = decode_fetchb();
+                if (rm < 0xc0) {
+                    int which = (rm >> 3) & 7;
                     rm |= 0xc0;
-                    if (Log.level<=LogSeverities.LOG_ERROR) Log.log(LogTypes.LOG_CPU,LogSeverities.LOG_ERROR,"MOV TR"+which+",XXX with non-register");
+                    if (Log.level <= LogSeverities.LOG_ERROR)
+                        Log.log(LogTypes.LOG_CPU, LogSeverities.LOG_ERROR, "MOV TR" + which + ",XXX with non-register");
                 }
                 prev.next = new Inst2.MovTrRd(rm);
                 return RESULT_HANDLED;
@@ -268,7 +274,7 @@ public class Prefix_0f extends Helper {
         /* RDTSC */
         ops[0x131] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 } else {
@@ -282,12 +288,12 @@ public class Prefix_0f extends Helper {
         /* CMOVO */
         ops[0x140] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_o_reg(rm);
                 } else {
@@ -300,12 +306,12 @@ public class Prefix_0f extends Helper {
         /* CMOVNO */
         ops[0x141] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_no_reg(rm);
                 } else {
@@ -318,12 +324,12 @@ public class Prefix_0f extends Helper {
         /* CMOVB */
         ops[0x142] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_b_reg(rm);
                 } else {
@@ -336,12 +342,12 @@ public class Prefix_0f extends Helper {
         /* CMOVNB */
         ops[0x143] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_nb_reg(rm);
                 } else {
@@ -354,12 +360,12 @@ public class Prefix_0f extends Helper {
         /* CMOVZ */
         ops[0x144] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_z_reg(rm);
                 } else {
@@ -372,12 +378,12 @@ public class Prefix_0f extends Helper {
         /* CMOVNZ */
         ops[0x145] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_nz_reg(rm);
                 } else {
@@ -390,12 +396,12 @@ public class Prefix_0f extends Helper {
         /* CMOVBE */
         ops[0x146] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_be_reg(rm);
                 } else {
@@ -408,12 +414,12 @@ public class Prefix_0f extends Helper {
         /* CMOVNBE */
         ops[0x147] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_nbe_reg(rm);
                 } else {
@@ -426,12 +432,12 @@ public class Prefix_0f extends Helper {
         /* CMOVS */
         ops[0x148] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_s_reg(rm);
                 } else {
@@ -444,12 +450,12 @@ public class Prefix_0f extends Helper {
         /* CMOVNS */
         ops[0x149] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_ns_reg(rm);
                 } else {
@@ -462,12 +468,12 @@ public class Prefix_0f extends Helper {
         /* CMOVP */
         ops[0x14a] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_p_reg(rm);
                 } else {
@@ -480,12 +486,12 @@ public class Prefix_0f extends Helper {
         /* CMOVNP */
         ops[0x14b] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_np_reg(rm);
                 } else {
@@ -498,12 +504,12 @@ public class Prefix_0f extends Helper {
         /* CMOVL */
         ops[0x14c] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_l_reg(rm);
                 } else {
@@ -516,12 +522,12 @@ public class Prefix_0f extends Helper {
         /* CMOVNL */
         ops[0x14d] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_nl_reg(rm);
                 } else {
@@ -534,12 +540,12 @@ public class Prefix_0f extends Helper {
         /* CMOVLE */
         ops[0x14e] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_le_reg(rm);
                 } else {
@@ -552,12 +558,12 @@ public class Prefix_0f extends Helper {
         /* CMOVNLE */
         ops[0x14f] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_PENTIUM_PRO) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 }
 
-                int rm=decode_fetchb();
+                int rm = decode_fetchb();
                 if (rm >= 0xc0) {
                     prev.next = new Inst2.ConditionalMov_nle_reg(rm);
                 } else {
@@ -698,8 +704,8 @@ public class Prefix_0f extends Helper {
         /* SETO */
         ops[0x190] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_o(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_o(rm);
@@ -712,8 +718,8 @@ public class Prefix_0f extends Helper {
         /* SETNO */
         ops[0x191] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_no(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_no(rm);
@@ -726,8 +732,8 @@ public class Prefix_0f extends Helper {
         /* SETB */
         ops[0x192] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_b(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_b(rm);
@@ -740,8 +746,8 @@ public class Prefix_0f extends Helper {
         /* SETNB */
         ops[0x193] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_nb(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_nb(rm);
@@ -754,8 +760,8 @@ public class Prefix_0f extends Helper {
         /* SETZ */
         ops[0x194] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_z(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_z(rm);
@@ -768,8 +774,8 @@ public class Prefix_0f extends Helper {
         /* SETNZ */
         ops[0x195] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_nz(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_nz(rm);
@@ -782,8 +788,8 @@ public class Prefix_0f extends Helper {
         /* SETBE */
         ops[0x196] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_be(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_be(rm);
@@ -796,8 +802,8 @@ public class Prefix_0f extends Helper {
         /* SETNBE */
         ops[0x197] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_nbe(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_nbe(rm);
@@ -810,8 +816,8 @@ public class Prefix_0f extends Helper {
         /* SETS */
         ops[0x198] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_s(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_s(rm);
@@ -824,8 +830,8 @@ public class Prefix_0f extends Helper {
         /* SETNS */
         ops[0x199] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_ns(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_ns(rm);
@@ -838,8 +844,8 @@ public class Prefix_0f extends Helper {
         /* SETP */
         ops[0x19a] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_p(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_p(rm);
@@ -852,8 +858,8 @@ public class Prefix_0f extends Helper {
         /* SETNP */
         ops[0x19b] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_np(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_np(rm);
@@ -866,8 +872,8 @@ public class Prefix_0f extends Helper {
         /* SETL */
         ops[0x19c] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_l(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_l(rm);
@@ -880,8 +886,8 @@ public class Prefix_0f extends Helper {
         /* SETNL */
         ops[0x19d] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_nl(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_nl(rm);
@@ -894,8 +900,8 @@ public class Prefix_0f extends Helper {
         /* SETLE */
         ops[0x19e] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_le(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_le(rm);
@@ -908,8 +914,8 @@ public class Prefix_0f extends Helper {
         /* SETNLE */
         ops[0x19f] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.SETcc_reg_nle(rm);
                 } else {
                     prev.next = new Inst2.SETcc_mem_nle(rm);
@@ -938,7 +944,7 @@ public class Prefix_0f extends Helper {
         /* CPUID */
         ops[0x1a2] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_486NEW) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_486NEW) {
                     prev.next = new Inst1.Illegal("CPUID");
                     return RESULT_JUMP;
                 }
@@ -951,8 +957,8 @@ public class Prefix_0f extends Helper {
         /* BT Ew,Gw */
         ops[0x1a3] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.BtEwGw_reg(rm);
                 } else {
                     prev.next = new Inst2.BtEwGw_mem(rm);
@@ -964,8 +970,8 @@ public class Prefix_0f extends Helper {
         /* SHLD Ew,Gw,Ib */
         ops[0x1a4] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     Reg earw = Mod.ew(rm);
                     int op3 = decode_fetchb();
                     if (Instructions.valid_DSHLW(op3))
@@ -983,8 +989,8 @@ public class Prefix_0f extends Helper {
         /* SHLD Ew,Gw,CL */
         ops[0x1a5] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.ShldEwGwCl_reg(rm);
                 } else {
                     prev.next = new Inst2.ShldEwGwCl_mem(rm);
@@ -1012,8 +1018,8 @@ public class Prefix_0f extends Helper {
         /* BTS Ew,Gw */
         ops[0x1ab] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.BtsEwGw_reg(rm);
                 } else {
                     prev.next = new Inst2.BtsEwGw_mem(rm);
@@ -1025,8 +1031,8 @@ public class Prefix_0f extends Helper {
         /* SHRD Ew,Gw,Ib */
         ops[0x1ac] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     Reg earw = Mod.ew(rm);
                     int op3 = decode_fetchb();
                     if (Instructions.valid_DSHRW(op3))
@@ -1044,8 +1050,8 @@ public class Prefix_0f extends Helper {
         /* SHRD Ew,Gw,CL */
         ops[0x1ad] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.ShrdEwGwCl_reg(rm);
                 } else {
                     prev.next = new Inst2.ShrdEwGwCl_mem(rm);
@@ -1057,8 +1063,8 @@ public class Prefix_0f extends Helper {
         /* IMUL Gw,Ew */
         ops[0x1af] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.ImulGwEw_reg(rm);
                 } else {
                     prev.next = new Inst2.ImulGwEw_mem(rm);
@@ -1070,12 +1076,12 @@ public class Prefix_0f extends Helper {
         /* cmpxchg Eb,Gb */
         ops[0x1b0] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType< CPU.CPU_ARCHTYPE_486OLD) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_486OLD) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 } else {
-                    int rm=decode_fetchb();
-                    if (rm >= 0xc0 ) {
+                    int rm = decode_fetchb();
+                    if (rm >= 0xc0) {
                         prev.next = new Inst2.CmpxchgEbGb_reg(rm);
                     } else {
                         prev.next = new Inst2.CmpxchgEbGb_mem(rm);
@@ -1089,12 +1095,12 @@ public class Prefix_0f extends Helper {
         /* cmpxchg Ew,Gw */
         ops[0x1b1] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType< CPU.CPU_ARCHTYPE_486OLD) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_486OLD) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 } else {
-                    int rm=decode_fetchb();
-                    if (rm >= 0xc0 ) {
+                    int rm = decode_fetchb();
+                    if (rm >= 0xc0) {
                         prev.next = new Inst2.CmpxchgEwGw_reg(rm);
                     } else {
                         prev.next = new Inst2.CmpxchgEwGw_mem(rm);
@@ -1107,8 +1113,8 @@ public class Prefix_0f extends Helper {
         /* LSS Ew */
         ops[0x1b2] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Illegal("");
                 } else {
                     prev.next = new Inst2.LssEw(rm);
@@ -1120,8 +1126,8 @@ public class Prefix_0f extends Helper {
         /* BTR Ew,Gw */
         ops[0x1b3] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.BtrEwGw_reg(rm);
                 } else {
                     prev.next = new Inst2.BtrEwGw_mem(rm);
@@ -1133,8 +1139,8 @@ public class Prefix_0f extends Helper {
         /* LFS Ew */
         ops[0x1b4] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Illegal("");
                 } else {
                     prev.next = new Inst2.LfsEw(rm);
@@ -1146,8 +1152,8 @@ public class Prefix_0f extends Helper {
         /* LGS Ew */
         ops[0x1b5] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst1.Illegal("");
                 } else {
                     prev.next = new Inst2.LgsEw(rm);
@@ -1159,8 +1165,8 @@ public class Prefix_0f extends Helper {
         /* MOVZX Gw,Eb */
         ops[0x1b6] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.MovzxGwEb_reg(rm);
                 } else {
                     prev.next = new Inst2.MovzxGwEb_mem(rm);
@@ -1172,8 +1178,8 @@ public class Prefix_0f extends Helper {
         /* MOVZX Gw,Ew */
         ops[0x1b7] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.MovzxGwEw_reg(rm);
                 } else {
                     prev.next = new Inst2.MovzxGwEw_mem(rm);
@@ -1188,40 +1194,40 @@ public class Prefix_0f extends Helper {
         /* GRP8 Ew,Ib */
         ops[0x1ba] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     switch (rm & 0x38) {
-                    case 0x20:										/* BT */
-                        prev.next = new Inst2.BtEwIb_reg(rm);
-                        break;
-                    case 0x28:										/* BTS */
-                        prev.next = new Inst2.BtsEwIb_reg(rm);
-                        break;
-                    case 0x30:										/* BTR */
-                        prev.next = new Inst2.BtrEwIb_reg(rm);
-                        break;
-                    case 0x38:										/* BTC */
-                        prev.next = new Inst2.BtcEwIb_reg(rm);
-                        break;
-                    default:
-                        Log.exit("CPU:0F:BA:Illegal subfunction "+Integer.toString(rm & 0x38,16));
+                        case 0x20:                                        /* BT */
+                            prev.next = new Inst2.BtEwIb_reg(rm);
+                            break;
+                        case 0x28:                                        /* BTS */
+                            prev.next = new Inst2.BtsEwIb_reg(rm);
+                            break;
+                        case 0x30:                                        /* BTR */
+                            prev.next = new Inst2.BtrEwIb_reg(rm);
+                            break;
+                        case 0x38:                                        /* BTC */
+                            prev.next = new Inst2.BtcEwIb_reg(rm);
+                            break;
+                        default:
+                            Log.exit("CPU:0F:BA:Illegal subfunction " + Integer.toString(rm & 0x38, 16));
                     }
                 } else {
                     switch (rm & 0x38) {
-                    case 0x20:										/* BT */
-                        prev.next = new Inst2.BtEwIb_mem(rm);
-                        break;
-                    case 0x28:										/* BTS */
-                        prev.next = new Inst2.BtsEwIb_mem(rm);
-                        break;
-                    case 0x30:										/* BTR */
-                        prev.next = new Inst2.BtrEwIb_mem(rm);
-                        break;
-                    case 0x38:										/* BTC */
-                        prev.next = new Inst2.BtcEwIb_mem(rm);
-                        break;
-                    default:
-                        Log.exit("CPU:0F:BA:Illegal subfunction "+Integer.toString(rm & 0x38,16));
+                        case 0x20:                                        /* BT */
+                            prev.next = new Inst2.BtEwIb_mem(rm);
+                            break;
+                        case 0x28:                                        /* BTS */
+                            prev.next = new Inst2.BtsEwIb_mem(rm);
+                            break;
+                        case 0x30:                                        /* BTR */
+                            prev.next = new Inst2.BtrEwIb_mem(rm);
+                            break;
+                        case 0x38:                                        /* BTC */
+                            prev.next = new Inst2.BtcEwIb_mem(rm);
+                            break;
+                        default:
+                            Log.exit("CPU:0F:BA:Illegal subfunction " + Integer.toString(rm & 0x38, 16));
                     }
                 }
                 return RESULT_HANDLED;
@@ -1231,8 +1237,8 @@ public class Prefix_0f extends Helper {
         /* BTC Ew,Gw */
         ops[0x1bb] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.BtcEwGw_reg(rm);
                 } else {
                     prev.next = new Inst2.BtcEwGw_mem(rm);
@@ -1244,8 +1250,8 @@ public class Prefix_0f extends Helper {
         /* BSF Gw,Ew */
         ops[0x1bc] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.BsfGwEw_reg(rm);
                 } else {
                     prev.next = new Inst2.BsfGwEw_mem(rm);
@@ -1257,8 +1263,8 @@ public class Prefix_0f extends Helper {
         /* BSR Gw,Ew */
         ops[0x1bd] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.BsrGwEw_reg(rm);
                 } else {
                     prev.next = new Inst2.BsrGwEw_mem(rm);
@@ -1270,8 +1276,8 @@ public class Prefix_0f extends Helper {
         /* MOVSX Gw,Eb */
         ops[0x1be] = new Decode() {
             final public int call(Op prev) {
-                int rm=decode_fetchb();
-                if (rm >= 0xc0 ) {
+                int rm = decode_fetchb();
+                if (rm >= 0xc0) {
                     prev.next = new Inst2.MovsxGwEb_reg(rm);
                 } else {
                     prev.next = new Inst2.MovsxGwEb_mem(rm);
@@ -1283,12 +1289,12 @@ public class Prefix_0f extends Helper {
         /* XADD Gb,Eb */
         ops[0x1c0] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType< CPU.CPU_ARCHTYPE_486OLD) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_486OLD) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 } else {
-                    int rm=decode_fetchb();
-                    if (rm >= 0xc0 ) {
+                    int rm = decode_fetchb();
+                    if (rm >= 0xc0) {
                         prev.next = new Inst2.XaddGbEb_reg(rm);
                     } else {
                         prev.next = new Inst2.XaddGbEb_mem(rm);
@@ -1302,12 +1308,12 @@ public class Prefix_0f extends Helper {
         /* XADD Gw,Ew */
         ops[0x1c1] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType< CPU.CPU_ARCHTYPE_486OLD) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_486OLD) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 } else {
-                    int rm=decode_fetchb();
-                    if (rm >= 0xc0 ) {
+                    int rm = decode_fetchb();
+                    if (rm >= 0xc0) {
                         prev.next = new Inst2.XaddGwEw_reg(rm);
                     } else {
                         prev.next = new Inst2.XaddGwEw_mem(rm);
@@ -1320,7 +1326,7 @@ public class Prefix_0f extends Helper {
         /* BSWAP AX */
         ops[0x1c8] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType< CPU.CPU_ARCHTYPE_486OLD) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_486OLD) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 } else {
@@ -1333,7 +1339,7 @@ public class Prefix_0f extends Helper {
         /* BSWAP CX */
         ops[0x1c9] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType< CPU.CPU_ARCHTYPE_486OLD) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_486OLD) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 } else {
@@ -1346,7 +1352,7 @@ public class Prefix_0f extends Helper {
         /* BSWAP DX */
         ops[0x1ca] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType< CPU.CPU_ARCHTYPE_486OLD) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_486OLD) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 } else {
@@ -1359,7 +1365,7 @@ public class Prefix_0f extends Helper {
         /* BSWAP BX */
         ops[0x1cb] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType< CPU.CPU_ARCHTYPE_486OLD) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_486OLD) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 } else {
@@ -1372,7 +1378,7 @@ public class Prefix_0f extends Helper {
         /* BSWAP SP */
         ops[0x1cc] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType< CPU.CPU_ARCHTYPE_486OLD) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_486OLD) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 } else {
@@ -1385,7 +1391,7 @@ public class Prefix_0f extends Helper {
         /* BSWAP BP */
         ops[0x1cd] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType< CPU.CPU_ARCHTYPE_486OLD) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_486OLD) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 } else {
@@ -1398,7 +1404,7 @@ public class Prefix_0f extends Helper {
         /* BSWAP SI */
         ops[0x1ce] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType< CPU.CPU_ARCHTYPE_486OLD) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_486OLD) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 } else {
@@ -1411,7 +1417,7 @@ public class Prefix_0f extends Helper {
         /* BSWAP DI */
         ops[0x1cf] = new Decode() {
             final public int call(Op prev) {
-                if (CPU.CPU_ArchitectureType< CPU.CPU_ARCHTYPE_486OLD) {
+                if (CPU.CPU_ArchitectureType < CPU.CPU_ARCHTYPE_486OLD) {
                     prev.next = new Inst1.Illegal("");
                     return RESULT_JUMP;
                 } else {

@@ -7,204 +7,22 @@ public class Drive_iso extends Dos_Drive {
     static private final int ISO_MAX_HASH_TABLE_SIZE = 100;
     static private final int ISO_FRAMESIZE = 2048;
 
-    static final private int ISO_ASSOCIATED	= 4;
+    static final private int ISO_ASSOCIATED = 4;
     static final private int ISO_DIRECTORY = 2;
     static final private int ISO_HIDDEN = 1;
     static final private int ISO_MAX_FILENAME_LENGTH = 37;
     static final private int ISO_MAXPATHNAME = 256;
     static final private int ISO_FIRST_VD = 16;
-    static private boolean IS_ASSOC(int fileFlags) {return (fileFlags & ISO_ASSOCIATED)!=0;}
-    static private boolean IS_DIR(int fileFlags) {return (fileFlags & ISO_DIRECTORY)!=0;}
-    static private boolean IS_HIDDEN(int fileFlags) {return (fileFlags & ISO_HIDDEN)!=0;}
-
-    private static class isoDirEntry {
-        /*Bit8u*/short length;
-        /*Bit8u*/short extAttrLength;
-        /*Bit32u*/long extentLocationL;
-        /*Bit32u*/long extentLocationM;
-        /*Bit32u*/long dataLengthL;
-        /*Bit32u*/long dataLengthM;
-        /*Bit8u*/short dateYear;
-        /*Bit8u*/short dateMonth;
-        /*Bit8u*/short dateDay;
-        /*Bit8u*/short timeHour;
-        /*Bit8u*/short timeMin;
-        /*Bit8u*/short timeSec;
-        /*Bit8u*/short timeZone;
-        /*Bit8u*/short fileFlags;
-        /*Bit8u*/short fileUnitSize;
-        /*Bit8u*/short interleaveGapSize;
-        /*Bit16u*/int VolumeSeqNumberL;
-        /*Bit16u*/int VolumeSeqNumberM;
-        /*Bit8u*/short fileIdentLength;
-        /*Bit8u*/byte[] ident = new byte[222];
-
-        public void copy(isoDirEntry i) {
-            length = i.length;
-            extAttrLength = i.extAttrLength;
-            extentLocationL = i.extentLocationL;
-            extentLocationM = i.extentLocationM;
-            dataLengthL = i.dataLengthL;
-            dataLengthM = i.dataLengthM;
-            dateYear = i.dateYear;
-            dateMonth = i.dateMonth;
-            dateDay = i.dateDay;
-            timeHour = i.timeHour;
-            timeMin = i.timeMin;
-            timeSec = i.timeSec;
-            timeZone = i.timeZone;
-            fileFlags = i.fileFlags;
-            fileUnitSize = i.fileUnitSize;
-            interleaveGapSize = i.interleaveGapSize;
-            VolumeSeqNumberL = i.VolumeSeqNumberL;
-            VolumeSeqNumberM = i.VolumeSeqNumberM;
-            fileIdentLength = i.fileIdentLength;
-            System.arraycopy(i.ident, 0, ident, 0, ident.length);
-        }
-        public void load(byte[] data, int offset, int len) {
-            Ptr p = new Ptr(data, offset);
-            length = p.readb(0);p.inc(1);
-            extAttrLength = p.readb(0);p.inc(1);
-            extentLocationL = p.readd(0);p.inc(4);
-            extentLocationM = p.readd(0);p.inc(4);
-            dataLengthL = p.readd(0);p.inc(4);
-            dataLengthM = p.readd(0);p.inc(4);
-
-            dateYear = p.readb(0);p.inc(1);
-            dateMonth = p.readb(0);p.inc(1);
-            dateDay = p.readb(0);p.inc(1);
-            timeHour = p.readb(0);p.inc(1);
-            timeMin = p.readb(0);p.inc(1);
-            timeSec = p.readb(0);p.inc(1);
-            timeZone = p.readb(0);p.inc(1);
-            fileFlags = p.readb(0);p.inc(1);
-            fileUnitSize = p.readb(0);p.inc(1);
-            interleaveGapSize = p.readb(0);p.inc(1);
-            VolumeSeqNumberL = p.readw(0);p.inc(2);
-            VolumeSeqNumberM = p.readw(0);p.inc(2);
-            fileIdentLength = p.readb(0);p.inc(1);
-            if (length>33)
-                p.read(ident, length-33);
-        }
-    }
-
-    private static class DirIterator {
-		boolean valid;
-		boolean root;
-		/*Bit32u*/long currentSector;
-		/*Bit32u*/long endSector;
-		/*Bit32u*/long pos;
-	}
-    private DirIterator[] dirIterators = new DirIterator[DOS_Drive_Cache.MAX_OPENDIRS];
-
-	private int nextFreeDirIterator;
-
-	private static class SectorHashEntry {
-		boolean valid;
-		/*Bit32u*/long sector;
-		/*Bit8u*/byte[] data = new byte[ISO_FRAMESIZE];
-	}
-    private SectorHashEntry[] sectorHashEntries = new SectorHashEntry[ISO_MAX_HASH_TABLE_SIZE];
-
-	private boolean dataCD;
-	private isoDirEntry rootEntry = new isoDirEntry();
-	private /*Bit8u*/short mediaid;
-	private String fileName;
-	private /*Bit8u*/short subUnit;
-	private char driveLetter;
-	private String discLabel;
-
-    class isoFile extends DOS_File {
-        isoFile(Drive_iso drive, String name, FileStat_Block stat, /*Bit32u*/long offset) {
-            this.drive = drive;
-            time = stat.time;
-            date = stat.date;
-            attr = stat.attr;
-            fileBegin = offset;
-            filePos = fileBegin;
-            fileEnd = fileBegin + stat.size;
-            cachedSector = -1;
-            open = true;
-            this.name = null;
-            SetName(name);
-        }
-        public boolean	Read(byte[] data,/*Bit16u*/IntRef size) {
-            if (filePos + size.value > fileEnd)
-                size.value = (int)(fileEnd - filePos);
-
-            /*Bit16u*/int nowSize = 0;
-            int sector = (int)(filePos / ISO_FRAMESIZE);
-            /*Bit16u*/int sectorPos = (/*Bit16u*/int)(filePos % ISO_FRAMESIZE);
-
-            if (sector != cachedSector) {
-                if (drive.readSector(buffer, sector)) cachedSector = sector;
-                else { size.value = 0; cachedSector = -1; }
-            }
-            while (nowSize < size.value) {
-                /*Bit16u*/int remSector = ISO_FRAMESIZE - sectorPos;
-                /*Bit16u*/int remSize = size.value - nowSize;
-                if(remSector < remSize) {
-                    System.arraycopy(buffer, sectorPos, data, nowSize, remSector);
-                    nowSize += remSector;
-                    sectorPos = 0;
-                    sector++;
-                    cachedSector++;
-                    if (!drive.readSector(buffer, sector)) {
-                        size.value = nowSize;
-                        cachedSector = -1;
-                    }
-                } else {
-                    System.arraycopy(buffer, sectorPos, data, nowSize, remSize);
-                    nowSize += remSize;
-                }
-
-            }
-
-            size.value = nowSize;
-            filePos += size.value;
-            return true;
-        }
-        public boolean	Write(byte[] data,/*Bit16u*/IntRef size) {
-            return false;
-        }
-        public boolean	Seek(/*Bit32u*/LongRef pos,/*Bit32u*/int type) {
-            int p = (int)(pos.value & 0xFFFFFFFFl);
-            switch (type) {
-                case Dos_files.DOS_SEEK_SET:
-                    filePos = fileBegin + p;
-                    break;
-                case Dos_files.DOS_SEEK_CUR:
-                    filePos += p;
-                    break;
-                case Dos_files.DOS_SEEK_END:
-                    filePos = fileEnd + p;
-                    break;
-                default:
-                    return false;
-            }
-            if (filePos > fileEnd || filePos < fileBegin)
-                filePos = fileEnd;
-
-            pos.value = filePos - fileBegin;
-            return true;
-        }
-        public boolean	Close() {
-            if (refCtr == 1) open = false;
-	        return true;
-        }
-        public /*Bit16u*/int GetInformation() {
-            return 0x40;		// read-only drive
-        }
-
-        private Drive_iso drive;
-        private /*Bit8u*/byte[] buffer = new byte[ISO_FRAMESIZE];
-        private int cachedSector;
-        private /*Bit32u*/long fileBegin;
-        private /*Bit32u*/long filePos;
-        private /*Bit32u*/long fileEnd;
-        private /*Bit32u*/int info;
-    }
-
+    private final DirIterator[] dirIterators = new DirIterator[DOS_Drive_Cache.MAX_OPENDIRS];
+    private int nextFreeDirIterator;
+    private final SectorHashEntry[] sectorHashEntries = new SectorHashEntry[ISO_MAX_HASH_TABLE_SIZE];
+    private boolean dataCD;
+    private final isoDirEntry rootEntry = new isoDirEntry();
+    private /*Bit8u*/ short mediaid;
+    private final String fileName;
+    private /*Bit8u*/ short subUnit;
+    private char driveLetter;
+    private String discLabel;
     public Drive_iso(char driveLetter, String fileName, /*Bit8u*/short mediaid, IntRef error) {
         nextFreeDirIterator = 0;
 
@@ -215,29 +33,41 @@ public class Drive_iso extends Dos_Drive {
 
         if (error.value == 0) {
             if (loadImage()) {
-                info = "isoDrive "+fileName;
+                info = "isoDrive " + fileName;
                 this.driveLetter = driveLetter;
                 this.mediaid = mediaid;
                 StringRef buffer = new StringRef();
-                if (!DosMSCDEX.MSCDEX_GetVolumeName(subUnit, buffer)) buffer.value="";
+                if (!DosMSCDEX.MSCDEX_GetVolumeName(subUnit, buffer)) buffer.value = "";
                 StringRef d = new StringRef(discLabel);
-                Drives.Set_Label(buffer.value,d,true);
+                Drives.Set_Label(buffer.value, d, true);
                 discLabel = d.value;
             } else if (CDROM_Interface_Image.images[subUnit].HasDataTrack() == false) { //Audio only cdrom
-                info = "isoDrive "+fileName;
+                info = "isoDrive " + fileName;
                 this.driveLetter = driveLetter;
                 this.mediaid = mediaid;
                 StringRef d = new StringRef(discLabel);
-                Drives.Set_Label("Audio_CD",d,true);
+                Drives.Set_Label("Audio_CD", d, true);
                 discLabel = d.value;
             } else error.value = 6; //Corrupt image
         }
-        for (int i=0;i<dirIterators.length;i++) {
+        for (int i = 0; i < dirIterators.length; i++) {
             dirIterators[i] = new DirIterator();
         }
-        for (int i=0;i<sectorHashEntries.length;i++) {
+        for (int i = 0; i < sectorHashEntries.length; i++) {
             sectorHashEntries[i] = new SectorHashEntry();
         }
+    }
+
+    static private boolean IS_ASSOC(int fileFlags) {
+        return (fileFlags & ISO_ASSOCIATED) != 0;
+    }
+
+    static private boolean IS_DIR(int fileFlags) {
+        return (fileFlags & ISO_DIRECTORY) != 0;
+    }
+
+    static private boolean IS_HIDDEN(int fileFlags) {
+        return (fileFlags & ISO_HIDDEN) != 0;
     }
 
     int UpdateMscdex(char driveLetter, String path, /*Bit8u*/ShortRef subUnit) {
@@ -305,12 +135,12 @@ public class Drive_iso extends Dos_Drive {
     }
 
     public boolean TestDir(String dir) {
-        isoDirEntry de=new isoDirEntry();
+        isoDirEntry de = new isoDirEntry();
         return (lookup(de, dir) && IS_DIR(de.fileFlags));
     }
 
-    public boolean FindFirst(String dir,Dos_DTA dta,boolean fcb_findfirst/*=false*/) {
-        isoDirEntry de=new isoDirEntry();
+    public boolean FindFirst(String dir, Dos_DTA dta, boolean fcb_findfirst/*=false*/) {
+        isoDirEntry de = new isoDirEntry();
         if (!lookup(de, dir)) {
             Dos.DOS_SetError(Dos.DOSERR_PATH_NOT_FOUND);
             return false;
@@ -322,17 +152,18 @@ public class Drive_iso extends Dos_Drive {
         dirIterators[dirIterator].root = isRoot;
         dta.SetDirID(dirIterator);
 
-        /*Bit8u*/ShortRef attr = new ShortRef();
+        /*Bit8u*/
+        ShortRef attr = new ShortRef();
         StringRef pattern = new StringRef();
         dta.GetSearchParams(attr, pattern);
 
         if (attr.value == Dos_system.DOS_ATTR_VOLUME) {
-            dta.SetResult(discLabel, 0, 0, 0, (short)Dos_system.DOS_ATTR_VOLUME);
+            dta.SetResult(discLabel, 0, 0, 0, (short) Dos_system.DOS_ATTR_VOLUME);
             return true;
-        } else if ((attr.value & Dos_system.DOS_ATTR_VOLUME)!=0 && isRoot && !fcb_findfirst) {
-            if (Drives.WildFileCmp(discLabel,pattern.value)) {
+        } else if ((attr.value & Dos_system.DOS_ATTR_VOLUME) != 0 && isRoot && !fcb_findfirst) {
+            if (Drives.WildFileCmp(discLabel, pattern.value)) {
                 // Get Volume Label (DOS_ATTR_VOLUME) and only in basedir and if it matches the searchstring
-                dta.SetResult(discLabel, 0, 0, 0, (short)Dos_system.DOS_ATTR_VOLUME);
+                dta.SetResult(discLabel, 0, 0, 0, (short) Dos_system.DOS_ATTR_VOLUME);
                 return true;
             }
         }
@@ -341,7 +172,8 @@ public class Drive_iso extends Dos_Drive {
     }
 
     public boolean FindNext(Dos_DTA dta) {
-        /*Bit8u*/ShortRef attr=new ShortRef(0);
+        /*Bit8u*/
+        ShortRef attr = new ShortRef(0);
         StringRef pattern = new StringRef();
         dta.GetSearchParams(attr, pattern);
 
@@ -350,20 +182,24 @@ public class Drive_iso extends Dos_Drive {
 
         isoDirEntry de = new isoDirEntry();
         while (GetNextDirEntry(dirIterator, de)) {
-            /*Bit8u*/short findAttr = 0;
+            /*Bit8u*/
+            short findAttr = 0;
             if (IS_DIR(de.fileFlags)) findAttr |= Dos_system.DOS_ATTR_DIRECTORY;
             else findAttr |= Dos_system.DOS_ATTR_ARCHIVE;
             if (IS_HIDDEN(de.fileFlags)) findAttr |= Dos_system.DOS_ATTR_HIDDEN;
 
             String deident = StringHelper.toString(de.ident);
-            if (!IS_ASSOC(de.fileFlags) && !(isRoot && de.ident[0]=='.') && Drives.WildFileCmp(deident, pattern.value)
-                && (~attr.value & findAttr & (Dos_system.DOS_ATTR_DIRECTORY | Dos_system.DOS_ATTR_HIDDEN | Dos_system.DOS_ATTR_SYSTEM))==0) {
+            if (!IS_ASSOC(de.fileFlags) && !(isRoot && de.ident[0] == '.') && Drives.WildFileCmp(deident, pattern.value)
+                    && (~attr.value & findAttr & (Dos_system.DOS_ATTR_DIRECTORY | Dos_system.DOS_ATTR_HIDDEN | Dos_system.DOS_ATTR_SYSTEM)) == 0) {
 
                 /* file is okay, setup everything to be copied in DTA Block */
                 String findName = deident.toUpperCase();
-                /*Bit32u*/long findSize = de.dataLengthL;
-                /*Bit16u*/int findDate = Dos.DOS_PackDate(1900 + de.dateYear, de.dateMonth, de.dateDay);
-                /*Bit16u*/int findTime = Dos.DOS_PackTime(de.timeHour, de.timeMin, de.timeSec);
+                /*Bit32u*/
+                long findSize = de.dataLengthL;
+                /*Bit16u*/
+                int findDate = Dos.DOS_PackDate(1900 + de.dateYear, de.dateMonth, de.dateDay);
+                /*Bit16u*/
+                int findTime = Dos.DOS_PackTime(de.timeHour, de.timeMin, de.timeSec);
                 dta.SetResult(findName, findSize, findDate, findTime, findAttr);
                 return true;
             }
@@ -375,7 +211,7 @@ public class Drive_iso extends Dos_Drive {
         return false;
     }
 
-    public boolean Rename(String oldname,String newname) {
+    public boolean Rename(String oldname, String newname) {
         Dos.DOS_SetError(Dos.DOSERR_ACCESS_DENIED);
         return false;
     }
@@ -401,12 +237,12 @@ public class Drive_iso extends Dos_Drive {
     }
 
     public boolean FileExists(String name) {
-        isoDirEntry de=new isoDirEntry();
+        isoDirEntry de = new isoDirEntry();
         return (lookup(de, name) && !IS_DIR(de.fileFlags));
     }
 
     public boolean FileStat(String name, FileStat_Block stat_block) {
-        isoDirEntry de=new isoDirEntry();
+        isoDirEntry de = new isoDirEntry();
         boolean success = lookup(de, name);
 
         if (success) {
@@ -433,7 +269,7 @@ public class Drive_iso extends Dos_Drive {
     }
 
     public /*Bits*/int UnMount() {
-        if(DosMSCDEX.MSCDEX_RemoveDrive(driveLetter)!=0) {
+        if (DosMSCDEX.MSCDEX_RemoveDrive(driveLetter) != 0) {
             return 0;
         }
         return 2;
@@ -445,7 +281,7 @@ public class Drive_iso extends Dos_Drive {
         // get start and end sector of the directory entry (pad end sector if necessary)
         dirIterators[dirIterator].currentSector = de.extentLocationL;
         dirIterators[dirIterator].endSector =
-            de.extentLocationL + de.dataLengthL / ISO_FRAMESIZE - 1;
+                de.extentLocationL + de.dataLengthL / ISO_FRAMESIZE - 1;
         if (de.dataLengthL % ISO_FRAMESIZE != 0)
             dirIterators[dirIterator].endSector++;
 
@@ -461,15 +297,16 @@ public class Drive_iso extends Dos_Drive {
 
     private boolean GetNextDirEntry(int dirIteratorHandle, isoDirEntry de) {
         boolean result = false;
-        /*Bit8u*/byte[][] buffer = new byte[1][];
+        /*Bit8u*/
+        byte[][] buffer = new byte[1][];
         DirIterator dirIterator = dirIterators[dirIteratorHandle];
 
         // check if the directory entry is valid
         if (dirIterator.valid && ReadCachedSector(buffer, dirIterator.currentSector)) {
             // check if the next sector has to be read
             if ((dirIterator.pos >= ISO_FRAMESIZE)
-             || (buffer[0][(int)dirIterator.pos] == 0)
-             || (dirIterator.pos + buffer[0][(int)dirIterator.pos] > ISO_FRAMESIZE)) {
+                    || (buffer[0][(int) dirIterator.pos] == 0)
+                    || (dirIterator.pos + buffer[0][(int) dirIterator.pos] > ISO_FRAMESIZE)) {
 
                 // check if there is another sector available
                 if (dirIterator.currentSector < dirIterator.endSector) {
@@ -481,11 +318,11 @@ public class Drive_iso extends Dos_Drive {
                 } else {
                     return false;
                 }
-             }
-             // read sector and advance sector pointer
-             int length = readDirEntry(de, buffer[0], (int)dirIterator.pos);
-             result = length >= 0;
-             dirIterator.pos += length;
+            }
+            // read sector and advance sector pointer
+            int length = readDirEntry(de, buffer[0], (int) dirIterator.pos);
+            result = length >= 0;
+            dirIterator.pos += length;
         }
         return result;
     }
@@ -495,22 +332,22 @@ public class Drive_iso extends Dos_Drive {
 
         // if this was the last aquired iterator decrement nextFreeIterator
         if ((dirIterator + 1) % DOS_Drive_Cache.MAX_OPENDIRS == nextFreeDirIterator) {
-            if (nextFreeDirIterator>0) {
+            if (nextFreeDirIterator > 0) {
                 nextFreeDirIterator--;
             } else {
-                nextFreeDirIterator = DOS_Drive_Cache.MAX_OPENDIRS-1;
+                nextFreeDirIterator = DOS_Drive_Cache.MAX_OPENDIRS - 1;
             }
         }
     }
 
     private boolean ReadCachedSector(/*Bit8u*/byte[][] buffer, /*Bit32u*/long sector) {
         // get hash table entry
-        int pos = (int)sector % ISO_MAX_HASH_TABLE_SIZE;
+        int pos = (int) sector % ISO_MAX_HASH_TABLE_SIZE;
         SectorHashEntry he = sectorHashEntries[pos];
 
         // check if the entry is valid and contains the correct sector
         if (!he.valid || he.sector != sector) {
-            if (!CDROM_Interface_Image.images[subUnit].ReadSector(he.data, 0, false, (int)sector)) {
+            if (!CDROM_Interface_Image.images[subUnit].ReadSector(he.data, 0, false, (int) sector)) {
                 return false;
             }
             he.valid = true;
@@ -527,7 +364,7 @@ public class Drive_iso extends Dos_Drive {
 
     private int readDirEntry(isoDirEntry de, /*Bit8u*/byte[] data, int offset) {
         // copy data into isoDirEntry struct, data[0] = length of DirEntry
-    //	if (data[0] > sizeof(isoDirEntry)) return -1;//check disabled as isoDirentry is currently 258 bytes large. So it always fits
+        //	if (data[0] > sizeof(isoDirEntry)) return -1;//check disabled as isoDirentry is currently 258 bytes large. So it always fits
         de.load(data, offset, data[0]);
 
         // xa not supported
@@ -548,7 +385,7 @@ public class Drive_iso extends Dos_Drive {
             if (de.fileIdentLength > 200) return -1;
             de.ident[de.fileIdentLength] = 0;
             // remove any file version identifiers as there are some cdroms that don't have them
-            StringHelper.strreplace(de.ident, ';', (char)0);
+            StringHelper.strreplace(de.ident, ';', (char) 0);
             // if file has no extension remove the trailing dot
             int tmp = StringHelper.strlen(de.ident);
             if (tmp > 0) {
@@ -556,14 +393,161 @@ public class Drive_iso extends Dos_Drive {
             }
         }
         int dotpos = StringHelper.toString(de.ident).indexOf('.');
-        if (dotpos>=0) {
+        if (dotpos >= 0) {
             int len = StringHelper.strlen(de.ident);
-            if (len-dotpos>4) de.ident[dotpos+4]=0;
-            if (dotpos>8) {
+            if (len - dotpos > 4) de.ident[dotpos + 4] = 0;
+            if (dotpos > 8) {
                 StringHelper.strcpy(de.ident, 8, de.ident, dotpos);
             }
-        } else if (StringHelper.strlen(de.ident)>8) de.ident[8]=0;
+        } else if (StringHelper.strlen(de.ident) > 8) de.ident[8] = 0;
         return de.length;
+    }
+
+    boolean loadImage() {
+        dataCD = false;
+        byte[] b = new byte[8000];
+        readSector(b, ISO_FIRST_VD);
+        if (/*pvd.type*/b[0] != 1 || !StringHelper.toString(/*pvd.standardIdent*/b, 1, 5).startsWith("CD001") || /*pvd.version*/b[6] != 1)
+            return false;
+        // :TODO: double check that 156 is the right offset
+        if (readDirEntry(this.rootEntry, /*pvd.rootEntry*/b, 156) > 0) {
+            dataCD = true;
+            return true;
+        }
+        return false;
+    }
+
+    boolean lookup(isoDirEntry de, String path) {
+        if (!dataCD) return false;
+        de.copy(this.rootEntry);
+        if (path.length() == 0) return true;
+
+        String[] isoPath = StringHelper.split(StringHelper.replace(path, "\\", "/"), "/");
+
+        // iterate over all path elements (name), and search each of them in the current de
+        for (int i = 0; i < isoPath.length; i++) {
+            String name = isoPath[i];
+            boolean found = false;
+            // current entry must be a directory, abort otherwise
+            if (IS_DIR(de.fileFlags)) {
+
+                // remove the trailing dot if present
+                int nameLength = name.length();
+                if (nameLength > 0) {
+                    if (name.charAt(nameLength - 1) == '.') name = name.substring(0, nameLength - 1);
+                }
+
+                // look for the current path element
+                int dirIterator = GetDirIterator(de);
+                while (!found && GetNextDirEntry(dirIterator, de)) {
+                    if (!IS_ASSOC(de.fileFlags) && name.compareToIgnoreCase(StringHelper.toString(de.ident)) == 0) {
+                        found = true;
+                    }
+                }
+                FreeDirIterator(dirIterator);
+            }
+            if (!found) return false;
+        }
+        return true;
+    }
+
+    private static class isoDirEntry {
+        /*Bit8u*/ short length;
+        /*Bit8u*/ short extAttrLength;
+        /*Bit32u*/ long extentLocationL;
+        /*Bit32u*/ long extentLocationM;
+        /*Bit32u*/ long dataLengthL;
+        /*Bit32u*/ long dataLengthM;
+        /*Bit8u*/ short dateYear;
+        /*Bit8u*/ short dateMonth;
+        /*Bit8u*/ short dateDay;
+        /*Bit8u*/ short timeHour;
+        /*Bit8u*/ short timeMin;
+        /*Bit8u*/ short timeSec;
+        /*Bit8u*/ short timeZone;
+        /*Bit8u*/ short fileFlags;
+        /*Bit8u*/ short fileUnitSize;
+        /*Bit8u*/ short interleaveGapSize;
+        /*Bit16u*/ int VolumeSeqNumberL;
+        /*Bit16u*/ int VolumeSeqNumberM;
+        /*Bit8u*/ short fileIdentLength;
+        /*Bit8u*/ byte[] ident = new byte[222];
+
+        public void copy(isoDirEntry i) {
+            length = i.length;
+            extAttrLength = i.extAttrLength;
+            extentLocationL = i.extentLocationL;
+            extentLocationM = i.extentLocationM;
+            dataLengthL = i.dataLengthL;
+            dataLengthM = i.dataLengthM;
+            dateYear = i.dateYear;
+            dateMonth = i.dateMonth;
+            dateDay = i.dateDay;
+            timeHour = i.timeHour;
+            timeMin = i.timeMin;
+            timeSec = i.timeSec;
+            timeZone = i.timeZone;
+            fileFlags = i.fileFlags;
+            fileUnitSize = i.fileUnitSize;
+            interleaveGapSize = i.interleaveGapSize;
+            VolumeSeqNumberL = i.VolumeSeqNumberL;
+            VolumeSeqNumberM = i.VolumeSeqNumberM;
+            fileIdentLength = i.fileIdentLength;
+            System.arraycopy(i.ident, 0, ident, 0, ident.length);
+        }
+
+        public void load(byte[] data, int offset, int len) {
+            Ptr p = new Ptr(data, offset);
+            length = p.readb(0);
+            p.inc(1);
+            extAttrLength = p.readb(0);
+            p.inc(1);
+            extentLocationL = p.readd(0);
+            p.inc(4);
+            extentLocationM = p.readd(0);
+            p.inc(4);
+            dataLengthL = p.readd(0);
+            p.inc(4);
+            dataLengthM = p.readd(0);
+            p.inc(4);
+
+            dateYear = p.readb(0);
+            p.inc(1);
+            dateMonth = p.readb(0);
+            p.inc(1);
+            dateDay = p.readb(0);
+            p.inc(1);
+            timeHour = p.readb(0);
+            p.inc(1);
+            timeMin = p.readb(0);
+            p.inc(1);
+            timeSec = p.readb(0);
+            p.inc(1);
+            timeZone = p.readb(0);
+            p.inc(1);
+            fileFlags = p.readb(0);
+            p.inc(1);
+            fileUnitSize = p.readb(0);
+            p.inc(1);
+            interleaveGapSize = p.readb(0);
+            p.inc(1);
+            VolumeSeqNumberL = p.readw(0);
+            p.inc(2);
+            VolumeSeqNumberM = p.readw(0);
+            p.inc(2);
+            fileIdentLength = p.readb(0);
+            p.inc(1);
+            if (length > 33)
+                p.read(ident, length - 33);
+        }
+    }
+
+    private static class DirIterator {
+        boolean valid;
+        boolean root;
+        /*Bit32u*/ long currentSector;
+        /*Bit32u*/ long endSector;
+        /*Bit32u*/ long pos;
     }
 
 //    static private class isoPVD {
@@ -599,51 +583,112 @@ public class Drive_iso extends Dos_Drive {
 //        }
 //    }
 
-    boolean loadImage() {
-        dataCD = false;
-        byte[] b = new byte[8000];
-        readSector(b, ISO_FIRST_VD);
-        if (/*pvd.type*/b[0] != 1 || !StringHelper.toString(/*pvd.standardIdent*/b, 1, 5).startsWith("CD001") || /*pvd.version*/b[6] != 1) return false;
-        // :TODO: double check that 156 is the right offset
-        if (readDirEntry(this.rootEntry, /*pvd.rootEntry*/b, 156)>0) {
-            dataCD = true;
-            return true;
-        }
-        return false;
+    private static class SectorHashEntry {
+        boolean valid;
+        /*Bit32u*/ long sector;
+        /*Bit8u*/ byte[] data = new byte[ISO_FRAMESIZE];
     }
 
-    boolean lookup(isoDirEntry de, String path) {
-        if (!dataCD) return false;
-        de.copy(this.rootEntry);
-        if (path.length()==0) return true;
-
-        String[] isoPath = StringHelper.split(StringHelper.replace(path, "\\", "/"), "/");
-
-        // iterate over all path elements (name), and search each of them in the current de
-        for(int i=0;i<isoPath.length;i++) {
-            String name = isoPath[i];
-            boolean found = false;
-            // current entry must be a directory, abort otherwise
-            if (IS_DIR(de.fileFlags)) {
-
-                // remove the trailing dot if present
-                int nameLength = name.length();
-                if (nameLength > 0) {
-                    if (name.charAt(nameLength - 1) == '.') name = name.substring(0, nameLength - 1);
-                }
-
-                // look for the current path element
-                int dirIterator = GetDirIterator(de);
-                while (!found && GetNextDirEntry(dirIterator, de)) {
-                    if (!IS_ASSOC(de.fileFlags) && name.compareToIgnoreCase(StringHelper.toString(de.ident)) == 0) {
-                        found = true;
-                    }
-                }
-                FreeDirIterator(dirIterator);
-            }
-            if (!found) return false;
+    class isoFile extends DOS_File {
+        private final Drive_iso drive;
+        private final /*Bit8u*/ byte[] buffer = new byte[ISO_FRAMESIZE];
+        private int cachedSector;
+        private final /*Bit32u*/ long fileBegin;
+        private /*Bit32u*/ long filePos;
+        private final /*Bit32u*/ long fileEnd;
+        private /*Bit32u*/ int info;
+        isoFile(Drive_iso drive, String name, FileStat_Block stat, /*Bit32u*/long offset) {
+            this.drive = drive;
+            time = stat.time;
+            date = stat.date;
+            attr = stat.attr;
+            fileBegin = offset;
+            filePos = fileBegin;
+            fileEnd = fileBegin + stat.size;
+            cachedSector = -1;
+            open = true;
+            this.name = null;
+            SetName(name);
         }
-        return true;
+
+        public boolean Read(byte[] data,/*Bit16u*/IntRef size) {
+            if (filePos + size.value > fileEnd)
+                size.value = (int) (fileEnd - filePos);
+
+            /*Bit16u*/
+            int nowSize = 0;
+            int sector = (int) (filePos / ISO_FRAMESIZE);
+            /*Bit16u*/
+            int sectorPos = (/*Bit16u*/int) (filePos % ISO_FRAMESIZE);
+
+            if (sector != cachedSector) {
+                if (drive.readSector(buffer, sector)) cachedSector = sector;
+                else {
+                    size.value = 0;
+                    cachedSector = -1;
+                }
+            }
+            while (nowSize < size.value) {
+                /*Bit16u*/
+                int remSector = ISO_FRAMESIZE - sectorPos;
+                /*Bit16u*/
+                int remSize = size.value - nowSize;
+                if (remSector < remSize) {
+                    System.arraycopy(buffer, sectorPos, data, nowSize, remSector);
+                    nowSize += remSector;
+                    sectorPos = 0;
+                    sector++;
+                    cachedSector++;
+                    if (!drive.readSector(buffer, sector)) {
+                        size.value = nowSize;
+                        cachedSector = -1;
+                    }
+                } else {
+                    System.arraycopy(buffer, sectorPos, data, nowSize, remSize);
+                    nowSize += remSize;
+                }
+
+            }
+
+            size.value = nowSize;
+            filePos += size.value;
+            return true;
+        }
+
+        public boolean Write(byte[] data,/*Bit16u*/IntRef size) {
+            return false;
+        }
+
+        public boolean Seek(/*Bit32u*/LongRef pos,/*Bit32u*/int type) {
+            int p = (int) (pos.value & 0xFFFFFFFFl);
+            switch (type) {
+                case Dos_files.DOS_SEEK_SET:
+                    filePos = fileBegin + p;
+                    break;
+                case Dos_files.DOS_SEEK_CUR:
+                    filePos += p;
+                    break;
+                case Dos_files.DOS_SEEK_END:
+                    filePos = fileEnd + p;
+                    break;
+                default:
+                    return false;
+            }
+            if (filePos > fileEnd || filePos < fileBegin)
+                filePos = fileEnd;
+
+            pos.value = filePos - fileBegin;
+            return true;
+        }
+
+        public boolean Close() {
+            if (refCtr == 1) open = false;
+            return true;
+        }
+
+        public /*Bit16u*/int GetInformation() {
+            return 0x40;        // read-only drive
+        }
     }
 
 }

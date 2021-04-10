@@ -18,25 +18,26 @@ public class MMTime extends WinAPI {
     static final public int MMSYSTIME_MININTERVAL = 1;
     static final public int MMSYSTIME_MAXINTERVAL = 65535;
 
-    static final public int TIMERR_BASE =       96;
-    static final public int TIMERR_NOERROR =    0;
-    static final public int TIMERR_NOCANDO =    TIMERR_BASE+1;
+    static final public int TIMERR_BASE = 96;
+    static final public int TIMERR_NOERROR = 0;
+    static final public int TIMERR_NOCANDO = TIMERR_BASE + 1;
 
-    static final public int TIME_ONESHOT =              0x0000;	/* program timer for single event */
-    static final public int TIME_PERIODIC =             0x0001;	/* program for continuous periodic event */
-    static final public int TIME_CALLBACK_FUNCTION =    0x0000;	/* callback is function */
-    static final public int TIME_CALLBACK_EVENT_SET =   0x0010;	/* callback is event - use SetEvent */
-    static final public int TIME_CALLBACK_EVENT_PULSE = 0x0020;	/* callback is event - use PulseEvent */
-    static final public int TIME_KILL_SYNCHRONOUS =     0x0100;
+    static final public int TIME_ONESHOT = 0x0000;    /* program timer for single event */
+    static final public int TIME_PERIODIC = 0x0001;    /* program for continuous periodic event */
+    static final public int TIME_CALLBACK_FUNCTION = 0x0000;    /* callback is function */
+    static final public int TIME_CALLBACK_EVENT_SET = 0x0010;    /* callback is event - use SetEvent */
+    static final public int TIME_CALLBACK_EVENT_PULSE = 0x0020;    /* callback is event - use PulseEvent */
+    static final public int TIME_KILL_SYNCHRONOUS = 0x0100;
+    static private final Hashtable<Integer, MMTimer> timers = new Hashtable<Integer, MMTimer>();
+    static private final Callback.Handler mmTimerThread = new HandlerBase() {
+        private long lastCall;
 
-    static private Callback.Handler mmTimerThread = new HandlerBase() {
         public String getName() {
             return "mmTimerThread";
         }
-        private long lastCall;
 
         public void onCall() {
-            int esp = CPU_Regs.reg_esp.dword-4;
+            int esp = CPU_Regs.reg_esp.dword - 4;
             int eip = CPU.CPU_Pop32();
             int id = CPU.CPU_Pop32();
             int threadHandle = CPU.CPU_Pop32();
@@ -56,77 +57,10 @@ public class MMTime extends WinAPI {
                 Scheduler.removeThread(thread);
                 timers.remove(id);
             } else
-                Scheduler.sleep(thread, dwDelay-(int)(System.currentTimeMillis()-start));
+                Scheduler.sleep(thread, dwDelay - (int) (System.currentTimeMillis() - start));
         }
     };
-
-    static private class MMTimer extends Thread {
-        int delay;
-        int callback;
-        int dwUser;
-        int flags;
-        int id;
-        final WinThread thread;
-        boolean bExit = false;
-
-        public MMTimer(int id, int delay, int callback, int dwUser, int flags) {
-            this.delay = delay;
-            this.callback = callback;
-            this.dwUser = dwUser;
-            this.flags = flags;
-            this.id = id;
-            if ((flags & TIME_CALLBACK_EVENT_SET)==0 && (flags & TIME_CALLBACK_EVENT_PULSE)==0) {
-                WinProcess process = WinSystem.getCurrentProcess();
-                if (process.mmTimerThreadEIP == 0) {
-                    int cb = WinCallback.addCallback(mmTimerThread);
-                    process.mmTimerThreadEIP = process.loader.registerFunction(cb);
-                }
-                this.thread = WinThread.create(process, process.mmTimerThreadEIP,  8192, 8192, true); // primary=true so that we don't call dllmain's with this thread
-                thread.pushStack32((flags & TIME_PERIODIC)==0?0:delay);
-                thread.pushStack32(dwUser);
-                thread.pushStack32(callback);
-                thread.pushStack32(thread.handle);
-                thread.pushStack32(id);
-                thread.pushStack32(thread.cpuState.eip);
-                thread.pushStack32(0); // bogus callback return address
-                Scheduler.addThread(thread, false);
-                Scheduler.sleep(thread, delay);
-            } else {
-                this.thread = null;
-                this.start();
-            }
-        }
-
-        public void close() {
-            if (thread == null) {
-                bExit = true;
-            } else {
-                Scheduler.removeThread(thread);
-                thread.close();
-            }
-        }
-
-        public void run() {
-            while(!bExit) {
-                try {sleep(delay);} catch (Exception e) {}
-                if (!bExit) {
-                    WinEvent event = WinEvent.get(callback);
-                    if (event == null)
-                        continue;
-                    if ((flags & TIME_CALLBACK_EVENT_SET)!=0) {
-                        event.set();
-                    } else {
-                        event.pulse();
-                    }
-                }
-                if ((flags & TIME_PERIODIC)==0)
-                    break;
-            }
-            timers.remove(this);
-        }
-    }
-
-    static private Hashtable<Integer, MMTimer> timers = new Hashtable<Integer, MMTimer>();
+    static private int nextTimerId = 1;
 
     // MMRESULT timeBeginPeriod(UINT uPeriod)
     static public int timeBeginPeriod(int wPeriod) {
@@ -168,13 +102,81 @@ public class MMTime extends WinAPI {
         return TIMERR_NOERROR;
     }
 
-    static private int nextTimerId = 1;
     // MMRESULT timeSetEvent(UINT uDelay, UINT uResolution, LPTIMECALLBACK lpTimeProc, DWORD_PTR dwUser, UINT fuEvent)
     static public int timeSetEvent(int uDelay, int uResolution, int lpTimeProc, int dwUser, int fuEvent) {
         if (uDelay < MMSYSTIME_MININTERVAL || uDelay > MMSYSTIME_MAXINTERVAL)
-	        return 0;
+            return 0;
         MMTimer timer = new MMTimer(nextTimerId++, uDelay, lpTimeProc, dwUser, fuEvent);
         timers.put(timer.id, timer);
         return timer.id;
+    }
+
+    static private class MMTimer extends Thread {
+        final WinThread thread;
+        int delay;
+        int callback;
+        int dwUser;
+        int flags;
+        int id;
+        boolean bExit = false;
+
+        public MMTimer(int id, int delay, int callback, int dwUser, int flags) {
+            this.delay = delay;
+            this.callback = callback;
+            this.dwUser = dwUser;
+            this.flags = flags;
+            this.id = id;
+            if ((flags & TIME_CALLBACK_EVENT_SET) == 0 && (flags & TIME_CALLBACK_EVENT_PULSE) == 0) {
+                WinProcess process = WinSystem.getCurrentProcess();
+                if (process.mmTimerThreadEIP == 0) {
+                    int cb = WinCallback.addCallback(mmTimerThread);
+                    process.mmTimerThreadEIP = process.loader.registerFunction(cb);
+                }
+                this.thread = WinThread.create(process, process.mmTimerThreadEIP, 8192, 8192, true); // primary=true so that we don't call dllmain's with this thread
+                thread.pushStack32((flags & TIME_PERIODIC) == 0 ? 0 : delay);
+                thread.pushStack32(dwUser);
+                thread.pushStack32(callback);
+                thread.pushStack32(thread.handle);
+                thread.pushStack32(id);
+                thread.pushStack32(thread.cpuState.eip);
+                thread.pushStack32(0); // bogus callback return address
+                Scheduler.addThread(thread, false);
+                Scheduler.sleep(thread, delay);
+            } else {
+                this.thread = null;
+                this.start();
+            }
+        }
+
+        public void close() {
+            if (thread == null) {
+                bExit = true;
+            } else {
+                Scheduler.removeThread(thread);
+                thread.close();
+            }
+        }
+
+        public void run() {
+            while (!bExit) {
+                try {
+                    sleep(delay);
+                } catch (Exception e) {
+                }
+                if (!bExit) {
+                    WinEvent event = WinEvent.get(callback);
+                    if (event == null)
+                        continue;
+                    if ((flags & TIME_CALLBACK_EVENT_SET) != 0) {
+                        event.set();
+                    } else {
+                        event.pulse();
+                    }
+                }
+                if ((flags & TIME_PERIODIC) == 0)
+                    break;
+            }
+            timers.remove(this);
+        }
     }
 }

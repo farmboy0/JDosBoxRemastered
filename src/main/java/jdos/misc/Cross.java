@@ -11,19 +11,12 @@ import java.io.File;
 
 public class Cross {
     public static boolean isWindows() {
-        return System.getProperty("os.name").toLowerCase().indexOf( "win" ) >= 0;
+        return System.getProperty("os.name").toLowerCase().indexOf("win") >= 0;
     }
 
     public static boolean isCDRom(String path) {
         String label = HomeDirectory.getVolumeLabel(path).toLowerCase();
-        if (label.indexOf("bd-rom")>=0 || label.indexOf("dvd")>=0)
-            return true;
-        return false;
-    }
-
-    static public class dir_information {
-        private File[] list;
-        private int index;
+        return label.indexOf("bd-rom") >= 0 || label.indexOf("dvd") >= 0;
     }
 
     static public dir_information open_directory(String dirname) {
@@ -44,7 +37,7 @@ public class Cross {
     }
 
     static public boolean read_directory_next(dir_information dirp, StringRef entry_name, BooleanRef is_directory) {
-        if (dirp.index+1 >= dirp.list.length) return false;
+        if (dirp.index + 1 >= dirp.list.length) return false;
         dirp.index++;
         entry_name.value = dirp.list[dirp.index].getName();
         is_directory.value = dirp.list[dirp.index].isDirectory();
@@ -61,22 +54,27 @@ public class Cross {
     static public String CreatePlatformConfigDir() {
         if (!Dosbox.allPrivileges) return "";
         String result = System.getProperty("user.dir");
-        if (result != null && result.length()!=0 && new File(result).exists()) {
+        if (result != null && result.length() != 0 && new File(result).exists()) {
             result += File.separator + ".dosbox";
             File f = new File(result);
             if (!f.exists()) {
                 f.mkdir();
             }
-            return f.getAbsolutePath()+File.separator;
+            return f.getAbsolutePath() + File.separator;
         }
         return "";
     }
 
     static public String GetPlatformConfigName() {
-        return "dosbox-"+ Config.MAJOR_VERSION +".conf"; 
+        return "dosbox-" + Config.MAJOR_VERSION + ".conf";
     }
 
     static public void CreateDir(String dir) {
         new File(dir).mkdirs();
+    }
+
+    static public class dir_information {
+        private File[] list;
+        private int index;
     }
 }

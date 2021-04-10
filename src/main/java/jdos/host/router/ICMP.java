@@ -1,11 +1,16 @@
 package jdos.host.router;
 
 public class ICMP extends EtherUtil {
+    public int type;
+    public int code;
+    public short checksum;
+
     private void parse(byte[] buffer, int offset) {
         type = buffer[offset] & 0xFF;
-        code = buffer[offset+1] & 0xFF;
-        checksum = (short)readWord(buffer, offset+2);
+        code = buffer[offset + 1] & 0xFF;
+        checksum = (short) readWord(buffer, offset + 2);
     }
+
     public void handle(byte[] buffer, int offset, int len) {
         System.out.print("Received ICMP Packet ");
         parse(buffer, offset);
@@ -61,14 +66,10 @@ public class ICMP extends EtherUtil {
                     strType = "Traceroute";
                     break;
             }
-            System.out.print(" type="+type);
+            System.out.print(" type=" + type);
             if (strType != null)
-                System.out.print("("+strType+")");
-            System.out.println(" code="+code);
+                System.out.print("(" + strType + ")");
+            System.out.println(" code=" + code);
         }
     }
-
-    public int type;
-    public int code;
-    public short checksum;
 }

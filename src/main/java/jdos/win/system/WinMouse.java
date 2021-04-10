@@ -33,7 +33,7 @@ public class WinMouse {
                 }
             }
             if (msg == 0) {
-                System.out.println("Unknown mouse message: "+event.toString());
+                System.out.println("Unknown mouse message: " + event.toString());
                 return;
             }
             StaticData.currentPos = point.copy();

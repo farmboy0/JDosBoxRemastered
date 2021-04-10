@@ -6,186 +6,131 @@ import java.io.File;
 import java.util.Vector;
 
 public class Block {
-    static public final int BIOS_ATA_TRANSLATION_AUTO =  0;
-    static public final int BIOS_ATA_TRANSLATION_NONE =  1;
-    static public final int BIOS_ATA_TRANSLATION_LBA =   2;
+    static public final int BIOS_ATA_TRANSLATION_AUTO = 0;
+    static public final int BIOS_ATA_TRANSLATION_NONE = 1;
+    static public final int BIOS_ATA_TRANSLATION_LBA = 2;
     static public final int BIOS_ATA_TRANSLATION_LARGE = 3;
     static public final int BIOS_ATA_TRANSLATION_RECHS = 4;
-
-    static private Vector<BlockDriver> bdrv_drivers = new Vector<BlockDriver>();
-    static private Vector<BlockDriverState> bdrv_states = new Vector<BlockDriverState>();
-    static private String[] whitelist = new String[0];
-    static private boolean use_bdrv_whitelist = false;
-
-    static private final int NOT_DONE = 0x7fffffff; /* used while emulated sync operation in progress */
-
-    static private final int BLOCK_DEVICE_IO_STATUS_OK = 0;
-
-    static public final int BDRV_O_RDWR =         0x0002;
-    static private final int BDRV_O_SNAPSHOT =     0x0008; /* open the file read only and save writes in a snapshot */
-    static private final int BDRV_O_NOCACHE =      0x0020; /* do not use the host page cache */
-    static private final int BDRV_O_CACHE_WB =     0x0040; /* use write-back caching */
-    static private final int BDRV_O_NATIVE_AIO =   0x0080; /* use native AIO instead of the thread pool */
-    static private final int BDRV_O_NO_BACKING =   0x0100; /* don't open the backing file */
-    static private final int BDRV_O_NO_FLUSH =     0x0200; /* disable flushing on this disk */
-    static private final int BDRV_O_COPY_ON_READ = 0x0400; /* copy read backing sectors into image */
-    static private final int BDRV_O_INCOMING =     0x0800;  /* consistency hint for incoming migration */
-    static private final int BDRV_O_CHECK =        0x1000;  /* open solely for consistency check */
-    
-    static private final int BDRV_O_CACHE_MASK =(BDRV_O_NOCACHE | BDRV_O_CACHE_WB | BDRV_O_NO_FLUSH);
-        
+    static public final int BDRV_O_RDWR = 0x0002;
     static public final int BDRV_SECTOR_BITS = 9;
     static public final int BDRV_SECTOR_SIZE = (1 << BDRV_SECTOR_BITS);
     static public final int BDRV_SECTOR_MASK = ~(BDRV_SECTOR_SIZE - 1);
-
     public static final int BDRV_ACCT_READ = 0;
     public static final int BDRV_ACCT_WRITE = 1;
     public static final int BDRV_ACCT_FLUSH = 2;
     public static final int BDRV_MAX_IOTYPE = 3;
-
-    public static enum BlockErrorAction {BLOCK_ERR_REPORT, BLOCK_ERR_IGNORE, BLOCK_ERR_STOP_ENOSPC,BLOCK_ERR_STOP_ANY}
-
-    public static enum BlockQMPEventAction {BDRV_ACTION_REPORT, BDRV_ACTION_IGNORE, BDRV_ACTION_STOP}
+    static private final int NOT_DONE = 0x7fffffff; /* used while emulated sync operation in progress */
+    static private final int BLOCK_DEVICE_IO_STATUS_OK = 0;
+    static private final int BDRV_O_SNAPSHOT = 0x0008; /* open the file read only and save writes in a snapshot */
+    static private final int BDRV_O_NOCACHE = 0x0020; /* do not use the host page cache */
+    static private final int BDRV_O_CACHE_WB = 0x0040; /* use write-back caching */
+    static private final int BDRV_O_NATIVE_AIO = 0x0080; /* use native AIO instead of the thread pool */
+    static private final int BDRV_O_NO_BACKING = 0x0100; /* don't open the backing file */
+    static private final int BDRV_O_NO_FLUSH = 0x0200; /* disable flushing on this disk */
+    static private final int BDRV_O_COPY_ON_READ = 0x0400; /* copy read backing sectors into image */
+    static private final int BDRV_O_INCOMING = 0x0800;  /* consistency hint for incoming migration */
+    static private final int BDRV_O_CHECK = 0x1000;  /* open solely for consistency check */
+    static private final int BDRV_O_CACHE_MASK = (BDRV_O_NOCACHE | BDRV_O_CACHE_WB | BDRV_O_NO_FLUSH);
+    static private final Vector<BlockDriver> bdrv_drivers = new Vector<BlockDriver>();
+    static private final Vector<BlockDriverState> bdrv_states = new Vector<BlockDriverState>();
+    static private final String[] whitelist = new String[0];
+    static private final boolean use_bdrv_whitelist = false;
 
     static long get_clock() {
-        return System.currentTimeMillis()*1000;
+        return System.currentTimeMillis() * 1000;
     }
 
-    static public class BlockAcctCookie {
-        long bytes;
-        long start_time_ns;
-        int type;
+    static private boolean is_windows_drive_prefix(String filename) {
+        char c = filename.charAt(0);
+        return (filename.length() > 0 && ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) && filename.charAt(1) == ':');
     }
 
-    public interface BlockDriverCompletionFunc {
-        void call(Object opaque, int ret);
+    static private boolean is_windows_drive(String filename) {
+        if (is_windows_drive_prefix(filename) && filename.length() == 2)
+            return true;
+        return filename.startsWith("\\\\.\\") || filename.startsWith("//./");
     }
 
-    static public class BlockDriverAIOCB {
-
+    /* check if the path starts with "<protocol>:" */
+    static private boolean path_has_protocol(String path) {
+        if (is_windows_drive(path) || is_windows_drive_prefix(path)) {
+            return false;
+        }
+        int pos1 = path.indexOf(":");
+        if (pos1 < 0)
+            return false;
+        int pos2 = path.indexOf("/");
+        if (pos2 >= 0 && pos2 < pos1)
+            return false;
+        pos2 = path.indexOf("\\");
+        return pos2 < 0 || pos2 >= pos1;
     }
 
-    /*
-     * Note: the function bdrv_append() copies and swaps contents of
-     * BlockDriverStates, so if you add new fields to this struct, please
-     * inspect bdrv_append() to determine if the new fields need to be
-     * copied as well.
-     */
-    static public class BlockDriverState {
-        public long total_sectors; /* if we are reading a disk image, give its
-                                  size in sectors */
-        public boolean read_only; /* if true, the media is read only */
-        public boolean keep_read_only; /* if true, the media was requested to stay read only */
-        public int open_flags; /* flags used to open the file, re-used for re-open */
-        public boolean encrypted; /* if true, the media is encrypted */
-        public boolean valid_key; /* if true, a valid encryption key has been set */
-        public boolean sg;        /* if true, the device is a /dev/sg* */
-        public int copy_on_read; /* if true, copy read backing sectors into image
-                             note this is a reference count */
-
-        public BlockDriver drv; /* NULL means no media */
-        public Object opaque;
-
-        Object dev;                  /* attached device model, if any */
-        /* TODO change to DeviceState when all users are qdevified */
-        public BlockDevOps dev_ops;
-        public Object dev_opaque;
-
-        public String filename;
-        public String backing_file=""; /* if non zero, the image is a diff of this file image */
-        public String backing_format; /* if non-zero and backing_file exists */
-        public boolean is_temporary;
-
-        public BlockDriverState backing_hd;
-        public BlockDriverState file;
-
-        /* number of in-flight copy-on-read requests */
-        public int copy_on_read_in_flight;
-
-        /* the time for latest disk I/O */
-        public long slice_time;
-        public long slice_start;
-        public long slice_end;
-        //BlockIOLimit io_limits;
-        //BlockIOBaseValue  io_base;
-        //CoQueue      throttled_reqs;
-        //QEMUTimer    *block_timer;
-        public boolean  io_limits_enabled;
-
-        /* I/O stats (display with "info blockstats"). */
-        public long[] nr_bytes = new long[BDRV_MAX_IOTYPE];
-        public long[] nr_ops = new long[BDRV_MAX_IOTYPE];
-        public long[] total_time_ns = new long[BDRV_MAX_IOTYPE];
-        public long wr_highest_sector;
-
-        /* Whether the disk can expand beyond total_sectors */
-        public boolean growable;
-
-        /* the memory alignment required for the buffers handled by this driver */
-        public int buffer_alignment;
-
-        /* do we need to tell the quest if we have a volatile write cache? */
-        public boolean enable_write_cache;
-
-        /* NOTE: the following infos are only hints for real hardware
-           drivers. They are not used by the block driver */
-        public BlockErrorAction on_read_error, on_write_error;
-        public boolean iostatus_enabled;
-        public int iostatus;
-        public String device_name;
-        public long[] dirty_bitmap;
-        public long dirty_count;
-        public int in_use; /* users other than guest access, eg. block migration */
-        //QTAILQ_ENTRY(BlockDriverState) list;
-
-        //QLIST_HEAD(, BdrvTrackedRequest) tracked_requests;
-
-        /* long-running background operation */
-        //public BlockJob *job;
+    static private boolean path_is_absolute(String path) {
+        /* specific case for names like: "\\.\d:" */
+        if (is_windows_drive(path) || is_windows_drive_prefix(path)) {
+            return true;
+        }
+        return (path.length() > 0 && path.charAt(0) == '/' || path.charAt(0) == '\\');
     }
 
-    static private class BlockDriverStateRef {
-        BlockDriverState value;
+    /* if filename is absolute, just copy it to dest. Otherwise, build a
+       path to it by considering it is relative to base_path. URL are
+       supported. */
+    static private String path_combine(String base_path, String filename) {
+        if (path_is_absolute(filename)) {
+            return filename;
+        } else {
+            int pos = base_path.lastIndexOf("/");
+            int pos2 = base_path.lastIndexOf("\\");
+            if (pos >= 0 && pos2 >= 0)
+                base_path = base_path.substring(0, Math.max(pos, pos2));
+            else if (pos >= 0)
+                base_path = base_path.substring(0, pos);
+            else if (pos2 >= 0)
+                base_path = base_path.substring(0, pos2);
+            if (!base_path.endsWith("\\") && !base_path.endsWith("/"))
+                base_path += File.pathSeparator;
+            return base_path + filename;
+        }
     }
 
-    /* Callbacks for block device models */
-    static public interface BlockDevOps {
-        /*
-         * Runs when virtual media changed (monitor commands eject, change)
-         * Argument load is true on load and false on eject.
-         * Beware: doesn't run when a host device's physical media
-         * changes.  Sure would be useful if it did.
-         * Device models with removable media must implement this callback.
-         */
-        public void change_media_cb(Object opaque, boolean load);
-        public boolean has_change_media_cb();
-        /*
-         * Runs when an eject request is issued from the monitor, the tray
-         * is closed, and the medium is locked.
-         * Device models that do not implement is_medium_locked will not need
-         * this callback.  Device models that can lock the medium or tray might
-         * want to implement the callback and unlock the tray when "force" is
-         * true, even if they do not support eject requests.
-         */
-        public void eject_request_cb(Object opaque, boolean force);
-        public boolean has_eject_request_cb();
-        /*
-         * Is the virtual tray open?
-         * Device models implement this only when the device has a tray.
-         */
-        public boolean is_tray_open(Object opaque);
-        public boolean has_is_tray_open();
-        /*
-         * Is the virtual medium locked into the device?
-         * Device models implement this only when device has such a lock.
-         */
-        public boolean is_medium_locked(Object opaque);
-        public boolean has_is_medium_locked();
-        /*
-         * Runs when the size changed (e.g. monitor command block_resize)
-         */
-        public void resize_cb(Object opaque);
-        public boolean has_resize_cb();
+    static private String bdrv_get_full_backing_filename(BlockDriverState bs) {
+        if (bs.backing_file.length() == 0 || path_has_protocol(bs.backing_file)) {
+            return bs.backing_file;
+        } else {
+            return path_combine(bs.filename, bs.backing_file);
+        }
+    }
+
+    private static void bdrv_register(BlockDriver bdrv) {
+        /* Block drivers without coroutine functions need emulation */
+//        if (bdrv.bdrv_co_readv == null) {
+//            bdrv.bdrv_co_readv = bdrv_co_readv_em;
+//            bdrv.bdrv_co_writev = bdrv_co_writev_em;
+//
+//            /* bdrv_co_readv_em()/brdv_co_writev_em() work in terms of aio, so if
+//             * the block driver lacks aio we need to emulate that too.
+//             */
+//            if (bdrv.bdrv_aio_readv == null) {
+//                /* add AIO emulation layer */
+//                bdrv.bdrv_aio_readv = bdrv_aio_readv_em;
+//                bdrv.bdrv_aio_writev = bdrv_aio_writev_em;
+//            }
+//        }
+        bdrv_drivers.insertElementAt(bdrv, 0);
+    }
+
+    /* create a new block device (by default it is empty) */
+    static public BlockDriverState bdrv_new(String device_name) {
+        BlockDriverState bs = new BlockDriverState();
+
+        bs.device_name = device_name;
+        if (device_name.length() == 0) {
+            bdrv_states.add(bs);
+        }
+        bdrv_iostatus_disable(bs);
+        return bs;
     }
 
 //    /* throttling disk I/O limits */
@@ -256,107 +201,8 @@ public class Block {
 //        qemu_co_queue_next(bs.throttled_reqs);
 //    }
 
-    static private boolean is_windows_drive_prefix(String filename) {
-        char c = filename.charAt(0);
-        return (filename.length()>0 && ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) && filename.charAt(1) == ':');
-    }
-
-    static private boolean is_windows_drive(String filename) {
-        if (is_windows_drive_prefix(filename) && filename.length()==2)
-            return true;
-        if (filename.startsWith("\\\\.\\") || filename.startsWith("//./"))
-            return true;
-        return false;
-    }
-
-    /* check if the path starts with "<protocol>:" */
-    static private boolean path_has_protocol(String path) {
-        if (is_windows_drive(path) || is_windows_drive_prefix(path)) {
-            return false;
-        }
-        int pos1 = path.indexOf(":");
-        if (pos1<0)
-            return false;
-        int pos2 = path.indexOf("/");
-        if (pos2>=0 && pos2<pos1)
-            return false;
-        pos2 = path.indexOf("\\");
-        if (pos2>=0 && pos2<pos1)
-            return false;
-        return true;
-    }
-
-    static private boolean path_is_absolute(String path) {
-        /* specific case for names like: "\\.\d:" */
-        if (is_windows_drive(path) || is_windows_drive_prefix(path)) {
-            return true;
-        }
-        return (path.length()>0 && path.charAt(0)=='/' || path.charAt(0)=='\\');
-    }
-
-    /* if filename is absolute, just copy it to dest. Otherwise, build a
-       path to it by considering it is relative to base_path. URL are
-       supported. */
-    static private String path_combine(String base_path, String filename) {
-        if (path_is_absolute(filename)) {
-            return filename;
-        } else {
-            int pos = base_path.lastIndexOf("/");
-            int pos2 = base_path.lastIndexOf("\\");
-            if (pos>=0 && pos2>=0)
-                base_path = base_path.substring(0, Math.max(pos, pos2));
-            else if (pos>=0)
-                base_path = base_path.substring(0, pos);
-            else if (pos2>=0)
-                base_path = base_path.substring(0, pos2);
-            if (!base_path.endsWith("\\") && !base_path.endsWith("/"))
-                base_path+= File.pathSeparator;
-            return base_path+filename;
-        }
-    }
-
-    static private String bdrv_get_full_backing_filename(BlockDriverState bs) {
-        if (bs.backing_file.length()==0 || path_has_protocol(bs.backing_file)) {
-            return bs.backing_file;
-        } else {
-            return path_combine(bs.filename, bs.backing_file);
-        }
-    }
-
-    private static void bdrv_register(BlockDriver bdrv) {
-        /* Block drivers without coroutine functions need emulation */
-//        if (bdrv.bdrv_co_readv == null) {
-//            bdrv.bdrv_co_readv = bdrv_co_readv_em;
-//            bdrv.bdrv_co_writev = bdrv_co_writev_em;
-//
-//            /* bdrv_co_readv_em()/brdv_co_writev_em() work in terms of aio, so if
-//             * the block driver lacks aio we need to emulate that too.
-//             */
-//            if (bdrv.bdrv_aio_readv == null) {
-//                /* add AIO emulation layer */
-//                bdrv.bdrv_aio_readv = bdrv_aio_readv_em;
-//                bdrv.bdrv_aio_writev = bdrv_aio_writev_em;
-//            }
-//        }
-        bdrv_drivers.insertElementAt(bdrv, 0);
-    }
-
-    /* create a new block device (by default it is empty) */
-    static public BlockDriverState bdrv_new(String device_name)
-    {
-        BlockDriverState bs = new BlockDriverState();
-
-        bs.device_name = device_name;
-        if (device_name.length()==0) {
-            bdrv_states.add(bs);
-        }
-        bdrv_iostatus_disable(bs);
-        return bs;
-    }
-
-    static private BlockDriver bdrv_find_format(String format_name)
-    {
-        for (BlockDriver drv1: bdrv_drivers) {
+    static private BlockDriver bdrv_find_format(String format_name) {
+        for (BlockDriver drv1 : bdrv_drivers) {
             if (drv1.format_name.equals(format_name))
                 return drv1;
         }
@@ -364,13 +210,248 @@ public class Block {
     }
 
     static private boolean bdrv_is_whitelisted(BlockDriver drv) {
-        if (whitelist.length==0)
+        if (whitelist.length == 0)
             return true;               /* no whitelist, anything goes */
-        for (String p: whitelist) {
+        for (String p : whitelist) {
             if (p.equals(drv.format_name))
                 return true;
         }
         return false;
+    }
+
+    static private BlockDriver bdrv_find_protocol(String filename) {
+        /* TODO Drivers without bdrv_file_open must be specified explicitly */
+
+        /*
+         * XXX(hch): we really should not let host device detection
+         * override an explicit protocol specification, but moving this
+         * later breaks access to device names with colons in them.
+         * Thanks to the brain-dead persistent naming schemes on udev-
+         * based Linux systems those actually are quite common.
+         */
+//        drv1 = find_hdev_driver(filename);
+//        if (drv1) {
+//            return drv1;
+//        }
+
+        if (!path_has_protocol(filename)) {
+            return bdrv_find_format("file");
+        }
+        String protocol = filename.substring(0, filename.indexOf(":"));
+        for (BlockDriver drv1 : bdrv_drivers) {
+            if (drv1.protocol_name.equals(protocol))
+                return drv1;
+        }
+        return null;
+    }
+
+    static private int find_image_format(String filename, BlockDriverRef pdrv) {
+        int ret, score, score_max;
+        BlockDriver drv;
+        BlockDriverStateRef bs = new BlockDriverStateRef();
+
+        ret = bdrv_file_open(bs, filename, 0);
+        if (ret < 0) {
+            pdrv.value = null;
+            return ret;
+        }
+
+        /* Return the raw BlockDriver * to scsi-generic devices or empty drives */
+        if (bs.value.sg || !bdrv_is_inserted(bs.value)) {
+            bdrv_delete(bs.value);
+            drv = bdrv_find_format("raw");
+            if (drv == null) {
+                ret = -Error.ENOENT;
+            }
+            pdrv.value = drv;
+            return ret;
+        }
+
+        byte[] buf = new byte[2048];
+        ret = bdrv_pread(bs.value, 0, buf, buf.length);
+        bdrv_delete(bs.value);
+        if (ret < 0) {
+            pdrv.value = null;
+            return ret;
+        }
+
+        score_max = 0;
+        drv = null;
+        for (BlockDriver drv1 : bdrv_drivers) {
+            if (drv1.has_bdrv_probe()) {
+                score = drv1.bdrv_probe(buf, ret, filename);
+                if (score > score_max) {
+                    score_max = score;
+                    drv = drv1;
+                }
+            }
+        }
+        if (drv == null) {
+            ret = -Error.ENOENT;
+        }
+        pdrv.value = drv;
+        return ret;
+    }
+
+    /**
+     * Set the current 'total_sectors' value
+     */
+    static private int refresh_total_sectors(BlockDriverState bs, long hint) {
+        BlockDriver drv = bs.drv;
+
+        /* Do not attempt drv.bdrv_getlength() on scsi-generic devices */
+        if (bs.sg)
+            return 0;
+
+        /* query actual device if possible, otherwise just trust the hint */
+        if (drv.has_bdrv_getlength()) {
+            long length = drv.bdrv_getlength(bs);
+            if (length < 0) {
+                return (int) length;
+            }
+            hint = length >> BDRV_SECTOR_BITS;
+        }
+        bs.total_sectors = hint;
+        return 0;
+    }
+
+    /**
+     * Set open flags for a given cache mode
+     * <p>
+     * Return 0 on success, -1 if the cache mode was invalid.
+     */
+    static private int bdrv_parse_cache_flags(String mode, IntRef flags) {
+        flags.value &= ~BDRV_O_CACHE_MASK;
+
+        if (mode.equals("off") || mode.equals("none")) {
+            flags.value |= BDRV_O_NOCACHE | BDRV_O_CACHE_WB;
+        } else if (mode.equals("directsync")) {
+            flags.value |= BDRV_O_NOCACHE;
+        } else if (mode.equals("writeback")) {
+            flags.value |= BDRV_O_CACHE_WB;
+        } else if (mode.equals("unsafe")) {
+            flags.value |= BDRV_O_CACHE_WB;
+            flags.value |= BDRV_O_NO_FLUSH;
+        } else if (mode.equals("writethrough")) {
+            /* this is the default */
+        } else {
+            return -1;
+        }
+        return 0;
+    }
+
+    /**
+     * The copy-on-read flag is actually a reference count so multiple users may
+     * use the feature without worrying about clobbering its previous state.
+     * Copy-on-read stays enabled until all users have called to disable it.
+     */
+    private static void bdrv_enable_copy_on_read(BlockDriverState bs) {
+        bs.copy_on_read++;
+    }
+
+    private static void bdrv_disable_copy_on_read(BlockDriverState bs) {
+        //assert(bs.copy_on_read > 0);
+        bs.copy_on_read--;
+    }
+
+    /*
+     * Common part for opening disk images and files
+     */
+    static private int bdrv_open_common(BlockDriverState bs, String filename, int flags, BlockDriver drv) {
+        int ret, open_flags;
+
+        //assert(drv != NULL);
+        //assert(bs.file == NULL);
+
+        //trace_bdrv_open_common(bs, filename, flags, drv.format_name);
+
+        bs.open_flags = flags;
+        bs.buffer_alignment = 512;
+
+        //assert(bs.copy_on_read == 0); /* bdrv_new() and bdrv_close() make it so */
+        if ((flags & BDRV_O_RDWR) != 0 && (flags & BDRV_O_COPY_ON_READ) != 0) {
+            bdrv_enable_copy_on_read(bs);
+        }
+
+        bs.filename = filename;
+
+        if (use_bdrv_whitelist && !bdrv_is_whitelisted(drv)) {
+            return -Error.ENOTSUP;
+        }
+
+        bs.drv = drv;
+        bs.opaque = drv.allocOpaque();
+
+        bs.enable_write_cache = (flags & BDRV_O_CACHE_WB) != 0;
+        open_flags = flags | BDRV_O_CACHE_WB;
+
+        /*
+         * Clear flags that are internal to the block layer before opening the
+         * image.
+         */
+        open_flags &= ~(BDRV_O_SNAPSHOT | BDRV_O_NO_BACKING);
+
+        /*
+         * Snapshots should be writable.
+         */
+        if (bs.is_temporary) {
+            open_flags |= BDRV_O_RDWR;
+        }
+
+        bs.keep_read_only = bs.read_only = (open_flags & BDRV_O_RDWR) == 0;
+
+        /* Open the image, either directly or using a protocol */
+        if (drv.has_bdrv_file_open()) {
+            ret = drv.bdrv_file_open(bs, filename, open_flags);
+        } else {
+            BlockDriverStateRef bds = new BlockDriverStateRef();
+            ret = bdrv_file_open(bds, filename, open_flags);
+            bs.file = bds.value;
+            if (ret >= 0) {
+                ret = drv.bdrv_open(bs, open_flags);
+            }
+        }
+
+        if (ret >= 0)
+            ret = refresh_total_sectors(bs, bs.total_sectors);
+
+        if (bs.is_temporary) {
+            new File(filename).delete();
+        }
+        if (ret >= 0)
+            return 0;
+
+        if (bs.file != null) {
+            bdrv_delete(bs.file);
+            bs.file = null;
+        }
+        bs.opaque = null;
+        bs.drv = null;
+        return ret;
+    }
+
+    /*
+     * Opens a file using a protocol (file, host_device, nbd, ...)
+     */
+    private static int bdrv_file_open(BlockDriverStateRef pbs, String filename, int flags) {
+        BlockDriverState bs;
+        BlockDriver drv;
+        int ret;
+
+        drv = bdrv_find_protocol(filename);
+        if (drv == null) {
+            return -Error.ENOENT;
+        }
+
+        bs = bdrv_new("");
+        ret = bdrv_open_common(bs, filename, flags, drv);
+        if (ret < 0) {
+            bdrv_delete(bs);
+            return ret;
+        }
+        bs.growable = true;
+        pbs.value = bs;
+        return 0;
     }
 //
 //    static private BlockDriver bdrv_find_whitelisted_format(String format_name) {
@@ -487,247 +568,6 @@ public class Block {
 //        return drv;
 //    }
 
-    static private BlockDriver bdrv_find_protocol(String filename) {
-        /* TODO Drivers without bdrv_file_open must be specified explicitly */
-
-        /*
-         * XXX(hch): we really should not let host device detection
-         * override an explicit protocol specification, but moving this
-         * later breaks access to device names with colons in them.
-         * Thanks to the brain-dead persistent naming schemes on udev-
-         * based Linux systems those actually are quite common.
-         */
-//        drv1 = find_hdev_driver(filename);
-//        if (drv1) {
-//            return drv1;
-//        }
-
-        if (!path_has_protocol(filename)) {
-            return bdrv_find_format("file");
-        }
-        String protocol = filename.substring(0, filename.indexOf(":"));
-        for (BlockDriver drv1: bdrv_drivers) {
-            if (drv1.protocol_name.equals(protocol))
-                return drv1;
-        }
-        return null;
-    }
-
-    static private class BlockDriverRef {
-        BlockDriver value;
-    }
-    static private int find_image_format(String filename, BlockDriverRef pdrv)
-    {
-        int ret, score, score_max;
-        BlockDriver drv;
-        BlockDriverStateRef bs = new BlockDriverStateRef();
-
-        ret = bdrv_file_open(bs, filename, 0);
-        if (ret < 0) {
-            pdrv.value = null;
-            return ret;
-        }
-
-        /* Return the raw BlockDriver * to scsi-generic devices or empty drives */
-        if (bs.value.sg || !bdrv_is_inserted(bs.value)) {
-            bdrv_delete(bs.value);
-            drv = bdrv_find_format("raw");
-            if (drv == null) {
-                ret = -Error.ENOENT;
-            }
-            pdrv.value = drv;
-            return ret;
-        }
-
-        byte[] buf = new byte[2048];
-        ret = bdrv_pread(bs.value, 0, buf, buf.length);
-        bdrv_delete(bs.value);
-        if (ret < 0) {
-            pdrv.value = null;
-            return ret;
-        }
-
-        score_max = 0;
-        drv = null;
-        for (BlockDriver drv1: bdrv_drivers) {
-            if (drv1.has_bdrv_probe()) {
-                score = drv1.bdrv_probe(buf, ret, filename);
-                if (score > score_max) {
-                    score_max = score;
-                    drv = drv1;
-                }
-            }
-        }
-        if (drv==null) {
-            ret = -Error.ENOENT;
-        }
-        pdrv.value = drv;
-        return ret;
-    }
-
-    /**
-     * Set the current 'total_sectors' value
-     */
-    static private int refresh_total_sectors(BlockDriverState bs, long hint) {
-        BlockDriver drv = bs.drv;
-
-        /* Do not attempt drv.bdrv_getlength() on scsi-generic devices */
-        if (bs.sg)
-            return 0;
-
-        /* query actual device if possible, otherwise just trust the hint */
-        if (drv.has_bdrv_getlength()) {
-            long length = drv.bdrv_getlength(bs);
-            if (length < 0) {
-                return (int)length;
-            }
-            hint = length >> BDRV_SECTOR_BITS;
-        }
-        bs.total_sectors = hint;
-        return 0;
-    }
-
-    /**
-     * Set open flags for a given cache mode
-     *
-     * Return 0 on success, -1 if the cache mode was invalid.
-     */
-    static private int bdrv_parse_cache_flags(String mode, IntRef flags)
-    {
-        flags.value &= ~BDRV_O_CACHE_MASK;
-
-        if (mode.equals("off") || mode.equals("none")) {
-            flags.value |= BDRV_O_NOCACHE | BDRV_O_CACHE_WB;
-        } else if (mode.equals("directsync")) {
-            flags.value |= BDRV_O_NOCACHE;
-        } else if (mode.equals("writeback")) {
-            flags.value |= BDRV_O_CACHE_WB;
-        } else if (mode.equals("unsafe")) {
-            flags.value |= BDRV_O_CACHE_WB;
-            flags.value |= BDRV_O_NO_FLUSH;
-        } else if (mode.equals("writethrough")) {
-            /* this is the default */
-        } else {
-            return -1;
-        }
-        return 0;
-    }
-
-    /**
-     * The copy-on-read flag is actually a reference count so multiple users may
-     * use the feature without worrying about clobbering its previous state.
-     * Copy-on-read stays enabled until all users have called to disable it.
-     */
-    private static void bdrv_enable_copy_on_read(BlockDriverState bs) {
-        bs.copy_on_read++;
-    }
-
-    private static void bdrv_disable_copy_on_read(BlockDriverState bs) {
-        //assert(bs.copy_on_read > 0);
-        bs.copy_on_read--;
-    }
-
-    /*
-     * Common part for opening disk images and files
-     */
-    static private int bdrv_open_common(BlockDriverState bs, String filename, int flags, BlockDriver drv) {
-        int ret, open_flags;
-
-        //assert(drv != NULL);
-        //assert(bs.file == NULL);
-
-        //trace_bdrv_open_common(bs, filename, flags, drv.format_name);
-
-        bs.open_flags = flags;
-        bs.buffer_alignment = 512;
-
-        //assert(bs.copy_on_read == 0); /* bdrv_new() and bdrv_close() make it so */
-        if ((flags & BDRV_O_RDWR)!=0 && (flags & BDRV_O_COPY_ON_READ)!=0) {
-            bdrv_enable_copy_on_read(bs);
-        }
-
-        bs.filename=filename;
-
-        if (use_bdrv_whitelist && !bdrv_is_whitelisted(drv)) {
-            return -Error.ENOTSUP;
-        }
-
-        bs.drv = drv;
-        bs.opaque = drv.allocOpaque();
-
-        bs.enable_write_cache = (flags & BDRV_O_CACHE_WB)!=0;
-        open_flags = flags | BDRV_O_CACHE_WB;
-
-        /*
-         * Clear flags that are internal to the block layer before opening the
-         * image.
-         */
-        open_flags &= ~(BDRV_O_SNAPSHOT | BDRV_O_NO_BACKING);
-
-        /*
-         * Snapshots should be writable.
-         */
-        if (bs.is_temporary) {
-            open_flags |= BDRV_O_RDWR;
-        }
-
-        bs.keep_read_only = bs.read_only = (open_flags & BDRV_O_RDWR)==0;
-
-        /* Open the image, either directly or using a protocol */
-        if (drv.has_bdrv_file_open()) {
-            ret = drv.bdrv_file_open(bs, filename, open_flags);
-        } else {
-            BlockDriverStateRef bds = new BlockDriverStateRef();
-            ret = bdrv_file_open(bds, filename, open_flags);
-            bs.file = bds.value;
-            if (ret >= 0) {
-                ret = drv.bdrv_open(bs, open_flags);
-            }
-        }
-
-        if (ret>=0)
-            ret = refresh_total_sectors(bs, bs.total_sectors);
-
-        if (bs.is_temporary) {
-            new File(filename).delete();
-        }
-        if (ret>=0)
-            return 0;
-
-        if (bs.file!=null) {
-            bdrv_delete(bs.file);
-            bs.file = null;
-        }
-        bs.opaque = null;
-        bs.drv = null;
-        return ret;
-    }
-
-    /*
-     * Opens a file using a protocol (file, host_device, nbd, ...)
-     */
-    private static int bdrv_file_open(BlockDriverStateRef pbs, String filename, int flags)
-    {
-        BlockDriverState bs;
-        BlockDriver drv;
-        int ret;
-
-        drv = bdrv_find_protocol(filename);
-        if (drv == null) {
-            return -Error.ENOENT;
-        }
-
-        bs = bdrv_new("");
-        ret = bdrv_open_common(bs, filename, flags, drv);
-        if (ret < 0) {
-            bdrv_delete(bs);
-            return ret;
-        }
-        bs.growable = true;
-        pbs.value = bs;
-        return 0;
-    }
-
     /*
      * Opens a disk image (raw, qcow2, vmdk, ...)
      */
@@ -793,63 +633,63 @@ public class Block {
 //        }
 
         while (true) { // goto unlink_and_faile
-        /* Find the right image format driver */
-        if (drv==null) {
-            BlockDriverRef bd = new BlockDriverRef();
-            ret = find_image_format(filename, bd);
-            drv = bd.value;
-        }
-
-        if (drv == null) {
-            break;
-        }
-
-        /* Open the image */
-        ret = bdrv_open_common(bs, filename, flags, drv);
-        if (ret < 0) {
-            break;
-        }
-
-        /* If there is a backing file, use it */
-        if ((flags & BDRV_O_NO_BACKING) == 0 && bs.backing_file.length()>0) {
-            String backing_filename;
-            int back_flags;
-            BlockDriver back_drv = null;
-
-            bs.backing_hd = bdrv_new("");
-            backing_filename = bdrv_get_full_backing_filename(bs);
-
-            if (bs.backing_format.length()>0) {
-                back_drv = bdrv_find_format(bs.backing_format);
+            /* Find the right image format driver */
+            if (drv == null) {
+                BlockDriverRef bd = new BlockDriverRef();
+                ret = find_image_format(filename, bd);
+                drv = bd.value;
             }
 
-            /* backing files always opened read-only */
-            back_flags =
-                flags & ~(BDRV_O_RDWR | BDRV_O_SNAPSHOT | BDRV_O_NO_BACKING);
+            if (drv == null) {
+                break;
+            }
 
-            ret = bdrv_open(bs.backing_hd, backing_filename, back_flags, back_drv);
+            /* Open the image */
+            ret = bdrv_open_common(bs, filename, flags, drv);
             if (ret < 0) {
-                bdrv_close(bs);
-                return ret;
+                break;
             }
-            if (bs.is_temporary) {
-                bs.backing_hd.keep_read_only = (flags & BDRV_O_RDWR)==0;
-            } else {
-                /* base image inherits from "parent" */
-                bs.backing_hd.keep_read_only = bs.keep_read_only;
-            }
-        }
 
-        //if (!bdrv_key_required(bs)) {
+            /* If there is a backing file, use it */
+            if ((flags & BDRV_O_NO_BACKING) == 0 && bs.backing_file.length() > 0) {
+                String backing_filename;
+                int back_flags;
+                BlockDriver back_drv = null;
+
+                bs.backing_hd = bdrv_new("");
+                backing_filename = bdrv_get_full_backing_filename(bs);
+
+                if (bs.backing_format.length() > 0) {
+                    back_drv = bdrv_find_format(bs.backing_format);
+                }
+
+                /* backing files always opened read-only */
+                back_flags =
+                        flags & ~(BDRV_O_RDWR | BDRV_O_SNAPSHOT | BDRV_O_NO_BACKING);
+
+                ret = bdrv_open(bs.backing_hd, backing_filename, back_flags, back_drv);
+                if (ret < 0) {
+                    bdrv_close(bs);
+                    return ret;
+                }
+                if (bs.is_temporary) {
+                    bs.backing_hd.keep_read_only = (flags & BDRV_O_RDWR) == 0;
+                } else {
+                    /* base image inherits from "parent" */
+                    bs.backing_hd.keep_read_only = bs.keep_read_only;
+                }
+            }
+
+            //if (!bdrv_key_required(bs)) {
             bdrv_dev_change_media_cb(bs, true);
-        //}
+            //}
 
-        /* throttling disk I/O limits */
-        //if (bs.io_limits_enabled) {
-        //    bdrv_io_limits_enable(bs);
-        //}
+            /* throttling disk I/O limits */
+            //if (bs.io_limits_enabled) {
+            //    bdrv_io_limits_enable(bs);
+            //}
 
-        return 0;
+            return 0;
         }
         // unlink_and_fail:
         if (bs.is_temporary) {
@@ -858,8 +698,108 @@ public class Block {
         return ret;
     }
 
-    static private void bdrv_close(BlockDriverState bs)
-    {}
+    static private void bdrv_close(BlockDriverState bs) {
+    }
+
+    /* make a BlockDriverState anonymous by removing from bdrv_state list.
+       Also, NULL terminate the device_name to prevent double remove */
+    static private void bdrv_make_anon(BlockDriverState bs) {
+        if (bs.device_name.length() != 0) {
+            bdrv_states.remove(bs);
+        }
+        bs.device_name = "";
+    }
+
+    static private void bdrv_delete(BlockDriverState bs) {
+        //assert(!bs.dev);
+        //assert(!bs.job);
+        //assert(!bs.in_use);
+
+        /* remove from list, if necessary */
+        bdrv_make_anon(bs);
+
+        bdrv_close(bs);
+
+        //assert(bs != bs_snapshots);
+        //g_free(bs);
+    }
+
+    static public void bdrv_set_dev_ops(BlockDriverState bs, BlockDevOps ops, Object opaque) {
+        bs.dev_ops = ops;
+        bs.dev_opaque = opaque;
+//        if (bdrv_dev_has_removable_media(bs) && bs == bs_snapshots) {
+//            bs_snapshots = NULL;
+//        }
+    }
+
+    static public void bdrv_emit_qmp_error_event(BlockDriverState bdrv, BlockQMPEventAction action, boolean is_read) {
+//        QObject *data;
+//        const char *action_str;
+//
+//        switch (action) {
+//        case BDRV_ACTION_REPORT:
+//            action_str = "report";
+//            break;
+//        case BDRV_ACTION_IGNORE:
+//            action_str = "ignore";
+//            break;
+//        case BDRV_ACTION_STOP:
+//            action_str = "stop";
+//            break;
+//        default:
+//            abort();
+//        }
+//
+//        data = qobject_from_jsonf("{ 'device': %s, 'action': %s, 'operation': %s }",
+//                                  bdrv.device_name,
+//                                  action_str,
+//                                  is_read ? "read" : "write");
+//        monitor_protocol_event(QEVENT_BLOCK_IO_ERROR, data);
+//
+//        qobject_decref(data);
+    }
+
+    static private void bdrv_emit_qmp_eject_event(BlockDriverState bs, boolean ejected) {
+//        QObject *data;
+//
+//        data = qobject_from_jsonf("{ 'device': %s, 'tray-open': %i }",
+//                                  bdrv_get_device_name(bs), ejected);
+//        monitor_protocol_event(QEVENT_DEVICE_TRAY_MOVED, data);
+//
+//        qobject_decref(data);
+    }
+
+    static void bdrv_dev_change_media_cb(BlockDriverState bs, boolean load) {
+        if (bs.dev_ops != null && bs.dev_ops.has_change_media_cb()) {
+            boolean tray_was_closed = !bdrv_dev_is_tray_open(bs);
+            bs.dev_ops.change_media_cb(bs.dev_opaque, load);
+            if (tray_was_closed) {
+                /* tray open */
+                bdrv_emit_qmp_eject_event(bs, true);
+            }
+            if (load) {
+                /* tray close */
+                bdrv_emit_qmp_eject_event(bs, false);
+            }
+        }
+    }
+
+    static private boolean bdrv_dev_has_removable_media(BlockDriverState bs) {
+        return bs.dev == null || (bs.dev_ops != null && bs.dev_ops.has_change_media_cb());
+    }
+
+    static private void bdrv_dev_eject_request(BlockDriverState bs, boolean force) {
+        if (bs.dev_ops != null && bs.dev_ops.has_eject_request_cb()) {
+            bs.dev_ops.eject_request_cb(bs.dev_opaque, force);
+        }
+    }
+
+    static private boolean bdrv_dev_is_tray_open(BlockDriverState bs) {
+        if (bs.dev_ops != null && bs.dev_ops.has_is_tray_open()) {
+            return bs.dev_ops.is_tray_open(bs.dev_opaque);
+        }
+        return false;
+    }
 //        bdrv_flush(bs);
 //        if (bs.drv!=null) {
 //            if (bs.job!=null) {
@@ -945,13 +885,10 @@ public class Block {
 //        }
 //    }
 
-    /* make a BlockDriverState anonymous by removing from bdrv_state list.
-       Also, NULL terminate the device_name to prevent double remove */
-    static private void bdrv_make_anon(BlockDriverState bs) {
-        if (bs.device_name.length()!=0) {
-            bdrv_states.remove(bs);
+    static private void bdrv_dev_resize_cb(BlockDriverState bs) {
+        if (bs.dev_ops != null && bs.dev_ops.has_resize_cb()) {
+            bs.dev_ops.resize_cb(bs.dev_opaque);
         }
-        bs.device_name="";
     }
 
 //    static void bdrv_rebind(BlockDriverState bs)
@@ -1080,19 +1017,11 @@ public class Block {
 //                bs_new.drv ? bs_new.drv.format_name : "");
 //    }
 
-    static private void bdrv_delete(BlockDriverState bs)
-    {
-        //assert(!bs.dev);
-        //assert(!bs.job);
-        //assert(!bs.in_use);
-
-        /* remove from list, if necessary */
-        bdrv_make_anon(bs);
-
-        bdrv_close(bs);
-
-        //assert(bs != bs_snapshots);
-        //g_free(bs);
+    static private boolean bdrv_dev_is_medium_locked(BlockDriverState bs) {
+        if (bs.dev_ops != null && bs.dev_ops.has_is_medium_locked()) {
+            return bs.dev_ops.is_medium_locked(bs.dev_opaque);
+        }
+        return false;
     }
 //
 //    static private int bdrv_attach_dev(BlockDriverState bs, Object dev)
@@ -1130,99 +1059,145 @@ public class Block {
 //        return bs.dev;
 //    }
 
-    static public void bdrv_set_dev_ops(BlockDriverState bs, BlockDevOps ops, Object opaque)
-    {
-        bs.dev_ops = ops;
-        bs.dev_opaque = opaque;
-//        if (bdrv_dev_has_removable_media(bs) && bs == bs_snapshots) {
-//            bs_snapshots = NULL;
+    /* return < 0 if error. See bdrv_write() for the return codes */
+    static public int bdrv_read(BlockDriverState bs, long sector_num, byte[] buf, int buffOffset, int nb_sectors) {
+        return bs.drv.bdrv_read(bs, sector_num, buf, buffOffset, nb_sectors);
+        //return bdrv_rw_co(bs, sector_num, buf, nb_sectors, false);
+    }
+
+    /* Just like bdrv_read(), but with I/O throttling temporarily disabled */
+    static int bdrv_read_unthrottled(BlockDriverState bs, long sector_num, byte[] buf, int nb_sectors) {
+        boolean enabled;
+        int ret;
+
+        enabled = bs.io_limits_enabled;
+        bs.io_limits_enabled = false;
+        ret = bdrv_read(bs, 0, buf, 0, 1);
+        bs.io_limits_enabled = enabled;
+        return ret;
+    }
+
+    //    static private final int BITS_PER_LONG  (sizeof(unsigned long) * 8)
+//
+//    static void set_dirty_bitmap(BlockDriverState bs, int64_t sector_num,
+//                                 int nb_sectors, int dirty)
+//    {
+//        int64_t start, end;
+//        unsigned long val, idx, bit;
+//
+//        start = sector_num / BDRV_SECTORS_PER_DIRTY_CHUNK;
+//        end = (sector_num + nb_sectors - 1) / BDRV_SECTORS_PER_DIRTY_CHUNK;
+//
+//        for (; start <= end; start++) {
+//            idx = start / BITS_PER_LONG;
+//            bit = start % BITS_PER_LONG;
+//            val = bs.dirty_bitmap[idx];
+//            if (dirty) {
+//                if (!(val & (1UL << bit))) {
+//                    bs.dirty_count++;
+//                    val |= 1UL << bit;
+//                }
+//            } else {
+//                if (val & (1UL << bit)) {
+//                    bs.dirty_count--;
+//                    val &= ~(1UL << bit);
+//                }
+//            }
+//            bs.dirty_bitmap[idx] = val;
 //        }
+//    }
+//
+    /* Return < 0 if error. Important errors are:
+      -EIO         generic I/O error (may happen for all errors)
+      -ENOMEDIUM   No media inserted.
+      -EINVAL      Invalid sector number or nb_sectors
+      -EACCES      Trying to write a read-only device
+    */
+    static public int bdrv_write(BlockDriverState bs, long sector_num, byte[] buf, int offset, int nb_sectors) {
+        return bs.drv.bdrv_write(bs, sector_num, buf, offset, nb_sectors);
+        //return bdrv_rw_co(bs, sector_num, (uint8_t *)buf, nb_sectors, true);
     }
 
-    static public void bdrv_emit_qmp_error_event(BlockDriverState bdrv, BlockQMPEventAction action, boolean is_read) {
-//        QObject *data;
-//        const char *action_str;
-//
-//        switch (action) {
-//        case BDRV_ACTION_REPORT:
-//            action_str = "report";
-//            break;
-//        case BDRV_ACTION_IGNORE:
-//            action_str = "ignore";
-//            break;
-//        case BDRV_ACTION_STOP:
-//            action_str = "stop";
-//            break;
-//        default:
-//            abort();
-//        }
-//
-//        data = qobject_from_jsonf("{ 'device': %s, 'action': %s, 'operation': %s }",
-//                                  bdrv.device_name,
-//                                  action_str,
-//                                  is_read ? "read" : "write");
-//        monitor_protocol_event(QEVENT_BLOCK_IO_ERROR, data);
-//
-//        qobject_decref(data);
+    static private int bdrv_pread(BlockDriverState bs, int offset, byte[] buf, int count1) {
+        byte[] tmp_buf = new byte[BDRV_SECTOR_SIZE];
+        int len, nb_sectors, count;
+        long sector_num;
+        int ret;
+
+        count = count1;
+        /* first read to align to sector start */
+        len = ((BDRV_SECTOR_SIZE - offset) & (BDRV_SECTOR_SIZE - 1));
+        if (len > count)
+            len = count;
+        sector_num = offset >> BDRV_SECTOR_BITS;
+        int bufOffset = 0;
+        if (len > 0) {
+            if ((ret = bdrv_read(bs, sector_num, tmp_buf, 0, 1)) < 0)
+                return ret;
+            System.arraycopy(tmp_buf, (offset & (BDRV_SECTOR_SIZE - 1)), buf, 0, len);
+            count -= len;
+            if (count == 0)
+                return count1;
+            sector_num++;
+            bufOffset = len;
+        }
+
+        /* read the sectors "in place" */
+        nb_sectors = count >> BDRV_SECTOR_BITS;
+        if (nb_sectors > 0) {
+            if ((ret = bdrv_read(bs, sector_num, buf, bufOffset, nb_sectors)) < 0)
+                return ret;
+            sector_num += nb_sectors;
+            len = nb_sectors << BDRV_SECTOR_BITS;
+            bufOffset += len;
+            count -= len;
+        }
+
+        /* add data from the last sector */
+        if (count > 0) {
+            if ((ret = bdrv_read(bs, sector_num, tmp_buf, 0, 1)) < 0)
+                return ret;
+            System.arraycopy(tmp_buf, 0, buf, bufOffset, count);
+        }
+        return count1;
     }
 
-    static private void bdrv_emit_qmp_eject_event(BlockDriverState bs, boolean ejected)
-    {
-//        QObject *data;
-//
-//        data = qobject_from_jsonf("{ 'device': %s, 'tray-open': %i }",
-//                                  bdrv_get_device_name(bs), ejected);
-//        monitor_protocol_event(QEVENT_DEVICE_TRAY_MOVED, data);
-//
-//        qobject_decref(data);
-    }
+    /**
+     * Length of a file in bytes. Return < 0 if error or unknown.
+     */
+    static private long bdrv_getlength(BlockDriverState bs) {
+        BlockDriver drv = bs.drv;
+        if (drv == null)
+            return -Error.ENOMEDIUM;
 
-    static void bdrv_dev_change_media_cb(BlockDriverState bs, boolean load) {
-        if (bs.dev_ops!=null && bs.dev_ops.has_change_media_cb()) {
-            boolean tray_was_closed = !bdrv_dev_is_tray_open(bs);
-            bs.dev_ops.change_media_cb(bs.dev_opaque, load);
-            if (tray_was_closed) {
-                /* tray open */
-                bdrv_emit_qmp_eject_event(bs, true);
+        if (bs.growable || bdrv_dev_has_removable_media(bs)) {
+            if (drv.has_bdrv_getlength()) {
+                return drv.bdrv_getlength(bs);
             }
-            if (load) {
-                /* tray close */
-                bdrv_emit_qmp_eject_event(bs, false);
-            }
         }
+        return bs.total_sectors * BDRV_SECTOR_SIZE;
     }
 
-    static private boolean bdrv_dev_has_removable_media(BlockDriverState bs)
-    {
-        return bs.dev==null || (bs.dev_ops!=null && bs.dev_ops.has_change_media_cb());
+    /* return 0 as number of sectors if no device present or error */
+    static public long bdrv_get_geometry(BlockDriverState bs) {
+        long length = bdrv_getlength(bs);
+        if (length < 0)
+            length = 0;
+        else
+            length = length >> BDRV_SECTOR_BITS;
+        return length;
     }
 
-    static private void bdrv_dev_eject_request(BlockDriverState bs, boolean force) {
-        if (bs.dev_ops!=null && bs.dev_ops.has_eject_request_cb()) {
-            bs.dev_ops.eject_request_cb(bs.dev_opaque, force);
-        }
+    static public BlockErrorAction bdrv_get_on_error(BlockDriverState bs, boolean is_read) {
+        return is_read ? bs.on_read_error : bs.on_write_error;
     }
 
-    static private boolean bdrv_dev_is_tray_open(BlockDriverState bs)
-    {
-        if (bs.dev_ops!=null && bs.dev_ops.has_is_tray_open()) {
-            return bs.dev_ops.is_tray_open(bs.dev_opaque);
-        }
-        return false;
+    static public boolean bdrv_is_read_only(BlockDriverState bs) {
+        return bs.read_only;
     }
 
-    static private void bdrv_dev_resize_cb(BlockDriverState bs) {
-        if (bs.dev_ops!=null && bs.dev_ops.has_resize_cb()) {
-            bs.dev_ops.resize_cb(bs.dev_opaque);
-        }
-    }
-
-    static private boolean bdrv_dev_is_medium_locked(BlockDriverState bs)
-    {
-        if (bs.dev_ops!=null && bs.dev_ops.has_is_medium_locked()) {
-            return bs.dev_ops.is_medium_locked(bs.dev_opaque);
-        }
-        return false;
+    static public boolean bdrv_enable_write_cache(BlockDriverState bs) {
+        return bs.enable_write_cache;
     }
 
 //    /*
@@ -1608,110 +1583,37 @@ public class Block {
 //        return rwco.ret;
 //    }
 
-    /* return < 0 if error. See bdrv_write() for the return codes */
-    static public int bdrv_read(BlockDriverState bs, long sector_num, byte[] buf, int buffOffset, int nb_sectors)
-    {
-        return bs.drv.bdrv_read(bs, sector_num, buf, buffOffset, nb_sectors);
-        //return bdrv_rw_co(bs, sector_num, buf, nb_sectors, false);
+    static public void bdrv_set_enable_write_cache(BlockDriverState bs, boolean wce) {
+        bs.enable_write_cache = wce;
     }
 
-    /* Just like bdrv_read(), but with I/O throttling temporarily disabled */
-    static int bdrv_read_unthrottled(BlockDriverState bs, long sector_num, byte[] buf, int nb_sectors)
-    {
-        boolean enabled;
-        int ret;
-
-        enabled = bs.io_limits_enabled;
-        bs.io_limits_enabled = false;
-        ret = bdrv_read(bs, 0, buf, 0, 1);
-        bs.io_limits_enabled = enabled;
-        return ret;
+    static private BlockDriverState bdrv_find(String name) {
+        for (BlockDriverState bs : bdrv_states) {
+            if (name.equals(bs.device_name))
+                return bs;
+        }
+        return null;
     }
 
-//    static private final int BITS_PER_LONG  (sizeof(unsigned long) * 8)
-//
-//    static void set_dirty_bitmap(BlockDriverState bs, int64_t sector_num,
-//                                 int nb_sectors, int dirty)
-//    {
-//        int64_t start, end;
-//        unsigned long val, idx, bit;
-//
-//        start = sector_num / BDRV_SECTORS_PER_DIRTY_CHUNK;
-//        end = (sector_num + nb_sectors - 1) / BDRV_SECTORS_PER_DIRTY_CHUNK;
-//
-//        for (; start <= end; start++) {
-//            idx = start / BITS_PER_LONG;
-//            bit = start % BITS_PER_LONG;
-//            val = bs.dirty_bitmap[idx];
-//            if (dirty) {
-//                if (!(val & (1UL << bit))) {
-//                    bs.dirty_count++;
-//                    val |= 1UL << bit;
-//                }
-//            } else {
-//                if (val & (1UL << bit)) {
-//                    bs.dirty_count--;
-//                    val &= ~(1UL << bit);
-//                }
-//            }
-//            bs.dirty_bitmap[idx] = val;
-//        }
-//    }
-//
-    /* Return < 0 if error. Important errors are:
-      -EIO         generic I/O error (may happen for all errors)
-      -ENOMEDIUM   No media inserted.
-      -EINVAL      Invalid sector number or nb_sectors
-      -EACCES      Trying to write a read-only device
-    */
-    static public int bdrv_write(BlockDriverState bs, long sector_num, byte[] buf, int offset, int nb_sectors)
-    {
-        return bs.drv.bdrv_write(bs, sector_num, buf, offset, nb_sectors);
-        //return bdrv_rw_co(bs, sector_num, (uint8_t *)buf, nb_sectors, true);
+    /**************************************************************/
+    /* async I/Os */
+    static public BlockDriverAIOCB bdrv_aio_readv(BlockDriverState bs, long sector_num, QemuCommon.QEMUIOVector qiov, int nb_sectors, BlockDriverCompletionFunc cb, Object opaque) {
+        //trace_bdrv_aio_readv(bs, sector_num, nb_sectors, opaque);
+        Internal.IDEState s = (Internal.IDEState) opaque;
+        bs.drv.bdrv_read(bs, sector_num, s.io_buffer, 0, nb_sectors);
+        cb.call(opaque, 0);
+        return null;
+        //return bdrv_co_aio_rw_vector(bs, sector_num, qiov, nb_sectors, cb, opaque, false);
     }
 
-    static private int bdrv_pread(BlockDriverState bs, int offset, byte[] buf, int count1) {
-        byte[] tmp_buf = new byte[BDRV_SECTOR_SIZE];
-        int len, nb_sectors, count;
-        long sector_num;
-        int ret;
+    static public BlockDriverAIOCB bdrv_aio_writev(BlockDriverState bs, long sector_num, QemuCommon.QEMUIOVector qiov, int nb_sectors, BlockDriverCompletionFunc cb, Object opaque) {
+        //trace_bdrv_aio_writev(bs, sector_num, nb_sectors, opaque);
 
-        count = count1;
-        /* first read to align to sector start */
-        len = ((BDRV_SECTOR_SIZE - offset) & (BDRV_SECTOR_SIZE - 1));
-        if (len > count)
-            len = count;
-        sector_num = offset >> BDRV_SECTOR_BITS;
-        int bufOffset = 0;
-        if (len > 0) {
-            if ((ret = bdrv_read(bs, sector_num, tmp_buf, 0, 1)) < 0)
-                return ret;
-            System.arraycopy(tmp_buf, (offset & (BDRV_SECTOR_SIZE - 1)) ,buf, 0, len);
-            count -= len;
-            if (count == 0)
-                return count1;
-            sector_num++;
-            bufOffset = len;
-        }
-
-        /* read the sectors "in place" */
-        nb_sectors = count >> BDRV_SECTOR_BITS;
-        if (nb_sectors > 0) {
-            if ((ret = bdrv_read(bs, sector_num, buf, bufOffset, nb_sectors)) < 0)
-                return ret;
-            sector_num += nb_sectors;
-            len = nb_sectors << BDRV_SECTOR_BITS;
-            bufOffset+=len;
-            count -= len;
-        }
-
-        /* add data from the last sector */
-        if (count > 0) {
-            if ((ret = bdrv_read(bs, sector_num, tmp_buf, 0, 1)) < 0)
-                return ret;
-            System.arraycopy(tmp_buf, 0 ,buf, bufOffset, count);
-        }
-        return count1;
+        Internal.IDEState s = (Internal.IDEState) opaque;
+        bs.drv.bdrv_write(bs, sector_num, s.io_buffer, 0, nb_sectors);
+        cb.call(opaque, 0);
+        return null;
+        //return bdrv_co_aio_rw_vector(bs, sector_num, qiov, nb_sectors, cb, opaque, true);
     }
 
 //    int bdrv_pwrite(BlockDriverState bs, int64_t offset,
@@ -2077,31 +1979,23 @@ public class Block {
 //        return -ENOTSUP;
 //    }
 
-    /**
-     * Length of a file in bytes. Return < 0 if error or unknown.
-     */
-    static private long bdrv_getlength(BlockDriverState bs) {
-        BlockDriver drv = bs.drv;
-        if (drv == null)
-            return -Error.ENOMEDIUM;
-
-        if (bs.growable || bdrv_dev_has_removable_media(bs)) {
-            if (drv.has_bdrv_getlength()) {
-                return drv.bdrv_getlength(bs);
-            }
-        }
-        return bs.total_sectors * BDRV_SECTOR_SIZE;
+    static public void bdrv_aio_cancel(BlockDriverAIOCB acb) {
+        //acb.pool.cancel(acb);
     }
 
-    /* return 0 as number of sectors if no device present or error */
-    static public long bdrv_get_geometry(BlockDriverState bs)
-    {
-        long length = bdrv_getlength(bs);
-        if (length < 0)
-            length = 0;
-        else
-            length = length >> BDRV_SECTOR_BITS;
-        return length;
+    static public BlockDriverAIOCB bdrv_aio_flush(BlockDriverState bs, BlockDriverCompletionFunc cb, Object opaque) {
+//        trace_bdrv_aio_flush(bs, opaque);
+//
+//        Coroutine *co;
+//        BlockDriverAIOCBCoroutine *acb;
+//
+//        acb = qemu_aio_get(&bdrv_em_co_aio_pool, bs, cb, opaque);
+//        co = qemu_coroutine_create(bdrv_aio_flush_co_entry);
+//        qemu_coroutine_enter(co, acb);
+//
+//        return &acb.common;
+        cb.call(opaque, 0);
+        return null;
     }
 
 //    /* throttling disk io limits */
@@ -2119,12 +2013,21 @@ public class Block {
 //        bs.on_write_error = on_write_error;
 //    }
 
-    static public BlockErrorAction bdrv_get_on_error(BlockDriverState bs, boolean is_read) {
-        return is_read ? bs.on_read_error : bs.on_write_error;
+    public static void bdrv_init() {
+        //module_call_init(MODULE_INIT_BLOCK);
     }
 
-    static public boolean bdrv_is_read_only(BlockDriverState bs) {
-        return bs.read_only;
+    /**
+     * Return TRUE if the media is present
+     */
+    static public boolean bdrv_is_inserted(BlockDriverState bs) {
+        BlockDriver drv = bs.drv;
+
+        if (drv == null)
+            return false;
+        if (!drv.has_bdrv_is_inserted())
+            return true;
+        return drv.bdrv_is_inserted(bs);
     }
 //
 //    int bdrv_is_sg(BlockDriverState bs)
@@ -2132,12 +2035,32 @@ public class Block {
 //        return bs.sg;
 //    }
 
-    static public boolean bdrv_enable_write_cache(BlockDriverState bs) {
-        return bs.enable_write_cache;
+    /**
+     * Return whether the media changed since the last call to this
+     * function, or -ENOTSUP if we don't know.  Most drivers don't know.
+     */
+    static private int bdrv_media_changed(BlockDriverState bs) {
+        BlockDriver drv = bs.drv;
+
+        if (drv != null && drv.has_bdrv_media_changed()) {
+            return drv.bdrv_media_changed(bs);
+        }
+        return -Error.ENOTSUP;
     }
 
-    static public void bdrv_set_enable_write_cache(BlockDriverState bs, boolean wce) {
-        bs.enable_write_cache = wce;
+    /**
+     * If eject_flag is TRUE, eject the media. Otherwise, close the tray
+     */
+    static public void bdrv_eject(BlockDriverState bs, boolean eject_flag) {
+        BlockDriver drv = bs.drv;
+
+        if (drv != null && drv.has_bdrv_eject()) {
+            drv.bdrv_eject(bs, eject_flag);
+        }
+
+        if (bs.device_name.length() > 0) {
+            bdrv_emit_qmp_eject_event(bs, eject_flag);
+        }
     }
 
 //    int bdrv_is_encrypted(BlockDriverState bs)
@@ -2196,12 +2119,18 @@ public class Block {
 //        }
 //    }
 
-    static private BlockDriverState bdrv_find(String name) {
-        for (BlockDriverState bs: bdrv_states) {
-            if (name.equals(bs.device_name))
-                return bs;
+    /**
+     * Lock or unlock the media (if it is locked, the user won't be able
+     * to eject it manually).
+     */
+    static public void bdrv_lock_medium(BlockDriverState bs, boolean locked) {
+        BlockDriver drv = bs.drv;
+
+        //trace_bdrv_lock_medium(bs, locked);
+
+        if (drv != null && drv.has_bdrv_lock_medium()) {
+            drv.bdrv_lock_medium(bs, locked);
         }
-        return null;
     }
 
 //    BlockDriverState *bdrv_next(BlockDriverState bs)
@@ -2813,26 +2742,13 @@ public class Block {
 //        return buf;
 //    }
 
-    /**************************************************************/
-    /* async I/Os */
-
-    static public BlockDriverAIOCB bdrv_aio_readv(BlockDriverState bs, long sector_num, QemuCommon.QEMUIOVector qiov, int nb_sectors, BlockDriverCompletionFunc cb, Object opaque) {
-        //trace_bdrv_aio_readv(bs, sector_num, nb_sectors, opaque);
-        Internal.IDEState s = (Internal.IDEState)opaque;
-        bs.drv.bdrv_read(bs, sector_num, s.io_buffer, 0, nb_sectors);
-        cb.call(opaque, 0);
-        return null;
-        //return bdrv_co_aio_rw_vector(bs, sector_num, qiov, nb_sectors, cb, opaque, false);
+    static public void bdrv_set_buffer_alignment(BlockDriverState bs, int align) {
+        bs.buffer_alignment = align;
     }
 
-    static public BlockDriverAIOCB bdrv_aio_writev(BlockDriverState bs, long sector_num, QemuCommon.QEMUIOVector qiov, int nb_sectors, BlockDriverCompletionFunc cb, Object opaque) {
-        //trace_bdrv_aio_writev(bs, sector_num, nb_sectors, opaque);
-
-        Internal.IDEState s = (Internal.IDEState)opaque;
-        bs.drv.bdrv_write(bs, sector_num, s.io_buffer, 0, nb_sectors);
-        cb.call(opaque, 0);
-        return null;
-        //return bdrv_co_aio_rw_vector(bs, sector_num, qiov, nb_sectors, cb, opaque, true);
+    static public void bdrv_iostatus_enable(BlockDriverState bs) {
+        bs.iostatus_enabled = true;
+        bs.iostatus = BLOCK_DEVICE_IO_STATUS_OK;
     }
 
 
@@ -3010,8 +2926,19 @@ public class Block {
 //        return 0;
 //    }
 
-    static public void bdrv_aio_cancel(BlockDriverAIOCB acb) {
-        //acb.pool.cancel(acb);
+    //
+//    /* The I/O status is only enabled if the drive explicitly
+//     * enables it _and_ the VM is configured to stop on errors */
+//    bool bdrv_iostatus_is_enabled(const BlockDriverState bs)
+//    {
+//        return (bs.iostatus_enabled &&
+//               (bs.on_write_error == BLOCK_ERR_STOP_ENOSPC ||
+//                bs.on_write_error == BLOCK_ERR_STOP_ANY    ||
+//                bs.on_read_error == BLOCK_ERR_STOP_ANY));
+//    }
+//
+    static private void bdrv_iostatus_disable(BlockDriverState bs) {
+        bs.iostatus_enabled = false;
     }
 
 //    /* block I/O throttling */
@@ -3333,19 +3260,16 @@ public class Block {
 //        qemu_bh_schedule(acb.bh);
 //    }
 
-    static public BlockDriverAIOCB bdrv_aio_flush(BlockDriverState bs, BlockDriverCompletionFunc cb, Object opaque) {
-//        trace_bdrv_aio_flush(bs, opaque);
-//
-//        Coroutine *co;
-//        BlockDriverAIOCBCoroutine *acb;
-//
-//        acb = qemu_aio_get(&bdrv_em_co_aio_pool, bs, cb, opaque);
-//        co = qemu_coroutine_create(bdrv_aio_flush_co_entry);
-//        qemu_coroutine_enter(co, acb);
-//
-//        return &acb.common;
-        cb.call(opaque, 0);
-        return null;
+    /* XXX: Today this is set by device models because it makes the implementation
+       quite simple. However, the block layer knows about the error, so it's
+       possible to implement this without device models being involved */
+    static public void bdrv_iostatus_set_err(BlockDriverState bs, int error) {
+//        if (bdrv_iostatus_is_enabled(bs) &&
+//            bs.iostatus == BLOCK_DEVICE_IO_STATUS_OK) {
+//            assert(error >= 0);
+//            bs.iostatus = error == ENOSPC ? BLOCK_DEVICE_IO_STATUS_NOSPACE :
+//                                             BLOCK_DEVICE_IO_STATUS_FAILED;
+//        }
     }
 
 //    static void coroutine_fn bdrv_aio_discard_co_entry(void *opaque)
@@ -3376,9 +3300,12 @@ public class Block {
 //        return &acb.common;
 //    }
 
-    public static void bdrv_init()
-    {
-        //module_call_init(MODULE_INIT_BLOCK);
+    static public void bdrv_acct_start(BlockDriverState bs, BlockAcctCookie cookie, long bytes, int type) {
+        //assert(type < BDRV_MAX_IOTYPE);
+
+        cookie.bytes = bytes;
+        cookie.start_time_ns = get_clock();
+        cookie.type = type;
     }
 
 //    void bdrv_init_with_whitelist()
@@ -3648,63 +3575,20 @@ public class Block {
     /**************************************************************/
     /* removable device support */
 
-    /**
-     * Return TRUE if the media is present
-     */
-    static public boolean bdrv_is_inserted(BlockDriverState bs)
-    {
-        BlockDriver drv = bs.drv;
+    static public void bdrv_acct_done(BlockDriverState bs, BlockAcctCookie cookie) {
+        //assert(cookie.type < BDRV_MAX_IOTYPE);
 
-        if (drv==null)
-            return false;
-        if (!drv.has_bdrv_is_inserted())
-            return true;
-        return drv.bdrv_is_inserted(bs);
+        bs.nr_bytes[cookie.type] += cookie.bytes;
+        bs.nr_ops[cookie.type]++;
+        bs.total_time_ns[cookie.type] += get_clock() - cookie.start_time_ns;
     }
 
-    /**
-     * Return whether the media changed since the last call to this
-     * function, or -ENOTSUP if we don't know.  Most drivers don't know.
-     */
-    static private int bdrv_media_changed(BlockDriverState bs)
-    {
-        BlockDriver drv = bs.drv;
+    public enum BlockErrorAction {BLOCK_ERR_REPORT, BLOCK_ERR_IGNORE, BLOCK_ERR_STOP_ENOSPC, BLOCK_ERR_STOP_ANY}
 
-        if (drv!=null && drv.has_bdrv_media_changed()) {
-            return drv.bdrv_media_changed(bs);
-        }
-        return -Error.ENOTSUP;
-    }
+    public enum BlockQMPEventAction {BDRV_ACTION_REPORT, BDRV_ACTION_IGNORE, BDRV_ACTION_STOP}
 
-    /**
-     * If eject_flag is TRUE, eject the media. Otherwise, close the tray
-     */
-    static public void bdrv_eject(BlockDriverState bs, boolean eject_flag)
-    {
-        BlockDriver drv = bs.drv;
-
-        if (drv!=null && drv.has_bdrv_eject()) {
-            drv.bdrv_eject(bs, eject_flag);
-        }
-
-        if (bs.device_name.length()>0) {
-            bdrv_emit_qmp_eject_event(bs, eject_flag);
-        }
-    }
-
-    /**
-     * Lock or unlock the media (if it is locked, the user won't be able
-     * to eject it manually).
-     */
-    static public void bdrv_lock_medium(BlockDriverState bs, boolean locked)
-    {
-        BlockDriver drv = bs.drv;
-
-        //trace_bdrv_lock_medium(bs, locked);
-
-        if (drv!=null && drv.has_bdrv_lock_medium()) {
-            drv.bdrv_lock_medium(bs, locked);
-        }
+    public interface BlockDriverCompletionFunc {
+        void call(Object opaque, int ret);
     }
 
 //    /* needed for generic scsi interface */
@@ -3729,9 +3613,53 @@ public class Block {
 //        return NULL;
 //    }
 
-    static public void bdrv_set_buffer_alignment(BlockDriverState bs, int align)
-    {
-        bs.buffer_alignment = align;
+    /* Callbacks for block device models */
+    public interface BlockDevOps {
+        /*
+         * Runs when virtual media changed (monitor commands eject, change)
+         * Argument load is true on load and false on eject.
+         * Beware: doesn't run when a host device's physical media
+         * changes.  Sure would be useful if it did.
+         * Device models with removable media must implement this callback.
+         */
+        void change_media_cb(Object opaque, boolean load);
+
+        boolean has_change_media_cb();
+
+        /*
+         * Runs when an eject request is issued from the monitor, the tray
+         * is closed, and the medium is locked.
+         * Device models that do not implement is_medium_locked will not need
+         * this callback.  Device models that can lock the medium or tray might
+         * want to implement the callback and unlock the tray when "force" is
+         * true, even if they do not support eject requests.
+         */
+        void eject_request_cb(Object opaque, boolean force);
+
+        boolean has_eject_request_cb();
+
+        /*
+         * Is the virtual tray open?
+         * Device models implement this only when the device has a tray.
+         */
+        boolean is_tray_open(Object opaque);
+
+        boolean has_is_tray_open();
+
+        /*
+         * Is the virtual medium locked into the device?
+         * Device models implement this only when device has such a lock.
+         */
+        boolean is_medium_locked(Object opaque);
+
+        boolean has_is_medium_locked();
+
+        /*
+         * Runs when the size changed (e.g. monitor command block_resize)
+         */
+        void resize_cb(Object opaque);
+
+        boolean has_resize_cb();
     }
 
 //    void *qemu_blockalign(BlockDriverState bs, size_t size)
@@ -3795,24 +3723,14 @@ public class Block {
 //        return bs.in_use;
 //    }
 
-    static public void bdrv_iostatus_enable(BlockDriverState bs) {
-        bs.iostatus_enabled = true;
-        bs.iostatus = BLOCK_DEVICE_IO_STATUS_OK;
+    static public class BlockAcctCookie {
+        long bytes;
+        long start_time_ns;
+        int type;
     }
-//
-//    /* The I/O status is only enabled if the drive explicitly
-//     * enables it _and_ the VM is configured to stop on errors */
-//    bool bdrv_iostatus_is_enabled(const BlockDriverState bs)
-//    {
-//        return (bs.iostatus_enabled &&
-//               (bs.on_write_error == BLOCK_ERR_STOP_ENOSPC ||
-//                bs.on_write_error == BLOCK_ERR_STOP_ANY    ||
-//                bs.on_read_error == BLOCK_ERR_STOP_ANY));
-//    }
-//
-    static private void bdrv_iostatus_disable(BlockDriverState bs)
-    {
-        bs.iostatus_enabled = false;
+
+    static public class BlockDriverAIOCB {
+
     }
 
 //    static private void bdrv_iostatus_reset(BlockDriverState bs)
@@ -3822,32 +3740,81 @@ public class Block {
 //        }
 //    }
 
-    /* XXX: Today this is set by device models because it makes the implementation
-       quite simple. However, the block layer knows about the error, so it's
-       possible to implement this without device models being involved */
-    static public void bdrv_iostatus_set_err(BlockDriverState bs, int error) {
-//        if (bdrv_iostatus_is_enabled(bs) &&
-//            bs.iostatus == BLOCK_DEVICE_IO_STATUS_OK) {
-//            assert(error >= 0);
-//            bs.iostatus = error == ENOSPC ? BLOCK_DEVICE_IO_STATUS_NOSPACE :
-//                                             BLOCK_DEVICE_IO_STATUS_FAILED;
-//        }
+    /*
+     * Note: the function bdrv_append() copies and swaps contents of
+     * BlockDriverStates, so if you add new fields to this struct, please
+     * inspect bdrv_append() to determine if the new fields need to be
+     * copied as well.
+     */
+    static public class BlockDriverState {
+        public long total_sectors; /* if we are reading a disk image, give its
+                                  size in sectors */
+        public boolean read_only; /* if true, the media is read only */
+        public boolean keep_read_only; /* if true, the media was requested to stay read only */
+        public int open_flags; /* flags used to open the file, re-used for re-open */
+        public boolean encrypted; /* if true, the media is encrypted */
+        public boolean valid_key; /* if true, a valid encryption key has been set */
+        public boolean sg;        /* if true, the device is a /dev/sg* */
+        public int copy_on_read; /* if true, copy read backing sectors into image
+                             note this is a reference count */
+
+        public BlockDriver drv; /* NULL means no media */
+        public Object opaque;
+        /* TODO change to DeviceState when all users are qdevified */
+        public BlockDevOps dev_ops;
+        public Object dev_opaque;
+        public String filename;
+        public String backing_file = ""; /* if non zero, the image is a diff of this file image */
+        public String backing_format; /* if non-zero and backing_file exists */
+        public boolean is_temporary;
+        public BlockDriverState backing_hd;
+        public BlockDriverState file;
+        /* number of in-flight copy-on-read requests */
+        public int copy_on_read_in_flight;
+        /* the time for latest disk I/O */
+        public long slice_time;
+        public long slice_start;
+        public long slice_end;
+        //BlockIOLimit io_limits;
+        //BlockIOBaseValue  io_base;
+        //CoQueue      throttled_reqs;
+        //QEMUTimer    *block_timer;
+        public boolean io_limits_enabled;
+        /* I/O stats (display with "info blockstats"). */
+        public long[] nr_bytes = new long[BDRV_MAX_IOTYPE];
+        public long[] nr_ops = new long[BDRV_MAX_IOTYPE];
+        public long[] total_time_ns = new long[BDRV_MAX_IOTYPE];
+        public long wr_highest_sector;
+        /* Whether the disk can expand beyond total_sectors */
+        public boolean growable;
+        /* the memory alignment required for the buffers handled by this driver */
+        public int buffer_alignment;
+        /* do we need to tell the quest if we have a volatile write cache? */
+        public boolean enable_write_cache;
+        /* NOTE: the following infos are only hints for real hardware
+           drivers. They are not used by the block driver */
+        public BlockErrorAction on_read_error, on_write_error;
+        public boolean iostatus_enabled;
+        public int iostatus;
+        public String device_name;
+        public long[] dirty_bitmap;
+        public long dirty_count;
+        public int in_use; /* users other than guest access, eg. block migration */
+        Object dev;                  /* attached device model, if any */
+        //QTAILQ_ENTRY(BlockDriverState) list;
+
+        //QLIST_HEAD(, BdrvTrackedRequest) tracked_requests;
+
+        /* long-running background operation */
+        //public BlockJob *job;
     }
 
-    static public void bdrv_acct_start(BlockDriverState bs, BlockAcctCookie cookie, long bytes, int type) {
-        //assert(type < BDRV_MAX_IOTYPE);
-
-        cookie.bytes = bytes;
-        cookie.start_time_ns = get_clock();
-        cookie.type = type;
+    static private class BlockDriverStateRef {
+        BlockDriverState value;
     }
 
-    static public void bdrv_acct_done(BlockDriverState bs, BlockAcctCookie cookie) {
-        //assert(cookie.type < BDRV_MAX_IOTYPE);
-
-        bs.nr_bytes[cookie.type] += cookie.bytes;
-        bs.nr_ops[cookie.type]++;
-        bs.total_time_ns[cookie.type] += get_clock() - cookie.start_time_ns;
+    static private class BlockDriverRef {
+        BlockDriver value;
     }
 //
 //    int bdrv_img_create(const char *filename, const char *fmt,

@@ -9,17 +9,13 @@ import jdos.win.builtin.directx.dinput.IDirectInput;
 import jdos.win.loader.BuiltinModule;
 import jdos.win.loader.Loader;
 
-public class DInput  extends BuiltinModule {
-    public DInput(Loader loader, int handle) {
-        super(loader, "DInput.dll", handle);
-        add(DirectInputCreateA);
-    }
-
+public class DInput extends BuiltinModule {
     // HRESULT WINAPI DirectInputCreateA(HINSTANCE hinst, DWORD dwVersion, LPDIRECTINPUTA *ppDI, LPUNKNOWN punkOuter);
-    private Callback.Handler DirectInputCreateA = new HandlerBase() {
+    private final Callback.Handler DirectInputCreateA = new HandlerBase() {
         public String getName() {
             return "DInput.DirectInputCreateA";
         }
+
         public void onCall() {
             int hinst = CPU.CPU_Pop32();
             int dwVersion = CPU.CPU_Pop32();
@@ -29,4 +25,9 @@ public class DInput  extends BuiltinModule {
             CPU_Regs.reg_eax.dword = jdos.win.utils.Error.S_OK;
         }
     };
+
+    public DInput(Loader loader, int handle) {
+        super(loader, "DInput.dll", handle);
+        add(DirectInputCreateA);
+    }
 }

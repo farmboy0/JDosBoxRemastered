@@ -10,8 +10,8 @@ import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
 
 public class AudioLayer {
-    static private byte[] audioBuffer;
     static public SourceDataLine line;
+    static private byte[] audioBuffer;
     static private boolean audioThreadExit = false;
 
 
@@ -35,7 +35,10 @@ public class AudioLayer {
                         if (result)
                             line.write(audioBuffer, 0, audioBuffer.length);
                         else {
-                            try {Thread.sleep(20);} catch (Exception e){}
+                            try {
+                                Thread.sleep(20);
+                            } catch (Exception e) {
+                            }
                         }
                     }
                 }
@@ -51,7 +54,10 @@ public class AudioLayer {
 
     public static void stop() {
         audioThreadExit = true;
-        try {audioThread.join(2000);} catch (Exception e){}
+        try {
+            audioThread.join(2000);
+        } catch (Exception e) {
+        }
         line.drain();
         line.stop();
     }
@@ -59,8 +65,8 @@ public class AudioLayer {
     public static void listMidi(Program program) {
         MidiDevice.Info[] devices = MidiSystem.getMidiDeviceInfo();
 
-        for (int i=0;i<devices.length;i++) {
-            program.WriteOut("%2d\t \"%s\"\n",new Object[]{new Integer(i),devices[i].getName()});
+        for (int i = 0; i < devices.length; i++) {
+            program.WriteOut("%2d\t \"%s\"\n", new Object[]{new Integer(i), devices[i].getName()});
         }
     }
 }

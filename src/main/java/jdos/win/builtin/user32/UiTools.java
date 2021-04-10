@@ -10,6 +10,69 @@ import jdos.win.utils.Ptr;
 import jdos.win.utils.StringUtil;
 
 public class UiTools extends WinAPI {
+    static final private int[] LTInnerNormal = {
+            -1, -1, -1, -1,
+            -1, COLOR_BTNHIGHLIGHT, COLOR_BTNHIGHLIGHT, -1,
+            -1, COLOR_3DDKSHADOW, COLOR_3DDKSHADOW, -1,
+            -1, -1, -1, -1
+    };
+    static final private int[] LTOuterNormal = {
+            -1, COLOR_3DLIGHT, COLOR_BTNSHADOW, -1,
+            COLOR_BTNHIGHLIGHT, COLOR_3DLIGHT, COLOR_BTNSHADOW, -1,
+            COLOR_3DDKSHADOW, COLOR_3DLIGHT, COLOR_BTNSHADOW, -1,
+            -1, COLOR_3DLIGHT, COLOR_BTNSHADOW, -1
+    };
+    static final private int[] RBInnerNormal = {
+            -1, -1, -1, -1,
+            -1, COLOR_BTNSHADOW, COLOR_BTNSHADOW, -1,
+            -1, COLOR_3DLIGHT, COLOR_3DLIGHT, -1,
+            -1, -1, -1, -1
+    };
+    static final private int[] RBOuterNormal = {
+            -1, COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1,
+            COLOR_BTNSHADOW, COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1,
+            COLOR_3DLIGHT, COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1,
+            -1, COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1
+    };
+    static final private int[] LTInnerSoft = {
+            -1, -1, -1, -1,
+            -1, COLOR_3DLIGHT, COLOR_3DLIGHT, -1,
+            -1, COLOR_BTNSHADOW, COLOR_BTNSHADOW, -1,
+            -1, -1, -1, -1
+    };
+    static final private int[] LTOuterSoft = {
+            -1, COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1,
+            COLOR_3DLIGHT, COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1,
+            COLOR_BTNSHADOW, COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1,
+            -1, COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1
+    };
+    static final private int[] RBInnerSoft = RBInnerNormal;   /* These are the same */
+    static final private int[] RBOuterSoft = RBOuterNormal;
+    static final private int[] LTRBOuterMono = {
+            -1, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME,
+            COLOR_WINDOW, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME,
+            COLOR_WINDOW, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME,
+            COLOR_WINDOW, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME,
+    };
+    static final private int[] LTRBInnerMono = {
+            -1, -1, -1, -1,
+            -1, COLOR_WINDOW, COLOR_WINDOW, COLOR_WINDOW,
+            -1, COLOR_WINDOW, COLOR_WINDOW, COLOR_WINDOW,
+            -1, COLOR_WINDOW, COLOR_WINDOW, COLOR_WINDOW,
+    };
+    static final private int[] LTRBOuterFlat = {
+            -1, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNSHADOW,
+            COLOR_BTNFACE, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNSHADOW,
+            COLOR_BTNFACE, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNSHADOW,
+            COLOR_BTNFACE, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNSHADOW,
+    };
+    static final private int[] LTRBInnerFlat = {
+            -1, -1, -1, -1,
+            -1, COLOR_BTNFACE, COLOR_BTNFACE, COLOR_BTNFACE,
+            -1, COLOR_BTNFACE, COLOR_BTNFACE, COLOR_BTNFACE,
+            -1, COLOR_BTNFACE, COLOR_BTNFACE, COLOR_BTNFACE,
+    };
+
     // BOOL CopyRect(LPRECT lprcDst, const RECT *lprcSrc)
     static public int CopyRect(int lprcDst, int lprcSrc) {
         if (lprcDst == 0 || lprcSrc == 0)
@@ -170,79 +233,6 @@ public class UiTools extends WinAPI {
         Clipping.IntersectClipRect(hdc, rc.left, rc.top, rc.right, rc.bottom);
         return hrgn;
     }
-
-    static final private int LTInnerNormal[] = {
-            -1, -1, -1, -1,
-            -1, COLOR_BTNHIGHLIGHT, COLOR_BTNHIGHLIGHT, -1,
-            -1, COLOR_3DDKSHADOW, COLOR_3DDKSHADOW, -1,
-            -1, -1, -1, -1
-    };
-
-    static final private int LTOuterNormal[] = {
-            -1, COLOR_3DLIGHT, COLOR_BTNSHADOW, -1,
-            COLOR_BTNHIGHLIGHT, COLOR_3DLIGHT, COLOR_BTNSHADOW, -1,
-            COLOR_3DDKSHADOW, COLOR_3DLIGHT, COLOR_BTNSHADOW, -1,
-            -1, COLOR_3DLIGHT, COLOR_BTNSHADOW, -1
-    };
-
-    static final private int RBInnerNormal[] = {
-            -1, -1, -1, -1,
-            -1, COLOR_BTNSHADOW, COLOR_BTNSHADOW, -1,
-            -1, COLOR_3DLIGHT, COLOR_3DLIGHT, -1,
-            -1, -1, -1, -1
-    };
-
-    static final private int RBOuterNormal[] = {
-            -1, COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1,
-            COLOR_BTNSHADOW, COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1,
-            COLOR_3DLIGHT, COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1,
-            -1, COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1
-    };
-
-    static final private int LTInnerSoft[] = {
-            -1, -1, -1, -1,
-            -1, COLOR_3DLIGHT, COLOR_3DLIGHT, -1,
-            -1, COLOR_BTNSHADOW, COLOR_BTNSHADOW, -1,
-            -1, -1, -1, -1
-    };
-
-    static final private int LTOuterSoft[] = {
-            -1, COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1,
-            COLOR_3DLIGHT, COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1,
-            COLOR_BTNSHADOW, COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1,
-            -1, COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1
-    };
-
-    static final private int[] RBInnerSoft = RBInnerNormal;   /* These are the same */
-    static final private int[] RBOuterSoft = RBOuterNormal;
-
-    static final private int LTRBOuterMono[] = {
-            -1, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME,
-            COLOR_WINDOW, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME,
-            COLOR_WINDOW, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME,
-            COLOR_WINDOW, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME,
-    };
-
-    static final private int LTRBInnerMono[] = {
-            -1, -1, -1, -1,
-            -1, COLOR_WINDOW, COLOR_WINDOW, COLOR_WINDOW,
-            -1, COLOR_WINDOW, COLOR_WINDOW, COLOR_WINDOW,
-            -1, COLOR_WINDOW, COLOR_WINDOW, COLOR_WINDOW,
-    };
-
-    static final private int LTRBOuterFlat[] = {
-            -1, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNSHADOW,
-            COLOR_BTNFACE, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNSHADOW,
-            COLOR_BTNFACE, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNSHADOW,
-            COLOR_BTNFACE, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNSHADOW,
-    };
-
-    static final private int LTRBInnerFlat[] = {
-            -1, -1, -1, -1,
-            -1, COLOR_BTNFACE, COLOR_BTNFACE, COLOR_BTNFACE,
-            -1, COLOR_BTNFACE, COLOR_BTNFACE, COLOR_BTNFACE,
-            -1, COLOR_BTNFACE, COLOR_BTNFACE, COLOR_BTNFACE,
-    };
 
     /**
      * ********************************************************************

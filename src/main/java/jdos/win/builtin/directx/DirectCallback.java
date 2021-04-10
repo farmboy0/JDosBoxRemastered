@@ -7,5 +7,6 @@ public abstract class DirectCallback implements Callback.Handler {
         onCall();
         return 0;
     }
+
     public abstract void onCall();
 }

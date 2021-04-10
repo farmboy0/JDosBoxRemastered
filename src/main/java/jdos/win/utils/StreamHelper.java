@@ -10,7 +10,7 @@ public class StreamHelper {
         byte[] buffer = new byte[8192];
         while (true) {
             int len = is.read(buffer);
-            if (len>0) {
+            if (len > 0) {
                 os.write(buffer, 0, len);
             } else {
                 break;

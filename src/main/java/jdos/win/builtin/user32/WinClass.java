@@ -11,9 +11,30 @@ import jdos.win.utils.StringUtil;
 import java.util.Hashtable;
 
 public class WinClass extends WinObject {
+    public WinDC dc;
+    public int id;
+    public int style;
+    public int eip;
+    public int hInstance;
+    public int hIcon;
+    public int hCursor;
+    public int hbrBackground;
+    public String className;
+    public int pClassName;
+    public int pMenuName;
+    public int hIconSm;
+    public int cbClsExtra;
+    public int cbWndExtra;
+    private final Hashtable extra = new Hashtable();
+
+    public WinClass(int id) {
+        super(id);
+        this.id = id;
+    }
+
     static public WinClass create() {
         int id = nextObjectId();
-        if (id>0xFFFF)
+        if (id > 0xFFFF)
             Win.panic("CLASS atom can not be greater than 0xFFFF");
         return new WinClass(id);
     }
@@ -26,7 +47,7 @@ public class WinClass extends WinObject {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinClass))
             return null;
-        return (WinClass)object;
+        return (WinClass) object;
     }
 
     // BOOL WINAPI GetClassInfo(HINSTANCE hInstance, LPCTSTR lpClassName, LPWNDCLASS lpWndClass)
@@ -37,7 +58,7 @@ public class WinClass extends WinObject {
             winClass = WinClass.get(lpClassName);
         } else {
             String name = StringUtil.getString(lpClassName);
-            winClass = (WinClass)WinSystem.getCurrentProcess().classNames.get(name.toLowerCase());
+            winClass = WinSystem.getCurrentProcess().classNames.get(name.toLowerCase());
         }
         if (winClass == null) {
             SetLastError(Error.ERROR_CLASS_DOES_NOT_EXIST);
@@ -52,8 +73,8 @@ public class WinClass extends WinObject {
         WinWindow window = WinWindow.get(hWnd);
         if (window == null)
             return 0;
-         if (nIndex>=0) {
-            Integer old = (Integer)window.winClass.extra.get(new Integer(nIndex));
+        if (nIndex >= 0) {
+            Integer old = (Integer) window.winClass.extra.get(new Integer(nIndex));
             if (old != null)
                 return old;
             return 0;
@@ -83,6 +104,7 @@ public class WinClass extends WinObject {
         }
         return 0;
     }
+
     // int WINAPI GetClassName(HWND hWnd, LPTSTR lpClassName, int nMaxCount)
     static public int GetClassNameA(int hWnd, int lpClassName, int nMaxCount) {
         WinWindow window = WinWindow.get(hWnd);
@@ -118,8 +140,8 @@ public class WinClass extends WinObject {
         WinWindow window = WinWindow.get(hWnd);
         if (window == null)
             return 0;
-        if (nIndex>=0) {
-            Integer old = (Integer)window.winClass.extra.get(new Integer(nIndex));
+        if (nIndex >= 0) {
+            Integer old = (Integer) window.winClass.extra.get(new Integer(nIndex));
             window.winClass.extra.put(new Integer(nIndex), new Integer(dwNewLong));
             if (old != null)
                 return old.intValue();
@@ -178,11 +200,6 @@ public class WinClass extends WinObject {
         WinSystem.getCurrentProcess().classNames.remove(name);
         c.close();
         return TRUE;
-    }
-
-    public WinClass(int id) {
-        super(id);
-        this.id = id;
     }
 
     /*
@@ -258,37 +275,31 @@ public class WinClass extends WinObject {
     }
 
     public void write(int address) {
-        writed(address, style);address+=4;
-        writed(address, eip);address+=4;
-        writed(address, cbClsExtra);address+=4;
-        writed(address, cbWndExtra);address+=4;
-        writed(address, hInstance);address+=4;
-        writed(address, hIcon);address+=4;
-        writed(address, hCursor);address+=4;
-        writed(address, hbrBackground);address+=4;
-        writed(address, pMenuName);address+=4;
+        writed(address, style);
+        address += 4;
+        writed(address, eip);
+        address += 4;
+        writed(address, cbClsExtra);
+        address += 4;
+        writed(address, cbWndExtra);
+        address += 4;
+        writed(address, hInstance);
+        address += 4;
+        writed(address, hIcon);
+        address += 4;
+        writed(address, hCursor);
+        address += 4;
+        writed(address, hbrBackground);
+        address += 4;
+        writed(address, pMenuName);
+        address += 4;
         if (pClassName == 0)
             pClassName = StringUtil.allocateA(className);
-        writed(address, pClassName);address+=4;
+        writed(address, pClassName);
+        address += 4;
     }
 
     public void onFree() {
         WinSystem.getCurrentProcess().classNames.remove(className.toLowerCase());
     }
-
-    public WinDC dc;
-    public int id;
-    public int style;
-    public int eip;
-    public int hInstance;
-    public int hIcon;
-    public int hCursor;
-    public int hbrBackground;
-    public String className;
-    public int pClassName;
-    public int pMenuName;
-    public int hIconSm;
-    public int cbClsExtra;
-    public int cbWndExtra;
-    private Hashtable extra = new Hashtable();
 }

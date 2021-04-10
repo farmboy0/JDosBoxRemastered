@@ -34,7 +34,7 @@ public class PaintingGDI extends WinAPI {
         if (dc == null) {
             return FALSE;
         }
-        if (lpPoint!=0) {
+        if (lpPoint != 0) {
             WinPoint p = new WinPoint(dc.CursPosX, dc.CursPosY);
             p.write(lpPoint);
         }
@@ -55,9 +55,9 @@ public class PaintingGDI extends WinAPI {
 
         int[] x = new int[nCount];
         int[] y = new int[nCount];
-        for (int i=0;i<nCount;i++) {
-            x[i] = readd(lpPoints+i*8);
-            y[i] = readd(lpPoints+i*12);
+        for (int i = 0; i < nCount; i++) {
+            x[i] = readd(lpPoints + i * 8);
+            y[i] = readd(lpPoints + i * 12);
         }
         Polygon polygon = new Polygon(x, y, nCount);
 

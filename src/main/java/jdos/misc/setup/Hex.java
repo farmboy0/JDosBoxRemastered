@@ -14,9 +14,9 @@ public class Hex {
     public Hex(Hex in) {
         _hex = in._hex;
     }
-    
+
     public boolean equals(Object obj) {
-        return (obj instanceof Hex && ((Hex)obj)._hex == _hex);
+        return (obj instanceof Hex && ((Hex) obj)._hex == _hex);
     }
 
     public int toInt() {

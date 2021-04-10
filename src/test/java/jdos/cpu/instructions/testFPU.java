@@ -5,7 +5,13 @@ import jdos.fpu.FPU;
 import jdos.hardware.Memory;
 
 public class testFPU extends InstructionsTestCase {
-    protected void setUp() throws java.lang.Exception  {
+    static private final int UNORDERED = 0x100 | 0x400 | 0x4000;
+    static private final int LESS = 0x100;
+    static private final int GREATER = 0x0;
+    static private final int EQUAL = 0x4000;
+    static private final int MASK = 0x100 | 0x200 | 0x400 | 0x4000;
+
+    protected void setUp() throws java.lang.Exception {
         super.setUp();
         //FPU.FPU_Init.call(null);
         init();
@@ -16,6 +22,7 @@ public class testFPU extends InstructionsTestCase {
         pushIb(rm(false, 4, 3));
         decoder.call();
     }
+
     private void fldf32(float f) {
         newInstruction(0xd9);
         pushIb(rm(true, 0, 0));
@@ -35,17 +42,19 @@ public class testFPU extends InstructionsTestCase {
         Memory.mem_writed(MEM_BASE_DS - 4, 0xCDCDCDCD);
         Memory.mem_writed(MEM_BASE_DS + 4, 0xCDCDCDCD);
     }
+
     private void writeD(long f) {
-        Memory.mem_writed(MEM_BASE_DS, (int)f);
-        Memory.mem_writed(MEM_BASE_DS+4, (int)(f>>>32));
+        Memory.mem_writed(MEM_BASE_DS, (int) f);
+        Memory.mem_writed(MEM_BASE_DS + 4, (int) (f >>> 32));
         Memory.mem_writed(MEM_BASE_DS - 4, 0xCDCDCDCD);
         Memory.mem_writed(MEM_BASE_DS + 8, 0xCDCDCDCD);
     }
+
     private byte rm(boolean ea, int group, int sub) {
         int result = (group & 7) << 3 | (sub & 7);
         if (!ea)
             result |= 0xC0;
-        return (byte)result;
+        return (byte) result;
     }
 
     private int getStackPos() {
@@ -55,6 +64,7 @@ public class testFPU extends InstructionsTestCase {
         return (CPU_Regs.reg_eax.word() & 0x3800) >> 11;
 
     }
+
     private void doF32Instruction(int op1, int group1, int op2, int group2, float x, float y, float r) {
         init();
 
@@ -67,7 +77,7 @@ public class testFPU extends InstructionsTestCase {
         decoder.call();
         float result = getTopFloat();
         assertTrue((Float.isNaN(result) && Float.isNaN(r)) || result == r);
-        assertTrue(getStackPos()==7); // nothing was popped
+        assertTrue(getStackPos() == 7); // nothing was popped
 
         init();
 
@@ -78,7 +88,7 @@ public class testFPU extends InstructionsTestCase {
         decoder.call();
         result = getTopFloat();
         assertTrue((Float.isNaN(result) && Float.isNaN(r)) || result == r);
-        assertTrue(getStackPos()==6); // nothing was popped
+        assertTrue(getStackPos() == 6); // nothing was popped
     }
 
     private void F32Add(float x, float y, float r) {
@@ -345,12 +355,6 @@ public class testFPU extends InstructionsTestCase {
         doF32DivR();
     }
 
-    static private final int UNORDERED = 0x100 | 0x400 | 0x4000;
-    static private final int LESS = 0x100;
-    static private final int GREATER = 0x0;
-    static private final int EQUAL = 0x4000;
-    static private final int MASK = 0x100 | 0x200 | 0x400 | 0x4000;
-
     private void assertTest(int r) {
         newInstruction(0xdf);
         pushIb(rm(false, 4, 0));
@@ -369,7 +373,7 @@ public class testFPU extends InstructionsTestCase {
         pushId(MEM_BASE_DS);
         decoder.call();
         assertTest(r);
-        assertTrue(getStackPos()==((7+popCount)&7));
+        assertTrue(getStackPos() == ((7 + popCount) & 7));
 
         init();
 
@@ -379,11 +383,13 @@ public class testFPU extends InstructionsTestCase {
         pushIb(rm(false, group, 1));
         decoder.call();
         assertTest(r);
-        assertTrue(getStackPos()==((6+popCount)&7));
+        assertTrue(getStackPos() == ((6 + popCount) & 7));
     }
+
     private void F32Com(float x, float y, int r) {
         F32ComBase(0xd8, 2, x, y, r, 0);
     }
+
     private void doF32Com() {
         F32Com(0.0f, 0.0f, EQUAL);
         F32Com(-0.0f, 0.0f, EQUAL);
@@ -478,9 +484,10 @@ public class testFPU extends InstructionsTestCase {
         pushIb(rm(true, group, 0));
         decoder.call();
         float result = Float.intBitsToFloat(Memory.mem_readd(MEM_BASE_DS));
-        assertTrue(result==f || (Float.isNaN(result) && Float.isNaN(f)));
-        assertTrue(getStackPos()==(pop?0:7));
+        assertTrue(result == f || (Float.isNaN(result) && Float.isNaN(f)));
+        assertTrue(getStackPos() == (pop ? 0 : 7));
     }
+
     public void doFSTFloat(int op, int group, boolean pop) {
         FSTFloat(op, group, 0.0f, pop);
         FSTFloat(op, group, 1.0f, pop);
@@ -523,22 +530,22 @@ public class testFPU extends InstructionsTestCase {
         newInstruction(0xd9);
         pushIb(rm(false, 0, 0));
         decoder.call();
-        assertTrue(getTopFloat()==1.0f);
+        assertTrue(getTopFloat() == 1.0f);
 
         newInstruction(0xd9);
         pushIb(rm(false, 0, 2));
         decoder.call();
-        assertTrue(getTopFloat()==2.0f);
+        assertTrue(getTopFloat() == 2.0f);
 
         newInstruction(0xd9);
         pushIb(rm(false, 0, 4));
         decoder.call();
-        assertTrue(getTopFloat()==3.0f);
+        assertTrue(getTopFloat() == 3.0f);
 
         newInstruction(0xd9);
         pushIb(rm(false, 0, 6));
         decoder.call();
-        assertTrue(getTopFloat()==4.0f);
+        assertTrue(getTopFloat() == 4.0f);
     }
 
     public void testFLDSTi() {
@@ -560,7 +567,7 @@ public class testFPU extends InstructionsTestCase {
         newInstruction(0xd9);
         pushIb(rm(false, 1, 3));
         decoder.call();
-        assertTrue(getTopFloat()==4.0f);
+        assertTrue(getTopFloat() == 4.0f);
     }
 
     public void testFXCHSTi() {
@@ -582,12 +589,12 @@ public class testFPU extends InstructionsTestCase {
         newInstruction(0xd9);
         pushIb(rm(false, 3, 2));
         decoder.call();
-        assertTrue(getTopFloat()==2.0f);
+        assertTrue(getTopFloat() == 2.0f);
 
         newInstruction(0xd9);
         pushIb(rm(false, 3, 2));
         decoder.call();
-        assertTrue(getTopFloat()==1.0f);
+        assertTrue(getTopFloat() == 1.0f);
     }
 
     public void testFSTPSTi() {
@@ -605,13 +612,13 @@ public class testFPU extends InstructionsTestCase {
         newInstruction(0xd9);
         pushIb(rm(false, 4, 0));
         decoder.call();
-        assertTrue(getTopFloat()==-432.1f);
+        assertTrue(getTopFloat() == -432.1f);
 
         fldf32(-0.001234f);
         newInstruction(0xd9);
         pushIb(rm(false, 4, 0));
         decoder.call();
-        assertTrue(getTopFloat()==0.001234f);
+        assertTrue(getTopFloat() == 0.001234f);
 
         fldf32(Float.NaN);
         newInstruction(0xd9);
@@ -623,13 +630,13 @@ public class testFPU extends InstructionsTestCase {
         newInstruction(0xd9);
         pushIb(rm(false, 4, 0));
         decoder.call();
-        assertTrue(getTopFloat()==Float.NEGATIVE_INFINITY);
+        assertTrue(getTopFloat() == Float.NEGATIVE_INFINITY);
 
         fldf32(Float.NEGATIVE_INFINITY);
         newInstruction(0xd9);
         pushIb(rm(false, 4, 0));
         decoder.call();
-        assertTrue(getTopFloat()==Float.POSITIVE_INFINITY);
+        assertTrue(getTopFloat() == Float.POSITIVE_INFINITY);
     }
 
     public void testFCHS() {
@@ -647,13 +654,13 @@ public class testFPU extends InstructionsTestCase {
         newInstruction(0xd9);
         pushIb(rm(false, 4, 1));
         decoder.call();
-        assertTrue(getTopFloat()==432.1f);
+        assertTrue(getTopFloat() == 432.1f);
 
         fldf32(-0.001234f);
         newInstruction(0xd9);
         pushIb(rm(false, 4, 1));
         decoder.call();
-        assertTrue(getTopFloat()==0.001234f);
+        assertTrue(getTopFloat() == 0.001234f);
 
         fldf32(Float.NaN);
         newInstruction(0xd9);
@@ -665,13 +672,13 @@ public class testFPU extends InstructionsTestCase {
         newInstruction(0xd9);
         pushIb(rm(false, 4, 1));
         decoder.call();
-        assertTrue(getTopFloat()==Float.POSITIVE_INFINITY);
+        assertTrue(getTopFloat() == Float.POSITIVE_INFINITY);
 
         fldf32(Float.NEGATIVE_INFINITY);
         newInstruction(0xd9);
         pushIb(rm(false, 4, 1));
         decoder.call();
-        assertTrue(getTopFloat()==Float.POSITIVE_INFINITY);
+        assertTrue(getTopFloat() == Float.POSITIVE_INFINITY);
     }
 
     public void testFABS() {

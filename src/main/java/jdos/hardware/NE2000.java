@@ -46,136 +46,175 @@ public class NE2000 extends Module_base {
     //#define bx_param_c Bit8u
 
 
-    //Never completely fill the ne2k ring so that we never
-    // hit the unclear completely full buffer condition.
-    static private final int BX_NE2K_NEVER_FULL_RING = 1;
-
     static final public boolean BX_DEBUG = false;
     static final public boolean BX_INFO = true;
     static final public boolean BX_PANIC = true;
     static final public boolean BX_ERROR = true;
-
+    //Never completely fill the ne2k ring so that we never
+    // hit the unclear completely full buffer condition.
+    static private final int BX_NE2K_NEVER_FULL_RING = 1;
     static private final int BX_RESET_HARDWARE = 0;
     static private final int BX_RESET_SOFTWARE = 1;
-
-    static private bx_ne2k_c theNE2kDevice = null;
+    static private final int BX_NE2K_MEMSIZ = 32 * 1024;
 
     //#  define BX_NE2K_SMF
-
-    static private final int BX_NE2K_MEMSIZ = 32 * 1024;
     static private final int BX_NE2K_MEMSTART = 16 * 1024;
     static private final int BX_NE2K_MEMEND = (BX_NE2K_MEMSTART + BX_NE2K_MEMSIZ);
+    static private bx_ne2k_c theNE2kDevice = null;
+    static final private IoHandler.IO_ReadHandler dosbox_read = new IoHandler.IO_ReadHandler() {
+        public /*Bitu*/int call(/*Bitu*/int port, /*Bitu*/int iolen) {
+            return (int) theNE2kDevice.read(port, iolen);
+        }
+    };
+    static private final Pic.PIC_EventHandler NE2000_TX_Event = new Pic.PIC_EventHandler() {
+        public void call(/*Bitu*/int val) {
+            theNE2kDevice.tx_timer();
+        }
+    };
+    static private NE2000 test;
+    static final private IoHandler.IO_WriteHandler dosbox_write = new IoHandler.IO_WriteHandler() {
+        public void call(/*Bitu*/int port, /*Bitu*/int val, /*Bitu*/int iolen) {
+            theNE2kDevice.write(port, val & 0xFFFFFFFFl, iolen);
+        }
+    };
+    static final private Timer.TIMER_TickHandler NE2000_Poller = new Timer.TIMER_TickHandler() {
+        public void call() {
+            test.ethernet.receive(theNE2kDevice);
+        }
+    };
+    private static final Section.SectionFunction NE2000_ShutDown = new Section.SectionFunction() {
+        public void call(Section section) {
+            test.close();
+            test = null;
+        }
+    };
+    public static Section.SectionFunction NE2000_Init = new Section.SectionFunction() {
+        public void call(Section section) {
+            test = new NE2000(section);
+            section.AddDestroyFunction(NE2000_ShutDown, true);
+        }
+    };
+    // Data
+    IoHandler.IO_ReadHandleObject[] ReadHandler8 = new IoHandler.IO_ReadHandleObject[0x20];
+    IoHandler.IO_WriteHandleObject[] WriteHandler8 = new IoHandler.IO_WriteHandleObject[0x20];
+    boolean load_success;
+    Ethernet ethernet;
+
+    public NE2000(Section configuration) {
+        super(configuration);
+        Section_prop section = (Section_prop) (configuration);
+
+        load_success = true;
+        // enabled?
+        String mode = section.Get_string("mode");
+        if (mode == null || mode.length() == 0 || mode.equalsIgnoreCase("false")) {
+            load_success = false;
+            return;
+        }
+
+        // get irq and base
+        /*Bitu*/
+        int irq = section.Get_int("nicirq");
+        if (!(irq == 3 || irq == 4 || irq == 5 || irq == 6 || irq == 7 ||
+                irq == 9 || irq == 10 || irq == 11 || irq == 12 || irq == 14 || irq == 15)) {
+            irq = 3;
+        }
+        /*Bitu*/
+        int base = section.Get_hex("nicbase").toInt();
+        if (!(base == 0x260 || base == 0x280 || base == 0x300 || base == 0x320 || base == 0x340 || base == 0x380)) {
+            base = 0x300;
+        }
+
+        // mac address
+        String macstring = section.Get_string("macaddr");
+        String[] parts = StringHelper.split(macstring, ":");
+        /*Bit8u*/
+        byte[] mac = new byte[6];
+        try {
+            for (int i = 0; i < parts.length; i++) {
+                int d = Integer.parseInt(parts[i], 16);
+                if (d > 0xFF)
+                    throw new Exception("Invalid macaddr string: " + macstring);
+                mac[i] = (byte) d;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            mac[0] = (byte) 0xac;
+            mac[1] = (byte) 0xde;
+            mac[2] = (byte) 0x48;
+            mac[3] = (byte) 0x88;
+            mac[4] = (byte) 0xbb;
+            mac[5] = (byte) 0xaa;
+        }
+
+        if (mode.equalsIgnoreCase("pcap")) {
+            try {
+                Class c = Class.forName("jdos.host.PCapEthernet");
+                ethernet = (Ethernet) c.newInstance();
+                if (!ethernet.open(section, mac)) {
+                    ethernet = null;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else if (mode.equalsIgnoreCase("pcaphost")) {
+            try {
+                Class c = Class.forName("jdos.host.FowardPCapEthernet");
+                ethernet = (Ethernet) c.newInstance();
+                if (!ethernet.open(section, mac))
+                    ethernet = null;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else if (mode.equalsIgnoreCase("user")) {
+            ethernet = new UserEthernet();
+            if (!ethernet.open(section, mac)) {
+                ethernet = null;
+            }
+        }
+        if (ethernet == null) {
+            Log.log_msg("Network card disabled. mode=" + mode + " not found.");
+            load_success = false;
+            return;
+        }
+
+        // create the bochs NIC class
+        theNE2kDevice = new bx_ne2k_c();
+        Ptr.memcpy(theNE2kDevice.s.physaddr, mac, 6);
+        theNE2kDevice.init();
+
+        theNE2kDevice.s.base_address = base;
+        theNE2kDevice.s.base_irq = irq;
+
+        // install I/O-handlers and timer
+        for (/*Bitu*/int i = 0; i < 0x20; i++) {
+            ReadHandler8[i] = new IoHandler.IO_ReadHandleObject();
+            ReadHandler8[i].Install((int) (i + theNE2kDevice.s.base_address), dosbox_read, IoHandler.IO_MB | IoHandler.IO_MW);
+            WriteHandler8[i] = new IoHandler.IO_WriteHandleObject();
+            WriteHandler8[i].Install((int) (i + theNE2kDevice.s.base_address), dosbox_write, IoHandler.IO_MB | IoHandler.IO_MW);
+        }
+        Timer.TIMER_AddTickHandler(NE2000_Poller);
+    }
+
+    public void close() {
+        if (ethernet != null)
+            ethernet.close();
+        Timer.TIMER_DelTickHandler(NE2000_Poller);
+        Pic.PIC_RemoveEvents(NE2000_TX_Event);
+    }
 
     private static final class bx_ne2k_t {
         //
         // ne2k register state
 
-        //
-        // Page 0
-        //
-        //  Command Register - 00h read/write
-        public static final class CR_t {
-            public int stop;        // STP - Software Reset command
-            public int start;        // START - start the NIC
-            public int tx_packet;    // TXP - initiate packet transmission
-            public /*Bit8u*/ short rdma_cmd;      // RD0,RD1,RD2 - Remote DMA command
-            public /*Bit8u*/ short pgsel;        // PS0,PS1 - Page select
-        }
-
-        public CR_t CR = new CR_t();
-
-        // Interrupt Status Register - 07h read/write
-        public static final class ISR_t {
-            public int pkt_rx;           // PRX - packet received with no errors
-            public int pkt_tx;           // PTX - packet transmitted with no errors
-            public int rx_err;    // RXE - packet received with 1 or more errors
-            public int tx_err;    // TXE - packet tx'd       "  " "    "    "
-            public int overwrite;    // OVW - rx buffer resources exhausted
-            public int cnt_oflow;     // CNT - network tally counter MSB's set
-            public int rdma_done;     // RDC - remote DMA complete
-            public int reset;        // RST - reset status
-        }
-
-        public ISR_t ISR = new ISR_t();
-
-        // Interrupt Mask Register - 0fh write
-        public static final class IMR_t {
-            public int rx_inte;    // PRXE - packet rx interrupt enable
-            public int tx_inte;    // PTXE - packet tx interrput enable
-            public int rxerr_inte;    // RXEE - rx error interrupt enable
-            public int txerr_inte;    // TXEE - tx error interrupt enable
-            public int overw_inte;    // OVWE - overwrite warn int enable
-            public int cofl_inte;    // CNTE - counter o'flow int enable
-            public int rdma_inte;    // RDCE - remote DMA complete int enable
-            public int reserved;    //  D7 - reserved
-        }
-
-        public IMR_t IMR = new IMR_t();
-
-        // Data Configuration Register - 0eh write
-        public static final class DCR_t {
-            public int wdsize;    // WTS - 8/16-bit select
-            public int endian;    // BOS - byte-order select
-            public int longaddr;    // LAS - long-address select
-            public int loop;        // LS  - loopback select
-            public int auto_rx;    // AR  - auto-remove rx packets with remote DMA
-            public /*Bit8u*/ short fifo_size;    // FT0,FT1 - fifo threshold
-        }
-
-        public DCR_t DCR = new DCR_t();
-
-        // Transmit Configuration Register - 0dh write
-        public static final class TCR_t {
-            public int crc_disable;    // CRC - inhibit tx CRC
-            public /*Bit8u*/ short loop_cntl;    // LB0,LB1 - loopback control
-            public int ext_stoptx;    // ATD - allow tx disable by external mcast
-            public int coll_prio;    // OFST - backoff algorithm select
-            public /*Bit8u*/ short reserved;      //  D5,D6,D7 - reserved
-        }
-
-        public TCR_t TCR = new TCR_t();
-
-        // Transmit Status Register - 04h read
-        public static final class TSR_t {
-            public int tx_ok;        // PTX - tx complete without error
-            public int reserved;    //  D1 - reserved
-            public int collided;    // COL - tx collided >= 1 times
-            public int aborted;    // ABT - aborted due to excessive collisions
-            public int no_carrier;    // CRS - carrier-sense lost
-            public int fifo_ur;    // FU  - FIFO underrun
-            public int cd_hbeat;    // CDH - no tx cd-heartbeat from transceiver
-            public int ow_coll;    // OWC - out-of-window collision
-        }
-
-        public TSR_t TSR = new TSR_t();
-
-        // Receive Configuration Register - 0ch write
-        public static final class RCR_t {
-            public int errors_ok;    // SEP - accept pkts with rx errors
-            public int runts_ok;    // AR  - accept < 64-byte runts
-            public int broadcast;    // AB  - accept eth broadcast address
-            public int multicast;    // AM  - check mcast hash array
-            public int promisc;    // PRO - accept all packets
-            public int monitor;    // MON - check pkts, but don't rx
-            public /*Bit8u*/ short reserved;    //  D6,D7 - reserved
-        }
-
         public final RCR_t RCR = new RCR_t();
-
-        // Receive Status Register - 0ch read
-        public static final class RSR_t {
-            public int rx_ok;        // PRX - rx complete without error
-            public int bad_crc;    // CRC - Bad CRC detected
-            public int bad_falign;    // FAE - frame alignment error
-            public int fifo_or;    // FO  - FIFO overrun
-            public int rx_missed;    // MPA - missed packet error
-            public int rx_mbit;    // PHY - unicast or mcast/bcast address match
-            public int rx_disabled;   // DIS - set when in monitor mode
-            public int deferred;    // DFR - collision active
-        }
-
+        public CR_t CR = new CR_t();
+        public ISR_t ISR = new ISR_t();
+        public IMR_t IMR = new IMR_t();
+        public DCR_t DCR = new DCR_t();
+        public TCR_t TCR = new TCR_t();
+        public TSR_t TSR = new TSR_t();
         public RSR_t RSR = new RSR_t();
-
         public /*Bit16u*/ int local_dma;    // 01,02h read ; current local DMA addr
         public /*Bit8u*/ short page_start;  // 01h write ; page start register
         public /*Bit8u*/ short page_stop;   // 02h write ; page stop register
@@ -190,7 +229,6 @@ public class NE2000 extends Module_base {
         public /*Bit8u*/ short tallycnt_0;  // 0dh read  ; tally counter 0 (frame align errors)
         public /*Bit8u*/ short tallycnt_1;  // 0eh read  ; tally counter 1 (CRC errors)
         public /*Bit8u*/ short tallycnt_2;  // 0fh read  ; tally counter 2 (missed pkt errors)
-
         //
         // Page 1
         //
@@ -199,7 +237,6 @@ public class NE2000 extends Module_base {
         public /*Bit8u*/ byte[] physaddr = new byte[6];  // 01-06h read/write ; MAC address
         public /*Bit8u*/ short curr_page;    // 07h read/write ; current page register
         public /*Bit8u*/ byte[] mchash = new byte[8];    // 08-0fh read/write ; multicast hash array
-
         //
         // Page 2  - diagnostic use only
         //
@@ -217,20 +254,108 @@ public class NE2000 extends Module_base {
         public /*Bit8u*/ short rempkt_ptr;   // 03h read/write ; remote next-packet pointer
         public /*Bit8u*/ short localpkt_ptr; // 05h read/write ; local next-packet pointer
         public /*Bit16u*/ int address_cnt;  // 06,07h read/write ; address counter
-
-        //
-        // Page 3  - should never be modified.
-        //
-
         // Novell ASIC state
         public /*Bit8u*/ byte[] macaddr = new byte[32];          // ASIC ROM'd MAC address, even bytes
         public /*Bit8u*/ Ptr mem = new Ptr(BX_NE2K_MEMSIZ);  // on-chip packet memory
-
         // ne2k internal state
         public /*Bit32u*/ long base_address;
         public int base_irq;
         public int tx_timer_index;
         public int tx_timer_active;
+
+        //
+        // Page 0
+        //
+        //  Command Register - 00h read/write
+        public static final class CR_t {
+            public int stop;        // STP - Software Reset command
+            public int start;        // START - start the NIC
+            public int tx_packet;    // TXP - initiate packet transmission
+            public /*Bit8u*/ short rdma_cmd;      // RD0,RD1,RD2 - Remote DMA command
+            public /*Bit8u*/ short pgsel;        // PS0,PS1 - Page select
+        }
+
+        // Interrupt Status Register - 07h read/write
+        public static final class ISR_t {
+            public int pkt_rx;           // PRX - packet received with no errors
+            public int pkt_tx;           // PTX - packet transmitted with no errors
+            public int rx_err;    // RXE - packet received with 1 or more errors
+            public int tx_err;    // TXE - packet tx'd       "  " "    "    "
+            public int overwrite;    // OVW - rx buffer resources exhausted
+            public int cnt_oflow;     // CNT - network tally counter MSB's set
+            public int rdma_done;     // RDC - remote DMA complete
+            public int reset;        // RST - reset status
+        }
+
+        //
+        // Page 3  - should never be modified.
+        //
+
+        // Interrupt Mask Register - 0fh write
+        public static final class IMR_t {
+            public int rx_inte;    // PRXE - packet rx interrupt enable
+            public int tx_inte;    // PTXE - packet tx interrput enable
+            public int rxerr_inte;    // RXEE - rx error interrupt enable
+            public int txerr_inte;    // TXEE - tx error interrupt enable
+            public int overw_inte;    // OVWE - overwrite warn int enable
+            public int cofl_inte;    // CNTE - counter o'flow int enable
+            public int rdma_inte;    // RDCE - remote DMA complete int enable
+            public int reserved;    //  D7 - reserved
+        }
+
+        // Data Configuration Register - 0eh write
+        public static final class DCR_t {
+            public int wdsize;    // WTS - 8/16-bit select
+            public int endian;    // BOS - byte-order select
+            public int longaddr;    // LAS - long-address select
+            public int loop;        // LS  - loopback select
+            public int auto_rx;    // AR  - auto-remove rx packets with remote DMA
+            public /*Bit8u*/ short fifo_size;    // FT0,FT1 - fifo threshold
+        }
+
+        // Transmit Configuration Register - 0dh write
+        public static final class TCR_t {
+            public int crc_disable;    // CRC - inhibit tx CRC
+            public /*Bit8u*/ short loop_cntl;    // LB0,LB1 - loopback control
+            public int ext_stoptx;    // ATD - allow tx disable by external mcast
+            public int coll_prio;    // OFST - backoff algorithm select
+            public /*Bit8u*/ short reserved;      //  D5,D6,D7 - reserved
+        }
+
+        // Transmit Status Register - 04h read
+        public static final class TSR_t {
+            public int tx_ok;        // PTX - tx complete without error
+            public int reserved;    //  D1 - reserved
+            public int collided;    // COL - tx collided >= 1 times
+            public int aborted;    // ABT - aborted due to excessive collisions
+            public int no_carrier;    // CRS - carrier-sense lost
+            public int fifo_ur;    // FU  - FIFO underrun
+            public int cd_hbeat;    // CDH - no tx cd-heartbeat from transceiver
+            public int ow_coll;    // OWC - out-of-window collision
+        }
+
+        // Receive Configuration Register - 0ch write
+        public static final class RCR_t {
+            public int errors_ok;    // SEP - accept pkts with rx errors
+            public int runts_ok;    // AR  - accept < 64-byte runts
+            public int broadcast;    // AB  - accept eth broadcast address
+            public int multicast;    // AM  - check mcast hash array
+            public int promisc;    // PRO - accept all packets
+            public int monitor;    // MON - check pkts, but don't rx
+            public /*Bit8u*/ short reserved;    //  D6,D7 - reserved
+        }
+
+        // Receive Status Register - 0ch read
+        public static final class RSR_t {
+            public int rx_ok;        // PRX - rx complete without error
+            public int bad_crc;    // CRC - Bad CRC detected
+            public int bad_falign;    // FAE - frame alignment error
+            public int fifo_or;    // FO  - FIFO overrun
+            public int rx_missed;    // MPA - missed packet error
+            public int rx_mbit;    // PHY - unicast or mcast/bcast address match
+            public int rx_disabled;   // DIS - set when in monitor mode
+            public int deferred;    // DFR - collision active
+        }
     }
 
     public static final class bx_ne2k_c implements RxFrame {
@@ -754,13 +879,20 @@ public class NE2000 extends Module_base {
                 case 0x7:  // ISR
                     value &= 0x7f;  // clear RST bit - status-only bit
                     // All other values are cleared iff the ISR bit is 1
-                    s.ISR.pkt_rx &= ~((/*bx_bool*/int) ((value & 0x01) == 0x01 ? 1 : 0));
-                    s.ISR.pkt_tx &= ~((/*bx_bool*/int) ((value & 0x02) == 0x02 ? 1 : 0));
-                    s.ISR.rx_err &= ~((/*bx_bool*/int) ((value & 0x04) == 0x04 ? 1 : 0));
-                    s.ISR.tx_err &= ~((/*bx_bool*/int) ((value & 0x08) == 0x08 ? 1 : 0));
-                    s.ISR.overwrite &= ~((/*bx_bool*/int) ((value & 0x10) == 0x10 ? 1 : 0));
-                    s.ISR.cnt_oflow &= ~((/*bx_bool*/int) ((value & 0x20) == 0x20 ? 1 : 0));
-                    s.ISR.rdma_done &= ~((/*bx_bool*/int) ((value & 0x40) == 0x40 ? 1 : 0));
+                    /*bx_bool*/
+                    s.ISR.pkt_rx &= ~((value & 0x01) == 0x01 ? 1 : 0);
+                    /*bx_bool*/
+                    s.ISR.pkt_tx &= ~((value & 0x02) == 0x02 ? 1 : 0);
+                    /*bx_bool*/
+                    s.ISR.rx_err &= ~((value & 0x04) == 0x04 ? 1 : 0);
+                    /*bx_bool*/
+                    s.ISR.tx_err &= ~((value & 0x08) == 0x08 ? 1 : 0);
+                    /*bx_bool*/
+                    s.ISR.overwrite &= ~((value & 0x10) == 0x10 ? 1 : 0);
+                    /*bx_bool*/
+                    s.ISR.cnt_oflow &= ~((value & 0x20) == 0x20 ? 1 : 0);
+                    /*bx_bool*/
+                    s.ISR.rdma_done &= ~((value & 0x40) == 0x40 ? 1 : 0);
                     value = ((s.ISR.rdma_done << 6) |
                             (s.ISR.cnt_oflow << 5) |
                             (s.ISR.overwrite << 4) |
@@ -1116,7 +1248,7 @@ public class NE2000 extends Module_base {
 
                 default:
                     if (BX_PANIC)
-                        Log.log_msg("[NE2000] page 2 write, illegal offset " + Integer.toString(offset));
+                        Log.log_msg("[NE2000] page 2 write, illegal offset " + offset);
                     break;
             }
         }
@@ -1267,7 +1399,7 @@ public class NE2000 extends Module_base {
          * the receive process is updated
          */
         public boolean rx_frame(Ptr buf, /*unsigned*/int io_len) {
-            if((s.DCR.loop == 0) || (s.TCR.loop_cntl != 0))
+            if ((s.DCR.loop == 0) || (s.TCR.loop_cntl != 0))
                 return false;
             int pages;
             int avail;
@@ -1407,156 +1539,6 @@ public class NE2000 extends Module_base {
             return true;
         }
     }
-
-    static final private IoHandler.IO_ReadHandler dosbox_read = new IoHandler.IO_ReadHandler() {
-        public /*Bitu*/int call(/*Bitu*/int port, /*Bitu*/int iolen) {
-            return (int) theNE2kDevice.read(port, iolen);
-        }
-    };
-    static final private IoHandler.IO_WriteHandler dosbox_write = new IoHandler.IO_WriteHandler() {
-        public void call(/*Bitu*/int port, /*Bitu*/int val, /*Bitu*/int iolen) {
-            theNE2kDevice.write(port, (long) (val & 0xFFFFFFFFl), iolen);
-        }
-    };
-
-    static private final Pic.PIC_EventHandler NE2000_TX_Event = new Pic.PIC_EventHandler() {
-        public void call(/*Bitu*/int val) {
-            theNE2kDevice.tx_timer();
-        }
-    };
-
-    static final private Timer.TIMER_TickHandler NE2000_Poller = new Timer.TIMER_TickHandler() {
-        public void call() {
-            test.ethernet.receive(theNE2kDevice);
-        }
-    };
-
-
-    // Data
-    IoHandler.IO_ReadHandleObject[] ReadHandler8 = new IoHandler.IO_ReadHandleObject[0x20];
-    IoHandler.IO_WriteHandleObject[] WriteHandler8 = new IoHandler.IO_WriteHandleObject[0x20];
-
-    boolean load_success;
-    Ethernet ethernet;
-
-    public NE2000(Section configuration) {
-        super(configuration);
-        Section_prop section = (Section_prop) (configuration);
-
-        load_success = true;
-        // enabled?
-        String mode = section.Get_string("mode");
-        if (mode == null || mode.length()==0 || mode.equalsIgnoreCase("false")) {
-            load_success = false;
-            return;
-        }
-
-        // get irq and base
-        /*Bitu*/
-        int irq = section.Get_int("nicirq");
-        if (!(irq == 3 || irq == 4 || irq == 5 || irq == 6 || irq == 7 ||
-                irq == 9 || irq == 10 || irq == 11 || irq == 12 || irq == 14 || irq == 15)) {
-            irq = 3;
-        }
-        /*Bitu*/
-        int base = section.Get_hex("nicbase").toInt();
-        if (!(base == 0x260 || base == 0x280 || base == 0x300 || base == 0x320 || base == 0x340 || base == 0x380)) {
-            base = 0x300;
-        }
-
-        // mac address
-        String macstring = section.Get_string("macaddr");
-        String[] parts = StringHelper.split(macstring, ":");
-        /*Bit8u*/
-        byte[] mac = new byte[6];
-        try {
-            for (int i = 0; i < parts.length; i++) {
-                int d = Integer.parseInt(parts[i], 16);
-                if (d > 0xFF)
-                    throw new Exception("Invalid macaddr string: " + macstring);
-                mac[i] = (byte) d;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            mac[0] = (byte) 0xac;
-            mac[1] = (byte) 0xde;
-            mac[2] = (byte) 0x48;
-            mac[3] = (byte) 0x88;
-            mac[4] = (byte) 0xbb;
-            mac[5] = (byte) 0xaa;
-        }
-
-        if (mode.equalsIgnoreCase("pcap")) {
-            try {
-                Class c = Class.forName("jdos.host.PCapEthernet");
-                ethernet = (Ethernet)c.newInstance();
-                if (!ethernet.open(section, mac)) {
-                    ethernet = null;
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }  else if (mode.equalsIgnoreCase("pcaphost")) {
-            try {
-                Class c = Class.forName("jdos.host.FowardPCapEthernet");
-                ethernet = (Ethernet)c.newInstance();
-                if (!ethernet.open(section, mac))
-                    ethernet = null;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else if (mode.equalsIgnoreCase("user")) {
-            ethernet = new UserEthernet();
-            if (!ethernet.open(section, mac)) {
-                ethernet = null;
-            }
-        }
-        if (ethernet == null) {
-            Log.log_msg("Network card disabled. mode="+mode+" not found.");
-            load_success = false;
-            return;
-        }
-
-        // create the bochs NIC class
-        theNE2kDevice = new bx_ne2k_c();
-        Ptr.memcpy(theNE2kDevice.s.physaddr, mac, 6);
-        theNE2kDevice.init();
-
-        theNE2kDevice.s.base_address = base;
-        theNE2kDevice.s.base_irq = irq;
-
-        // install I/O-handlers and timer
-        for (/*Bitu*/int i = 0; i < 0x20; i++) {
-            ReadHandler8[i] = new IoHandler.IO_ReadHandleObject();
-            ReadHandler8[i].Install((int) (i + theNE2kDevice.s.base_address), dosbox_read, IoHandler.IO_MB | IoHandler.IO_MW);
-            WriteHandler8[i] = new IoHandler.IO_WriteHandleObject();
-            WriteHandler8[i].Install((int) (i + theNE2kDevice.s.base_address), dosbox_write, IoHandler.IO_MB | IoHandler.IO_MW);
-        }
-        Timer.TIMER_AddTickHandler(NE2000_Poller);
-    }
-
-    public void close() {
-        if (ethernet!=null)
-            ethernet.close();
-        Timer.TIMER_DelTickHandler(NE2000_Poller);
-        Pic.PIC_RemoveEvents(NE2000_TX_Event);
-    }
-
-    static private NE2000 test;
-
-    private static Section.SectionFunction NE2000_ShutDown = new Section.SectionFunction() {
-        public void call(Section section) {
-            test.close();
-            test = null;
-        }
-    };
-
-    public static Section.SectionFunction NE2000_Init = new Section.SectionFunction() {
-        public void call(Section section) {
-            test = new NE2000(section);
-            section.AddDestroyFunction(NE2000_ShutDown, true);
-        }
-    };
 }
 
 

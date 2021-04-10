@@ -33,8 +33,22 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 public class Loader {
+    public NativeModule main = null;
     long nextFunctionAddress = WinProcess.ADDRESS_CALLBACK_START;
     long maxFunctionAddress = WinProcess.ADDRESS_CALLBACK_END;
+    private final Hashtable modulesByName = new Hashtable();
+    private final Hashtable modulesByHandle = new Hashtable();
+    private final Vector paths;
+    private final int page_directory;
+    private final KernelHeap callbackHeap;
+    private int nextModuleHandle = 1;
+    private final WinProcess process;
+    public Loader(WinProcess process, KernelMemory memory, int page_directory, Vector paths) {
+        this.paths = paths;
+        this.process = process;
+        this.page_directory = page_directory;
+        callbackHeap = new KernelHeap(memory, page_directory, nextFunctionAddress, maxFunctionAddress, maxFunctionAddress, false, true);
+    }
 
     public int registerFunction(int cb) {
         if (nextFunctionAddress >= maxFunctionAddress) {
@@ -44,22 +58,6 @@ public class Loader {
         long result = nextFunctionAddress;
         nextFunctionAddress += 4;
         return (int) result;
-    }
-
-    private Hashtable modulesByName = new Hashtable();
-    private Hashtable modulesByHandle = new Hashtable();
-    private Vector paths;
-    public NativeModule main = null;
-    private int page_directory;
-    private KernelHeap callbackHeap;
-    private int nextModuleHandle = 1;
-    private WinProcess process;
-
-    public Loader(WinProcess process, KernelMemory memory, int page_directory, Vector paths) {
-        this.paths = paths;
-        this.process = process;
-        this.page_directory = page_directory;
-        callbackHeap = new KernelHeap(memory, page_directory, nextFunctionAddress, maxFunctionAddress, maxFunctionAddress, false, true);
     }
 
     public void unload() {
@@ -78,8 +76,8 @@ public class Loader {
     public void attachThread() {
         Enumeration e = modulesByHandle.elements();
         while (e.hasMoreElements()) {
-            Module module = (Module)e.nextElement();
-            if (module != main &&  module.threadLibraryCalls) {
+            Module module = (Module) e.nextElement();
+            if (module != main && module.threadLibraryCalls) {
                 module.callDllMain(Module.DLL_THREAD_ATTACH);
             }
         }
@@ -88,7 +86,7 @@ public class Loader {
     public void detachThread() {
         Enumeration e = modulesByHandle.elements();
         while (e.hasMoreElements()) {
-            Module module = (Module)e.nextElement();
+            Module module = (Module) e.nextElement();
             if (module != main && module.threadLibraryCalls) {
                 module.callDllMain(Module.DLL_THREAD_DETACH);
             }
@@ -200,9 +198,9 @@ public class Loader {
     public Module loadModule(String name) {
         String path = null;
         int pos = name.lastIndexOf("\\");
-        if (pos>=0) {
-            path = name.substring(0, pos+1);
-            name = name.substring(pos+1);
+        if (pos >= 0) {
+            path = name.substring(0, pos + 1);
+            name = name.substring(pos + 1);
         }
         // :TODO: currently we only support modules in the path
         return internalLoadModule(name);

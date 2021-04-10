@@ -6,19 +6,12 @@ import jdos.win.builtin.user32.Input;
 import java.util.Hashtable;
 
 public class Scheduler {
-    private static class SchedulerItem {
-        WinThread thread;
-        SchedulerItem next;
-        SchedulerItem prev;
-        int sleepUntil = 0;
-    }
-    private static SchedulerItem currentThread = null;
-    private static SchedulerItem first;
-    private static Hashtable<WinThread, SchedulerItem> threadMap = new Hashtable<WinThread, SchedulerItem>();
-    private static long start = System.currentTimeMillis();
-
     // DirectX surface to force to the screen
     public static int monitor;
+    private static SchedulerItem currentThread = null;
+    private static SchedulerItem first;
+    private static final Hashtable<WinThread, SchedulerItem> threadMap = new Hashtable<WinThread, SchedulerItem>();
+    private static final long start = System.currentTimeMillis();
 
     static public void addThread(WinThread thread, boolean schedule) {
         SchedulerItem item;
@@ -45,7 +38,7 @@ public class Scheduler {
     }
 
     static private int currentTickCount() {
-        return (int)(System.currentTimeMillis()-start);
+        return (int) (System.currentTimeMillis() - start);
     }
 
     static public void sleep(WinThread thread, int ms) {
@@ -57,7 +50,7 @@ public class Scheduler {
     }
 
     static public void wait(WinThread thread) {
-        if (thread.waitTime==-1)
+        if (thread.waitTime == -1)
             removeThread(thread);
         else {
             SchedulerItem item = threadMap.get(thread);
@@ -85,7 +78,10 @@ public class Scheduler {
                         Input.processInput();
                         if (first != null)
                             break;
-                        try {StaticData.inputQueueMutex.wait();} catch (Exception e){}
+                        try {
+                            StaticData.inputQueueMutex.wait();
+                        } catch (Exception e) {
+                        }
                     }
                 }
                 if (item == currentThread) {
@@ -128,7 +124,10 @@ public class Scheduler {
                 break;
             }
             if (next == start) {
-                try {Thread.sleep(10);} catch (Exception e) {}
+                try {
+                    Thread.sleep(10);
+                } catch (Exception e) {
+                }
                 tickCount = currentTickCount();
             }
             next = next.next;
@@ -142,5 +141,12 @@ public class Scheduler {
             next.thread.loadCPU();
             currentThread = next;
         }
+    }
+
+    private static class SchedulerItem {
+        WinThread thread;
+        SchedulerItem next;
+        SchedulerItem prev;
+        int sleepUntil = 0;
     }
 }

@@ -7,79 +7,88 @@ import jdos.misc.setup.Module_base;
 import jdos.misc.setup.Section;
 
 public class IO extends Module_base {
-    static private class IOF_Entry {
-        /*Bitu*/int cs;
-        /*Bitu*/long eip;
-    }
     private final static int IOF_QUEUESIZE = 16;
-    static private class IOF_Queue {
-        public IOF_Queue() {
-            for (int i=0;i<entries.length;i++)
-                entries[i] = new IOF_Entry();
-        }
-        /*Bitu*/int used;
-        IOF_Entry[] entries = new IOF_Entry[IOF_QUEUESIZE];
-    }
-    private static IOF_Queue iof_queue;
-
-    private static CPU.CPU_Decoder IOFaultCore = new CPU.CPU_Decoder() {
-        public /*Bits*/int call() {
-            CPU.CPU_CycleLeft+=CPU.CPU_Cycles;
-            CPU.CPU_Cycles=1;
-            /*Bits*/int ret= Core_full.CPU_Core_Full_Run.call();
-            CPU.CPU_CycleLeft+=CPU.CPU_Cycles;
-            if (ret<0) Log.exit("Got a dosbox close machine in IO-fault core?");
-            if (ret!=0)
-                return ret;
-            if (iof_queue.used==0) Log.exit("IO-faul Core without IO-faul");
-            IOF_Entry entry=iof_queue.entries[iof_queue.used-1];
-            if (entry.cs == CPU_Regs.reg_csVal.dword && entry.eip==CPU_Regs.reg_eip)
-                return -1;
-            return 0;
-        }
-    };
+    private static final float IODELAY_READ_MICROS = 1.0f;
+    private static final float IODELAY_WRITE_MICROS = 0.75f;
+    static private final int IODELAY_READ_MICROSk = (int) (1024 / 1.0);
+    static private final int IODELAY_WRITE_MICROSk = (int) (1024 / 0.75);
 
 
     /* Some code to make io operations take some virtual time. Helps certain
      * games with their timing of certain operations
      */
-
-
-    private static final float IODELAY_READ_MICROS = 1.0f;
-    private static final float IODELAY_WRITE_MICROS = 0.75f;
+    static IO test;
+    private static IOF_Queue iof_queue;
+    public static Section.SectionFunction IO_Destroy = new Section.SectionFunction() {
+        public void call(Section section) {
+            test = null;
+            iof_queue = null;
+        }
+    };
+    public static Section.SectionFunction IO_Init = new Section.SectionFunction() {
+        public void call(Section sec) {
+            iof_queue = new IOF_Queue();
+            test = new IO(sec);
+            sec.AddDestroyFunction(IO_Destroy);
+        }
+    };
+    private static final CPU.CPU_Decoder IOFaultCore = new CPU.CPU_Decoder() {
+        public /*Bits*/int call() {
+            CPU.CPU_CycleLeft += CPU.CPU_Cycles;
+            CPU.CPU_Cycles = 1;
+            /*Bits*/
+            int ret = Core_full.CPU_Core_Full_Run.call();
+            CPU.CPU_CycleLeft += CPU.CPU_Cycles;
+            if (ret < 0) Log.exit("Got a dosbox close machine in IO-fault core?");
+            if (ret != 0)
+                return ret;
+            if (iof_queue.used == 0) Log.exit("IO-faul Core without IO-faul");
+            IOF_Entry entry = iof_queue.entries[iof_queue.used - 1];
+            if (entry.cs == CPU_Regs.reg_csVal.dword && entry.eip == CPU_Regs.reg_eip)
+                return -1;
+            return 0;
+        }
+    };
+    public IO(Section configuration) {
+        super(configuration);
+        iof_queue.used = 0;
+        IoHandler.IO_FreeReadHandler(0, IoHandler.IO_MA, IoHandler.IO_MAX);
+        IoHandler.IO_FreeWriteHandler(0, IoHandler.IO_MA, IoHandler.IO_MAX);
+    }
 
     static private void IO_USEC_read_delay_old() {
-        if(CPU.CPU_CycleMax > (int)((IODELAY_READ_MICROS*1000.0))) {
+        if (CPU.CPU_CycleMax > (int) ((IODELAY_READ_MICROS * 1000.0))) {
             // this could be calculated whenever CPU_CycleMax changes
-            /*Bits*/int delaycyc = (int)((CPU.CPU_CycleMax/1000)*IODELAY_READ_MICROS);
+            /*Bits*/
+            int delaycyc = (int) ((CPU.CPU_CycleMax / 1000) * IODELAY_READ_MICROS);
             if (CPU.CPU_Cycles > delaycyc) CPU.CPU_Cycles -= delaycyc;
             else CPU.CPU_Cycles = 0;
         }
     }
 
     static private void IO_USEC_write_delay_old() {
-        if(CPU.CPU_CycleMax > (int)((IODELAY_WRITE_MICROS*1000.0))) {
+        if (CPU.CPU_CycleMax > (int) ((IODELAY_WRITE_MICROS * 1000.0))) {
             // this could be calculated whenever CPU_CycleMax changes
-            /*Bits*/int delaycyc = (int)((CPU.CPU_CycleMax/1000)*IODELAY_WRITE_MICROS);
+            /*Bits*/
+            int delaycyc = (int) ((CPU.CPU_CycleMax / 1000) * IODELAY_WRITE_MICROS);
             if (CPU.CPU_Cycles > delaycyc) CPU.CPU_Cycles -= delaycyc;
             else CPU.CPU_Cycles = 0;
         }
     }
 
-
-    static private final int IODELAY_READ_MICROSk = (int)(1024/1.0);
-    static private final int IODELAY_WRITE_MICROSk = (int)(1024/0.75);
-
     static private void IO_USEC_read_delay() {
-        /*Bits*/int delaycyc = CPU.CPU_CycleMax/IODELAY_READ_MICROSk;
-        if(CPU.CPU_Cycles < 3*delaycyc) delaycyc = 0; //Else port acces will set cycles to 0. which might trigger problem with games which read 16 bit values
+        /*Bits*/
+        int delaycyc = CPU.CPU_CycleMax / IODELAY_READ_MICROSk;
+        if (CPU.CPU_Cycles < 3 * delaycyc)
+            delaycyc = 0; //Else port acces will set cycles to 0. which might trigger problem with games which read 16 bit values
         CPU.CPU_Cycles -= delaycyc;
         CPU.CPU_IODelayRemoved += delaycyc;
     }
 
     static private void IO_USEC_write_delay() {
-        /*Bits*/int delaycyc = CPU.CPU_CycleMax/IODELAY_WRITE_MICROSk;
-        if(CPU.CPU_Cycles < 3*delaycyc) delaycyc=0;
+        /*Bits*/
+        int delaycyc = CPU.CPU_CycleMax / IODELAY_WRITE_MICROSk;
+        if (CPU.CPU_Cycles < 3 * delaycyc) delaycyc = 0;
         CPU.CPU_Cycles -= delaycyc;
         CPU.CPU_IODelayRemoved += delaycyc;
     }
@@ -159,24 +168,27 @@ public class IO extends Module_base {
 
     public static void IO_WriteB(/*Bitu*/int port,/*Bitu*/int val) {
         log_io(0, true, port, val);
-        if (CPU_Regs.GETFLAG(CPU_Regs.VM)!=0 && CPU.CPU_IO_Exception(port,1)) {
+        if (CPU_Regs.GETFLAG(CPU_Regs.VM) != 0 && CPU.CPU_IO_Exception(port, 1)) {
             LazyFlags old_lflags = new LazyFlags();
             CPU.CPU_Decoder old_cpudecoder;
-            old_cpudecoder=CPU.cpudecoder;
-            CPU.cpudecoder=IOFaultCore;
-            IOF_Entry entry=iof_queue.entries[iof_queue.used++];
-            entry.cs=(int)CPU_Regs.reg_csVal.dword;
-            entry.eip=CPU_Regs.reg_eip;
+            old_cpudecoder = CPU.cpudecoder;
+            CPU.cpudecoder = IOFaultCore;
+            IOF_Entry entry = iof_queue.entries[iof_queue.used++];
+            entry.cs = CPU_Regs.reg_csVal.dword;
+            entry.eip = CPU_Regs.reg_eip;
             CPU.CPU_Push16(CPU_Regs.reg_csVal.dword);
             CPU.CPU_Push16(CPU_Regs.reg_ip());
-            /*Bit8u*/int old_al = CPU_Regs.reg_eax.low();
-            /*Bit16u*/int old_dx = CPU_Regs.reg_edx.word();
+            /*Bit8u*/
+            int old_al = CPU_Regs.reg_eax.low();
+            /*Bit16u*/
+            int old_dx = CPU_Regs.reg_edx.word();
             CPU_Regs.reg_eax.low(val);
             CPU_Regs.reg_edx.word(port);
-            /*RealPt*/int icb = Callback.CALLBACK_RealPointer(Callback.call_priv_io);
+            /*RealPt*/
+            int icb = Callback.CALLBACK_RealPointer(Callback.call_priv_io);
             CPU_Regs.SegSet16CS(Memory.RealSeg(icb));
-            CPU_Regs.reg_eip=Memory.RealOff(icb)+0x08;
-            CPU.CPU_Exception(CPU.cpu.exception.which,CPU.cpu.exception.error);
+            CPU_Regs.reg_eip = Memory.RealOff(icb) + 0x08;
+            CPU.CPU_Exception(CPU.cpu.exception.which, CPU.cpu.exception.error);
 
             Dosbox.DOSBOX_RunMachine();
             iof_queue.used--;
@@ -184,33 +196,35 @@ public class IO extends Module_base {
             CPU_Regs.reg_eax.low(old_al);
             CPU_Regs.reg_edx.word(old_dx);
             Flags.copy(old_lflags);
-            CPU.cpudecoder=old_cpudecoder;
-        }
-        else {
+            CPU.cpudecoder = old_cpudecoder;
+        } else {
             IO_USEC_write_delay();
-            IoHandler.io_writehandlers[0][port].call(port,val,1);
+            IoHandler.io_writehandlers[0][port].call(port, val, 1);
         }
     }
 
     static public void IO_WriteW(/*Bitu*/int port,/*Bitu*/int val) {
         log_io(1, true, port, val);
-        if (CPU_Regs.GETFLAG(CPU_Regs.VM)!=0 && CPU.CPU_IO_Exception(port,2)) {
+        if (CPU_Regs.GETFLAG(CPU_Regs.VM) != 0 && CPU.CPU_IO_Exception(port, 2)) {
             LazyFlags old_lflags = new LazyFlags();
             CPU.CPU_Decoder old_cpudecoder = CPU.cpudecoder;
-            CPU.cpudecoder=IOFaultCore;
-            IOF_Entry entry=iof_queue.entries[iof_queue.used++];
-            entry.cs=CPU_Regs.reg_csVal.dword;
-            entry.eip=CPU_Regs.reg_eip;
+            CPU.cpudecoder = IOFaultCore;
+            IOF_Entry entry = iof_queue.entries[iof_queue.used++];
+            entry.cs = CPU_Regs.reg_csVal.dword;
+            entry.eip = CPU_Regs.reg_eip;
             CPU.CPU_Push16(CPU_Regs.reg_csVal.dword);
             CPU.CPU_Push16(CPU_Regs.reg_ip());
-            /*Bit16u*/int old_ax = CPU_Regs.reg_eax.word();
-            /*Bit16u*/int old_dx = CPU_Regs.reg_edx.word();
+            /*Bit16u*/
+            int old_ax = CPU_Regs.reg_eax.word();
+            /*Bit16u*/
+            int old_dx = CPU_Regs.reg_edx.word();
             CPU_Regs.reg_eax.word(val);
             CPU_Regs.reg_edx.word(port);
-            /*RealPt*/int icb = Callback.CALLBACK_RealPointer(Callback.call_priv_io);
+            /*RealPt*/
+            int icb = Callback.CALLBACK_RealPointer(Callback.call_priv_io);
             CPU_Regs.SegSet16CS(Memory.RealSeg(icb));
-            CPU_Regs.reg_eip=Memory.RealOff(icb)+0x0a;
-            CPU.CPU_Exception(CPU.cpu.exception.which,CPU.cpu.exception.error);
+            CPU_Regs.reg_eip = Memory.RealOff(icb) + 0x0a;
+            CPU.CPU_Exception(CPU.cpu.exception.which, CPU.cpu.exception.error);
 
             Dosbox.DOSBOX_RunMachine();
             iof_queue.used--;
@@ -218,65 +232,70 @@ public class IO extends Module_base {
             CPU_Regs.reg_eax.word(old_ax);
             CPU_Regs.reg_edx.word(old_dx);
             Flags.copy(old_lflags);
-            CPU.cpudecoder=old_cpudecoder;
-        }
-        else {
+            CPU.cpudecoder = old_cpudecoder;
+        } else {
             IO_USEC_write_delay();
-            IoHandler.io_writehandlers[1][port].call(port,val,2);
+            IoHandler.io_writehandlers[1][port].call(port, val, 2);
         }
     }
 
     static public void IO_WriteD(/*Bitu*/int port,/*Bitu*/int val) {
         log_io(2, true, port, val);
-        if (CPU_Regs.GETFLAG(CPU_Regs.VM)!=0 && CPU.CPU_IO_Exception(port,4)) {
+        if (CPU_Regs.GETFLAG(CPU_Regs.VM) != 0 && CPU.CPU_IO_Exception(port, 4)) {
             LazyFlags old_lflags = new LazyFlags();
             CPU.CPU_Decoder old_cpudecoder;
-            old_cpudecoder=CPU.cpudecoder;
-            CPU.cpudecoder=IOFaultCore;
-            IOF_Entry entry=iof_queue.entries[iof_queue.used++];
-            entry.cs=CPU_Regs.reg_csVal.dword;
-            entry.eip=CPU_Regs.reg_eip;
+            old_cpudecoder = CPU.cpudecoder;
+            CPU.cpudecoder = IOFaultCore;
+            IOF_Entry entry = iof_queue.entries[iof_queue.used++];
+            entry.cs = CPU_Regs.reg_csVal.dword;
+            entry.eip = CPU_Regs.reg_eip;
             CPU.CPU_Push16(CPU_Regs.reg_csVal.dword);
             CPU.CPU_Push16(CPU_Regs.reg_ip());
-            /*Bit32u*/int old_eax = CPU_Regs.reg_eax.dword;
-            /*Bit16u*/int old_dx = CPU_Regs.reg_edx.word();
-            CPU_Regs.reg_eax.dword=val;
+            /*Bit32u*/
+            int old_eax = CPU_Regs.reg_eax.dword;
+            /*Bit16u*/
+            int old_dx = CPU_Regs.reg_edx.word();
+            CPU_Regs.reg_eax.dword = val;
             CPU_Regs.reg_edx.word(port);
-            /*RealPt*/int icb = Callback.CALLBACK_RealPointer(Callback.call_priv_io);
+            /*RealPt*/
+            int icb = Callback.CALLBACK_RealPointer(Callback.call_priv_io);
             CPU_Regs.SegSet16CS(Memory.RealSeg(icb));
-            CPU_Regs.reg_eip=Memory.RealOff(icb)+0x0c;
-            CPU.CPU_Exception(CPU.cpu.exception.which,CPU.cpu.exception.error);
+            CPU_Regs.reg_eip = Memory.RealOff(icb) + 0x0c;
+            CPU.CPU_Exception(CPU.cpu.exception.which, CPU.cpu.exception.error);
 
             Dosbox.DOSBOX_RunMachine();
             iof_queue.used--;
 
-            CPU_Regs.reg_eax.dword=old_eax;
+            CPU_Regs.reg_eax.dword = old_eax;
             CPU_Regs.reg_edx.word(old_dx);
             Flags.copy(old_lflags);
-            CPU.cpudecoder=old_cpudecoder;
+            CPU.cpudecoder = old_cpudecoder;
         } else {
-            IoHandler.io_writehandlers[2][port].call(port,val,4);
+            IoHandler.io_writehandlers[2][port].call(port, val, 4);
         }
     }
 
     static public/*Bitu*/int IO_ReadB(/*Bitu*/int port) {
-        /*Bitu*/int retval;
-        if (CPU_Regs.GETFLAG(CPU_Regs.VM)!=0 && CPU.CPU_IO_Exception(port,1)) {
+        /*Bitu*/
+        int retval;
+        if (CPU_Regs.GETFLAG(CPU_Regs.VM) != 0 && CPU.CPU_IO_Exception(port, 1)) {
             LazyFlags old_lflags = new LazyFlags();
-            CPU.CPU_Decoder  old_cpudecoder;
-            old_cpudecoder=CPU.cpudecoder;
-            CPU.cpudecoder=IOFaultCore;
-            IOF_Entry entry=iof_queue.entries[iof_queue.used++];
-            entry.cs=CPU_Regs.reg_csVal.dword;
-            entry.eip=CPU_Regs.reg_eip;
+            CPU.CPU_Decoder old_cpudecoder;
+            old_cpudecoder = CPU.cpudecoder;
+            CPU.cpudecoder = IOFaultCore;
+            IOF_Entry entry = iof_queue.entries[iof_queue.used++];
+            entry.cs = CPU_Regs.reg_csVal.dword;
+            entry.eip = CPU_Regs.reg_eip;
             CPU.CPU_Push16(CPU_Regs.reg_csVal.dword);
             CPU.CPU_Push16(CPU_Regs.reg_ip());
-            /*Bit16u*/int old_dx = CPU_Regs.reg_edx.word();
+            /*Bit16u*/
+            int old_dx = CPU_Regs.reg_edx.word();
             CPU_Regs.reg_edx.word(port);
-            /*RealPt*/int icb = Callback.CALLBACK_RealPointer(Callback.call_priv_io);
+            /*RealPt*/
+            int icb = Callback.CALLBACK_RealPointer(Callback.call_priv_io);
             CPU_Regs.SegSet16CS(Memory.RealSeg(icb));
-            CPU_Regs.reg_eip=Memory.RealOff(icb)+0x00;
-            CPU.CPU_Exception(CPU.cpu.exception.which,CPU.cpu.exception.error);
+            CPU_Regs.reg_eip = Memory.RealOff(icb) + 0x00;
+            CPU.CPU_Exception(CPU.cpu.exception.which, CPU.cpu.exception.error);
 
             Dosbox.DOSBOX_RunMachine();
             iof_queue.used--;
@@ -284,35 +303,37 @@ public class IO extends Module_base {
             retval = CPU_Regs.reg_eax.low();
             CPU_Regs.reg_edx.word(old_dx);
             Flags.copy(old_lflags);
-            CPU.cpudecoder=old_cpudecoder;
+            CPU.cpudecoder = old_cpudecoder;
             return retval;
-        }
-        else {
+        } else {
             IO_USEC_read_delay();
-            retval = IoHandler.io_readhandlers[0][port].call(port,1);
+            retval = IoHandler.io_readhandlers[0][port].call(port, 1);
         }
         log_io(0, false, port, retval);
         return retval;
     }
 
     static public /*Bitu*/int IO_ReadW(/*Bitu*/int port) {
-        /*Bitu*/int retval;
-        if (CPU_Regs.GETFLAG(CPU_Regs.VM)!=0 && CPU.CPU_IO_Exception(port,2)) {
+        /*Bitu*/
+        int retval;
+        if (CPU_Regs.GETFLAG(CPU_Regs.VM) != 0 && CPU.CPU_IO_Exception(port, 2)) {
             LazyFlags old_lflags = new LazyFlags();
             CPU.CPU_Decoder old_cpudecoder;
-            old_cpudecoder=CPU.cpudecoder;
-            CPU.cpudecoder=IOFaultCore;
-            IOF_Entry entry=iof_queue.entries[iof_queue.used++];
-            entry.cs=CPU_Regs.reg_csVal.dword;
-            entry.eip=CPU_Regs.reg_eip;
+            old_cpudecoder = CPU.cpudecoder;
+            CPU.cpudecoder = IOFaultCore;
+            IOF_Entry entry = iof_queue.entries[iof_queue.used++];
+            entry.cs = CPU_Regs.reg_csVal.dword;
+            entry.eip = CPU_Regs.reg_eip;
             CPU.CPU_Push16(CPU_Regs.reg_csVal.dword);
             CPU.CPU_Push16(CPU_Regs.reg_ip());
-            /*Bit16u*/int old_dx = CPU_Regs.reg_edx.word();
+            /*Bit16u*/
+            int old_dx = CPU_Regs.reg_edx.word();
             CPU_Regs.reg_edx.word(port);
-            /*RealPt*/int icb = Callback.CALLBACK_RealPointer(Callback.call_priv_io);
+            /*RealPt*/
+            int icb = Callback.CALLBACK_RealPointer(Callback.call_priv_io);
             CPU_Regs.SegSet16CS(Memory.RealSeg(icb));
-            CPU_Regs.reg_eip=Memory.RealOff(icb)+0x02;
-            CPU.CPU_Exception(CPU.cpu.exception.which,CPU.cpu.exception.error);
+            CPU_Regs.reg_eip = Memory.RealOff(icb) + 0x02;
+            CPU.CPU_Exception(CPU.cpu.exception.which, CPU.cpu.exception.error);
 
             Dosbox.DOSBOX_RunMachine();
             iof_queue.used--;
@@ -320,34 +341,36 @@ public class IO extends Module_base {
             retval = CPU_Regs.reg_eax.word();
             CPU_Regs.reg_edx.word(old_dx);
             Flags.copy(old_lflags);
-            CPU.cpudecoder=old_cpudecoder;
-        }
-        else {
+            CPU.cpudecoder = old_cpudecoder;
+        } else {
             IO_USEC_read_delay();
-            retval = IoHandler.io_readhandlers[1][port].call(port,2);
+            retval = IoHandler.io_readhandlers[1][port].call(port, 2);
         }
         log_io(1, false, port, retval);
         return retval;
     }
 
     static public /*Bitu*/int IO_ReadD(/*Bitu*/int port) {
-        /*Bitu*/int retval;
-        if (CPU_Regs.GETFLAG(CPU_Regs.VM)!=0 && CPU.CPU_IO_Exception(port,4)) {
+        /*Bitu*/
+        int retval;
+        if (CPU_Regs.GETFLAG(CPU_Regs.VM) != 0 && CPU.CPU_IO_Exception(port, 4)) {
             LazyFlags old_lflags = new LazyFlags();
             CPU.CPU_Decoder old_cpudecoder;
-            old_cpudecoder=CPU.cpudecoder;
-            CPU.cpudecoder=IOFaultCore;
-            IOF_Entry entry=iof_queue.entries[iof_queue.used++];
-            entry.cs=CPU_Regs.reg_csVal.dword;
-            entry.eip=CPU_Regs.reg_eip;
+            old_cpudecoder = CPU.cpudecoder;
+            CPU.cpudecoder = IOFaultCore;
+            IOF_Entry entry = iof_queue.entries[iof_queue.used++];
+            entry.cs = CPU_Regs.reg_csVal.dword;
+            entry.eip = CPU_Regs.reg_eip;
             CPU.CPU_Push16(CPU_Regs.reg_csVal.dword);
             CPU.CPU_Push16(CPU_Regs.reg_ip());
-            /*Bit16u*/int old_dx = CPU_Regs.reg_edx.word();
+            /*Bit16u*/
+            int old_dx = CPU_Regs.reg_edx.word();
             CPU_Regs.reg_edx.word(port);
-            /*RealPt*/int icb = Callback.CALLBACK_RealPointer(Callback.call_priv_io);
+            /*RealPt*/
+            int icb = Callback.CALLBACK_RealPointer(Callback.call_priv_io);
             CPU_Regs.SegSet16CS(Memory.RealSeg(icb));
-            CPU_Regs.reg_eip=Memory.RealOff(icb)+0x04;
-            CPU.CPU_Exception(CPU.cpu.exception.which,CPU.cpu.exception.error);
+            CPU_Regs.reg_eip = Memory.RealOff(icb) + 0x04;
+            CPU.CPU_Exception(CPU.cpu.exception.which, CPU.cpu.exception.error);
 
             Dosbox.DOSBOX_RunMachine();
             iof_queue.used--;
@@ -355,32 +378,25 @@ public class IO extends Module_base {
             retval = CPU_Regs.reg_eax.dword;
             CPU_Regs.reg_edx.word(old_dx);
             Flags.copy(old_lflags);
-            CPU.cpudecoder=old_cpudecoder;
+            CPU.cpudecoder = old_cpudecoder;
         } else {
-            retval = IoHandler.io_readhandlers[2][port].call(port,4);
+            retval = IoHandler.io_readhandlers[2][port].call(port, 4);
         }
         log_io(2, false, port, retval);
         return retval;
     }
 
-    public IO(Section configuration) {
-        super(configuration);
-        iof_queue.used = 0;
-        IoHandler.IO_FreeReadHandler(0,IoHandler.IO_MA,IoHandler.IO_MAX);
-	    IoHandler.IO_FreeWriteHandler(0,IoHandler.IO_MA,IoHandler.IO_MAX);
+    static private class IOF_Entry {
+        /*Bitu*/ int cs;
+        /*Bitu*/ long eip;
     }
-    static IO test;
-    public static Section.SectionFunction IO_Destroy = new Section.SectionFunction() {
-        public void call(Section section) {
-            test = null;
-            iof_queue = null;
+
+    static private class IOF_Queue {
+        /*Bitu*/ int used;
+        IOF_Entry[] entries = new IOF_Entry[IOF_QUEUESIZE];
+        public IOF_Queue() {
+            for (int i = 0; i < entries.length; i++)
+                entries[i] = new IOF_Entry();
         }
-    };
-    public static Section.SectionFunction IO_Init = new Section.SectionFunction() {
-        public void call(Section sec) {
-            iof_queue = new IOF_Queue();
-            test = new IO(sec);
-            sec.AddDestroyFunction(IO_Destroy);
-        }
-    };
+    }
 }

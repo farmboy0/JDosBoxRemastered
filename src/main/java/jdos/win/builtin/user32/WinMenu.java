@@ -4,6 +4,10 @@ import jdos.win.system.StaticData;
 import jdos.win.system.WinObject;
 
 public class WinMenu extends WinObject {
+    public WinMenu(int id) {
+        super(id);
+    }
+
     static public WinMenu create() {
         return new WinMenu(nextObjectId());
     }
@@ -12,7 +16,7 @@ public class WinMenu extends WinObject {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinMenu))
             return null;
-        return (WinMenu)object;
+        return (WinMenu) object;
     }
 
     // BOOL WINAPI AppendMenu(HMENU hMenu, UINT uFlags, UINT_PTR uIDNewItem, LPCTSTR lpNewItem)
@@ -84,7 +88,7 @@ public class WinMenu extends WinObject {
             DestroyMenu(window.hSysMenu);
             window.hSysMenu = 0;
         }
-        if (window.hSysMenu==0 && (window.dwStyle & WS_SYSMENU)!=0) {
+        if (window.hSysMenu == 0 && (window.dwStyle & WS_SYSMENU) != 0) {
             // :TODO: MENU_GetSysMenu
             window.hSysMenu = create().handle;
         }
@@ -93,13 +97,14 @@ public class WinMenu extends WinObject {
             // :TODO: return the submenu
             result = window.hSysMenu;
         }
-        return (bRevert==0)?result:0;
+        return (bRevert == 0) ? result : 0;
     }
 
     // HMENU WINAPI LoadMenu(HINSTANCE hInstance, LPCTSTR lpMenuName)
     static public int LoadMenuA(int hInstance, int lpMenuName) {
         return 0;
     }
+
     static public int LoadMenuW(int hInstance, int lpMenuName) {
         return 0;
     }
@@ -122,10 +127,6 @@ public class WinMenu extends WinObject {
     // int WINAPI TranslateAccelerator(HWND hWnd, HACCEL hAccTable, LPMSG lpMsg)
     static public int TranslateAcceleratorA(int hWnd, int hAccTable, int lpMsg) {
         return 0;
-    }
-
-    public WinMenu(int id) {
-        super(id);
     }
 
     static public int MENU_IsMenuActive() {

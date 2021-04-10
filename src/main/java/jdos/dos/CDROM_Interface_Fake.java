@@ -14,18 +14,20 @@ public class CDROM_Interface_Fake implements Dos_cdrom.CDROM_Interface {
     }
 
     public boolean GetUPC(ShortRef attr, StringRef upc) {
-        attr.value = 0; upc.value="UPC"; return true;
+        attr.value = 0;
+        upc.value = "UPC";
+        return true;
     }
 
     public boolean GetAudioTracks(IntRef stTrack, IntRef end, Dos_cdrom.TMSF leadOut) {
         stTrack.value = end.value = 1;
-        leadOut.min	= 60;
+        leadOut.min = 60;
         leadOut.sec = leadOut.fr = 0;
         return true;
     }
 
     public boolean GetAudioTrackInfo(int track, Dos_cdrom.TMSF start, ShortRef attr) {
-        if (track>1) return false;
+        if (track > 1) return false;
         start.min = start.fr = 0;
         start.sec = 2;
         attr.value = 0x60; // data / permitted
@@ -35,20 +37,22 @@ public class CDROM_Interface_Fake implements Dos_cdrom.CDROM_Interface {
     public boolean GetAudioSub(ShortRef attr, ShortRef track, ShortRef index, Dos_cdrom.TMSF relPos, Dos_cdrom.TMSF absPos) {
         attr.value = 0;
         track.value = index.value = 1;
-        relPos.min = relPos.fr = 0; relPos.sec = 2;
-        absPos.min = absPos.fr = 0; absPos.sec = 2;
+        relPos.min = relPos.fr = 0;
+        relPos.sec = 2;
+        absPos.min = absPos.fr = 0;
+        absPos.sec = 2;
         return true;
     }
 
     public boolean GetAudioStatus(BooleanRef playing, BooleanRef pause) {
         playing.value = pause.value = false;
-	    return true;
+        return true;
     }
 
     public boolean GetMediaTrayStatus(BooleanRef mediaPresent, BooleanRef mediaChanged, BooleanRef trayOpen) {
         mediaPresent.value = true;
         mediaChanged.value = false;
-        trayOpen.value     = false;
+        trayOpen.value = false;
         return true;
     }
 

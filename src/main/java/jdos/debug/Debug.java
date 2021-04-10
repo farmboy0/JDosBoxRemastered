@@ -1,6 +1,5 @@
 package jdos.debug;
 
-import jdos.cpu.CPU;
 import jdos.cpu.CPU_Regs;
 import jdos.misc.setup.Section;
 
@@ -59,25 +58,30 @@ public class Debug {
     public static final int CSEIP4 = 46;
     public static final int DONE = 47;
     public static final int INSTRUCTION_DONE = 48;
-
-    static long[] last = new long[50];
-
-    static DataOutputStream log = null;
-    static public boolean logging = true;
-
-    static {
-        try {log = new DataOutputStream(new BufferedOutputStream(new FileOutputStream("debug.log")));} catch (Exception e){}
-    }
-
     static public final int TYPE_CPU = 0x01;
     static public final int TYPE_INT10 = 0x02;
-
+    static public final int MASK = TYPE_CPU;
+    static public boolean logging = true;
+    static public /*Bitu*/ int cycle_count;
+    static public /*Bitu*/ int debugCallback;
+    public static Section.SectionFunction DEBUG_Init = new Section.SectionFunction() {
+        public void call(Section section) {
+        }
+    };
+    static long[] last = new long[50];
+    static DataOutputStream log = null;
     static private int lastType;
 
-    static public final int MASK = TYPE_CPU;
+    static {
+        try {
+            log = new DataOutputStream(new BufferedOutputStream(new FileOutputStream("debug.log")));
+        } catch (Exception e) {
+        }
+    }
+
     static public void start(int type, int c) {
         lastType = type;
-        if ((type & MASK)!=0) {
+        if ((type & MASK) != 0) {
             Debug.log(Debug.INSTRUCTION, c);
             Debug.log(Debug.EAX, CPU_Regs.reg_eax.dword);
             Debug.log(Debug.EBX, CPU_Regs.reg_ebx.dword);
@@ -98,9 +102,10 @@ public class Debug {
             //FPU.log();
         }
     }
+
     static public void stop(int type, int c) {
         lastType = type;
-        if ((type & MASK)!=0) {
+        if ((type & MASK) != 0) {
             Debug.log(Debug.INSTRUCTION_DONE, c);
             Debug.log(Debug.EAX, CPU_Regs.reg_eax.dword);
             Debug.log(Debug.EBX, CPU_Regs.reg_ebx.dword);
@@ -122,11 +127,16 @@ public class Debug {
             Debug.log(Debug.DONE, c);
         }
     }
+
     static public void close() {
         if (log != null) {
-            try {log.close();} catch (Exception e) {}
+            try {
+                log.close();
+            } catch (Exception e) {
+            }
         }
     }
+
     static public void log(int type, String value) {
         if (logging) {
             try {
@@ -141,12 +151,12 @@ public class Debug {
     }
 
     static public void log(int type, long value) {
-        if (logging && (lastType & MASK)!=0) {
+        if (logging && (lastType & MASK) != 0) {
             try {
-                if (type>34 || last[type]!=value) {
+                if (type > 34 || last[type] != value) {
                     log.writeByte(type);
-                    log.writeInt((int)value);
-                    last[type]=value;
+                    log.writeInt((int) value);
+                    last[type] = value;
                 }
             } catch (Exception e) {
 
@@ -155,12 +165,12 @@ public class Debug {
     }
 
     static public void log_long(int type, long value) {
-        if (logging && (lastType & MASK)!=0) {
+        if (logging && (lastType & MASK) != 0) {
             try {
-                if (type>34 || last[type]!=value) {
+                if (type > 34 || last[type] != value) {
                     log.writeByte(type);
                     log.writeLong(value);
-                    last[type]=value;
+                    last[type] = value;
                 }
             } catch (Exception e) {
 
@@ -169,36 +179,32 @@ public class Debug {
     }
 
     static public void log(int type, long value, long value1) {
-        if (logging && (lastType & MASK)!=0) {
+        if (logging && (lastType & MASK) != 0) {
             try {
                 log.writeByte(type);
-                log.writeInt((int)value);
-                log.writeInt((int)value1);
+                log.writeInt((int) value);
+                log.writeInt((int) value1);
             } catch (Exception e) {
 
             }
         }
     }
 
-    static public /*Bitu*/int cycle_count;
-    static public /*Bitu*/int debugCallback;
     static public void DEBUG_HeavyWriteLogInstruction() {
 
     }
+
     static public boolean DEBUG_IntBreakpoint(/*Bit8u*/int intNum) {
         return false;
     }
+
     static public boolean DEBUG_HeavyIsBreakpoint() {
         return false;
     }
+
     static public boolean DEBUG_Breakpoint() {
         return false;
     }
-
-    public static Section.SectionFunction DEBUG_Init = new Section.SectionFunction() {
-        public void call(Section section) {
-        }
-    };
 
     public static boolean DEBUG_ExitLoop() {
         return false;

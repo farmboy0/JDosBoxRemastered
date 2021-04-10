@@ -13,13 +13,13 @@ public class MsgBox extends WinAPI {
         if (lpCaption != 0)
             caption = StringUtil.getString(lpCaption);
         int type = JOptionPane.INFORMATION_MESSAGE;
-        if ((uType & 0x00000040)!=0) // MB_ICONINFORMATION
+        if ((uType & 0x00000040) != 0) // MB_ICONINFORMATION
             type = JOptionPane.INFORMATION_MESSAGE;
-        else if ((uType & 0x00000030)!=0) // MB_ICONWARNING
+        else if ((uType & 0x00000030) != 0) // MB_ICONWARNING
             type = JOptionPane.WARNING_MESSAGE;
-        else if ((uType & 0x00000020)!=0) // MB_ICONQUESTION
+        else if ((uType & 0x00000020) != 0) // MB_ICONQUESTION
             type = JOptionPane.QUESTION_MESSAGE;
-        else if ((uType & 0x00000010)!=0) // MB_ICONERROR
+        else if ((uType & 0x00000010) != 0) // MB_ICONERROR
             type = JOptionPane.ERROR_MESSAGE;
         JOptionPane.showMessageDialog(null, text, caption, type);
         return IDOK;
