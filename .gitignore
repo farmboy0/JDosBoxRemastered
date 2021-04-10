@@ -1,8 +1,5 @@
 .idea
-*.ipr
-*.iml
-*.iws
-build
-.gradle
-gradle
 .dosbox
+mnt
+target
+*.iml
