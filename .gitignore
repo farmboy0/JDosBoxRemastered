@@ -3,3 +3,6 @@
 mnt
 target
 *.iml
+.classpath
+.project
+.settings/
