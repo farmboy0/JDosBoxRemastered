@@ -77,28 +77,28 @@ public class KeyboardKey {
         new JavaMapper.DefaultKey("lessthan", KeyEvent.VK_LESS) };
     static boolean ctrAltDel = false;
 
-    public static boolean isLeft(Object key) {
-        return ((KeyEvent) key).getKeyLocation() == KeyEvent.KEY_LOCATION_LEFT;
+    public static boolean isLeft(KeyEvent key) {
+        return key.getKeyLocation() == KeyEvent.KEY_LOCATION_LEFT;
     }
 
-    public static boolean isRight(Object key) {
-        return ((KeyEvent) key).getKeyLocation() == KeyEvent.KEY_LOCATION_RIGHT;
+    public static boolean isRight(KeyEvent key) {
+        return key.getKeyLocation() == KeyEvent.KEY_LOCATION_RIGHT;
     }
 
-    public static boolean isNumPad(Object key) {
-        return ((KeyEvent) key).getKeyLocation() == KeyEvent.KEY_LOCATION_NUMPAD;
+    public static boolean isNumPad(KeyEvent key) {
+        return key.getKeyLocation() == KeyEvent.KEY_LOCATION_NUMPAD;
     }
 
-    public static boolean isPressed(Object key) {
-        return ((KeyEvent) key).getID() == KeyEvent.KEY_PRESSED;
+    public static boolean isPressed(KeyEvent key) {
+        return key.getID() == KeyEvent.KEY_PRESSED;
     }
 
-    public static boolean isReleased(Object key) {
-        return ((KeyEvent) key).getID() == KeyEvent.KEY_RELEASED;
+    public static boolean isReleased(KeyEvent key) {
+        return key.getID() == KeyEvent.KEY_RELEASED;
     }
 
-    public static int getKeyCode(Object key) {
-        return ((KeyEvent) key).getKeyCode();
+    public static int getKeyCode(KeyEvent key) {
+        return key.getKeyCode();
     }
 
     public static void CreateDefaultBinds() {
@@ -144,8 +144,7 @@ public class KeyboardKey {
         return key;
     }
 
-    public static void CheckEvent(Object e) {
-        KeyEvent event = (KeyEvent) e;
+    public static void CheckEvent(KeyEvent event) {
         if (JavaMapper.mapper.mods == 3 && event.getKeyCode() == KeyEvent.VK_INSERT
             && event.getID() == KeyEvent.KEY_PRESSED) {
             ctrAltDel = true;
@@ -153,7 +152,7 @@ public class KeyboardKey {
         if (ctrAltDel && event.getKeyCode() == KeyEvent.VK_INSERT) {
             event.setKeyCode(KeyEvent.VK_DELETE);
         }
-        JavaMapper.MAPPER_CheckEvent(e);
+        JavaMapper.MAPPER_CheckEvent(event);
 
         if (ctrAltDel && event.getKeyCode() == KeyEvent.VK_INSERT && event.getID() == KeyEvent.KEY_RELEASED) {
             ctrAltDel = false;

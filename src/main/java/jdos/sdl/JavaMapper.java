@@ -1,5 +1,6 @@
 package jdos.sdl;
 
+import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
@@ -48,45 +49,77 @@ public class JavaMapper {
     private static final int BW = 28;
     private static final int BH = 20;
     private static final int DX = 5;
-    private static final KeyBlock[] combo_f = { new KeyBlock("F1", "f1", Keyboard.KBD_KEYS.KBD_f1),
-        new KeyBlock("F2", "f2", Keyboard.KBD_KEYS.KBD_f2), new KeyBlock("F3", "f3", Keyboard.KBD_KEYS.KBD_f3),
-        new KeyBlock("F4", "f4", Keyboard.KBD_KEYS.KBD_f4), new KeyBlock("F5", "f5", Keyboard.KBD_KEYS.KBD_f5),
-        new KeyBlock("F6", "f6", Keyboard.KBD_KEYS.KBD_f6), new KeyBlock("F7", "f7", Keyboard.KBD_KEYS.KBD_f7),
-        new KeyBlock("F8", "f8", Keyboard.KBD_KEYS.KBD_f8), new KeyBlock("F9", "f9", Keyboard.KBD_KEYS.KBD_f9),
-        new KeyBlock("F10", "f10", Keyboard.KBD_KEYS.KBD_f10), new KeyBlock("F11", "f11", Keyboard.KBD_KEYS.KBD_f11),
-        new KeyBlock("F12", "f12", Keyboard.KBD_KEYS.KBD_f12), };
-    private static final KeyBlock[] combo_1 = { new KeyBlock("`~", "grave", Keyboard.KBD_KEYS.KBD_grave),
-        new KeyBlock("1!", "1", Keyboard.KBD_KEYS.KBD_1), new KeyBlock("2@", "2", Keyboard.KBD_KEYS.KBD_2),
-        new KeyBlock("3#", "3", Keyboard.KBD_KEYS.KBD_3), new KeyBlock("4$", "4", Keyboard.KBD_KEYS.KBD_4),
-        new KeyBlock("5%", "5", Keyboard.KBD_KEYS.KBD_5), new KeyBlock("6^", "6", Keyboard.KBD_KEYS.KBD_6),
-        new KeyBlock("7&", "7", Keyboard.KBD_KEYS.KBD_7), new KeyBlock("8*", "8", Keyboard.KBD_KEYS.KBD_8),
-        new KeyBlock("9(", "9", Keyboard.KBD_KEYS.KBD_9), new KeyBlock("0)", "0", Keyboard.KBD_KEYS.KBD_0),
-        new KeyBlock("-_", "minus", Keyboard.KBD_KEYS.KBD_minus),
-        new KeyBlock("=+", "equals", Keyboard.KBD_KEYS.KBD_equals),
-        new KeyBlock("\u001B", "bspace", Keyboard.KBD_KEYS.KBD_backspace), };
-    private static final KeyBlock[] combo_2 = { new KeyBlock("q", "q", Keyboard.KBD_KEYS.KBD_q),
-        new KeyBlock("w", "w", Keyboard.KBD_KEYS.KBD_w), new KeyBlock("e", "e", Keyboard.KBD_KEYS.KBD_e),
-        new KeyBlock("r", "r", Keyboard.KBD_KEYS.KBD_r), new KeyBlock("t", "t", Keyboard.KBD_KEYS.KBD_t),
-        new KeyBlock("y", "y", Keyboard.KBD_KEYS.KBD_y), new KeyBlock("u", "u", Keyboard.KBD_KEYS.KBD_u),
-        new KeyBlock("i", "i", Keyboard.KBD_KEYS.KBD_i), new KeyBlock("o", "o", Keyboard.KBD_KEYS.KBD_o),
-        new KeyBlock("p", "p", Keyboard.KBD_KEYS.KBD_p),
-        new KeyBlock("[", "lbracket", Keyboard.KBD_KEYS.KBD_leftbracket),
-        new KeyBlock("]", "rbracket", Keyboard.KBD_KEYS.KBD_rightbracket), };
-    private static final KeyBlock[] combo_3 = { new KeyBlock("a", "a", Keyboard.KBD_KEYS.KBD_a),
-        new KeyBlock("s", "s", Keyboard.KBD_KEYS.KBD_s), new KeyBlock("d", "d", Keyboard.KBD_KEYS.KBD_d),
-        new KeyBlock("f", "f", Keyboard.KBD_KEYS.KBD_f), new KeyBlock("g", "g", Keyboard.KBD_KEYS.KBD_g),
-        new KeyBlock("h", "h", Keyboard.KBD_KEYS.KBD_h), new KeyBlock("j", "j", Keyboard.KBD_KEYS.KBD_j),
-        new KeyBlock("k", "k", Keyboard.KBD_KEYS.KBD_k), new KeyBlock("l", "l", Keyboard.KBD_KEYS.KBD_l),
-        new KeyBlock(";", "semicolon", Keyboard.KBD_KEYS.KBD_semicolon),
-        new KeyBlock("'", "quote", Keyboard.KBD_KEYS.KBD_quote),
-        new KeyBlock("\\", "backslash", Keyboard.KBD_KEYS.KBD_backslash), };
-    private static final KeyBlock[] combo_4 = { new KeyBlock("<", "lessthan", Keyboard.KBD_KEYS.KBD_extra_lt_gt),
-        new KeyBlock("z", "z", Keyboard.KBD_KEYS.KBD_z), new KeyBlock("x", "x", Keyboard.KBD_KEYS.KBD_x),
-        new KeyBlock("c", "c", Keyboard.KBD_KEYS.KBD_c), new KeyBlock("v", "v", Keyboard.KBD_KEYS.KBD_v),
-        new KeyBlock("b", "b", Keyboard.KBD_KEYS.KBD_b), new KeyBlock("n", "n", Keyboard.KBD_KEYS.KBD_n),
-        new KeyBlock("m", "m", Keyboard.KBD_KEYS.KBD_m), new KeyBlock(",", "comma", Keyboard.KBD_KEYS.KBD_comma),
-        new KeyBlock(".", "period", Keyboard.KBD_KEYS.KBD_period),
-        new KeyBlock("/", "slash", Keyboard.KBD_KEYS.KBD_slash), };
+    private static final KeyBlock[] combo_f = { //
+        new KeyBlock("F1", "f1", Keyboard.KBD_KEYS.KBD_f1), //
+        new KeyBlock("F2", "f2", Keyboard.KBD_KEYS.KBD_f2), //
+        new KeyBlock("F3", "f3", Keyboard.KBD_KEYS.KBD_f3), //
+        new KeyBlock("F4", "f4", Keyboard.KBD_KEYS.KBD_f4), //
+        new KeyBlock("F5", "f5", Keyboard.KBD_KEYS.KBD_f5), //
+        new KeyBlock("F6", "f6", Keyboard.KBD_KEYS.KBD_f6), //
+        new KeyBlock("F7", "f7", Keyboard.KBD_KEYS.KBD_f7), //
+        new KeyBlock("F8", "f8", Keyboard.KBD_KEYS.KBD_f8), //
+        new KeyBlock("F9", "f9", Keyboard.KBD_KEYS.KBD_f9), //
+        new KeyBlock("F10", "f10", Keyboard.KBD_KEYS.KBD_f10), //
+        new KeyBlock("F11", "f11", Keyboard.KBD_KEYS.KBD_f11), //
+        new KeyBlock("F12", "f12", Keyboard.KBD_KEYS.KBD_f12), //
+    };
+    private static final KeyBlock[] combo_1 = { //
+        new KeyBlock("`~", "grave", Keyboard.KBD_KEYS.KBD_grave), //
+        new KeyBlock("1!", "1", Keyboard.KBD_KEYS.KBD_1), //
+        new KeyBlock("2@", "2", Keyboard.KBD_KEYS.KBD_2), //
+        new KeyBlock("3#", "3", Keyboard.KBD_KEYS.KBD_3), //
+        new KeyBlock("4$", "4", Keyboard.KBD_KEYS.KBD_4), //
+        new KeyBlock("5%", "5", Keyboard.KBD_KEYS.KBD_5), //
+        new KeyBlock("6^", "6", Keyboard.KBD_KEYS.KBD_6), //
+        new KeyBlock("7&", "7", Keyboard.KBD_KEYS.KBD_7), //
+        new KeyBlock("8*", "8", Keyboard.KBD_KEYS.KBD_8), //
+        new KeyBlock("9(", "9", Keyboard.KBD_KEYS.KBD_9), //
+        new KeyBlock("0)", "0", Keyboard.KBD_KEYS.KBD_0), //
+        new KeyBlock("-_", "minus", Keyboard.KBD_KEYS.KBD_minus), //
+        new KeyBlock("=+", "equals", Keyboard.KBD_KEYS.KBD_equals), //
+        new KeyBlock("\u001B", "bspace", Keyboard.KBD_KEYS.KBD_backspace), //
+    };
+    private static final KeyBlock[] combo_2 = { //
+        new KeyBlock("q", "q", Keyboard.KBD_KEYS.KBD_q), //
+        new KeyBlock("w", "w", Keyboard.KBD_KEYS.KBD_w), //
+        new KeyBlock("e", "e", Keyboard.KBD_KEYS.KBD_e), //
+        new KeyBlock("r", "r", Keyboard.KBD_KEYS.KBD_r), //
+        new KeyBlock("t", "t", Keyboard.KBD_KEYS.KBD_t), //
+        new KeyBlock("y", "y", Keyboard.KBD_KEYS.KBD_y), //
+        new KeyBlock("u", "u", Keyboard.KBD_KEYS.KBD_u), //
+        new KeyBlock("i", "i", Keyboard.KBD_KEYS.KBD_i), //
+        new KeyBlock("o", "o", Keyboard.KBD_KEYS.KBD_o), //
+        new KeyBlock("p", "p", Keyboard.KBD_KEYS.KBD_p), //
+        new KeyBlock("[", "lbracket", Keyboard.KBD_KEYS.KBD_leftbracket), //
+        new KeyBlock("]", "rbracket", Keyboard.KBD_KEYS.KBD_rightbracket), //
+    };
+    private static final KeyBlock[] combo_3 = { //
+        new KeyBlock("a", "a", Keyboard.KBD_KEYS.KBD_a), //
+        new KeyBlock("s", "s", Keyboard.KBD_KEYS.KBD_s), //
+        new KeyBlock("d", "d", Keyboard.KBD_KEYS.KBD_d), //
+        new KeyBlock("f", "f", Keyboard.KBD_KEYS.KBD_f), //
+        new KeyBlock("g", "g", Keyboard.KBD_KEYS.KBD_g), //
+        new KeyBlock("h", "h", Keyboard.KBD_KEYS.KBD_h), //
+        new KeyBlock("j", "j", Keyboard.KBD_KEYS.KBD_j), //
+        new KeyBlock("k", "k", Keyboard.KBD_KEYS.KBD_k), //
+        new KeyBlock("l", "l", Keyboard.KBD_KEYS.KBD_l), //
+        new KeyBlock(";", "semicolon", Keyboard.KBD_KEYS.KBD_semicolon), //
+        new KeyBlock("'", "quote", Keyboard.KBD_KEYS.KBD_quote), //
+        new KeyBlock("\\", "backslash", Keyboard.KBD_KEYS.KBD_backslash), //
+    };
+    private static final KeyBlock[] combo_4 = { //
+        new KeyBlock("<", "lessthan", Keyboard.KBD_KEYS.KBD_extra_lt_gt), //
+        new KeyBlock("z", "z", Keyboard.KBD_KEYS.KBD_z), //
+        new KeyBlock("x", "x", Keyboard.KBD_KEYS.KBD_x), //
+        new KeyBlock("c", "c", Keyboard.KBD_KEYS.KBD_c), //
+        new KeyBlock("v", "v", Keyboard.KBD_KEYS.KBD_v), //
+        new KeyBlock("b", "b", Keyboard.KBD_KEYS.KBD_b), //
+        new KeyBlock("n", "n", Keyboard.KBD_KEYS.KBD_n), //
+        new KeyBlock("m", "m", Keyboard.KBD_KEYS.KBD_m), //
+        new KeyBlock(",", "comma", Keyboard.KBD_KEYS.KBD_comma), //
+        new KeyBlock(".", "period", Keyboard.KBD_KEYS.KBD_period), //
+        new KeyBlock("/", "slash", Keyboard.KBD_KEYS.KBD_slash), //
+    };
     public static boolean autofire = false;
     public static String mapperfile = "mapper.txt";
     public static Section.SectionFunction MAPPER_StartUp = sec -> {
@@ -511,7 +544,7 @@ public class JavaMapper {
         return true;
     }
 
-    public static void MAPPER_CheckEvent(Object event) {
+    public static void MAPPER_CheckEvent(KeyEvent event) {
         for (CBindGroup it : bindgroups) {
             if (it.CheckEvent(event))
                 return;
@@ -520,7 +553,7 @@ public class JavaMapper {
 
     private static void CreateBindGroups() {
         bindgroups.clear();
-        new CKeyBindGroup(1024);
+        new CKeyBindGroup(65536);
     }
 
     public static void MAPPER_Init() {
@@ -648,7 +681,7 @@ public class JavaMapper {
         public void destroy() {
         }
 
-        void ActivateBindList(CBindList list, Object key, int value, boolean ev_trigger) {
+        void ActivateBindList(CBindList list, KeyEvent key, int value, boolean ev_trigger) {
             int validmod = 0;
             for (CBind it : list) {
                 if ((it.mods & mapper.mods) == it.mods) {
@@ -673,9 +706,9 @@ public class JavaMapper {
 
         public abstract CBind CreateConfigBind(StringRef buf);
 
-        public abstract CBind CreateEventBind(Object event);
+        public abstract CBind CreateEventBind(KeyEvent event);
 
-        public abstract boolean CheckEvent(Object event);
+        public abstract boolean CheckEvent(KeyEvent event);
 
         public abstract String ConfigStart();
 
@@ -730,14 +763,14 @@ public class JavaMapper {
         }
 
         @Override
-        public CBind CreateEventBind(Object event) {
+        public CBind CreateEventBind(KeyEvent event) {
             if (!KeyboardKey.isPressed(event))
                 return null;
             return CreateKeyBind(GetKeyCode(KeyboardKey.getKeyCode(event)));
         }
 
         @Override
-        public boolean CheckEvent(Object event) {
+        public boolean CheckEvent(KeyEvent event) {
             if (!KeyboardKey.isPressed(event) && !KeyboardKey.isReleased(event))
                 return false;
             int key = GetKeyCode(KeyboardKey.getKeyCode(event));
