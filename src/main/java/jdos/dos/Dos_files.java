@@ -1,5 +1,7 @@
 package jdos.dos;
 
+import java.util.Random;
+
 import jdos.cpu.CPU_Regs;
 import jdos.dos.drives.Drive_virtual;
 import jdos.hardware.Memory;
@@ -7,9 +9,11 @@ import jdos.ints.Bios;
 import jdos.misc.Log;
 import jdos.types.LogSeverities;
 import jdos.types.LogTypes;
-import jdos.util.*;
-
-import java.util.Random;
+import jdos.util.IntRef;
+import jdos.util.LongRef;
+import jdos.util.ShortRef;
+import jdos.util.StringHelper;
+import jdos.util.StringRef;
 
 public class Dos_files {
     public static final int DOS_FILES = 127;
@@ -39,36 +43,38 @@ public class Dos_files {
     public static final int STDERR = 2;
     public static final int STDAUX = 3;
     public static final int STDPRN = 4;
-    static private final String FCB_SEP = ":.;,=+";
-    static private final String ILLEGAL = ":.;,=+ \t/\"[]<>|";
-    static private final int PARSE_SEP_STOP = 0x01;
-    static private final int PARSE_DFLT_DRIVE = 0x02;
-    static private final int PARSE_BLNK_FNAME = 0x04;
-    static private final int PARSE_BLNK_FEXT = 0x08;
-    static private final int PARSE_RET_NOWILD = 0;
-    static private final int PARSE_RET_WILD = 1;
-    static private final int PARSE_RET_BADDRIVE = 0xff;
+    private static final String FCB_SEP = ":.;,=+";
+    private static final String ILLEGAL = ":.;,=+ \t/\"[]<>|";
+    private static final int PARSE_SEP_STOP = 0x01;
+    private static final int PARSE_DFLT_DRIVE = 0x02;
+    private static final int PARSE_BLNK_FNAME = 0x04;
+    private static final int PARSE_BLNK_FEXT = 0x08;
+    private static final int PARSE_RET_NOWILD = 0;
+    private static final int PARSE_RET_WILD = 1;
+    private static final int PARSE_RET_BADDRIVE = 0xff;
     public static DOS_File[] Files = new DOS_File[DOS_FILES];
     public static Dos_Drive[] Drives = new Dos_Drive[DOS_DRIVES];
 
-    static public /*Bit8u*/short DOS_GetDefaultDrive() {
+    public static /*Bit8u*/short DOS_GetDefaultDrive() {
         //	return DOS_SDA(DOS_SDA_SEG,DOS_SDA_OFS).GetDrive();
         /*Bit8u*/
         short d = new Dos_SDA(Dos.DOS_SDA_SEG, Dos.DOS_SDA_OFS).GetDrive();
-        if (d != Dos.dos.current_drive) if (Log.level <= LogSeverities.LOG_ERROR)
-            Log.log(LogTypes.LOG_DOSMISC, LogSeverities.LOG_ERROR, "SDA drive " + d + " not the same as dos.current_drive " + Dos.dos.current_drive);
+        if (d != Dos.dos.current_drive)
+            if (Log.level <= LogSeverities.LOG_ERROR)
+                Log.log(LogTypes.LOG_DOSMISC, LogSeverities.LOG_ERROR,
+                    "SDA drive " + d + " not the same as dos.current_drive " + Dos.dos.current_drive);
         return Dos.dos.current_drive;
     }
 
-    static public void DOS_SetDefaultDrive(/*Bit8u*/short drive) {
+    public static void DOS_SetDefaultDrive(/*Bit8u*/short drive) {
         //	if (drive<=DOS_DRIVES && ((drive<2) || Drives[drive])) DOS_SDA(Dos.DOS_SDA_SEG,Dos.DOS_SDA_OFS).SetDrive(drive);
-        if (drive < DOS_DRIVES && ((drive < 2) || Drives[drive] != null)) {
+        if (drive < DOS_DRIVES && (drive < 2 || Drives[drive] != null)) {
             Dos.dos.current_drive = (byte) drive;
             new Dos_SDA(Dos.DOS_SDA_SEG, Dos.DOS_SDA_OFS).SetDrive(drive);
         }
     }
 
-    public static boolean DOS_MakeName(String name, StringRef fullname,/*Bit8u*/ShortRef drive) {
+    public static boolean DOS_MakeName(String name, StringRef fullname, /*Bit8u*/ShortRef drive) {
         if (name == null || name.length() == 0 || name.startsWith(" ")) {
             /* Both \0 and space are seperators and
              * empty filenames report file not found */
@@ -83,7 +89,7 @@ public class Dos_files {
         drive.value = DOS_GetDefaultDrive();
         /* First get the drive */
         if (name.length() > 1 && name_int.charAt(1) == ':') {
-            drive.value = (short) (((int) name_int.charAt(0) | 0x20) - 'a');
+            drive.value = (short) ((name_int.charAt(0) | 0x20) - 'a');
             name_int = name_int.substring(2);
         }
         if (drive.value >= DOS_DRIVES || drive.value < 0 || Drives[drive.value] == null) {
@@ -92,18 +98,14 @@ public class Dos_files {
         }
         r = 0;
         w = 0;
-        while (r < name_int.length() && (r < Dos_system.DOS_PATHLENGTH)) {
+        while (r < name_int.length() && r < Dos_system.DOS_PATHLENGTH) {
             /*Bit8u*/
             byte c = (byte) name_int.charAt(r++);
-            if ((c >= 'a') && (c <= 'z')) {
+            if (c >= 'a' && c <= 'z') {
                 upname[w++] = (byte) (c - 32);
                 continue;
             }
-            if ((c >= 'A') && (c <= 'Z')) {
-                upname[w++] = c;
-                continue;
-            }
-            if ((c >= '0') && (c <= '9')) {
+            if ((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
                 upname[w++] = c;
                 continue;
             }
@@ -144,7 +146,8 @@ public class Dos_files {
                     break;
                 default:
                     if (Log.level <= LogSeverities.LOG_NORMAL)
-                        Log.log(LogTypes.LOG_FILES, LogSeverities.LOG_NORMAL, "Makename encountered an illegal char " + (char) c + " hex:" + Integer.toString(c, 16) + " in " + name + "!");
+                        Log.log(LogTypes.LOG_FILES, LogSeverities.LOG_NORMAL, "Makename encountered an illegal char "
+                            + (char) c + " hex:" + Integer.toString(c, 16) + " in " + name + "!");
                     Dos.DOS_SetError(Dos.DOSERR_PATH_NOT_FOUND);
                     return false;
                 //break;
@@ -156,13 +159,16 @@ public class Dos_files {
         }
         upname[w] = 0;
         /* Now parse the new file name to make the final filename */
-        if (upname[0] != '\\') fullname.value = Drives[drive.value].curdir;
-        else fullname.value = "";
+        if (upname[0] != '\\')
+            fullname.value = Drives[drive.value].curdir;
+        else
+            fullname.value = "";
         /*Bit32u*/
         int lastdir = 0;/*Bit32u*/
         int t = 0;
         while (t < fullname.value.length()) {
-            if ((fullname.value.charAt(t) == '\\') && t + 1 < fullname.value.length()) lastdir = t;
+            if (fullname.value.charAt(t) == '\\' && t + 1 < fullname.value.length())
+                lastdir = t;
             t++;
         }
         r = 0;
@@ -170,8 +176,9 @@ public class Dos_files {
         tempdir[0] = 0;
         boolean stop = false;
         while (!stop) {
-            if (upname[r] == 0) stop = true;
-            if ((upname[r] == '\\') || (upname[r] == 0)) {
+            if (upname[r] == 0)
+                stop = true;
+            if (upname[r] == '\\' || upname[r] == 0) {
                 tempdir[w] = 0;
                 if (tempdir[0] == 0) {
                     w = 0;
@@ -191,12 +198,12 @@ public class Dos_files {
                 /*Bit32s*/
                 /*Bit32s*/
                 int templen = StringHelper.strlen(tempdir);
-                for (iDown = 0; (iDown < templen) && dots; iDown++)
+                for (iDown = 0; iDown < templen && dots; iDown++)
                     if (tempdir[iDown] != '.')
                         dots = false;
 
                 // only dots?
-                if (dots && (templen > 1)) {
+                if (dots && templen > 1) {
                     /*Bit32s*/
                     int cDots = templen - 1;
                     /*Bit32s*/
@@ -212,7 +219,8 @@ public class Dos_files {
                     t = 0;
                     lastdir = 0;
                     while (t < fullname.value.length()) {
-                        if ((fullname.value.charAt(t) == '\\') && t + 1 < fullname.value.length()) lastdir = t;
+                        if (fullname.value.charAt(t) == '\\' && t + 1 < fullname.value.length())
+                            lastdir = t;
                         t++;
                     }
                     tempdir[0] = 0;
@@ -221,10 +229,10 @@ public class Dos_files {
                     continue;
                 }
 
-
                 lastdir = fullname.value.length();
 
-                if (lastdir != 0) fullname.value += "\\";
+                if (lastdir != 0)
+                    fullname.value += "\\";
                 String stempdir = new String(tempdir, 0, StringHelper.strlen(tempdir));
                 int pos = stempdir.indexOf('.');
                 String ext = null;
@@ -244,10 +252,11 @@ public class Dos_files {
                     }
 
                     ext = ext.substring(0, Math.min(4, ext.length()));
-                    if ((StringHelper.strlen(tempdir) - ext.length()) > 8)
+                    if (StringHelper.strlen(tempdir) - ext.length() > 8)
                         System.arraycopy(ext.getBytes(), 0, tempdir, 8, 4);
 
-                } else tempdir[8] = 0;
+                } else
+                    tempdir[8] = 0;
 
                 if (fullname.value.length() + StringHelper.strlen(tempdir) >= Dos_system.DOS_PATHLENGTH) {
                     Dos.DOS_SetError(Dos.DOSERR_PATH_NOT_FOUND);
@@ -266,9 +275,11 @@ public class Dos_files {
     }
 
     public static boolean DOS_GetCurrentDir(/*Bit8u*/short drive, StringRef buffer) {
-        if (drive == 0) drive = DOS_GetDefaultDrive();
-        else drive--;
-        if ((drive >= DOS_DRIVES) || (Drives[drive]) == null) {
+        if (drive == 0)
+            drive = DOS_GetDefaultDrive();
+        else
+            drive--;
+        if (drive >= DOS_DRIVES || Drives[drive] == null) {
             Dos.DOS_SetError(Dos.DOSERR_INVALID_DRIVE);
             return false;
         }
@@ -281,13 +292,15 @@ public class Dos_files {
         ShortRef drive = new ShortRef();
         StringRef fulldir = new StringRef();
         String testdir = dir;
-        if (testdir.length() > 1 && testdir.charAt(1) == ':') testdir = testdir.substring(2);
+        if (testdir.length() > 1 && testdir.charAt(1) == ':')
+            testdir = testdir.substring(2);
         if (testdir.length() == 0) {
             Dos.DOS_SetError(Dos.DOSERR_PATH_NOT_FOUND);
             return false;
         }
-        if (!DOS_MakeName(dir, fulldir, drive)) return false;
-        if (fulldir.value.length() > 0 && (testdir.length() > 1 && testdir.charAt(testdir.length() - 1) == '\\')) {
+        if (!DOS_MakeName(dir, fulldir, drive))
+            return false;
+        if (fulldir.value.length() > 0 && testdir.length() > 1 && testdir.charAt(testdir.length() - 1) == '\\') {
             Dos.DOS_SetError(Dos.DOSERR_PATH_NOT_FOUND);
             return false;
         }
@@ -308,8 +321,10 @@ public class Dos_files {
             Dos.DOS_SetError(Dos.DOSERR_PATH_NOT_FOUND);
             return false;
         }
-        if (!DOS_MakeName(dir, fulldir, drive)) return false;
-        if (Drives[drive.value].MakeDir(fulldir.value)) return true;
+        if (!DOS_MakeName(dir, fulldir, drive))
+            return false;
+        if (Drives[drive.value].MakeDir(fulldir.value))
+            return true;
 
         /* Determine reason for failing */
         if (Drives[drive.value].TestDir(fulldir.value))
@@ -327,7 +342,8 @@ public class Dos_files {
         /*Bit8u*/
         ShortRef drive = new ShortRef();
         StringRef fulldir = new StringRef();
-        if (!DOS_MakeName(dir, fulldir, drive)) return false;
+        if (!DOS_MakeName(dir, fulldir, drive))
+            return false;
         /* Check if exists */
         if (!Drives[drive.value].TestDir(fulldir.value)) {
             Dos.DOS_SetError(Dos.DOSERR_PATH_NOT_FOUND);
@@ -341,7 +357,8 @@ public class Dos_files {
             return false;
         }
 
-        if (Drives[drive.value].RemoveDir(fulldir.value)) return true;
+        if (Drives[drive.value].RemoveDir(fulldir.value))
+            return true;
 
         /* Failed. We know it exists and it's not the current dir */
         /* Assume non empty */
@@ -349,18 +366,18 @@ public class Dos_files {
         return false;
     }
 
-    static public boolean DOS_Rename(String oldname, String newname) {
+    public static boolean DOS_Rename(String oldname, String newname) {
         /*Bit8u*/
         ShortRef driveold = new ShortRef();
         StringRef fullold = new StringRef();
         /*Bit8u*/
         ShortRef drivenew = new ShortRef();
         StringRef fullnew = new StringRef();
-        if (!DOS_MakeName(oldname, fullold, driveold)) return false;
-        if (!DOS_MakeName(newname, fullnew, drivenew)) return false;
+        if (!DOS_MakeName(oldname, fullold, driveold) || !DOS_MakeName(newname, fullnew, drivenew))
+            return false;
         /* No tricks with devices */
-        if ((Dos_devices.DOS_FindDevice(oldname) != Dos_devices.DOS_DEVICES) ||
-                (Dos_devices.DOS_FindDevice(newname) != Dos_devices.DOS_DEVICES)) {
+        if (Dos_devices.DOS_FindDevice(oldname) != Dos_devices.DOS_DEVICES
+            || Dos_devices.DOS_FindDevice(newname) != Dos_devices.DOS_DEVICES) {
             Dos.DOS_SetError(Dos.DOSERR_FILE_NOT_FOUND);
             return false;
         }
@@ -382,37 +399,41 @@ public class Dos_files {
             return false;
         }
 
-        if (Drives[drivenew.value].Rename(fullold.value, fullnew.value)) return true;
+        if (Drives[drivenew.value].Rename(fullold.value, fullnew.value))
+            return true;
         /* If it still fails, which error should we give ? PATH NOT FOUND or EACCESS */
         if (Log.level <= LogSeverities.LOG_NORMAL)
-            Log.log(LogTypes.LOG_FILES, LogSeverities.LOG_NORMAL, "Rename fails for " + oldname + " to " + newname + ", no proper errorcode returned.");
+            Log.log(LogTypes.LOG_FILES, LogSeverities.LOG_NORMAL,
+                "Rename fails for " + oldname + " to " + newname + ", no proper errorcode returned.");
         Dos.DOS_SetError(Dos.DOSERR_FILE_NOT_FOUND);
         return false;
     }
 
-    static public boolean DOS_FindFirst(String search,/*Bit16u*/int attr) {
+    public static boolean DOS_FindFirst(String search, /*Bit16u*/int attr) {
         return DOS_FindFirst(search, attr, false);
     }
 
-    static public boolean DOS_FindFirst(String search,/*Bit16u*/int attr, boolean fcb_findfirst/*=false*/) {
+    public static boolean DOS_FindFirst(String search, /*Bit16u*/int attr, boolean fcb_findfirst/*=false*/) {
         Dos_DTA dta = new Dos_DTA(Dos.dos.dta());
         /*Bit8u*/
         ShortRef drive = new ShortRef();
         StringRef fullsearch = new StringRef();
         String dir;
         String pattern;
-        if (search.length() > 0 && search.endsWith("\\") && !((search.length() > 2) && (search.charAt(search.length() - 2) == ':') && (attr == Dos_system.DOS_ATTR_VOLUME))) {
+        if (search.length() > 0 && search.endsWith("\\") && !(search.length() > 2
+            && search.charAt(search.length() - 2) == ':' && attr == Dos_system.DOS_ATTR_VOLUME)) {
             //Dark Forces installer, but c:\ is allright for volume labels(exclusively set)
             Dos.DOS_SetError(Dos.DOSERR_NO_MORE_FILES);
             return false;
         }
-        if (!DOS_MakeName(search, fullsearch, drive)) return false;
+        if (!DOS_MakeName(search, fullsearch, drive))
+            return false;
         //Check for devices. FindDevice checks for leading subdir as well
-        boolean device = (Dos_devices.DOS_FindDevice(search) != Dos_devices.DOS_DEVICES);
+        boolean device = Dos_devices.DOS_FindDevice(search) != Dos_devices.DOS_DEVICES;
 
         /* Split the search in dir and pattern */
         int pos = fullsearch.value.lastIndexOf('\\');
-        if (pos < 0) {    /*No dir */
+        if (pos < 0) { /*No dir */
             pattern = fullsearch.value;
             dir = "";
         } else {
@@ -424,7 +445,8 @@ public class Dos_files {
 
         if (device) {
             pos = pattern.indexOf('.');
-            if (pos >= 0) pattern = pattern.substring(0, pos);
+            if (pos >= 0)
+                pattern = pattern.substring(0, pos);
             //TODO use current date and time
             dta.SetResult(pattern, 0, 0, 0, (short) Dos_system.DOS_ATTR_DEVICE);
             if (Log.level <= LogSeverities.LOG_WARN)
@@ -435,7 +457,7 @@ public class Dos_files {
         return Drives[drive.value].FindFirst(dir, dta, fcb_findfirst);
     }
 
-    static public boolean DOS_FindNext() {
+    public static boolean DOS_FindNext() {
         Dos_DTA dta = new Dos_DTA(Dos.dos.dta());
         /*Bit8u*/
         short i = dta.GetSearchDrive();
@@ -448,70 +470,40 @@ public class Dos_files {
         return Drives[i].FindNext(dta);
     }
 
-    public static boolean DOS_ReadFile(/*Bit16u*/int entry,/*Bit8u*/byte[] data,/*Bit16u*/IntRef amount) {
+    public static boolean DOS_ReadFile(/*Bit16u*/int entry, /*Bit8u*/byte[] data, /*Bit16u*/IntRef amount) {
         /*Bit32u*/
         int handle = Dos.RealHandle(entry);
-        if (handle >= DOS_FILES) {
+        if ((handle >= DOS_FILES) || Files[handle] == null || !Files[handle].IsOpen()) {
             Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
             return false;
         }
-        if (Files[handle] == null || !Files[handle].IsOpen()) {
-            Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
-            return false;
-        }
-    /*
-        if ((Files[handle].flags & 0x0f) == OPEN_WRITE)) {
-            Dos.DOS_SetError(DOSERR_INVALID_HANDLE);
-            return false;
-        }
-    */
-        boolean ret = Files[handle].Read(data, amount);
-        return ret;
+        return Files[handle].Read(data, amount);
     }
 
-    public static boolean DOS_WriteFile(/*Bit16u*/int entry,/*Bit8u*/byte[] data,/*Bit16u*/IntRef amount) {
+    public static boolean DOS_WriteFile(/*Bit16u*/int entry, /*Bit8u*/byte[] data, /*Bit16u*/IntRef amount) {
         /*Bit32u*/
         int handle = Dos.RealHandle(entry);
-        if (handle >= DOS_FILES) {
+        if ((handle >= DOS_FILES) || Files[handle] == null || !Files[handle].IsOpen()) {
             Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
             return false;
         }
-        if (Files[handle] == null || !Files[handle].IsOpen()) {
-            Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
-            return false;
-        }
-    /*
-        if ((Files[handle].flags & 0x0f) == OPEN_READ)) {
-            Dos.DOS_SetError(DOSERR_INVALID_HANDLE);
-            return false;
-        }
-    */
-        boolean ret = Files[handle].Write(data, amount);
-        return ret;
+        return Files[handle].Write(data, amount);
     }
 
-    static public boolean DOS_SeekFile(/*Bit16u*/int entry,/*Bit32u*/LongRef pos,/*Bit32u*/int type) {
+    public static boolean DOS_SeekFile(/*Bit16u*/int entry, /*Bit32u*/LongRef pos, /*Bit32u*/int type) {
         /*Bit32u*/
         int handle = Dos.RealHandle(entry);
-        if (handle >= DOS_FILES) {
-            Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
-            return false;
-        }
-        if (Files[handle] == null || !Files[handle].IsOpen()) {
+        if ((handle >= DOS_FILES) || Files[handle] == null || !Files[handle].IsOpen()) {
             Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
             return false;
         }
         return Files[handle].Seek(pos, type);
     }
 
-    static public boolean DOS_CloseFile(/*Bit16u*/int entry) {
+    public static boolean DOS_CloseFile(/*Bit16u*/int entry) {
         /*Bit32u*/
         int handle = Dos.RealHandle(entry);
-        if (handle >= DOS_FILES) {
-            Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
-            return false;
-        }
-        if (Files[handle] == null || !Files[handle].IsOpen()) {
+        if ((handle >= DOS_FILES) || Files[handle] == null || !Files[handle].IsOpen()) {
             Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
             return false;
         }
@@ -526,14 +518,10 @@ public class Dos_files {
         return true;
     }
 
-    static public boolean DOS_FlushFile(/*Bit16u*/int entry) {
+    public static boolean DOS_FlushFile(/*Bit16u*/int entry) {
         /*Bit32u*/
         int handle = Dos.RealHandle(entry);
-        if (handle >= DOS_FILES) {
-            Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
-            return false;
-        }
-        if (Files[handle] == null || !Files[handle].IsOpen()) {
+        if ((handle >= DOS_FILES) || Files[handle] == null || !Files[handle].IsOpen()) {
             Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
             return false;
         }
@@ -541,29 +529,32 @@ public class Dos_files {
         return true;
     }
 
-    static private boolean PathExists(String name) {
-        if (name.lastIndexOf('\\') < 0) return true;
-        if (name.lastIndexOf('\\') == 0) return true;
+    private static boolean PathExists(String name) {
+        if ((name.lastIndexOf('\\') < 0) || (name.lastIndexOf('\\') == 0))
+            return true;
         name = name.substring(0, name.lastIndexOf('\\'));
         /*Bit8u*/
         ShortRef drive = new ShortRef();
         StringRef fulldir = new StringRef();
-        if (!DOS_MakeName(name, fulldir, drive)) return false;
+        if (!DOS_MakeName(name, fulldir, drive))
+            return false;
         return Drives[drive.value].TestDir(fulldir.value);
     }
 
-    static public boolean DOS_CreateFile(String name,/*Bit16u*/int attributes,/*Bit16u*/IntRef entry) {
+    public static boolean DOS_CreateFile(String name, /*Bit16u*/int attributes, /*Bit16u*/IntRef entry) {
         // Creation of a device is the same as opening it
         // Tc201 installer
         if (Dos_devices.DOS_FindDevice(name) != Dos_devices.DOS_DEVICES)
             return DOS_OpenFile(name, OPEN_READ, entry);
 
         if (Log.level <= LogSeverities.LOG_NORMAL)
-            Log.log(LogTypes.LOG_FILES, LogSeverities.LOG_NORMAL, "file create attributes " + Integer.toString(attributes, 16) + " file " + name);
+            Log.log(LogTypes.LOG_FILES, LogSeverities.LOG_NORMAL,
+                "file create attributes " + Integer.toString(attributes, 16) + " file " + name);
         StringRef fullname = new StringRef();/*Bit8u*/
         ShortRef drive = new ShortRef();
         Dos_PSP psp = new Dos_PSP(Dos.dos.psp());
-        if (!DOS_MakeName(name, fullname, drive)) return false;
+        if (!DOS_MakeName(name, fullname, drive))
+            return false;
         /* Check for a free file handle */
         /*Bit8u*/
         short handle = DOS_FILES;/*Bit8u*/
@@ -597,25 +588,30 @@ public class Dos_files {
             psp.SetFileHandle(entry.value, handle);
             return true;
         } else {
-            if (!PathExists(name)) Dos.DOS_SetError(Dos.DOSERR_PATH_NOT_FOUND);
-            else Dos.DOS_SetError(Dos.DOSERR_FILE_NOT_FOUND);
+            if (!PathExists(name))
+                Dos.DOS_SetError(Dos.DOSERR_PATH_NOT_FOUND);
+            else
+                Dos.DOS_SetError(Dos.DOSERR_FILE_NOT_FOUND);
             return false;
         }
     }
 
-    public static boolean DOS_OpenFile(String name,/*Bit8u*/int flags,/*Bit16u*/IntRef entry) {
+    public static boolean DOS_OpenFile(String name, /*Bit8u*/int flags, /*Bit16u*/IntRef entry) {
         /* First check for devices */
-        if (flags > 2) if (Log.level <= LogSeverities.LOG_ERROR)
-            Log.log(LogTypes.LOG_FILES, LogSeverities.LOG_ERROR, "Special file open command " + Integer.toString(flags, 16) + " file " + name);
-        else if (Log.level <= LogSeverities.LOG_NORMAL)
-            Log.log(LogTypes.LOG_FILES, LogSeverities.LOG_NORMAL, "file open command " + Integer.toString(flags, 16) + " file " + name);
+        if (flags > 2)
+            if (Log.level <= LogSeverities.LOG_ERROR)
+                Log.log(LogTypes.LOG_FILES, LogSeverities.LOG_ERROR,
+                    "Special file open command " + Integer.toString(flags, 16) + " file " + name);
+            else if (Log.level <= LogSeverities.LOG_NORMAL)
+                Log.log(LogTypes.LOG_FILES, LogSeverities.LOG_NORMAL,
+                    "file open command " + Integer.toString(flags, 16) + " file " + name);
 
         Dos_PSP psp = new Dos_PSP(Dos.dos.psp());
         /*Bit16u*/
         IntRef attr = new IntRef(0);
         /*Bit8u*/
         short devnum = Dos_devices.DOS_FindDevice(name);
-        boolean device = (devnum != Dos_devices.DOS_DEVICES);
+        boolean device = devnum != Dos_devices.DOS_DEVICES;
         if (!device && DOS_GetFileAttr(name, attr)) {
             //DON'T ALLOW directories to be openened.(skip test if file is device).
             if ((attr.value & Dos_system.DOS_ATTR_DIRECTORY) != 0 || (attr.value & Dos_system.DOS_ATTR_VOLUME) != 0) {
@@ -628,7 +624,8 @@ public class Dos_files {
         ShortRef drive = new ShortRef();/*Bit8u*/
         short i;
         /* First check if the name is correct */
-        if (!DOS_MakeName(name, fullname, drive)) return false;
+        if (!DOS_MakeName(name, fullname, drive))
+            return false;
         /*Bit8u*/
         short handle = 255;
         /* Check for a free file handle */
@@ -655,7 +652,8 @@ public class Dos_files {
         } else {
             Files[handle] = Drives[drive.value].FileOpen(fullname.value, flags);
             exists = Files[handle] != null;
-            if (exists) Files[handle].SetDrive(drive.value);
+            if (exists)
+                Files[handle].SetDrive(drive.value);
         }
         if (exists || device) {
             Files[handle].AddRef();
@@ -663,17 +661,20 @@ public class Dos_files {
             return true;
         } else {
             //Test if file exists, but opened in read-write mode (and writeprotected)
-            if (((flags & 3) != OPEN_READ) && Drives[drive.value].FileExists(fullname.value))
+            if ((flags & 3) != OPEN_READ && Drives[drive.value].FileExists(fullname.value))
                 Dos.DOS_SetError(Dos.DOSERR_ACCESS_DENIED);
             else {
-                if (!PathExists(name)) Dos.DOS_SetError(Dos.DOSERR_PATH_NOT_FOUND);
-                else Dos.DOS_SetError(Dos.DOSERR_FILE_NOT_FOUND);
+                if (!PathExists(name))
+                    Dos.DOS_SetError(Dos.DOSERR_PATH_NOT_FOUND);
+                else
+                    Dos.DOS_SetError(Dos.DOSERR_FILE_NOT_FOUND);
             }
             return false;
         }
     }
 
-    static public boolean DOS_OpenFileExtended(String name, /*Bit16u*/int flags, /*Bit16u*/int createAttr, /*Bit16u*/int action, /*Bit16u*/IntRef entry, /*Bit16u*/IntRef status) {
+    public static boolean DOS_OpenFileExtended(String name, /*Bit16u*/int flags, /*Bit16u*/int createAttr,
+        /*Bit16u*/int action, /*Bit16u*/IntRef entry, /*Bit16u*/IntRef status) {
         // FIXME: Not yet supported : Bit 13 of flags (int 0x24 on critical error)
         /*Bit16u*/
         int result = 0;
@@ -682,7 +683,7 @@ public class Dos_files {
             Dos.DOS_SetError(Dos.DOSERR_FUNCTION_NUMBER_INVALID);
             return false;
         } else {
-            if (((action & 0x0f) > 2) || ((action & 0xf0) > 0x10)) {
+            if ((action & 0x0f) > 2 || (action & 0xf0) > 0x10) {
                 // invalid action parameter
                 Dos.DOS_SetError(Dos.DOSERR_FUNCTION_NUMBER_INVALID);
                 return false;
@@ -691,15 +692,16 @@ public class Dos_files {
         if (DOS_OpenFile(name, (/*Bit8u*/short) (flags & 0xff), entry)) {
             // File already exists
             switch (action & 0x0f) {
-                case 0x00:        // failed
+                case 0x00: // failed
                     Dos.DOS_SetError(Dos.DOSERR_FILE_ALREADY_EXISTS);
                     return false;
-                case 0x01:        // file open (already done)
+                case 0x01: // file open (already done)
                     result = 1;
                     break;
-                case 0x02:        // replace
+                case 0x02: // replace
                     DOS_CloseFile(entry.value);
-                    if (!DOS_CreateFile(name, createAttr, entry)) return false;
+                    if (!DOS_CreateFile(name, createAttr, entry))
+                        return false;
                     result = 3;
                     break;
                 default:
@@ -709,12 +711,8 @@ public class Dos_files {
             }
         } else {
             // File doesn't exist
-            if ((action & 0xf0) == 0) {
-                // uses error code from failed open
-                return false;
-            }
             // Create File
-            if (!DOS_CreateFile(name, createAttr, entry)) {
+            if (((action & 0xf0) == 0) || !DOS_CreateFile(name, createAttr, entry)) {
                 // uses error code from failed create
                 return false;
             }
@@ -725,10 +723,11 @@ public class Dos_files {
         return true;
     }
 
-    static public boolean DOS_UnlinkFile(String name) {
+    public static boolean DOS_UnlinkFile(String name) {
         StringRef fullname = new StringRef();/*Bit8u*/
         ShortRef drive = new ShortRef();
-        if (!DOS_MakeName(name, fullname, drive)) return false;
+        if (!DOS_MakeName(name, fullname, drive))
+            return false;
         if (Drives[drive.value].FileUnlink(fullname.value)) {
             return true;
         } else {
@@ -737,10 +736,11 @@ public class Dos_files {
         }
     }
 
-    public static boolean DOS_GetFileAttr(String name,/*Bit16u*/IntRef attr) {
+    public static boolean DOS_GetFileAttr(String name, /*Bit16u*/IntRef attr) {
         StringRef fullname = new StringRef();/*Bit8u*/
         ShortRef drive = new ShortRef();
-        if (!DOS_MakeName(name, fullname, drive)) return false;
+        if (!DOS_MakeName(name, fullname, drive))
+            return false;
         if (Drives[drive.value].GetFileAttr(fullname.value, attr)) {
             return true;
         } else {
@@ -749,7 +749,7 @@ public class Dos_files {
         }
     }
 
-    public static boolean DOS_SetFileAttr(String name,/*Bit16u*/int attr)
+    public static boolean DOS_SetFileAttr(String name, /*Bit16u*/int attr)
     // this function does not change the file attributs
     // it just does some tests if file is available
     // returns false when using on cdrom (stonekeep)
@@ -758,19 +758,22 @@ public class Dos_files {
         IntRef attrTemp = new IntRef(0);
         StringRef fullname = new StringRef();/*Bit8u*/
         ShortRef drive = new ShortRef();
-        if (!DOS_MakeName(name, fullname, drive)) return false;
-        if (Drives[drive.value].GetInfo().startsWith("CDRom ") || Drives[drive.value].GetInfo().startsWith("isoDrive ")) {
+        if (!DOS_MakeName(name, fullname, drive))
+            return false;
+        if (Drives[drive.value].GetInfo().startsWith("CDRom ")
+            || Drives[drive.value].GetInfo().startsWith("isoDrive ")) {
             Dos.DOS_SetError(Dos.DOSERR_ACCESS_DENIED);
             return false;
         }
         return Drives[drive.value].GetFileAttr(fullname.value, attrTemp);
     }
 
-    static public boolean DOS_Canonicalize(String name, StringRef big) {
+    public static boolean DOS_Canonicalize(String name, StringRef big) {
         //TODO Add Better support for devices and shit but will it be needed i doubt it :)
         StringRef fullname = new StringRef();/*Bit8u*/
         ShortRef drive = new ShortRef();
-        if (!DOS_MakeName(name, fullname, drive)) return false;
+        if (!DOS_MakeName(name, fullname, drive))
+            return false;
         big.value = String.valueOf((char) (drive.value + 'A'));
         big.value += ':';
         big.value += '\\';
@@ -778,30 +781,29 @@ public class Dos_files {
         return true;
     }
 
-    static public boolean DOS_GetFreeDiskSpace(/*Bit8u*/short drive,/*Bit16u*/IntRef bytes,/*Bit8u*/ShortRef sectors,/*Bit16u*/IntRef clusters,/*Bit16u*/IntRef free) {
-        if (drive == 0) drive = DOS_GetDefaultDrive();
-        else drive--;
-        if ((drive >= DOS_DRIVES) || Drives[drive] == null) {
+    public static boolean DOS_GetFreeDiskSpace(/*Bit8u*/short drive, /*Bit16u*/IntRef bytes, /*Bit8u*/ShortRef sectors,
+        /*Bit16u*/IntRef clusters, /*Bit16u*/IntRef free) {
+        if (drive == 0)
+            drive = DOS_GetDefaultDrive();
+        else
+            drive--;
+        if (drive >= DOS_DRIVES || Drives[drive] == null) {
             Dos.DOS_SetError(Dos.DOSERR_INVALID_DRIVE);
             return false;
         }
         return Drives[drive].AllocationInfo(bytes, sectors, clusters, free);
     }
 
-    static public boolean DOS_DuplicateEntry(/*Bit16u*/int entry,/*Bit16u*/IntRef newentry) {
+    public static boolean DOS_DuplicateEntry(/*Bit16u*/int entry, /*Bit16u*/IntRef newentry) {
         // Dont duplicate console handles
-    /*	if (entry<=STDPRN) {
+        /*	if (entry<=STDPRN) {
             *newentry = entry;
             return true;
         };
-    */
+        */
         /*Bit8u*/
         int handle = Dos.RealHandle(entry);
-        if (handle >= DOS_FILES) {
-            Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
-            return false;
-        }
-        if (Files[handle] == null || !Files[handle].IsOpen()) {
+        if ((handle >= DOS_FILES) || Files[handle] == null || !Files[handle].IsOpen()) {
             Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
             return false;
         }
@@ -816,18 +818,14 @@ public class Dos_files {
         return true;
     }
 
-    static public boolean DOS_ForceDuplicateEntry(/*Bit16u*/int entry,/*Bit16u*/int newentry) {
+    public static boolean DOS_ForceDuplicateEntry(/*Bit16u*/int entry, /*Bit16u*/int newentry) {
         if (entry == newentry) {
             Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
             return false;
         }
         /*Bit8u*/
         int orig = Dos.RealHandle(entry);
-        if (orig >= DOS_FILES) {
-            Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
-            return false;
-        }
-        if (Files[orig] == null || !Files[orig].IsOpen()) {
+        if ((orig >= DOS_FILES) || Files[orig] == null || !Files[orig].IsOpen()) {
             Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
             return false;
         }
@@ -842,7 +840,7 @@ public class Dos_files {
         return true;
     }
 
-    static public boolean DOS_CreateTempFile(StringRef name,/*Bit16u*/IntRef entry) {
+    public static boolean DOS_CreateTempFile(StringRef name, /*Bit16u*/IntRef entry) {
         if (name.value.length() == 0) {
             // temp file created in root directory
             name.value = "\\";
@@ -853,25 +851,27 @@ public class Dos_files {
         Dos.dos.errorcode = 0;
         /* add random crap to the end of the name and try to open */
         Random r = new Random();
-        StringBuffer tempname;
+        StringBuilder tempname;
 
         do {
             /*Bit32u*/
             int i;
-            tempname = new StringBuffer();
+            tempname = new StringBuilder();
             for (i = 0; i < 8; i++) {
                 tempname.append((char) (Math.abs(r.nextInt() % 26) + 'A'));
             }
-        } while ((!DOS_CreateFile(name.value + tempname.toString(), 0, entry)) && (Dos.dos.errorcode == Dos.DOSERR_FILE_ALREADY_EXISTS));
+        } while (!DOS_CreateFile(name.value + tempname.toString(), 0, entry)
+            && Dos.dos.errorcode == Dos.DOSERR_FILE_ALREADY_EXISTS);
         name.value += tempname;
         return Dos.dos.errorcode == 0;
     }
 
-    static private boolean isvalid(char in) {
-        return (in > 0x1F) && ILLEGAL.indexOf(in) < 0;
+    private static boolean isvalid(char in) {
+        return in > 0x1F && ILLEGAL.indexOf(in) < 0;
     }
 
-    public static /*Bit8u*/short FCB_Parsename(/*Bit16u*/int seg,/*Bit16u*/int offset,/*Bit8u*/short parser, String string, /*Bit8u*/ShortRef change) {
+    public static /*Bit8u*/short FCB_Parsename(/*Bit16u*/int seg, /*Bit16u*/int offset, /*Bit8u*/short parser,
+        String string, /*Bit8u*/ShortRef change) {
         int begin_len = string.length();
         /*Bit8u*/
         short ret = 0;
@@ -879,7 +879,7 @@ public class Dos_files {
             // default drive forced, this intentionally invalidates an extended FCB
             Memory.mem_writeb(Memory.PhysMake(seg, offset), 0);
         }
-        Dos_FCB fcb = new Dos_FCB(seg, offset, false);    // always a non-extended FCB
+        Dos_FCB fcb = new Dos_FCB(seg, offset, false); // always a non-extended FCB
         boolean hasdrive, hasname, hasext, finished;
         hasdrive = hasname = hasext = finished = false;
         /*Bitu*/
@@ -898,11 +898,12 @@ public class Dos_files {
         b = fcb_name.value.substring(fcb_name.value.lastIndexOf('.') + 1).getBytes();
         System.arraycopy(b, 0, ext, 0, Math.min(b.length, ext.length));
         /* Strip of the leading sepetaror */
-        if ((parser & PARSE_SEP_STOP) != 0 && string.length() > 0) {       //ignore leading seperator
-            if (FCB_SEP.indexOf(string.charAt(0)) >= 0) string = string.substring(1);
+        if ((parser & PARSE_SEP_STOP) != 0 && string.length() > 0) { //ignore leading seperator
+            if (FCB_SEP.indexOf(string.charAt(0)) >= 0)
+                string = string.substring(1);
         }
         /* strip leading spaces */
-        while (string.length() > 0 && ((string.charAt(0) == ' ') || (string.charAt(0) == '\t')))
+        while (string.length() > 0 && (string.charAt(0) == ' ' || string.charAt(0) == '\t'))
             string = string.substring(1);
         /* Check for a drive */
         if (string.length() > 1 && string.charAt(1) == ':') {
@@ -911,7 +912,8 @@ public class Dos_files {
             char d = string.substring(0, 1).toUpperCase().charAt(0);
             if (d >= 'A' && d <= 'Z' && Drives[d - 'A'] != null) {
                 drive = (char) (d - 'A' + 1);
-            } else ret = 0xff;
+            } else
+                ret = 0xff;
             string = string.substring(2);
         }
         // :TODO: I added this, otherwise the filename could contain the middle of a long full path
@@ -945,11 +947,13 @@ public class Dos_files {
                     if (string.charAt(0) == '*') {
                         fill = '?';
                         name[index] = '?';
-                        if (ret == 0) ret = 1;
+                        if (ret == 0)
+                            ret = 1;
                         finished = true;
                     } else if (string.charAt(0) == '?') {
                         name[index] = '?';
-                        if (ret == 0) ret = 1;
+                        if (ret == 0)
+                            ret = 1;
                     } else if (isvalid(string.charAt(0))) {
                         name[index] = (byte) string.toUpperCase().charAt(0);
                     } else {
@@ -963,8 +967,10 @@ public class Dos_files {
                 index++;
             }
             if (string.length() > 0) {
-                if (string.charAt(0) != '.') skipext = true;
-                else string = string.substring(1);
+                if (string.charAt(0) != '.')
+                    skipext = true;
+                else
+                    string = string.substring(1);
             }
         }
         if (!skipext) {
@@ -981,7 +987,8 @@ public class Dos_files {
                         finished = true;
                     } else if (string.charAt(0) == '?') {
                         ext[index] = '?';
-                        if (ret == 0) ret = 1;
+                        if (ret == 0)
+                            ret = 1;
                     } else if (isvalid(string.charAt(0))) {
                         ext[index] = (byte) string.toUpperCase().charAt(0);
                     } else {
@@ -995,26 +1002,32 @@ public class Dos_files {
                 index++;
             }
         }
-        if (!hasdrive & (parser & PARSE_DFLT_DRIVE) == 0) drive = 0;
-        if (!hasname & (parser & PARSE_BLNK_FNAME) == 0) name = "        ".getBytes();
-        if (!hasext & (parser & PARSE_BLNK_FEXT) == 0) ext = "   ".getBytes();
+        if (!hasdrive && (parser & PARSE_DFLT_DRIVE) == 0)
+            drive = 0;
+        if (!hasname && (parser & PARSE_BLNK_FNAME) == 0)
+            name = "        ".getBytes();
+        if (!hasext && (parser & PARSE_BLNK_FEXT) == 0)
+            ext = "   ".getBytes();
         fcb.SetName((short) drive, new String(name), new String(ext));
         change.value = (short) (begin_len - string.length());
         return ret;
     }
 
-    static private void DTAExtendName(String name, StringRef filename, StringRef ext) {
+    private static void DTAExtendName(String name, StringRef filename, StringRef ext) {
         int pos = name.indexOf('.');
         if (pos > 0) {
             ext.value = name.substring(pos + 1);
             name = name.substring(0, pos);
-        } else ext.value = "";
+        } else
+            ext.value = "";
         filename.value = name;
-        while (filename.value.length() < 8) filename.value += " ";
-        while (ext.value.length() < 3) ext.value += " ";
+        while (filename.value.length() < 8)
+            filename.value += " ";
+        while (ext.value.length() < 3)
+            ext.value += " ";
     }
 
-    static private void SaveFindResult(Dos_FCB find_fcb) {
+    private static void SaveFindResult(Dos_FCB find_fcb) {
         Dos_DTA find_dta = new Dos_DTA(Dos.dos.tables.tempdta);
         StringRef name = new StringRef();/*Bit32u*/
         LongRef size = new LongRef(0);/*Bit16u*/
@@ -1034,25 +1047,27 @@ public class Dos_files {
         Dos_FCB fcb = new Dos_FCB(Memory.RealSeg(Dos.dos.dta()), Memory.RealOff(Dos.dos.dta()));//TODO
         fcb.Create(find_fcb.Extended());
         fcb.SetName(drive, file_name.value, ext.value);
-        fcb.SetAttr(find_attr.value);      /* Only adds attribute if fcb is extended */
+        fcb.SetAttr(find_attr.value); /* Only adds attribute if fcb is extended */
         fcb.SetResultAttr(attr.value);
         fcb.SetSizeDateTime(size.value, date.value, time.value);
     }
 
-    public static boolean DOS_FCBCreate(/*Bit16u*/int seg,/*Bit16u*/int offset) {
+    public static boolean DOS_FCBCreate(/*Bit16u*/int seg, /*Bit16u*/int offset) {
         Dos_FCB fcb = new Dos_FCB(seg, offset);
         StringRef shortname = new StringRef();/*Bit16u*/
         IntRef handle = new IntRef(0);
         fcb.GetName(shortname);
         ShortRef attr = new ShortRef(Dos_system.DOS_ATTR_ARCHIVE);
         fcb.GetAttr(attr);
-        if (attr.value == 0) attr.value = Dos_system.DOS_ATTR_ARCHIVE; //Better safe than sorry
-        if (!DOS_CreateFile(shortname.value, attr.value, handle)) return false;
+        if (attr.value == 0)
+            attr.value = Dos_system.DOS_ATTR_ARCHIVE; //Better safe than sorry
+        if (!DOS_CreateFile(shortname.value, attr.value, handle))
+            return false;
         fcb.FileOpen((/*Bit8u*/short) handle.value);
         return true;
     }
 
-    public static boolean DOS_FCBOpen(/*Bit16u*/int seg,/*Bit16u*/int offset) {
+    public static boolean DOS_FCBOpen(/*Bit16u*/int seg, /*Bit16u*/int offset) {
         Dos_FCB fcb = new Dos_FCB(seg, offset);
         StringRef shortname = new StringRef();/*Bit16u*/
         IntRef handle = new IntRef(0);
@@ -1062,7 +1077,8 @@ public class Dos_files {
         /*Bit8u*/
         ShortRef drive = new ShortRef();
         StringRef fullname = new StringRef();
-        if (!DOS_MakeName(shortname.value, fullname, drive)) return false;
+        if (!DOS_MakeName(shortname.value, fullname, drive))
+            return false;
 
         /* Check, if file is already opened */
         for (/*Bit8u*/short i = 0; i < DOS_FILES; i++) {
@@ -1072,7 +1088,8 @@ public class Dos_files {
                 if (handle.value == 0xFF) {
                     // This shouldnt happen
                     if (Log.level <= LogSeverities.LOG_ERROR)
-                        Log.log(LogTypes.LOG_FILES, LogSeverities.LOG_ERROR, "DOS: File " + shortname + " is opened but has no psp entry.");
+                        Log.log(LogTypes.LOG_FILES, LogSeverities.LOG_ERROR,
+                            "DOS: File " + shortname + " is opened but has no psp entry.");
                     return false;
                 }
                 fcb.FileOpen((/*Bit8u*/short) handle.value);
@@ -1080,14 +1097,16 @@ public class Dos_files {
             }
         }
 
-        if (!DOS_OpenFile(shortname.value, OPEN_READWRITE, handle)) return false;
+        if (!DOS_OpenFile(shortname.value, OPEN_READWRITE, handle))
+            return false;
         fcb.FileOpen((/*Bit8u*/short) handle.value);
         return true;
     }
 
-    public static boolean DOS_FCBClose(/*Bit16u*/int seg,/*Bit16u*/int offset) {
+    public static boolean DOS_FCBClose(/*Bit16u*/int seg, /*Bit16u*/int offset) {
         Dos_FCB fcb = new Dos_FCB(seg, offset);
-        if (!fcb.Valid()) return false;
+        if (!fcb.Valid())
+            return false;
         /*Bit8u*/
         ShortRef fhandle = new ShortRef();
         fcb.FileClose(fhandle);
@@ -1095,7 +1114,7 @@ public class Dos_files {
         return true;
     }
 
-    public static boolean DOS_FCBFindFirst(/*Bit16u*/int seg,/*Bit16u*/int offset) {
+    public static boolean DOS_FCBFindFirst(/*Bit16u*/int seg, /*Bit16u*/int offset) {
         Dos_FCB fcb = new Dos_FCB(seg, offset);
         /*RealPt*/
         int old_dta = Dos.dos.dta();
@@ -1107,92 +1126,104 @@ public class Dos_files {
         fcb.GetAttr(attr); /* Gets search attributes if extended */
         boolean ret = DOS_FindFirst(name.value, attr.value, true);
         Dos.dos.dta(old_dta);
-        if (ret) SaveFindResult(fcb);
+        if (ret)
+            SaveFindResult(fcb);
         return ret;
     }
 
-    public static boolean DOS_FCBFindNext(/*Bit16u*/int seg,/*Bit16u*/int offset) {
+    public static boolean DOS_FCBFindNext(/*Bit16u*/int seg, /*Bit16u*/int offset) {
         Dos_FCB fcb = new Dos_FCB(seg, offset);
         /*RealPt*/
         int old_dta = Dos.dos.dta();
         Dos.dos.dta(Dos.dos.tables.tempdta);
         boolean ret = DOS_FindNext();
         Dos.dos.dta(old_dta);
-        if (ret) SaveFindResult(fcb);
+        if (ret)
+            SaveFindResult(fcb);
         return ret;
     }
 
-    public static /*Bit8u*/short DOS_FCBRead(/*Bit16u*/int seg,/*Bit16u*/int offset,/*Bit16u*/int recno) {
+    public static /*Bit8u*/short DOS_FCBRead(/*Bit16u*/int seg, /*Bit16u*/int offset, /*Bit16u*/int recno) {
         Dos_FCB fcb = new Dos_FCB(seg, offset);
         /*Bit8u*/
         ShortRef fhandle = new ShortRef(), cur_rec = new ShortRef();/*Bit16u*/
         IntRef cur_block = new IntRef(0), rec_size = new IntRef(0);
         fcb.GetSeqData(fhandle, rec_size);
         if (fhandle.value == 0xff && rec_size.value != 0) {
-            if (!DOS_FCBOpen(seg, offset)) return FCB_READ_NODATA;
+            if (!DOS_FCBOpen(seg, offset))
+                return FCB_READ_NODATA;
             if (Log.level <= LogSeverities.LOG_WARN)
                 Log.log(LogTypes.LOG_FCB, LogSeverities.LOG_WARN, "Reopened closed FCB");
             fcb.GetSeqData(fhandle, rec_size);
         }
         fcb.GetRecord(cur_block, cur_rec);
         /*Bit32u*/
-        LongRef pos = new LongRef(((cur_block.value * 128) + cur_rec.value) * rec_size.value);
-        if (!DOS_SeekFile(fhandle.value, pos, DOS_SEEK_SET)) return FCB_READ_NODATA;
+        LongRef pos = new LongRef((cur_block.value * 128 + cur_rec.value) * rec_size.value);
+        if (!DOS_SeekFile(fhandle.value, pos, DOS_SEEK_SET))
+            return FCB_READ_NODATA;
         /*Bit16u*/
         IntRef toread = new IntRef(rec_size.value);
-        if (!DOS_ReadFile(fhandle.value, Dos.dos_copybuf, toread)) return FCB_READ_NODATA;
-        if (toread.value == 0) return FCB_READ_NODATA;
+        if (!DOS_ReadFile(fhandle.value, Dos.dos_copybuf, toread) || (toread.value == 0))
+            return FCB_READ_NODATA;
         if (toread.value < rec_size.value) { //Zero pad copybuffer to rec_size
             /*Bitu*/
             int i = toread.value;
-            while (i < rec_size.value) Dos.dos_copybuf[i++] = 0;
+            while (i < rec_size.value)
+                Dos.dos_copybuf[i++] = 0;
         }
-        Memory.MEM_BlockWrite(Memory.Real2Phys(Dos.dos.dta()) + recno * rec_size.value, Dos.dos_copybuf, rec_size.value);
+        Memory.MEM_BlockWrite(Memory.Real2Phys(Dos.dos.dta()) + recno * rec_size.value, Dos.dos_copybuf,
+            rec_size.value);
         if (++cur_rec.value > 127) {
             cur_block.value++;
             cur_rec.value = 0;
         }
         fcb.SetRecord(cur_block.value, cur_rec.value);
-        if (toread.value == rec_size.value) return FCB_SUCCESS;
-        if (toread.value == 0) return FCB_READ_NODATA;
+        if (toread.value == rec_size.value)
+            return FCB_SUCCESS;
+        if (toread.value == 0)
+            return FCB_READ_NODATA;
         return FCB_READ_PARTIAL;
     }
 
-    public static /*Bit8u*/short DOS_FCBWrite(/*Bit16u*/int seg,/*Bit16u*/int offset,/*Bit16u*/int recno) {
+    public static /*Bit8u*/short DOS_FCBWrite(/*Bit16u*/int seg, /*Bit16u*/int offset, /*Bit16u*/int recno) {
         Dos_FCB fcb = new Dos_FCB(seg, offset);
         /*Bit8u*/
         ShortRef fhandle = new ShortRef(), cur_rec = new ShortRef();/*Bit16u*/
         IntRef cur_block = new IntRef(0), rec_size = new IntRef(0);
         fcb.GetSeqData(fhandle, rec_size);
         if (fhandle.value == 0xff && rec_size.value != 0) {
-            if (!DOS_FCBOpen(seg, offset)) return FCB_READ_NODATA;
+            if (!DOS_FCBOpen(seg, offset))
+                return FCB_READ_NODATA;
             if (Log.level <= LogSeverities.LOG_WARN)
                 Log.log(LogTypes.LOG_FCB, LogSeverities.LOG_WARN, "Reopened closed FCB");
             fcb.GetSeqData(fhandle, rec_size);
         }
         fcb.GetRecord(cur_block, cur_rec);
         /*Bit32u*/
-        LongRef pos = new LongRef(((cur_block.value * 128) + cur_rec.value) * rec_size.value);
-        if (!DOS_SeekFile(fhandle.value, pos, DOS_SEEK_SET)) return FCB_ERR_WRITE;
+        LongRef pos = new LongRef((cur_block.value * 128 + cur_rec.value) * rec_size.value);
+        if (!DOS_SeekFile(fhandle.value, pos, DOS_SEEK_SET))
+            return FCB_ERR_WRITE;
         Memory.MEM_BlockRead(Memory.Real2Phys(Dos.dos.dta()) + recno * rec_size.value, Dos.dos_copybuf, rec_size.value);
         /*Bit16u*/
         IntRef towrite = new IntRef(rec_size.value);
-        if (!DOS_WriteFile(fhandle.value, Dos.dos_copybuf, towrite)) return FCB_ERR_WRITE;
+        if (!DOS_WriteFile(fhandle.value, Dos.dos_copybuf, towrite))
+            return FCB_ERR_WRITE;
         /*Bit32u*/
         LongRef size = new LongRef(0);/*Bit16u*/
         IntRef date = new IntRef(0), time = new IntRef(0);
         fcb.GetSizeDateTime(size, date, time);
-        if (pos.value + towrite.value > size.value) size.value = pos.value + towrite.value;
+        if (pos.value + towrite.value > size.value)
+            size.value = pos.value + towrite.value;
         //time doesn't keep track of endofday
         date.value = Dos.DOS_PackDate(Dos.dos.date.year, Dos.dos.date.month, Dos.dos.date.day);
         /*Bit32u*/
-        long ticks = Memory.mem_readd(Bios.BIOS_TIMER) & 0xFFFFFFFFl;
+        long ticks = Memory.mem_readd(Bios.BIOS_TIMER) & 0xFFFFFFFFL;
         /*Bit32u*/
-        long seconds = (ticks * 10) / 182;
+        long seconds = ticks * 10 / 182;
         /*Bit16u*/
         int hour = (/*Bit16u*/int) (seconds / 3600);
         /*Bit16u*/
-        int min = (/*Bit16u*/int) ((seconds % 3600) / 60);
+        int min = (/*Bit16u*/int) (seconds % 3600 / 60);
         /*Bit16u*/
         int sec = (/*Bit16u*/int) (seconds % 60);
         time.value = Dos.DOS_PackTime(hour, min, sec);
@@ -1209,7 +1240,7 @@ public class Dos_files {
         return FCB_SUCCESS;
     }
 
-    public static /*Bit8u*/short DOS_FCBIncreaseSize(/*Bit16u*/int seg,/*Bit16u*/int offset) {
+    public static /*Bit8u*/short DOS_FCBIncreaseSize(/*Bit16u*/int seg, /*Bit16u*/int offset) {
         Dos_FCB fcb = new Dos_FCB(seg, offset);
         /*Bit8u*/
         ShortRef fhandle = new ShortRef(), cur_rec = new ShortRef();/*Bit16u*/
@@ -1217,26 +1248,29 @@ public class Dos_files {
         fcb.GetSeqData(fhandle, rec_size);
         fcb.GetRecord(cur_block, cur_rec);
         /*Bit32u*/
-        LongRef pos = new LongRef(((cur_block.value * 128) + cur_rec.value) * rec_size.value);
-        if (!DOS_SeekFile(fhandle.value, pos, DOS_SEEK_SET)) return FCB_ERR_WRITE;
+        LongRef pos = new LongRef((cur_block.value * 128 + cur_rec.value) * rec_size.value);
+        if (!DOS_SeekFile(fhandle.value, pos, DOS_SEEK_SET))
+            return FCB_ERR_WRITE;
         /*Bit16u*/
         IntRef towrite = new IntRef(0);
-        if (!DOS_WriteFile(fhandle.value, Dos.dos_copybuf, towrite)) return FCB_ERR_WRITE;
+        if (!DOS_WriteFile(fhandle.value, Dos.dos_copybuf, towrite))
+            return FCB_ERR_WRITE;
         /*Bit32u*/
         LongRef size = new LongRef(0);/*Bit16u*/
         IntRef date = new IntRef(0), time = new IntRef(0);
         fcb.GetSizeDateTime(size, date, time);
-        if (pos.value + towrite.value > size.value) size.value = pos.value + towrite.value;
+        if (pos.value + towrite.value > size.value)
+            size.value = pos.value + towrite.value;
         //time doesn't keep track of endofday
         date.value = Dos.DOS_PackDate(Dos.dos.date.year, Dos.dos.date.month, Dos.dos.date.day);
         /*Bit32u*/
-        long ticks = Memory.mem_readd(Bios.BIOS_TIMER) & 0xFFFFFFFFl;
+        long ticks = Memory.mem_readd(Bios.BIOS_TIMER) & 0xFFFFFFFFL;
         /*Bit32u*/
-        long seconds = (ticks * 10) / 182;
+        long seconds = ticks * 10 / 182;
         /*Bit16u*/
         int hour = (/*Bit16u*/int) (seconds / 3600);
         /*Bit16u*/
-        int min = (/*Bit16u*/int) ((seconds % 3600) / 60);
+        int min = (/*Bit16u*/int) (seconds % 3600 / 60);
         /*Bit16u*/
         int sec = (/*Bit16u*/int) (seconds % 60);
         time.value = Dos.DOS_PackTime(hour, min, sec);
@@ -1249,7 +1283,8 @@ public class Dos_files {
         return FCB_SUCCESS;
     }
 
-    public static /*Bit8u*/short DOS_FCBRandomRead(/*Bit16u*/int seg,/*Bit16u*/int offset,/*Bit16u*/IntRef numRec, boolean restore) {
+    public static /*Bit8u*/short DOS_FCBRandomRead(/*Bit16u*/int seg, /*Bit16u*/int offset, /*Bit16u*/IntRef numRec,
+        boolean restore) {
         /* if restore is true :random read else random blok read.
          * random read updates old block and old record to reflect the random data
          * before the read!!!!!!!!! and the random data is not updated! (user must do this)
@@ -1271,26 +1306,32 @@ public class Dos_files {
         /* Set the correct record from the random data */
         fcb.GetRandom(random);
         fcb.SetRecord((/*Bit16u*/int) (random.value / 128), (/*Bit8u*/short) (random.value & 127));
-        if (restore) fcb.GetRecord(old_block, old_rec);//store this for after the read.
+        if (restore)
+            fcb.GetRecord(old_block, old_rec);//store this for after the read.
         // Read records
         for (count = 0; count < numRec.value; count++) {
             error = DOS_FCBRead(seg, offset, count);
-            if (error != FCB_SUCCESS) break;
+            if (error != FCB_SUCCESS)
+                break;
         }
-        if (error == FCB_READ_PARTIAL) count++;    //partial read counts
+        if (error == FCB_READ_PARTIAL)
+            count++; //partial read counts
         numRec.value = count;
 
         /*Bit16u*/
         IntRef new_block = new IntRef(0);/*Bit8u*/
         ShortRef new_rec = new ShortRef(0);
         fcb.GetRecord(new_block, new_rec);
-        if (restore) fcb.SetRecord(old_block.value, old_rec.value);
+        if (restore)
+            fcb.SetRecord(old_block.value, old_rec.value);
         /* Update the random record pointer with new position only when restore is false*/
-        if (!restore) fcb.SetRandom(new_block.value * 128 + new_rec.value);
+        if (!restore)
+            fcb.SetRandom(new_block.value * 128 + new_rec.value);
         return error;
     }
 
-    public static /*Bit8u*/short DOS_FCBRandomWrite(/*Bit16u*/int seg,/*Bit16u*/int offset,/*Bit16u*/IntRef numRec, boolean restore) {
+    public static /*Bit8u*/short DOS_FCBRandomWrite(/*Bit16u*/int seg, /*Bit16u*/int offset, /*Bit16u*/IntRef numRec,
+        boolean restore) {
         /* see FCB_RandomRead */
         Dos_FCB fcb = new Dos_FCB(seg, offset);
         /*Bit32u*/
@@ -1307,12 +1348,14 @@ public class Dos_files {
         /* Set the correct record from the random data */
         fcb.GetRandom(random);
         fcb.SetRecord((/*Bit16u*/int) (random.value / 128), (/*Bit8u*/short) (random.value & 127));
-        if (restore) fcb.GetRecord(old_block, old_rec);
+        if (restore)
+            fcb.GetRecord(old_block, old_rec);
         if (numRec.value > 0) {
             /* Write records */
             for (count = 0; count < numRec.value; count++) {
                 error = DOS_FCBWrite(seg, offset, count);// dos_fcbwrite return 0 false when true...
-                if (error != FCB_SUCCESS) break;
+                if (error != FCB_SUCCESS)
+                    break;
             }
             numRec.value = count;
         } else {
@@ -1322,20 +1365,23 @@ public class Dos_files {
         IntRef new_block = new IntRef(0);/*Bit8u*/
         ShortRef new_rec = new ShortRef(0);
         fcb.GetRecord(new_block, new_rec);
-        if (restore) fcb.SetRecord(old_block.value, old_rec.value);
+        if (restore)
+            fcb.SetRecord(old_block.value, old_rec.value);
         /* Update the random record pointer with new position only when restore is false */
-        if (!restore) fcb.SetRandom(new_block.value * 128 + new_rec.value);
+        if (!restore)
+            fcb.SetRandom(new_block.value * 128 + new_rec.value);
         return error;
     }
 
-    public static boolean DOS_FCBGetFileSize(/*Bit16u*/int seg,/*Bit16u*/int offset) {
+    public static boolean DOS_FCBGetFileSize(/*Bit16u*/int seg, /*Bit16u*/int offset) {
         StringRef shortname = new StringRef();/*Bit16u*/
         IntRef entry = new IntRef(0);/*Bit8u*/
         ShortRef handle = new ShortRef();/*Bit16u*/
         IntRef rec_size = new IntRef(0);
         Dos_FCB fcb = new Dos_FCB(seg, offset);
         fcb.GetName(shortname);
-        if (!DOS_OpenFile(shortname.value, OPEN_READ, entry)) return false;
+        if (!DOS_OpenFile(shortname.value, OPEN_READ, entry))
+            return false;
         handle.value = (short) Dos.RealHandle(entry.value);
         /*Bit32u*/
         LongRef size = new LongRef(0);
@@ -1343,13 +1389,14 @@ public class Dos_files {
         DOS_CloseFile(entry.value);
         fcb.GetSeqData(handle, rec_size);
         /*Bit32u*/
-        long random = (size.value / rec_size.value);
-        if ((size.value % rec_size.value) != 0) random++;
+        long random = size.value / rec_size.value;
+        if (size.value % rec_size.value != 0)
+            random++;
         fcb.SetRandom(random);
         return true;
     }
 
-    public static boolean DOS_FCBDeleteFile(/*Bit16u*/int seg,/*Bit16u*/int offset) {
+    public static boolean DOS_FCBDeleteFile(/*Bit16u*/int seg, /*Bit16u*/int offset) {
         /* FCB DELETE honours wildcards. it will return true if one or more
          * files get deleted.
          * To get this: the dta is set to temporary dta in which found files are
@@ -1360,25 +1407,26 @@ public class Dos_files {
         Dos.dos.dta(Dos.dos.tables.tempdta_fcbdelete);
         /*RealPt*/
         int new_dta = Dos.dos.dta();
-        boolean nextfile = false;
         boolean return_value = false;
-        nextfile = DOS_FCBFindFirst(seg, offset);
+        boolean nextfile = DOS_FCBFindFirst(seg, offset);
         Dos_FCB fcb = new Dos_FCB(Memory.RealSeg(new_dta), Memory.RealOff(new_dta));
         while (nextfile) {
             StringRef shortname = new StringRef();
             fcb.GetName(shortname);
             boolean res = DOS_UnlinkFile(shortname.value);
-            if (!return_value && res) return_value = true; //at least one file deleted
+            if (!return_value && res)
+                return_value = true; //at least one file deleted
             nextfile = DOS_FCBFindNext(seg, offset);
         }
-        Dos.dos.dta(old_dta);  /*Restore dta */
+        Dos.dos.dta(old_dta); /*Restore dta */
         return return_value;
     }
 
     public static boolean DOS_FCBRenameFile(/*Bit16u*/int seg, /*Bit16u*/int offset) {
         Dos_FCB fcbold = new Dos_FCB(seg, offset);
         Dos_FCB fcbnew = new Dos_FCB(seg, offset + 16);
-        if (!fcbold.Valid()) return false;
+        if (!fcbold.Valid())
+            return false;
         StringRef oldname = new StringRef();
         StringRef newname = new StringRef();
         fcbold.GetName(oldname);
@@ -1387,7 +1435,8 @@ public class Dos_files {
         /* Check, if sourcefile is still open. This was possible in DOS, but modern oses don't like this */
         ShortRef drive = new ShortRef(0);
         StringRef fullname = new StringRef();
-        if (!DOS_MakeName(oldname.value, fullname, drive)) return false;
+        if (!DOS_MakeName(oldname.value, fullname, drive))
+            return false;
 
         Dos_PSP psp = new Dos_PSP(Dos.dos.psp());
         for (short i = 0; i < DOS_FILES; i++) {
@@ -1396,7 +1445,8 @@ public class Dos_files {
                 if (handle == 0xFF) {
                     // This shouldnt happen
                     if (Log.level <= LogSeverities.LOG_ERROR)
-                        Log.log(LogTypes.LOG_FILES, LogSeverities.LOG_ERROR, "DOS: File " + oldname.value + " is opened but has no psp entry.");
+                        Log.log(LogTypes.LOG_FILES, LogSeverities.LOG_ERROR,
+                            "DOS: File " + oldname.value + " is opened but has no psp entry.");
                     return false;
                 }
                 DOS_CloseFile(handle);
@@ -1415,17 +1465,20 @@ public class Dos_files {
         fcb.SetRandom(block.value * 128 + rec.value);
     }
 
-
     public static boolean DOS_FileExists(String name) {
         StringRef fullname = new StringRef();/*Bit8u*/
         ShortRef drive = new ShortRef();
-        if (!DOS_MakeName(name, fullname, drive)) return false;
+        if (!DOS_MakeName(name, fullname, drive))
+            return false;
         return Drives[drive.value].FileExists(fullname.value);
     }
 
-    public static boolean DOS_GetAllocationInfo(/*Bit8u*/short drive,/*Bit16u*/IntRef _bytes_sector,/*Bit8u*/ShortRef _sectors_cluster,/*Bit16u*/IntRef _total_clusters) {
-        if (drive == 0) drive = DOS_GetDefaultDrive();
-        else drive--;
+    public static boolean DOS_GetAllocationInfo(/*Bit8u*/short drive, /*Bit16u*/IntRef _bytes_sector,
+        /*Bit8u*/ShortRef _sectors_cluster, /*Bit16u*/IntRef _total_clusters) {
+        if (drive == 0)
+            drive = DOS_GetDefaultDrive();
+        else
+            drive--;
         if (drive >= DOS_DRIVES || Drives[drive] == null) {
             Dos.DOS_SetError(Dos.DOSERR_INVALID_DRIVE);
             return false;
@@ -1450,15 +1503,7 @@ public class Dos_files {
     public static boolean DOS_GetFileDate(/*Bit16u*/int entry, /*Bit16u*/IntRef otime, /*Bit16u*/IntRef odate) {
         /*Bit32u*/
         int handle = Dos.RealHandle(entry);
-        if (handle >= DOS_FILES) {
-            Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
-            return false;
-        }
-        if (Files[handle] == null || !Files[handle].IsOpen()) {
-            Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
-            return false;
-        }
-        if (!Files[handle].UpdateDateTimeFromHost()) {
+        if ((handle >= DOS_FILES) || Files[handle] == null || !Files[handle].IsOpen() || !Files[handle].UpdateDateTimeFromHost()) {
             Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
             return false;
         }

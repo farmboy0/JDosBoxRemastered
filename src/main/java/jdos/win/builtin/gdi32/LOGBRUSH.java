@@ -3,7 +3,7 @@ package jdos.win.builtin.gdi32;
 import jdos.win.builtin.WinAPI;
 
 public class LOGBRUSH extends WinAPI {
-    public final static int SIZE = 12;
+    public static final int SIZE = 12;
     public int lbStyle;
     public int lbColor;
     public int lbHatch;

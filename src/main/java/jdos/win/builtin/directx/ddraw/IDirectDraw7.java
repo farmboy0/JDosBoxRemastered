@@ -7,11 +7,13 @@ import jdos.win.builtin.HandlerBase;
 public class IDirectDraw7 extends IUnknown {
     /* added in v2 */
     // HRESULT GetAvailableVidMem(this, LPDDSCAPS2 lpDDCaps, LPDWORD lpdwTotal, LPDWORD lpdwFree)
-    static private final Callback.Handler GetAvailableVidMem = new HandlerBase() {
+    private static final Callback.Handler GetAvailableVidMem = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectDraw7.GetAvailableVidMem";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lpDDCaps = CPU.CPU_Pop32();
@@ -22,11 +24,13 @@ public class IDirectDraw7 extends IUnknown {
     };
     /* added in v4 */
     // HRESULT GetSurfaceFromDC(this HDC hdc, LPDIRECTDRAWSURFACE7 *pSurf)
-    static private final Callback.Handler GetSurfaceFromDC = new HandlerBase() {
+    private static final Callback.Handler GetSurfaceFromDC = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectDraw7.GetSurfaceFromDC";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int hdc = CPU.CPU_Pop32();
@@ -35,33 +39,39 @@ public class IDirectDraw7 extends IUnknown {
         }
     };
     // HRESULT RestoreAllSurfaces(this)
-    static private final Callback.Handler RestoreAllSurfaces = new HandlerBase() {
+    private static final Callback.Handler RestoreAllSurfaces = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectDraw7.RestoreAllSurfaces";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             notImplemented();
         }
     };
     // HRESULT TestCooperativeLevel(this)
-    static private final Callback.Handler TestCooperativeLevel = new HandlerBase() {
+    private static final Callback.Handler TestCooperativeLevel = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectDraw7.TestCooperativeLevel";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             notImplemented();
         }
     };
     // HRESULT GetDeviceIdentifier(this, LPDDDEVICEIDENTIFIER2 pDDDI, DWORD dwFlags)
-    static private final Callback.Handler GetDeviceIdentifier = new HandlerBase() {
+    private static final Callback.Handler GetDeviceIdentifier = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectDraw7.GetDeviceIdentifier";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int pDDDI = CPU.CPU_Pop32();
@@ -71,11 +81,13 @@ public class IDirectDraw7 extends IUnknown {
     };
     /* added in v7 */
     // HRESULT StartModeTest(this, LPSIZE pModes, DWORD dwNumModes, DWORD dwFlags)
-    static private final Callback.Handler StartModeTest = new HandlerBase() {
+    private static final Callback.Handler StartModeTest = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectDraw7.StartModeTest";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int pModes = CPU.CPU_Pop32();
@@ -85,11 +97,13 @@ public class IDirectDraw7 extends IUnknown {
         }
     };
     // HRESULT EvaluateMode(this, DWORD dwFlags, DWORD  *pTimeout)
-    static private final Callback.Handler EvaluateMode = new HandlerBase() {
+    private static final Callback.Handler EvaluateMode = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectDraw7.EvaluateMode";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int dwFlags = CPU.CPU_Pop32();
@@ -120,6 +134,7 @@ public class IDirectDraw7 extends IUnknown {
         int vtable = getVTable("IDirectDraw7");
         if (vtable == 0)
             createVTable();
-        return IDirectDraw.create("IDirectDraw7", IDirectDraw.FLAGS_CALLBACK2 | IDirectDraw.FLAGS_DESC2 | IDirectDraw.FLAGS_V7);
+        return IDirectDraw.create("IDirectDraw7",
+            IDirectDraw.FLAGS_CALLBACK2 | IDirectDraw.FLAGS_DESC2 | IDirectDraw.FLAGS_V7);
     }
 }

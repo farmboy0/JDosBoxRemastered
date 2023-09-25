@@ -4,11 +4,8 @@ import jdos.misc.Log;
 import jdos.util.IntRef;
 
 /**
- * Created with IntelliJ IDEA.
- * User: James
- * Date: 1/31/13
- * Time: 5:46 AM
- * To change this template use File | Settings | File Templates.
+ * Created with IntelliJ IDEA. User: James Date: 1/31/13 Time: 5:46 AM To change
+ * this template use File | Settings | File Templates.
  */
 public abstract class PCI_Device {
     protected /*Bits*/ int pci_id, pci_subfunction;
@@ -49,9 +46,9 @@ public abstract class PCI_Device {
     }
 
     public void SetPCIId(/*Bitu*/int number, /*Bits*/int subfct) {
-        if ((number >= 0) && (number < PCI.PCI_MAX_PCIDEVICES)) {
+        if (number >= 0 && number < PCI.PCI_MAX_PCIDEVICES) {
             pci_id = number;
-            if ((subfct >= 0) && (subfct < PCI.PCI_MAX_PCIFUNCTIONS - 1))
+            if (subfct >= 0 && subfct < PCI.PCI_MAX_PCIFUNCTIONS - 1)
                 pci_subfunction = subfct;
             else
                 pci_subfunction = -1;
@@ -60,7 +57,8 @@ public abstract class PCI_Device {
 
     public boolean AddSubdevice(PCI_Device dev) {
         if (num_subdevices < PCI.PCI_MAX_PCIFUNCTIONS - 1) {
-            if (subdevices[num_subdevices] != null) Log.exit("PCI subdevice slot already in use!");
+            if (subdevices[num_subdevices] != null)
+                Log.exit("PCI subdevice slot already in use!");
             subdevices[num_subdevices] = dev;
             num_subdevices++;
             return true;
@@ -69,7 +67,7 @@ public abstract class PCI_Device {
     }
 
     public void RemoveSubdevice(/*Bits*/int subfct) {
-        if ((subfct > 0) && (subfct < PCI.PCI_MAX_PCIFUNCTIONS)) {
+        if (subfct > 0 && subfct < PCI.PCI_MAX_PCIFUNCTIONS) {
             if (subfct <= NumSubdevices()) {
                 //subdevices[subfct-1].destroy();
                 subdevices[subfct - 1] = null;
@@ -79,9 +77,11 @@ public abstract class PCI_Device {
     }
 
     public PCI_Device GetSubdevice(/*Bits*/int subfct) {
-        if (subfct >= PCI.PCI_MAX_PCIFUNCTIONS) return null;
+        if (subfct >= PCI.PCI_MAX_PCIFUNCTIONS)
+            return null;
         if (subfct > 0) {
-            if (subfct <= NumSubdevices()) return subdevices[subfct - 1];
+            if (subfct <= NumSubdevices())
+                return subdevices[subfct - 1];
         } else if (subfct == 0) {
             return this;
         }
@@ -89,12 +89,14 @@ public abstract class PCI_Device {
     }
 
     public /*Bit16u*/int NumSubdevices() {
-        if (num_subdevices > PCI.PCI_MAX_PCIFUNCTIONS - 1) return PCI.PCI_MAX_PCIFUNCTIONS - 1;
+        if (num_subdevices > PCI.PCI_MAX_PCIFUNCTIONS - 1)
+            return PCI.PCI_MAX_PCIFUNCTIONS - 1;
         return num_subdevices;
     }
 
     public /*Bits*/int GetNextSubdeviceNumber() {
-        if (num_subdevices >= PCI.PCI_MAX_PCIFUNCTIONS - 1) return -1;
+        if (num_subdevices >= PCI.PCI_MAX_PCIFUNCTIONS - 1)
+            return -1;
         return num_subdevices + 1;
     }
 
@@ -111,9 +113,10 @@ public abstract class PCI_Device {
 
     public abstract /*Bits*/int ParseReadRegister(/*Bit8u*/int regnum);
 
-    public abstract boolean OverrideReadRegister(/*Bit8u*/int regnum, /*Bit8u**/IntRef rval, /*Bit8u**/IntRef rval_mask);
+    public abstract boolean OverrideReadRegister(/*Bit8u*/int regnum, /*Bit8u**/IntRef rval,
+        /*Bit8u**/IntRef rval_mask);
 
-    public abstract /*Bits*/int ParseWriteRegister(/*Bit8u*/int regnum,/*Bit8u*/int value);
+    public abstract /*Bits*/int ParseWriteRegister(/*Bit8u*/int regnum, /*Bit8u*/int value);
 
     public abstract boolean InitializeRegisters(/*Bit8u*/byte[] registers);
 }

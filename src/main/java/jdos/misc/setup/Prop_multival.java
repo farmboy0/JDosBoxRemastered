@@ -14,7 +14,8 @@ public class Prop_multival extends Property {
 
     protected void make_default_value() {
         Property p = section.Get_prop(0);
-        if (p == null) return;
+        if (p == null)
+            return;
         String result = p.Get_Default_Value().toString();
         int i = 1;
         while (true) {
@@ -33,10 +34,12 @@ public class Prop_multival extends Property {
         return section;
     }
 
+    @Override
     public void SetValue(String input) {
         SetVal(new Value(input, Value.Etype.V_STRING), false, true);
         //No properties in this section. do nothing
-        if (section.Get_prop(0) == null) return;
+        if (section.Get_prop(0) == null)
+            return;
         int i = 0;
         while (true) {
             Property p = section.Get_prop(i++);
@@ -65,6 +68,7 @@ public class Prop_multival extends Property {
         }
     }
 
+    @Override
     public Vector GetValues() {
         if (section.Get_prop(0) == null)
             return suggested_values;
@@ -75,7 +79,8 @@ public class Prop_multival extends Property {
             if (p == null)
                 return suggested_values;
             Vector v = p.GetValues();
-            if (!v.isEmpty()) return v;
+            if (!v.isEmpty())
+                return v;
         }
     }
 }

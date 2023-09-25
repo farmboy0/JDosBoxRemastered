@@ -10,15 +10,18 @@ public class Section_line extends Section {
         super(_sectionname);
     }
 
+    @Override
     public void HandleInputline(String input) {
         data += input;
         data += "\n";
     }
 
+    @Override
     public void PrintData(OutputStream os) throws IOException {
         Config.fputs(data, os);
     }
 
+    @Override
     public String GetPropValue(String _property) {
         return NO_SUCH_PROPERTY;
     }

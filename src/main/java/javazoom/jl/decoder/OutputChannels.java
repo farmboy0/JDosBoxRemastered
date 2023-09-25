@@ -20,14 +20,13 @@
 
 package javazoom.jl.decoder;
 
-
 /**
- * A Type-safe representation of the the supported output channel
- * constants.
+ * A Type-safe representation of the the supported output channel constants.
  * <p>
  * This class is immutable and, hence, is thread safe.
  *
  * @author Mat McGowan 12/12/99
+ *
  * @since 0.0.7
  */
 public class OutputChannels {
@@ -51,12 +50,10 @@ public class OutputChannels {
      */
     public static final int DOWNMIX_CHANNELS = 3;
 
-
     public static final OutputChannels LEFT = new OutputChannels(LEFT_CHANNEL);
     public static final OutputChannels RIGHT = new OutputChannels(RIGHT_CHANNEL);
     public static final OutputChannels BOTH = new OutputChannels(BOTH_CHANNELS);
     public static final OutputChannels DOWNMIX = new OutputChannels(DOWNMIX_CHANNELS);
-
 
     private final /*final*/ int outputChannels;
 
@@ -68,14 +65,14 @@ public class OutputChannels {
     }
 
     /**
-     * Creates an <code>OutputChannels</code> instance
-     * corresponding to the given channel code.
-     *
-     * @param    code one of the OutputChannels channel code constants.
-     * @throws IllegalArgumentException if code is not a valid
+     * Creates an <code>OutputChannels</code> instance corresponding to the given
      * channel code.
+     *
+     * @param code one of the OutputChannels channel code constants.
+     *
+     * @throws IllegalArgumentException if code is not a valid channel code.
      */
-    static public OutputChannels fromInt(int code) {
+    public static OutputChannels fromInt(int code) {
         switch (code) {
             case LEFT_CHANNEL:
                 return LEFT;
@@ -91,9 +88,8 @@ public class OutputChannels {
     }
 
     /**
-     * Retrieves the code representing the desired output channels.
-     * Will be one of LEFT_CHANNEL, RIGHT_CHANNEL, BOTH_CHANNELS
-     * or DOWNMIX_CHANNELS.
+     * Retrieves the code representing the desired output channels. Will be one of
+     * LEFT_CHANNEL, RIGHT_CHANNEL, BOTH_CHANNELS or DOWNMIX_CHANNELS.
      *
      * @return the channel code represented by this instance.
      */
@@ -102,30 +98,29 @@ public class OutputChannels {
     }
 
     /**
-     * Retrieves the number of output channels represented
-     * by this channel output type.
+     * Retrieves the number of output channels represented by this channel output
+     * type.
      *
-     * @return The number of output channels for this channel output
-     * type. This will be 2 for BOTH_CHANNELS only, and 1
-     * for all other types.
+     * @return The number of output channels for this channel output type. This will
+     *         be 2 for BOTH_CHANNELS only, and 1 for all other types.
      */
     public int getChannelCount() {
-        int count = (outputChannels == BOTH_CHANNELS) ? 2 : 1;
-        return count;
+        return outputChannels == BOTH_CHANNELS ? 2 : 1;
     }
 
-
+    @Override
     public boolean equals(Object o) {
         boolean equals = false;
 
         if (o instanceof OutputChannels) {
             OutputChannels oc = (OutputChannels) o;
-            equals = (oc.outputChannels == outputChannels);
+            equals = oc.outputChannels == outputChannels;
         }
 
         return equals;
     }
 
+    @Override
     public int hashCode() {
         return outputChannels;
     }

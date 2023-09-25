@@ -13,11 +13,13 @@ public class IDirectSound extends IUnknown {
     static final int DATA_SIZE = 4;
     static int OFFSET_FLAGS = 0;
     // HRESULT CreateSoundBuffer(this, LPCDSBUFFERDESC lpcDSBufferDesc, LPLPDIRECTSOUNDBUFFER lplpDirectSoundBuffer, IUnknown *pUnkOuter)
-    static private final Callback.Handler CreateSoundBuffer = new HandlerBase() {
+    private static final Callback.Handler CreateSoundBuffer = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectSound.CreateSoundBuffer";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lpcDSBufferDesc = CPU.CPU_Pop32();
@@ -27,7 +29,7 @@ public class IDirectSound extends IUnknown {
         }
     };
     // HRESULT GetCaps(this, LPDSCAPS lpDSCaps)
-    static private final Callback.Handler GetCaps = new HandlerBase() {
+    private static final Callback.Handler GetCaps = new HandlerBase() {
         static final int DSCAPS_PRIMARYMONO = 0x00000001;
         static final int DSCAPS_PRIMARYSTEREO = 0x00000002;
         static final int DSCAPS_PRIMARY8BIT = 0x00000004;
@@ -40,10 +42,12 @@ public class IDirectSound extends IUnknown {
         static final int DSCAPS_SECONDARY8BIT = 0x00000400;
         static final int DSCAPS_SECONDARY16BIT = 0x00000800;
 
+        @Override
         public java.lang.String getName() {
             return "IDirectSound.GetCaps";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lpDSCaps = CPU.CPU_Pop32();
@@ -51,7 +55,9 @@ public class IDirectSound extends IUnknown {
             if (caps.dwSize != 96) {
                 Win.panic(getName() + " unexpected size of caps structure");
             }
-            caps.dwFlags = DSCAPS_PRIMARYMONO | DSCAPS_PRIMARYSTEREO | DSCAPS_PRIMARY8BIT | DSCAPS_PRIMARY16BIT | DSCAPS_CONTINUOUSRATE | DSCAPS_CERTIFIED | DSCAPS_SECONDARYMONO | DSCAPS_SECONDARYSTEREO | DSCAPS_SECONDARY8BIT | DSCAPS_SECONDARY16BIT;
+            caps.dwFlags = DSCAPS_PRIMARYMONO | DSCAPS_PRIMARYSTEREO | DSCAPS_PRIMARY8BIT | DSCAPS_PRIMARY16BIT
+                | DSCAPS_CONTINUOUSRATE | DSCAPS_CERTIFIED | DSCAPS_SECONDARYMONO | DSCAPS_SECONDARYSTEREO
+                | DSCAPS_SECONDARY8BIT | DSCAPS_SECONDARY16BIT;
             caps.dwMinSecondarySampleRate = 4000;
             caps.dwMaxSecondarySampleRate = 48000;
             caps.dwPrimaryBuffers = 1;
@@ -76,11 +82,13 @@ public class IDirectSound extends IUnknown {
         }
     };
     // HRESULT DuplicateSoundBuffer(this, LPDIRECTSOUNDBUFFER lpDsbOriginal, LPLPDIRECTSOUNDBUFFER lplpDsbDuplicate)
-    static private final Callback.Handler DuplicateSoundBuffer = new HandlerBase() {
+    private static final Callback.Handler DuplicateSoundBuffer = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectSound.DuplicateSoundBuffer";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lpDsbOriginal = CPU.CPU_Pop32();
@@ -89,16 +97,18 @@ public class IDirectSound extends IUnknown {
         }
     };
     // HRESULT SetCooperativeLevel(this, HWND hwnd, DWORD dwLevel)
-    static private final Callback.Handler SetCooperativeLevel = new HandlerBase() {
-        static final public int DSSCL_NORMAL = 1;
-        static final public int DSSCL_PRIORITY = 2;
-        static final public int DSSCL_EXCLUSIVE = 3;
-        static final public int DSSCL_WRITEPRIMARY = 4;
+    private static final Callback.Handler SetCooperativeLevel = new HandlerBase() {
+        public static final int DSSCL_NORMAL = 1;
+        public static final int DSSCL_PRIORITY = 2;
+        public static final int DSSCL_EXCLUSIVE = 3;
+        public static final int DSSCL_WRITEPRIMARY = 4;
 
+        @Override
         public java.lang.String getName() {
             return "IDirectSound.SetCooperativeLevel";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int hwnd = CPU.CPU_Pop32();
@@ -108,22 +118,26 @@ public class IDirectSound extends IUnknown {
         }
     };
     // HRESULT Compact(this)
-    static private final Callback.Handler Compact = new HandlerBase() {
+    private static final Callback.Handler Compact = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectSound.Compact";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             notImplemented();
         }
     };
     // HRESULT GetSpeakerConfig(this, LPDWORD lpdwSpeakerConfig)
-    static private final Callback.Handler GetSpeakerConfig = new HandlerBase() {
+    private static final Callback.Handler GetSpeakerConfig = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectSound.GetSpeakerConfig";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lpdwSpeakerConfig = CPU.CPU_Pop32();
@@ -131,11 +145,13 @@ public class IDirectSound extends IUnknown {
         }
     };
     // HRESULT SetSpeakerConfig(this, DWORD dwSpeakerConfig)
-    static private final Callback.Handler SetSpeakerConfig = new HandlerBase() {
+    private static final Callback.Handler SetSpeakerConfig = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectSound.SetSpeakerConfig";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int dwSpeakerConfig = CPU.CPU_Pop32();
@@ -143,11 +159,13 @@ public class IDirectSound extends IUnknown {
         }
     };
     // HRESULT Initialize(this, LPCGUID lpcGuid)
-    static private final Callback.Handler Initialize = new HandlerBase() {
+    private static final Callback.Handler Initialize = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectSound.Initialize";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lpcGuid = CPU.CPU_Pop32();
@@ -170,8 +188,7 @@ public class IDirectSound extends IUnknown {
         address = add(address, Compact);
         address = add(address, GetSpeakerConfig);
         address = add(address, SetSpeakerConfig);
-        address = add(address, Initialize);
-        return address;
+        return add(address, Initialize);
     }
 
     public static int create() {

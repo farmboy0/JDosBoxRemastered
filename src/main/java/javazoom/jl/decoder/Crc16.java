@@ -42,9 +42,9 @@ public final class Crc16 {
      * Feed a bitstring to the crc calculation (0 < length <= 32).
      */
     public void add_bits(int bitstring, int length) {
-        int bitmask = 1 << (length - 1);
+        int bitmask = 1 << length - 1;
         do
-            if (((crc & 0x8000) == 0) ^ ((bitstring & bitmask) == 0)) {
+            if ((crc & 0x8000) == 0 ^ (bitstring & bitmask) == 0) {
                 crc <<= 1;
                 crc ^= polynomial;
             } else
@@ -53,8 +53,7 @@ public final class Crc16 {
     }
 
     /**
-     * Return the calculated checksum.
-     * Erase it for next calls to add_bits().
+     * Return the calculated checksum. Erase it for next calls to add_bits().
      */
     public short checksum() {
         short sum = crc;

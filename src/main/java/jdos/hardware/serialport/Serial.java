@@ -1,6 +1,6 @@
 package jdos.hardware.serialport;
 
-import jdos.gui.Main;
+import jdos.gui.MainBase;
 import jdos.hardware.Pic;
 import jdos.misc.setup.CommandLine;
 import jdos.util.FileIO;
@@ -20,9 +20,10 @@ public class Serial {
     boolean dbg_aux;
     boolean InstallationSuccessful;// check after constructing. If
 
-    static boolean getBituSubstring(String name,/*Bitu*/IntRef data, CommandLine cmd) {
+    static boolean getBituSubstring(String name, /*Bitu*/IntRef data, CommandLine cmd) {
         String tmpstring;
-        if ((tmpstring = cmd.FindStringBegin(name, false)) == null) return false;
+        if ((tmpstring = cmd.FindStringBegin(name, false)) == null)
+            return false;
         try {
             data.value = Integer.parseInt(tmpstring);
             return true;
@@ -42,9 +43,11 @@ public class Serial {
 
     void log_ser(boolean active, String format) {
         if (active) {
-            String buf = StringHelper.format(Pic.PIC_FullIndex(), 3) + " [" + StringHelper.format(Main.GetTicks(), 7) + "] ";
+            String buf = StringHelper.format(Pic.PIC_FullIndex(), 3) + " ["
+                + StringHelper.format(MainBase.GetTicks(), 7) + "] ";
             buf += format;
-            if (!buf.endsWith("\n")) buf += "\r\n";
+            if (!buf.endsWith("\n"))
+                buf += "\r\n";
             try {
                 debugfp.write(buf.getBytes());
             } catch (Exception e) {
@@ -52,7 +55,7 @@ public class Serial {
         }
     }
 
-    static private class MyFifo {
+    private static class MyFifo {
         /*Bit8u*/ short[] data;
         /*Bitu*/ int maxsize, size, pos, used;
 
@@ -71,7 +74,7 @@ public class Serial {
         }
 
         boolean isFull() {
-            return (size - used) == 0;
+            return size - used == 0;
         }
 
         /*Bitu*/int getUsage() {
@@ -91,11 +94,14 @@ public class Serial {
         boolean addb(/*Bit8u*/short _val) {
             /*Bitu*/
             int where = pos + used;
-            if (where >= size) where -= size;
+            if (where >= size)
+                where -= size;
             if (used >= size) {
                 // overwrite last byte
-                if (where == 0) where = size - 1;
-                else where--;
+                if (where == 0)
+                    where = size - 1;
+                else
+                    where--;
                 data[where] = _val;
                 return false;
             }
@@ -105,22 +111,28 @@ public class Serial {
         }
 
         /*Bit8u*/short getb() {
-            if (used == 0) return data[pos];
+            if (used == 0)
+                return data[pos];
             /*Bitu*/
             int where = pos;
             used--;
-            if (used != 0) pos++;
-            if (pos >= size) pos -= size;
+            if (used != 0)
+                pos++;
+            if (pos >= size)
+                pos -= size;
             return data[where];
         }
 
         /*Bit8u*/short getTop() {
             /*Bitu*/
             int where = pos + used;
-            if (where >= size) where -= size;
+            if (where >= size)
+                where -= size;
             if (used >= size) {
-                if (where == 0) where = size - 1;
-                else where--;
+                if (where == 0)
+                    where = size - 1;
+                else
+                    where--;
             }
             return data[where];
         }

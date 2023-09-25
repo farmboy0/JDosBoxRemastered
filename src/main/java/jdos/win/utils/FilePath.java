@@ -1,5 +1,15 @@
 package jdos.win.utils;
 
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.RandomAccessFile;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Set;
+
 import jdos.dos.DOS_File;
 import jdos.dos.Dos_files;
 import jdos.dos.Dos_system;
@@ -7,14 +17,9 @@ import jdos.dos.drives.Drive_fat;
 import jdos.util.IntRef;
 import jdos.util.LongRef;
 
-import java.io.*;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Set;
-
 public class FilePath {
-    static public Hashtable<String, Object> disks = new Hashtable<String, Object>();
-    static Set<String> faked = new HashSet<String>();
+    public static Hashtable<String, Object> disks = new Hashtable<>();
+    static Set<String> faked = new HashSet<>();
 
     static {
         faked.add("\\windows\\system32\\dsound.vxd");
@@ -166,7 +171,7 @@ public class FilePath {
         void close();
     }
 
-    static private class FatPath implements FilePathInterface {
+    private static class FatPath implements FilePathInterface {
         String fullPath;
         String path;
         Drive_fat drive;
@@ -187,6 +192,7 @@ public class FilePath {
             }
         }
 
+        @Override
         public FilePath getParentFile() {
             int pos = fullPath.lastIndexOf("\\");
             if (pos >= 0)
@@ -194,17 +200,20 @@ public class FilePath {
             return null;
         }
 
+        @Override
         public boolean exists() {
             if (file != null)
                 return true;
             return isDirectory();
         }
 
+        @Override
         public String getName() {
             int pos = fullPath.lastIndexOf("\\");
             return fullPath.substring(pos + 1);
         }
 
+        @Override
         public boolean mkdirs() {
             FilePath parent = getParentFile();
             if (parent != null) {
@@ -217,10 +226,12 @@ public class FilePath {
             return file != null;
         }
 
+        @Override
         public boolean delete() {
             return drive.FileUnlink(path);
         }
 
+        @Override
         public boolean createNewFile() {
             DOS_File file = drive.FileCreate(path, Dos_system.DOS_ATTR_ARCHIVE);
             if (file == null)
@@ -229,34 +240,42 @@ public class FilePath {
             return true;
         }
 
+        @Override
         public FilePath[] listFiles(FileFilter filter) {
             return new FilePath[0];
         }
 
+        @Override
         public long lastModified() {
             return 0;
         }
 
+        @Override
         public long length() {
             return length;
         }
 
+        @Override
         public boolean isDirectory() {
             return drive.TestDir(path);
         }
 
+        @Override
         public boolean renameTo(FilePath path) {
             return drive.Rename(this.path, path.path);
         }
 
+        @Override
         public String getAbsolutePath() {
             return path;
         }
 
+        @Override
         public InputStream getInputStream() {
             return new InputStream() {
                 final byte[] buf = new byte[1];
 
+                @Override
                 public int read() throws IOException {
 
                     int result = FatPath.this.read(buf);
@@ -265,16 +284,19 @@ public class FilePath {
                     return result;
                 }
 
+                @Override
                 public void reset() {
                     FatPath.this.seek(0);
                 }
             };
         }
 
+        @Override
         public boolean open(boolean write) {
             return file != null;
         }
 
+        @Override
         public void seek(long pos) {
             if (file != null) {
                 LongRef ref = new LongRef(pos);
@@ -282,6 +304,7 @@ public class FilePath {
             }
         }
 
+        @Override
         public void skipBytes(int count) {
             if (file != null) {
                 LongRef ref = new LongRef(count);
@@ -289,6 +312,7 @@ public class FilePath {
             }
         }
 
+        @Override
         public long getFilePointer() {
             if (file != null) {
                 LongRef ref = new LongRef(0);
@@ -298,6 +322,7 @@ public class FilePath {
             return 0;
         }
 
+        @Override
         public int read(byte[] buffer) {
             if (file != null) {
                 IntRef size = new IntRef(buffer.length);
@@ -308,6 +333,7 @@ public class FilePath {
             return -1;
         }
 
+        @Override
         public void write(byte[] buffer) {
             if (file != null) {
                 IntRef size = new IntRef(buffer.length);
@@ -315,6 +341,7 @@ public class FilePath {
             }
         }
 
+        @Override
         public void close() {
             if (file != null) {
                 file.Close();
@@ -322,7 +349,7 @@ public class FilePath {
         }
     }
 
-    static private class JavaPath implements FilePathInterface {
+    private static class JavaPath implements FilePathInterface {
         File file;
         RandomAccessFile openFile;
 
@@ -330,6 +357,7 @@ public class FilePath {
             file = new File(path);
         }
 
+        @Override
         public boolean open(boolean write) {
             try {
                 openFile = new RandomAccessFile(file, write ? "rw" : "r");
@@ -339,6 +367,7 @@ public class FilePath {
             }
         }
 
+        @Override
         public void seek(long pos) {
             if (openFile != null) {
                 try {
@@ -348,6 +377,7 @@ public class FilePath {
             }
         }
 
+        @Override
         public void skipBytes(int count) {
             if (openFile != null) {
                 try {
@@ -357,6 +387,7 @@ public class FilePath {
             }
         }
 
+        @Override
         public long getFilePointer() {
             if (openFile != null) {
                 try {
@@ -367,6 +398,7 @@ public class FilePath {
             return 0;
         }
 
+        @Override
         public int read(byte[] buffer) {
             if (openFile != null) {
                 try {
@@ -377,6 +409,7 @@ public class FilePath {
             return 0;
         }
 
+        @Override
         public void write(byte[] buffer) {
             if (openFile != null) {
                 try {
@@ -386,6 +419,7 @@ public class FilePath {
             }
         }
 
+        @Override
         public void close() {
             if (openFile != null) {
                 try {
@@ -396,26 +430,32 @@ public class FilePath {
             }
         }
 
+        @Override
         public FilePath getParentFile() {
             return new FilePath(file.getParent());
         }
 
+        @Override
         public boolean exists() {
             return file.exists();
         }
 
+        @Override
         public String getName() {
             return file.getName();
         }
 
+        @Override
         public boolean mkdirs() {
             return file.mkdirs();
         }
 
+        @Override
         public boolean delete() {
             return file.delete();
         }
 
+        @Override
         public boolean createNewFile() {
             try {
                 return file.createNewFile();
@@ -424,6 +464,7 @@ public class FilePath {
             }
         }
 
+        @Override
         public FilePath[] listFiles(FileFilter filter) {
             File[] files = file.listFiles(filter);
             FilePath[] result = new FilePath[files.length];
@@ -432,26 +473,32 @@ public class FilePath {
             return result;
         }
 
+        @Override
         public long lastModified() {
             return file.lastModified();
         }
 
+        @Override
         public long length() {
             return file.length();
         }
 
+        @Override
         public boolean isDirectory() {
             return file.isDirectory();
         }
 
+        @Override
         public boolean renameTo(FilePath path) {
             return file.renameTo(new File(path.path));
         }
 
+        @Override
         public String getAbsolutePath() {
             return file.getAbsolutePath();
         }
 
+        @Override
         public InputStream getInputStream() {
             try {
                 return new FileInputStream(file);

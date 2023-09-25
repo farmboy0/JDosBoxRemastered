@@ -1,16 +1,16 @@
 package jdos.hardware.qemu;
 
 public class Cdrom extends Internal {
-    static public void lba_to_msf(byte[] buf, int offset, long lba) {
+    public static void lba_to_msf(byte[] buf, int offset, long lba) {
         lba += 150;
-        buf[offset] = (byte) ((lba / 75) / 60);
-        buf[offset + 1] = (byte) ((lba / 75) % 60);
+        buf[offset] = (byte) (lba / 75 / 60);
+        buf[offset + 1] = (byte) (lba / 75 % 60);
         buf[offset + 2] = (byte) (lba % 75);
     }
 
     /* same toc as bochs. Return -1 if error or the toc length */
     /* XXX: check this */
-    static public int cdrom_read_toc(long nb_sectors, byte[] buf, int msf, int start_track) {
+    public static int cdrom_read_toc(long nb_sectors, byte[] buf, int msf, int start_track) {
         int q;
         int len;
 
@@ -22,7 +22,7 @@ public class Cdrom extends Internal {
         if (start_track <= 1) {
             buf[q++] = 0; /* reserved */
             buf[q++] = 0x14; /* ADR, control */
-            buf[q++] = 1;    /* track number */
+            buf[q++] = 1; /* track number */
             buf[q++] = 0; /* reserved */
             if (msf != 0) {
                 buf[q++] = 0; /* reserved */
@@ -53,7 +53,7 @@ public class Cdrom extends Internal {
     }
 
     /* mostly same info as PearPc */
-    static public int cdrom_read_toc_raw(long nb_sectors, byte[] buf, int msf, int session_num) {
+    public static int cdrom_read_toc_raw(long nb_sectors, byte[] buf, int msf, int session_num) {
         int q;
         int len;
 
@@ -103,8 +103,8 @@ public class Cdrom extends Internal {
 
         buf[q++] = 1; /* session number */
         buf[q++] = 0x14; /* ADR, control */
-        buf[q++] = 0;    /* track number */
-        buf[q++] = 1;    /* point */
+        buf[q++] = 0; /* track number */
+        buf[q++] = 1; /* point */
         buf[q++] = 0; /* min */
         buf[q++] = 0; /* sec */
         buf[q++] = 0; /* frame */

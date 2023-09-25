@@ -1,15 +1,17 @@
 package jdos.win.builtin.gdi32;
 
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics2D;
+import java.awt.font.FontRenderContext;
+import java.awt.font.LineMetrics;
+import java.util.Arrays;
+
 import jdos.hardware.Memory;
 import jdos.win.builtin.WinAPI;
 import jdos.win.system.WinObject;
 import jdos.win.system.WinSize;
 import jdos.win.utils.StringUtil;
-
-import java.awt.*;
-import java.awt.font.FontRenderContext;
-import java.awt.font.LineMetrics;
-import java.util.Arrays;
 
 public class WinFont extends WinGDI {
     public Font font;
@@ -19,11 +21,11 @@ public class WinFont extends WinGDI {
         this.font = font;
     }
 
-    static public WinFont create(Font font) {
+    public static WinFont create(Font font) {
         return new WinFont(nextObjectId(), font);
     }
 
-    static public WinFont get(int handle) {
+    public static WinFont get(int handle) {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinFont))
             return null;
@@ -31,25 +33,33 @@ public class WinFont extends WinGDI {
     }
 
     // HFONT CreateFont(int nHeight, int nWidth, int nEscapement, int nOrientation, int fnWeight, DWORD fdwItalic, DWORD fdwUnderline, DWORD fdwStrikeOut, DWORD fdwCharSet, DWORD fdwOutputPrecision, DWORD fdwClipPrecision, DWORD fdwQuality, DWORD fdwPitchAndFamily, LPCTSTR lpszFace)
-    public static int CreateFontA(int nHeight, int nWidth, int nEscapement, int nOrientation, int fnWeight, int fdwItalic, int fdwUnderline, int fdwStrikeOut, int fdwCharSet, int fdwOutputPrecision, int fdwClipPrecision, int fdwQuality, int fdwPitchAndFamily, int lpszFace) {
+    public static int CreateFontA(int nHeight, int nWidth, int nEscapement, int nOrientation, int fnWeight,
+        int fdwItalic, int fdwUnderline, int fdwStrikeOut, int fdwCharSet, int fdwOutputPrecision, int fdwClipPrecision,
+        int fdwQuality, int fdwPitchAndFamily, int lpszFace) {
         String fontName = null;
 
         if (lpszFace != 0) {
             fontName = StringUtil.getString(lpszFace);
         }
-        return CreateFont(nHeight, nWidth, nEscapement, nOrientation, fnWeight, fdwItalic, fdwUnderline, fdwStrikeOut, fdwCharSet, fdwOutputPrecision, fdwClipPrecision, fdwQuality, fdwPitchAndFamily, fontName);
+        return CreateFont(nHeight, nWidth, nEscapement, nOrientation, fnWeight, fdwItalic, fdwUnderline, fdwStrikeOut,
+            fdwCharSet, fdwOutputPrecision, fdwClipPrecision, fdwQuality, fdwPitchAndFamily, fontName);
     }
 
-    public static int CreateFontW(int nHeight, int nWidth, int nEscapement, int nOrientation, int fnWeight, int fdwItalic, int fdwUnderline, int fdwStrikeOut, int fdwCharSet, int fdwOutputPrecision, int fdwClipPrecision, int fdwQuality, int fdwPitchAndFamily, int lpszFace) {
+    public static int CreateFontW(int nHeight, int nWidth, int nEscapement, int nOrientation, int fnWeight,
+        int fdwItalic, int fdwUnderline, int fdwStrikeOut, int fdwCharSet, int fdwOutputPrecision, int fdwClipPrecision,
+        int fdwQuality, int fdwPitchAndFamily, int lpszFace) {
         String fontName = null;
 
         if (lpszFace != 0) {
             fontName = StringUtil.getStringW(lpszFace);
         }
-        return CreateFont(nHeight, nWidth, nEscapement, nOrientation, fnWeight, fdwItalic, fdwUnderline, fdwStrikeOut, fdwCharSet, fdwOutputPrecision, fdwClipPrecision, fdwQuality, fdwPitchAndFamily, fontName);
+        return CreateFont(nHeight, nWidth, nEscapement, nOrientation, fnWeight, fdwItalic, fdwUnderline, fdwStrikeOut,
+            fdwCharSet, fdwOutputPrecision, fdwClipPrecision, fdwQuality, fdwPitchAndFamily, fontName);
     }
 
-    public static int CreateFont(int nHeight, int nWidth, int nEscapement, int nOrientation, int fnWeight, int fdwItalic, int fdwUnderline, int fdwStrikeOut, int fdwCharSet, int fdwOutputPrecision, int fdwClipPrecision, int fdwQuality, int fdwPitchAndFamily, String fontName) {
+    public static int CreateFont(int nHeight, int nWidth, int nEscapement, int nOrientation, int fnWeight,
+        int fdwItalic, int fdwUnderline, int fdwStrikeOut, int fdwCharSet, int fdwOutputPrecision, int fdwClipPrecision,
+        int fdwQuality, int fdwPitchAndFamily, String fontName) {
         int style = Font.PLAIN;
         if (fnWeight >= 600) // FW_SEMIBOLD
             style |= Font.BOLD;
@@ -108,11 +118,13 @@ public class WinFont extends WinGDI {
         int fdwPitchAndFamily = readb(lplf);
         lplf += 1;
         int lpszFace = lplf;
-        return CreateFontA(nHeight, nWidth, nEscapement, nOrientation, fnWeight, fdwItalic, fdwUnderline, fdwStrikeOut, fdwCharSet, fdwOutputPrecision, fdwClipPrecision, fdwQuality, fdwPitchAndFamily, lpszFace);
+        return CreateFontA(nHeight, nWidth, nEscapement, nOrientation, fnWeight, fdwItalic, fdwUnderline, fdwStrikeOut,
+            fdwCharSet, fdwOutputPrecision, fdwClipPrecision, fdwQuality, fdwPitchAndFamily, lpszFace);
     }
 
     // BOOL GetTextExtentExPoint(HDC hdc, LPCTSTR lpszStr, int cchString, int nMaxExtent, LPINT lpnFit, LPINT alpDx, LPSIZE lpSize)
-    public static int GetTextExtentExPointA(int hdc, int lpszStr, int cchString, int nMaxExtent, int lpnFit, int alpDx, int lpSize) {
+    public static int GetTextExtentExPointA(int hdc, int lpszStr, int cchString, int nMaxExtent, int lpnFit, int alpDx,
+        int lpSize) {
         String text = StringUtil.getString(lpszStr, cchString);
         WinSize size = GetTextExtentExPoint(hdc, text, nMaxExtent, lpnFit, alpDx);
         if (size == null)
@@ -159,16 +171,16 @@ public class WinFont extends WinGDI {
     }
 
     // BOOL GetTextExtentPoint32(HDC hdc, LPCTSTR lpString, int c, LPSIZE lpSize)
-    static public int GetTextExtentPoint32A(int hdc, int lpString, int cbString, int lpSize) {
+    public static int GetTextExtentPoint32A(int hdc, int lpString, int cbString, int lpSize) {
         return GetTextExtentPointA(hdc, lpString, cbString, lpSize);
     }
 
-    static public int GetTextExtentPoint32W(int hdc, int lpString, int cbString, int lpSize) {
+    public static int GetTextExtentPoint32W(int hdc, int lpString, int cbString, int lpSize) {
         return GetTextExtentPointW(hdc, lpString, cbString, lpSize);
     }
 
     // BOOL GetTextExtentPoint(HDC hdc, LPCTSTR lpString, int cbString, LPSIZE lpSize)
-    static public int GetTextExtentPointA(int hdc, int lpString, int cbString, int lpSize) {
+    public static int GetTextExtentPointA(int hdc, int lpString, int cbString, int lpSize) {
         String text = StringUtil.getString(lpString, cbString);
         WinSize size = GetTextExtentPoint(hdc, text);
         if (size == null)
@@ -178,7 +190,7 @@ public class WinFont extends WinGDI {
         return TRUE;
     }
 
-    static public int GetTextExtentPointW(int hdc, int lpString, int cbString, int lpSize) {
+    public static int GetTextExtentPointW(int hdc, int lpString, int cbString, int lpSize) {
         String text = StringUtil.getStringW(lpString, cbString);
         WinSize size = GetTextExtentPoint(hdc, text);
         if (size == null)
@@ -188,12 +200,12 @@ public class WinFont extends WinGDI {
         return TRUE;
     }
 
-    static public WinSize GetTextExtentPoint(int hdc, String text) {
+    public static WinSize GetTextExtentPoint(int hdc, String text) {
         return GetTextExtentExPoint(hdc, text, 0, NULL, NULL);
     }
 
     // BOOL GetTextMetrics(HDC hdc, LPTEXTMETRIC lptm)
-    static public int GetTextMetricsA(int hdc, int lptm) {
+    public static int GetTextMetricsA(int hdc, int lptm) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return FALSE;
@@ -247,38 +259,28 @@ public class WinFont extends WinGDI {
         return WinAPI.TRUE;
     }
 
-    static public int JAVA_TO_WIN(int size) {
+    public static int JAVA_TO_WIN(int size) {
         return size * 9 / 10;// * 96 / 72;
     }
 
-    static public int WIN_TO_JAVA(int size) {
+    public static int WIN_TO_JAVA(int size) {
         return size * 10 / 9;// * 72 / 96;
     }
 
     /***********************************************************************
-     *           GdiGetCharDimensions    (GDI32.@)
-     *
-     * Gets the average width of the characters in the English alphabet.
-     *
-     * PARAMS
-     *  hdc    [I] Handle to the device context to measure on.
-     *
-     * RETURNS
-     *  The average width of characters in the English alphabet.
-     *
-     * NOTES
-     *  This function is used by the dialog manager to get the size of a dialog
-     *  unit. It should also be used by other pieces of code that need to know
-     *  the size of a dialog unit in logical units without having access to the
-     *  window handle of the dialog.
-     *  Windows caches the font metrics from this function, but we don't and
-     *  there doesn't appear to be an immediate advantage to do so.
-     *
-     * SEE ALSO
-     *  GetTextExtentPointW, GetTextMetricsW, MapDialogRect.
+     * GdiGetCharDimensions (GDI32.@) Gets the average width of the characters in
+     * the English alphabet. PARAMS hdc [I] Handle to the device context to measure
+     * on. RETURNS The average width of characters in the English alphabet. NOTES
+     * This function is used by the dialog manager to get the size of a dialog unit.
+     * It should also be used by other pieces of code that need to know the size of
+     * a dialog unit in logical units without having access to the window handle of
+     * the dialog. Windows caches the font metrics from this function, but we don't
+     * and there doesn't appear to be an immediate advantage to do so. SEE ALSO
+     * GetTextExtentPointW, GetTextMetricsW, MapDialogRect.
      */
-    static public WinSize GdiGetCharDimensions(int hdc, int lptm) {
-        if (lptm != 0 && GetTextMetricsA(hdc, lptm) == 0) return null;
+    public static WinSize GdiGetCharDimensions(int hdc, int lptm) {
+        if (lptm != 0 && GetTextMetricsA(hdc, lptm) == 0)
+            return null;
 
         WinSize size = GetTextExtentPoint(hdc, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
         if (size == null)
@@ -287,6 +289,7 @@ public class WinFont extends WinGDI {
         return size;
     }
 
+    @Override
     public String toString() {
         return "FONT " + font.getFontName() + " " + font.getSize() + "pt";
     }

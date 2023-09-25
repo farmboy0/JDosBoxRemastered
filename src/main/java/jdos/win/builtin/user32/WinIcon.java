@@ -10,12 +10,11 @@ public class WinIcon extends WinObject {
         super(handle);
     }
 
-    static public WinIcon create(int instance, int name) {
-        WinIcon icon = new WinIcon(nextObjectId());
-        return icon;
+    public static WinIcon create(int instance, int name) {
+        return new WinIcon(nextObjectId());
     }
 
-    static public WinIcon get(int handle) {
+    public static WinIcon get(int handle) {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinIcon))
             return null;
@@ -28,7 +27,8 @@ public class WinIcon extends WinObject {
     }
 
     // BOOL WINAPI DrawIconEx(HDC hdc, int xLeft, int yTop, HICON hIcon, int cxWidth, int cyWidth, UINT istepIfAniCur, HBRUSH hbrFlickerFreeDraw, UINT diFlags)
-    public static int DrawIconEx(int hdc, int xLeft, int yTop, int hIcon, int cxWidth, int cyWidth, int istepIfAniCur, int hbrFlickerFreeDraw, int diFlags) {
+    public static int DrawIconEx(int hdc, int xLeft, int yTop, int hIcon, int cxWidth, int cyWidth, int istepIfAniCur,
+        int hbrFlickerFreeDraw, int diFlags) {
         log("DrawIconEx faked");
         return TRUE;
     }

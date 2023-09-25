@@ -1,9 +1,9 @@
 package jdos.misc.setup;
 
+import java.util.Vector;
+
 import jdos.misc.Log;
 import jdos.misc.Msg;
-
-import java.util.Vector;
 
 public abstract class Property {
     public final String propname;
@@ -19,8 +19,8 @@ public abstract class Property {
 
     public void Set_values(String[] in) {
         int type = default_value.type;
-        for (int i = 0; i < in.length; i++) {
-            suggested_values.add(new Value(in[i], type));
+        for (String element : in) {
+            suggested_values.add(new Value(element, type));
         }
     }
 
@@ -50,14 +50,16 @@ public abstract class Property {
     //Type specific properties are encouraged to override this and check for type
     //specific features.
     public boolean CheckValue(Value in, boolean warn) {
-        if (suggested_values.isEmpty()) return true;
+        if (suggested_values.isEmpty())
+            return true;
         for (int i = 0; i < suggested_values.size(); i++) {
             Value v = (Value) suggested_values.elementAt(i);
             if (in.equals(v))
                 return true;
         }
         if (warn)
-            Log.log_msg("\"" + in.toString() + "\" is not a valid value for variable: " + propname + ".\nIt might now be reset to the default value: " + default_value.toString());
+            Log.log_msg("\"" + in.toString() + "\" is not a valid value for variable: " + propname
+                + ".\nIt might now be reset to the default value: " + default_value.toString());
         return false;
     }
 
@@ -67,8 +69,10 @@ public abstract class Property {
     }
 
     public void SetVal(Value in, boolean forced, boolean warn) {
-        if (forced || CheckValue(in, warn)) value = in;
-        else value = default_value;
+        if (forced || CheckValue(in, warn))
+            value = in;
+        else
+            value = default_value;
     }
 
     public Vector GetValues() {

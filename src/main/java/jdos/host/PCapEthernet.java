@@ -1,21 +1,22 @@
 package jdos.host;
 
-import jdos.misc.Log;
-import jdos.misc.setup.Section_prop;
-import jdos.util.Ptr;
-import jdos.util.StringHelper;
+import java.util.ArrayList;
+
 import org.jnetpcap.Pcap;
 import org.jnetpcap.PcapHeader;
 import org.jnetpcap.PcapIf;
 import org.jnetpcap.nio.JBuffer;
 import org.jnetpcap.nio.JMemory;
 
-import java.util.ArrayList;
+import jdos.misc.Log;
+import jdos.misc.setup.Section_prop;
+import jdos.util.Ptr;
+import jdos.util.StringHelper;
 
 public class PCapEthernet implements Ethernet {
     Pcap pcap;
 
-    static public Pcap open(String realnicstring, boolean async) {
+    public static Pcap open(String realnicstring, boolean async) {
         try {
             ArrayList alldevs = new ArrayList(); // Will be filled with NICs
             StringBuilder errbuf = new StringBuilder(); // For any error msgs
@@ -38,7 +39,8 @@ public class PCapEthernet implements Ethernet {
                     if (desc == null || desc.length() == 0)
                         desc = "no description";
                     i++;
-                    Log.log_msg(StringHelper.sprintf("%2d. %s\n    (%s)\n", new Object[]{new Integer(i), currentdev.getName(), desc}));
+                    Log.log_msg(StringHelper.sprintf("%2d. %s\n    (%s)\n",
+                        new Object[] { Integer.valueOf(i), currentdev.getName(), desc }));
                 }
                 Pcap.freeAllDevs(alldevs, errbuf);
                 return null;
@@ -50,12 +52,13 @@ public class PCapEthernet implements Ethernet {
                     dev = (PcapIf) alldevs.get(index);
                 }
             } catch (Exception e) {
-                for (int i = 0; i < alldevs.size(); i++) {
-                    PcapIf currentdev = (PcapIf) alldevs.get(i);
+                for (Object alldev : alldevs) {
+                    PcapIf currentdev = (PcapIf) alldev;
                     if (currentdev.getName().contains(realnicstring)) {
                         dev = currentdev;
                         break;
-                    } else if (currentdev.getDescription() != null && currentdev.getDescription().contains(realnicstring)) {
+                    } else if (currentdev.getDescription() != null
+                        && currentdev.getDescription().contains(realnicstring)) {
                         dev = currentdev;
                         break;
                     }
@@ -85,10 +88,12 @@ public class PCapEthernet implements Ethernet {
         }
     }
 
+    @Override
     public void send(byte[] buffer, int offset, int len) {
         pcap.sendPacket(buffer, offset, len);
     }
 
+    @Override
     public void receive(RxFrame frame) {
         PcapHeader header = new PcapHeader(JMemory.POINTER);
         JBuffer buffer = new JBuffer(JMemory.POINTER);
@@ -99,6 +104,7 @@ public class PCapEthernet implements Ethernet {
         }
     }
 
+    @Override
     public void close() {
         if (pcap != null) {
             pcap.close();
@@ -106,6 +112,7 @@ public class PCapEthernet implements Ethernet {
         }
     }
 
+    @Override
     public boolean open(Section_prop section, byte[] mac) {
         pcap = open(section.Get_string("realnic"), true);
         return pcap != null;

@@ -1,7 +1,11 @@
 package jdos.cpu.core_dynamic;
 
 import jdos.Dosbox;
-import jdos.cpu.*;
+import jdos.cpu.CPU;
+import jdos.cpu.CPU_Regs;
+import jdos.cpu.Core;
+import jdos.cpu.PageFaultException;
+import jdos.cpu.Paging;
 import jdos.cpu.core_share.Constants;
 import jdos.cpu.core_share.ModifiedDecode;
 import jdos.hardware.RAM;
@@ -11,38 +15,41 @@ import jdos.misc.setup.Config;
 public class Decoder extends Inst1 {
     public static final Decode[] ops = new Decode[1024];
     public static final boolean removeRedundantSegs = false;
-    public static final boolean log = false;
-    public static final boolean trace = false; // useful if the compiler isn't enabled
+    public static final boolean log = true;
+    public static final boolean trace = true; // useful if the compiler isn't enabled
     public static boolean logit = false;
     public static int traceCount = 0;
 
     static {
-        Decode not_handled = new Decode() {
-            public int call(Op prev) {
-                prev.next = new Op() {
-                    public int call() {
-                        CPU.CPU_Exception(6, 0);
-                        return Constants.BR_Jump;
-                    }
+        Decode not_handled = prev -> {
+            prev.next = new Op() {
+                @Override
+                public int call() {
+                    CPU.CPU_Exception(6, 0);
+                    return Constants.BR_Jump;
+                }
 
-                    public boolean throwsException() {
-                        return true;
-                    }
+                @Override
+                public boolean throwsException() {
+                    return true;
+                }
 
-                    public boolean accessesMemory() {
-                        return false;
-                    }
+                @Override
+                public boolean accessesMemory() {
+                    return false;
+                }
 
-                    public boolean usesEip() {
-                        return false;
-                    }
+                @Override
+                public boolean usesEip() {
+                    return false;
+                }
 
-                    public boolean setsEip() {
-                        return false;
-                    }
-                };
-                return RESULT_JUMP;
-            }
+                @Override
+                public boolean setsEip() {
+                    return false;
+                }
+            };
+            return RESULT_JUMP;
         };
         for (int i = 0; i < ops.length; i++)
             ops[i] = not_handled;
@@ -55,7 +62,8 @@ public class Decoder extends Inst1 {
         Prefix_66_0f.init(ops);
     }
 
-    public static CacheBlockDynRec CreateCacheBlock(CodePageHandlerDynRec codepage,/*PhysPt*/int start,/*Bitu*/int max_opcodes) {
+    public static CacheBlockDynRec CreateCacheBlock(CodePageHandlerDynRec codepage, /*PhysPt*/int start,
+        /*Bitu*/int max_opcodes) {
         // initialize a load of variables
         decode.code_start = start;
         decode.code = start;
@@ -102,15 +110,18 @@ public class Decoder extends Inst1 {
                 result = ops[opcode].call(op);
                 if (log) {
                     if (op.next != null)
-                        System.out.print(Integer.toHexString(CPU_Regs.reg_csPhys.dword) + ":" + Integer.toHexString(op_start) + " " + Integer.toHexString(opcode) + " " + op.next.getClass().getName());
+                        System.out
+                            .print(Integer.toHexString(CPU_Regs.reg_csPhys.dword) + ":" + Integer.toHexString(op_start)
+                                + " " + Integer.toHexString(opcode) + " " + op.next.getClass().getName());
                     else
-                        System.out.print(Integer.toHexString(CPU_Regs.reg_csPhys.dword) + ":" + Integer.toHexString(op_start) + " " + Integer.toHexString(opcode) + " ");
+                        System.out.print(Integer.toHexString(CPU_Regs.reg_csPhys.dword) + ":"
+                            + Integer.toHexString(op_start) + " " + Integer.toHexString(opcode) + " ");
                 }
                 if (decode.modifiedAlot) {
                     result = RESULT_ILLEGAL_INSTRUCTION;
                     break;
                 }
-                count += (decode.code - decode.op_start);
+                count += decode.code - decode.op_start;
                 if (result == RESULT_CONTINUE) {
                     result = RESULT_HANDLED;
                     max_opcodes++;
@@ -238,7 +249,8 @@ public class Decoder extends Inst1 {
         decode.active_block.page.end = --decode.page.index;
         if (Config.DYNAMIC_CORE_VERIFY) {
             decode.block.originalByteCode = new byte[decode.block.page.end - decode.block.page.start + 1];
-            RAM.memcpy(decode.block.originalByteCode, 0, Paging.getDirectIndexRO(start), decode.block.originalByteCode.length);
+            RAM.memcpy(decode.block.originalByteCode, 0, Paging.getDirectIndexRO(start),
+                decode.block.originalByteCode.length);
         }
         start_op.next.cycle = cycles;
         if (trace) {
@@ -249,7 +261,8 @@ public class Decoder extends Inst1 {
                 op = o;
             }
         }
-        decode.block.code = new DecodeBlock(decode.block, start_op.next, start, decode.block.page.end - decode.block.page.start + 1);
+        decode.block.code = new DecodeBlock(decode.block, start_op.next, start,
+            decode.block.page.end - decode.block.page.start + 1);
         return decode.block;
     }
 
@@ -260,7 +273,7 @@ public class Decoder extends Inst1 {
         }
     }
 
-    abstract public static class SegOp extends Op {
+    public abstract static class SegOp extends Op {
         public Op op;
 
         public void reset() {
@@ -269,40 +282,49 @@ public class Decoder extends Inst1 {
             Core.base_val_ds = ds;
         }
 
+        @Override
         public int sets() {
             return op.sets();
         }
 
+        @Override
         public int gets() {
             return op.gets();
         }
 
+        @Override
         public boolean returnsIllegal() {
             return op.returnsIllegal();
         }
 
+        @Override
         public int setsSeg() {
             return op.setsSeg();
         }
 
+        @Override
         public boolean throwsException() {
             return op.throwsException();
         }
 
+        @Override
         public boolean accessesMemory() {
             return op.accessesMemory();
         }
 
+        @Override
         public boolean usesEip() {
             return op.accessesMemory();
         }
 
+        @Override
         public boolean setsEip() {
             return op.setsEip();
         }
     }
 
-    final public static class HandledSegChange extends Op {
+    public static final class HandledSegChange extends Op {
+        @Override
         public int call() {
             Core.base_ds = CPU_Regs.reg_dsPhys.dword;
             Core.base_ss = CPU_Regs.reg_ssPhys.dword;
@@ -310,40 +332,49 @@ public class Decoder extends Inst1 {
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
     private static class StartDecode extends Op {
+        @Override
         public int call() {
             return Constants.BR_Normal;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
@@ -357,35 +388,49 @@ public class Decoder extends Inst1 {
             this.cycle = op.cycle;
         }
 
+        @Override
         public int call() {
             if (logit) {
                 traceCount++;
-                if ((traceCount % 1000) == 0) {
+                if (traceCount % 1000 == 0) {
                     int ii = 0;
                 }
-                System.out.println(traceCount + " " + Integer.toHexString(CPU_Regs.reg_csPhys.dword) + ":" + Integer.toHexString(CPU_Regs.reg_eip) + " " + Integer.toHexString(op.c) + " " + op.description() + " (eax=0x" + Integer.toHexString(CPU_Regs.reg_eax.dword) + " ecx=0x" + Integer.toHexString(CPU_Regs.reg_ecx.dword) + " edx=0x" + Integer.toHexString(CPU_Regs.reg_edx.dword) + " ebx=0x" + Integer.toHexString(CPU_Regs.reg_ebx.dword) + " esp=0x" + Integer.toHexString(CPU_Regs.reg_esp.dword) + " ebp=0x" + Integer.toHexString(CPU_Regs.reg_ebp.dword) + " esi=0x" + Integer.toHexString(CPU_Regs.reg_esi.dword) + " edi=0x" + Integer.toHexString(CPU_Regs.reg_edi.dword) + ")");
+                System.out.println(traceCount + " " + Integer.toHexString(CPU_Regs.reg_csPhys.dword) + ":"
+                    + Integer.toHexString(CPU_Regs.reg_eip) + " " + Integer.toHexString(op.c) + " " + op.description()
+                    + " (eax=0x" + Integer.toHexString(CPU_Regs.reg_eax.dword) + " ecx=0x"
+                    + Integer.toHexString(CPU_Regs.reg_ecx.dword) + " edx=0x"
+                    + Integer.toHexString(CPU_Regs.reg_edx.dword) + " ebx=0x"
+                    + Integer.toHexString(CPU_Regs.reg_ebx.dword) + " esp=0x"
+                    + Integer.toHexString(CPU_Regs.reg_esp.dword) + " ebp=0x"
+                    + Integer.toHexString(CPU_Regs.reg_ebp.dword) + " esi=0x"
+                    + Integer.toHexString(CPU_Regs.reg_esi.dword) + " edi=0x"
+                    + Integer.toHexString(CPU_Regs.reg_edi.dword) + ")");
             }
             return op.call();
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    static public class JumpOp extends Op {
+    public static class JumpOp extends Op {
         int offset;
 
         public JumpOp(Op op) {
@@ -409,71 +454,87 @@ public class Decoder extends Inst1 {
             }
         }
 
+        @Override
         public String description() {
             return "JMP " + offset;
         }
 
+        @Override
         public int call() {
             CPU_Regs.reg_eip += eip_count + offset;
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return true;
         }
 
+        @Override
         public boolean setsEip() {
             return true;
         }
     }
 
     public static class HandledDecode extends Op {
+        @Override
         public int call() {
             return Constants.BR_Jump;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    static public class ModifiedDecodeOp extends Op {
+    public static class ModifiedDecodeOp extends Op {
+        @Override
         public int call() {
             return ModifiedDecode.call();
         }
 
+        @Override
         public boolean throwsException() {
             return true;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return true;
         }
 
+        @Override
         public boolean setsEip() {
             return true;
         }

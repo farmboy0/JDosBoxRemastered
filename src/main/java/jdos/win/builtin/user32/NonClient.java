@@ -4,23 +4,23 @@ import jdos.win.builtin.WinAPI;
 
 public class NonClient extends WinAPI {
     // BOOL WINAPI AdjustWindowRectEx(LPRECT lpRect, DWORD dwStyle, BOOL bMenu, DWORD dwExStyle)
-    static public int AdjustWindowRectEx(int lpRect, int dwStyle, int bMenu, int dwExStyle) {
+    public static int AdjustWindowRectEx(int lpRect, int dwStyle, int bMenu, int dwExStyle) {
         log("Faked");
         return TRUE;
     }
 
-    static public int NC_HandleNCPaint(int hwnd, int clip) {
+    public static int NC_HandleNCPaint(int hwnd, int clip) {
         return 0;
     }
 
-    static public int NC_HandleSetCursor(int hwnd, int wParam, int lParam) {
+    public static int NC_HandleSetCursor(int hwnd, int wParam, int lParam) {
         switch ((short) LOWORD(lParam)) {
             case HTERROR: {
                 int msg = HIWORD(lParam);
-                if ((msg == WM_LBUTTONDOWN) || (msg == WM_MBUTTONDOWN) || (msg == WM_RBUTTONDOWN))
+                if (msg == WM_LBUTTONDOWN || msg == WM_MBUTTONDOWN || msg == WM_RBUTTONDOWN)
                     Message.MessageBeep(0);
             }
-            break;
+                break;
             case HTCLIENT: {
                 int hCursor = WinClass.GetClassLongA(hwnd, GCL_HCURSOR);
                 if (hCursor != 0) {

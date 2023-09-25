@@ -4,77 +4,57 @@ import jdos.cpu.CPU_Regs;
 import jdos.hardware.Memory;
 import jdos.win.Win;
 import jdos.win.builtin.WinAPI;
-import jdos.win.builtin.gdi32.*;
-import jdos.win.system.*;
+import jdos.win.builtin.gdi32.BitBlt;
+import jdos.win.builtin.gdi32.Clipping;
+import jdos.win.builtin.gdi32.GdiObj;
+import jdos.win.builtin.gdi32.LOGBRUSH;
+import jdos.win.builtin.gdi32.Mapping;
+import jdos.win.builtin.gdi32.PaintingGDI;
+import jdos.win.builtin.gdi32.WinBitmap;
+import jdos.win.builtin.gdi32.WinBrush;
+import jdos.win.builtin.gdi32.WinDC;
+import jdos.win.builtin.gdi32.WinFont;
+import jdos.win.builtin.gdi32.WinPen;
+import jdos.win.builtin.gdi32.WinRegion;
+import jdos.win.system.StaticData;
+import jdos.win.system.WinPoint;
+import jdos.win.system.WinRect;
+import jdos.win.system.WinSize;
+import jdos.win.system.WinSystem;
 import jdos.win.utils.Ptr;
 import jdos.win.utils.StringUtil;
 
 public class UiTools extends WinAPI {
-    static final private int[] LTInnerNormal = {
-            -1, -1, -1, -1,
-            -1, COLOR_BTNHIGHLIGHT, COLOR_BTNHIGHLIGHT, -1,
-            -1, COLOR_3DDKSHADOW, COLOR_3DDKSHADOW, -1,
-            -1, -1, -1, -1
-    };
-    static final private int[] LTOuterNormal = {
-            -1, COLOR_3DLIGHT, COLOR_BTNSHADOW, -1,
-            COLOR_BTNHIGHLIGHT, COLOR_3DLIGHT, COLOR_BTNSHADOW, -1,
-            COLOR_3DDKSHADOW, COLOR_3DLIGHT, COLOR_BTNSHADOW, -1,
-            -1, COLOR_3DLIGHT, COLOR_BTNSHADOW, -1
-    };
-    static final private int[] RBInnerNormal = {
-            -1, -1, -1, -1,
-            -1, COLOR_BTNSHADOW, COLOR_BTNSHADOW, -1,
-            -1, COLOR_3DLIGHT, COLOR_3DLIGHT, -1,
-            -1, -1, -1, -1
-    };
-    static final private int[] RBOuterNormal = {
-            -1, COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1,
-            COLOR_BTNSHADOW, COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1,
-            COLOR_3DLIGHT, COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1,
-            -1, COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1
-    };
-    static final private int[] LTInnerSoft = {
-            -1, -1, -1, -1,
-            -1, COLOR_3DLIGHT, COLOR_3DLIGHT, -1,
-            -1, COLOR_BTNSHADOW, COLOR_BTNSHADOW, -1,
-            -1, -1, -1, -1
-    };
-    static final private int[] LTOuterSoft = {
-            -1, COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1,
-            COLOR_3DLIGHT, COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1,
-            COLOR_BTNSHADOW, COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1,
-            -1, COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1
-    };
-    static final private int[] RBInnerSoft = RBInnerNormal;   /* These are the same */
-    static final private int[] RBOuterSoft = RBOuterNormal;
-    static final private int[] LTRBOuterMono = {
-            -1, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME,
-            COLOR_WINDOW, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME,
-            COLOR_WINDOW, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME,
-            COLOR_WINDOW, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME,
-    };
-    static final private int[] LTRBInnerMono = {
-            -1, -1, -1, -1,
-            -1, COLOR_WINDOW, COLOR_WINDOW, COLOR_WINDOW,
-            -1, COLOR_WINDOW, COLOR_WINDOW, COLOR_WINDOW,
-            -1, COLOR_WINDOW, COLOR_WINDOW, COLOR_WINDOW,
-    };
-    static final private int[] LTRBOuterFlat = {
-            -1, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNSHADOW,
-            COLOR_BTNFACE, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNSHADOW,
-            COLOR_BTNFACE, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNSHADOW,
-            COLOR_BTNFACE, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNSHADOW,
-    };
-    static final private int[] LTRBInnerFlat = {
-            -1, -1, -1, -1,
-            -1, COLOR_BTNFACE, COLOR_BTNFACE, COLOR_BTNFACE,
-            -1, COLOR_BTNFACE, COLOR_BTNFACE, COLOR_BTNFACE,
-            -1, COLOR_BTNFACE, COLOR_BTNFACE, COLOR_BTNFACE,
-    };
+    private static final int[] LTInnerNormal = { -1, -1, -1, -1, -1, COLOR_BTNHIGHLIGHT, COLOR_BTNHIGHLIGHT, -1, -1,
+        COLOR_3DDKSHADOW, COLOR_3DDKSHADOW, -1, -1, -1, -1, -1 };
+    private static final int[] LTOuterNormal = { -1, COLOR_3DLIGHT, COLOR_BTNSHADOW, -1, COLOR_BTNHIGHLIGHT,
+        COLOR_3DLIGHT, COLOR_BTNSHADOW, -1, COLOR_3DDKSHADOW, COLOR_3DLIGHT, COLOR_BTNSHADOW, -1, -1, COLOR_3DLIGHT,
+        COLOR_BTNSHADOW, -1 };
+    private static final int[] RBInnerNormal = { -1, -1, -1, -1, -1, COLOR_BTNSHADOW, COLOR_BTNSHADOW, -1, -1,
+        COLOR_3DLIGHT, COLOR_3DLIGHT, -1, -1, -1, -1, -1 };
+    private static final int[] RBOuterNormal = { -1, COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1, COLOR_BTNSHADOW,
+        COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1, COLOR_3DLIGHT, COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1, -1,
+        COLOR_3DDKSHADOW, COLOR_BTNHIGHLIGHT, -1 };
+    private static final int[] LTInnerSoft = { -1, -1, -1, -1, -1, COLOR_3DLIGHT, COLOR_3DLIGHT, -1, -1,
+        COLOR_BTNSHADOW, COLOR_BTNSHADOW, -1, -1, -1, -1, -1 };
+    private static final int[] LTOuterSoft = { -1, COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1, COLOR_3DLIGHT,
+        COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1, COLOR_BTNSHADOW, COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1, -1,
+        COLOR_BTNHIGHLIGHT, COLOR_3DDKSHADOW, -1 };
+    private static final int[] RBInnerSoft = RBInnerNormal; /* These are the same */
+    private static final int[] RBOuterSoft = RBOuterNormal;
+    private static final int[] LTRBOuterMono = { -1, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME,
+        COLOR_WINDOW, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOW, COLOR_WINDOWFRAME,
+        COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOW, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, COLOR_WINDOWFRAME, };
+    private static final int[] LTRBInnerMono = { -1, -1, -1, -1, -1, COLOR_WINDOW, COLOR_WINDOW, COLOR_WINDOW, -1,
+        COLOR_WINDOW, COLOR_WINDOW, COLOR_WINDOW, -1, COLOR_WINDOW, COLOR_WINDOW, COLOR_WINDOW, };
+    private static final int[] LTRBOuterFlat = { -1, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNFACE,
+        COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNFACE, COLOR_BTNSHADOW, COLOR_BTNSHADOW,
+        COLOR_BTNSHADOW, COLOR_BTNFACE, COLOR_BTNSHADOW, COLOR_BTNSHADOW, COLOR_BTNSHADOW, };
+    private static final int[] LTRBInnerFlat = { -1, -1, -1, -1, -1, COLOR_BTNFACE, COLOR_BTNFACE, COLOR_BTNFACE, -1,
+        COLOR_BTNFACE, COLOR_BTNFACE, COLOR_BTNFACE, -1, COLOR_BTNFACE, COLOR_BTNFACE, COLOR_BTNFACE, };
 
     // BOOL CopyRect(LPRECT lprcDst, const RECT *lprcSrc)
-    static public int CopyRect(int lprcDst, int lprcSrc) {
+    public static int CopyRect(int lprcDst, int lprcSrc) {
         if (lprcDst == 0 || lprcSrc == 0)
             return FALSE;
         Memory.mem_memcpy(lprcDst, lprcSrc, WinRect.SIZE);
@@ -82,7 +62,7 @@ public class UiTools extends WinAPI {
     }
 
     // BOOL DrawEdge(HDC hdc, LPRECT qrc, UINT edge, UINT grfFlags)
-    static public int DrawEdge(int hdc, int qrc, int edge, int grfFlags) {
+    public static int DrawEdge(int hdc, int qrc, int edge, int grfFlags) {
         if ((grfFlags & BF_DIAGONAL) != 0)
             return UITOOLS95_DrawDiagEdge(hdc, qrc, edge, grfFlags);
         else
@@ -90,7 +70,7 @@ public class UiTools extends WinAPI {
     }
 
     // BOOL DrawFocusRect(HDC hDC, const RECT *lprc)
-    static public int DrawFocusRect(int hDC, int lprc) {
+    public static int DrawFocusRect(int hDC, int lprc) {
         LOGBRUSH lb = new LOGBRUSH();
 
         int hOldBrush = WinDC.SelectObject(hDC, GdiObj.GetStockObject(NULL_BRUSH));
@@ -114,12 +94,13 @@ public class UiTools extends WinAPI {
     }
 
     // BOOL DrawState(HDC hdc, HBRUSH hbr, DRAWSTATEPROC lpOutputFunc, LPARAM lData, WPARAM wData, int x, int y, int cx, int cy, UINT fuFlags)
-    static public int DrawStateA(int hdc, int hbr, int lpOutputFunc, int lData, int wData, int x, int y, int cx, int cy, int fuFlags) {
+    public static int DrawStateA(int hdc, int hbr, int lpOutputFunc, int lData, int wData, int x, int y, int cx, int cy,
+        int fuFlags) {
         return UITOOLS_DrawState(hdc, hbr, lpOutputFunc, lData, wData, x, y, cx, cy, fuFlags, false);
     }
 
     // BOOL DrawFrameControl(HDC hdc, LPRECT lprc, UINT uType, UINT uState)
-    static public int DrawFrameControl(int hdc, int rc, int uType, int uState) {
+    public static int DrawFrameControl(int hdc, int rc, int uType, int uState) {
         switch (uType) {
             case DFC_BUTTON:
                 return UITOOLS95_DrawFrameButton(hdc, rc, uState);
@@ -139,12 +120,14 @@ public class UiTools extends WinAPI {
     }
 
     // INT WINAPI FrameRect( HDC hdc, const RECT *rect, HBRUSH hbrush )
-    static public int FrameRect(int hdc, int rect, int hbrush) {
+    public static int FrameRect(int hdc, int rect, int hbrush) {
         WinRect r = new WinRect(rect);
 
-        if ((r.right <= r.left) || (r.bottom <= r.top)) return FALSE;
+        if (r.right <= r.left || r.bottom <= r.top)
+            return FALSE;
         int prevBrush = WinDC.SelectObject(hdc, hbrush);
-        if (prevBrush == 0) return FALSE;
+        if (prevBrush == 0)
+            return FALSE;
 
         WinDC.PatBlt(hdc, r.left, r.top, 1, r.bottom - r.top, PATCOPY);
         WinDC.PatBlt(hdc, r.right - 1, r.top, 1, r.bottom - r.top, PATCOPY);
@@ -156,7 +139,7 @@ public class UiTools extends WinAPI {
     }
 
     // BOOL InflateRect(LPRECT lprc, int dx, int dy)
-    static public int InflateRect(int lprc, int dx, int dy) {
+    public static int InflateRect(int lprc, int dx, int dy) {
         if (lprc == 0)
             return FALSE;
         WinRect rect = new WinRect(lprc);
@@ -166,7 +149,7 @@ public class UiTools extends WinAPI {
     }
 
     // BOOL IntersectRect(LPRECT lprcDst, const RECT *lprcSrc1, const RECT *lprcSrc2)
-    static public int IntersectRect(int lprcDst, int lprcSrc1, int lprcSrc2) {
+    public static int IntersectRect(int lprcDst, int lprcSrc1, int lprcSrc2) {
         if (lprcDst == 0 || lprcSrc1 == 0 || lprcSrc2 == 0)
             return FALSE;
         WinRect rect = new WinRect(lprcSrc1);
@@ -176,7 +159,7 @@ public class UiTools extends WinAPI {
     }
 
     // BOOL IsRectEmpty(const RECT *lprc)
-    static public int IsRectEmpty(int lprc) {
+    public static int IsRectEmpty(int lprc) {
         if (lprc == 0)
             return TRUE;
         WinRect rect = new WinRect(lprc);
@@ -184,7 +167,7 @@ public class UiTools extends WinAPI {
     }
 
     // BOOL OffsetRect(LPRECT lprc, int dx, int dy)
-    static public int OffsetRect(int lprc, int dx, int dy) {
+    public static int OffsetRect(int lprc, int dx, int dy) {
         WinRect rect = new WinRect(lprc);
         rect.left += dx;
         rect.right += dx;
@@ -195,13 +178,13 @@ public class UiTools extends WinAPI {
     }
 
     // BOOL SetRect(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom)
-    static public int SetRect(int lprc, int xLeft, int yTop, int xRight, int yBottom) {
+    public static int SetRect(int lprc, int xLeft, int yTop, int xRight, int yBottom) {
         WinRect.write(lprc, xLeft, yTop, xRight, yBottom);
         return TRUE;
     }
 
     // BOOL SetRectEmpty(LPRECT lprc)
-    static public int SetRectEmpty(int lprc) {
+    public static int SetRectEmpty(int lprc) {
         if (lprc == 0)
             return FALSE;
         writed(lprc, 0);
@@ -215,14 +198,14 @@ public class UiTools extends WinAPI {
      * ********************************************************************
      * set_control_clipping
      * <p/>
-     * Set clipping for a builtin control that uses CS_PARENTDC.
-     * Return the previous clip region if any.
+     * Set clipping for a builtin control that uses CS_PARENTDC. Return the previous
+     * clip region if any.
      */
-    static public int set_control_clipping(int hdc, int pRect) {
+    public static int set_control_clipping(int hdc, int pRect) {
         return set_control_clipping(hdc, new WinRect(pRect));
     }
 
-    static public int set_control_clipping(int hdc, WinRect rc) {
+    public static int set_control_clipping(int hdc, WinRect rc) {
         int hrgn = WinRegion.CreateRectRgn(0, 0, 0, 0);
 
         if (Clipping.GetClipRgn(hdc, hrgn) != 1) {
@@ -244,9 +227,10 @@ public class UiTools extends WinAPI {
      * <p/>
      * See also comments with UITOOLS_DrawRectEdge()
      */
-    static private int UITOOLS95_DrawDiagEdge(int hdc, int prc, int uType, int uFlags) {
+    private static int UITOOLS95_DrawDiagEdge(int hdc, int prc, int uType, int uFlags) {
         WinPoint[] Points = new WinPoint[4];
-        for (int i = 0; i < Points.length; i++) Points[i] = new WinPoint();
+        for (int i = 0; i < Points.length; i++)
+            Points[i] = new WinPoint();
         int InnerI, OuterI;
         int InnerPen, OuterPen;
         int SavePoint = getTempBuffer(WinPoint.SIZE);
@@ -257,8 +241,10 @@ public class UiTools extends WinAPI {
         int Width = rc.right - rc.left;
         int Height = rc.bottom - rc.top;
         int SmallDiam = Width > Height ? Height : Width;
-        int retval = BOOL(!(((uType & BDR_INNER) == BDR_INNER || (uType & BDR_OUTER) == BDR_OUTER) && (uFlags & (BF_FLAT | BF_MONO)) == 0));
-        int add = (LTRBInnerMono[uType & (BDR_INNER | BDR_OUTER)] != -1 ? 1 : 0) + (LTRBOuterMono[uType & (BDR_INNER | BDR_OUTER)] != -1 ? 1 : 0);
+        int retval = BOOL(!(((uType & BDR_INNER) == BDR_INNER || (uType & BDR_OUTER) == BDR_OUTER)
+            && (uFlags & (BF_FLAT | BF_MONO)) == 0));
+        int add = (LTRBInnerMono[uType & (BDR_INNER | BDR_OUTER)] != -1 ? 1 : 0)
+            + (LTRBOuterMono[uType & (BDR_INNER | BDR_OUTER)] != -1 ? 1 : 0);
 
         /* Init some vars */
         OuterPen = InnerPen = GdiObj.GetStockObject(NULL_PEN);
@@ -290,8 +276,10 @@ public class UiTools extends WinAPI {
             }
         }
 
-        if (InnerI != -1) InnerPen = SysParams.GetSysColorPen(InnerI);
-        if (OuterI != -1) OuterPen = SysParams.GetSysColorPen(OuterI);
+        if (InnerI != -1)
+            InnerPen = SysParams.GetSysColorPen(InnerI);
+        if (OuterI != -1)
+            OuterPen = SysParams.GetSysColorPen(OuterI);
 
         PaintingGDI.MoveToEx(hdc, 0, 0, SavePoint);
 
@@ -348,9 +336,9 @@ public class UiTools extends WinAPI {
 
         switch (uFlags & (BF_RECT | BF_DIAGONAL)) {
             case BF_DIAGONAL_ENDBOTTOMLEFT:
-            case (BF_DIAGONAL | BF_BOTTOM):
+            case BF_DIAGONAL | BF_BOTTOM:
             case BF_DIAGONAL:
-            case (BF_DIAGONAL | BF_LEFT):
+            case BF_DIAGONAL | BF_LEFT:
                 PaintingGDI.MoveToEx(hdc, spx - 1, spy, NULL);
                 PaintingGDI.LineTo(hdc, epx, epy - 1);
                 Points[0].x = spx - add;
@@ -374,10 +362,10 @@ public class UiTools extends WinAPI {
                 Points[3] = Points[2];
                 break;
 
-            case (BF_DIAGONAL | BF_BOTTOM | BF_RIGHT | BF_TOP):
-            case (BF_DIAGONAL | BF_BOTTOM | BF_RIGHT | BF_TOP | BF_LEFT):
+            case BF_DIAGONAL | BF_BOTTOM | BF_RIGHT | BF_TOP:
+            case BF_DIAGONAL | BF_BOTTOM | BF_RIGHT | BF_TOP | BF_LEFT:
             case BF_DIAGONAL_ENDTOPRIGHT:
-            case (BF_DIAGONAL | BF_RIGHT | BF_TOP | BF_LEFT):
+            case BF_DIAGONAL | BF_RIGHT | BF_TOP | BF_LEFT:
                 PaintingGDI.MoveToEx(hdc, spx + 1, spy, NULL);
                 PaintingGDI.LineTo(hdc, epx, epy + 1);
                 Points[0].x = epx - 1;
@@ -403,9 +391,9 @@ public class UiTools extends WinAPI {
                 Points[3].y = spy - add;
                 break;
 
-            case (BF_DIAGONAL | BF_TOP):
-            case (BF_DIAGONAL | BF_BOTTOM | BF_TOP):
-            case (BF_DIAGONAL | BF_BOTTOM | BF_TOP | BF_LEFT):
+            case BF_DIAGONAL | BF_TOP:
+            case BF_DIAGONAL | BF_BOTTOM | BF_TOP:
+            case BF_DIAGONAL | BF_BOTTOM | BF_TOP | BF_LEFT:
                 PaintingGDI.MoveToEx(hdc, spx + 1, spy - 1, NULL);
                 PaintingGDI.LineTo(hdc, epx, epy);
                 Points[0].x = epx - 1;
@@ -418,9 +406,9 @@ public class UiTools extends WinAPI {
                 Points[3].y = spy - add;
                 break;
 
-            case (BF_DIAGONAL | BF_RIGHT):
-            case (BF_DIAGONAL | BF_RIGHT | BF_LEFT):
-            case (BF_DIAGONAL | BF_RIGHT | BF_LEFT | BF_BOTTOM):
+            case BF_DIAGONAL | BF_RIGHT:
+            case BF_DIAGONAL | BF_RIGHT | BF_LEFT:
+            case BF_DIAGONAL | BF_RIGHT | BF_LEFT | BF_BOTTOM:
                 PaintingGDI.MoveToEx(hdc, spx, spy, NULL);
                 PaintingGDI.LineTo(hdc, epx - 1, epy + 1);
                 Points[0].x = spx;
@@ -449,10 +437,14 @@ public class UiTools extends WinAPI {
 
         /* Adjust rectangle if asked */
         if ((uFlags & BF_ADJUST) != 0) {
-            if ((uFlags & BF_LEFT) != 0) rc.left += add;
-            if ((uFlags & BF_RIGHT) != 0) rc.right -= add;
-            if ((uFlags & BF_TOP) != 0) rc.top += add;
-            if ((uFlags & BF_BOTTOM) != 0) rc.bottom -= add;
+            if ((uFlags & BF_LEFT) != 0)
+                rc.left += add;
+            if ((uFlags & BF_RIGHT) != 0)
+                rc.right -= add;
+            if ((uFlags & BF_TOP) != 0)
+                rc.top += add;
+            if ((uFlags & BF_BOTTOM) != 0)
+                rc.bottom -= add;
             rc.write(prc);
         }
 
@@ -472,74 +464,40 @@ public class UiTools extends WinAPI {
      * <p/>
      * 23-Nov-1997: Changed by Bertho Stultiens
      * <p/>
-     * Well, I started testing this and found out that there are a few things
-     * that weren't quite as win95. The following rewrite should reproduce
-     * win95 results completely.
-     * The colorselection is table-driven to avoid awful if-statements.
+     * Well, I started testing this and found out that there are a few things that
+     * weren't quite as win95. The following rewrite should reproduce win95 results
+     * completely. The colorselection is table-driven to avoid awful if-statements.
      * The table below show the color settings.
      * <p/>
      * Pen selection table for uFlags = 0
      * <p/>
-     * uType |  LTI  |  LTO  |  RBI  |  RBO
-     * ------+-------+-------+-------+-------
-     * 0000 |   x   |   x   |   x   |   x
-     * 0001 |   x   |  22   |   x   |  21
-     * 0010 |   x   |  16   |   x   |  20
-     * 0011 |   x   |   x   |   x   |   x
-     * ------+-------+-------+-------+-------
-     * 0100 |   x   |  20   |   x   |  16
-     * 0101 |  20   |  22   |  16   |  21
-     * 0110 |  20   |  16   |  16   |  20
-     * 0111 |   x   |   x   |   x   |   x
-     * ------+-------+-------+-------+-------
-     * 1000 |   x   |  21   |   x   |  22
-     * 1001 |  21   |  22   |  22   |  21
-     * 1010 |  21   |  16   |  22   |  20
-     * 1011 |   x   |   x   |   x   |   x
-     * ------+-------+-------+-------+-------
-     * 1100 |   x   |   x   |   x   |   x
-     * 1101 |   x   | x (22)|   x   | x (21)
-     * 1110 |   x   | x (16)|   x   | x (20)
-     * 1111 |   x   |   x   |   x   |   x
+     * uType | LTI | LTO | RBI | RBO ------+-------+-------+-------+------- 0000 | x
+     * | x | x | x 0001 | x | 22 | x | 21 0010 | x | 16 | x | 20 0011 | x | x | x |
+     * x ------+-------+-------+-------+------- 0100 | x | 20 | x | 16 0101 | 20 |
+     * 22 | 16 | 21 0110 | 20 | 16 | 16 | 20 0111 | x | x | x | x
+     * ------+-------+-------+-------+------- 1000 | x | 21 | x | 22 1001 | 21 | 22
+     * | 22 | 21 1010 | 21 | 16 | 22 | 20 1011 | x | x | x | x
+     * ------+-------+-------+-------+------- 1100 | x | x | x | x 1101 | x | x
+     * (22)| x | x (21) 1110 | x | x (16)| x | x (20) 1111 | x | x | x | x
      * <p/>
      * Pen selection table for uFlags = BF_SOFT
      * <p/>
-     * uType |  LTI  |  LTO  |  RBI  |  RBO
-     * ------+-------+-------+-------+-------
-     * 0000 |   x   |   x   |   x   |   x
-     * 0001 |   x   |  20   |   x   |  21
-     * 0010 |   x   |  21   |   x   |  20
-     * 0011 |   x   |   x   |   x   |   x
-     * ------+-------+-------+-------+-------
-     * 0100 |   x   |  22   |   x   |  16
-     * 0101 |  22   |  20   |  16   |  21
-     * 0110 |  22   |  21   |  16   |  20
-     * 0111 |   x   |   x   |   x   |   x
-     * ------+-------+-------+-------+-------
-     * 1000 |   x   |  16   |   x   |  22
-     * 1001 |  16   |  20   |  22   |  21
-     * 1010 |  16   |  21   |  22   |  20
-     * 1011 |   x   |   x   |   x   |   x
-     * ------+-------+-------+-------+-------
-     * 1100 |   x   |   x   |   x   |   x
-     * 1101 |   x   | x (20)|   x   | x (21)
-     * 1110 |   x   | x (21)|   x   | x (20)
-     * 1111 |   x   |   x   |   x   |   x
+     * uType | LTI | LTO | RBI | RBO ------+-------+-------+-------+------- 0000 | x
+     * | x | x | x 0001 | x | 20 | x | 21 0010 | x | 21 | x | 20 0011 | x | x | x |
+     * x ------+-------+-------+-------+------- 0100 | x | 22 | x | 16 0101 | 22 |
+     * 20 | 16 | 21 0110 | 22 | 21 | 16 | 20 0111 | x | x | x | x
+     * ------+-------+-------+-------+------- 1000 | x | 16 | x | 22 1001 | 16 | 20
+     * | 22 | 21 1010 | 16 | 21 | 22 | 20 1011 | x | x | x | x
+     * ------+-------+-------+-------+------- 1100 | x | x | x | x 1101 | x | x
+     * (20)| x | x (21) 1110 | x | x (21)| x | x (20) 1111 | x | x | x | x
      * <p/>
-     * x = don't care; (n) = is what win95 actually uses
-     * LTI = left Top Inner line
-     * LTO = left Top Outer line
-     * RBI = Right Bottom Inner line
-     * RBO = Right Bottom Outer line
-     * 15 = COLOR_BTNFACE
-     * 16 = COLOR_BTNSHADOW
-     * 20 = COLOR_BTNHIGHLIGHT
-     * 21 = COLOR_3DDKSHADOW
-     * 22 = COLOR_3DLIGHT
+     * x = don't care; (n) = is what win95 actually uses LTI = left Top Inner line
+     * LTO = left Top Outer line RBI = Right Bottom Inner line RBO = Right Bottom
+     * Outer line 15 = COLOR_BTNFACE 16 = COLOR_BTNSHADOW 20 = COLOR_BTNHIGHLIGHT 21
+     * = COLOR_3DDKSHADOW 22 = COLOR_3DLIGHT
      */
 
-
-    static private int UITOOLS95_DrawRectEdge(int hdc, int rc, int uType, int uFlags) {
+    private static int UITOOLS95_DrawRectEdge(int hdc, int rc, int uType, int uFlags) {
         int LTInnerI, LTOuterI;
         int RBInnerI, RBOuterI;
         int LTInnerPen, LTOuterPen, RBInnerPen, RBOuterPen;
@@ -547,7 +505,8 @@ public class UiTools extends WinAPI {
         int LTpenplus = 0;
         int RTpenplus = 0;
         int RBpenplus = 0;
-        int retval = BOOL(!(((uType & BDR_INNER) == BDR_INNER || (uType & BDR_OUTER) == BDR_OUTER) && (uFlags & (BF_FLAT | BF_MONO)) == 0));
+        int retval = BOOL(!(((uType & BDR_INNER) == BDR_INNER || (uType & BDR_OUTER) == BDR_OUTER)
+            && (uFlags & (BF_FLAT | BF_MONO)) == 0));
 
         /* Init some vars */
         LTInnerPen = LTOuterPen = RBInnerPen = RBOuterPen = GdiObj.GetStockObject(NULL_PEN);
@@ -561,7 +520,8 @@ public class UiTools extends WinAPI {
             LTInnerI = RBInnerI = LTRBInnerFlat[uType & (BDR_INNER | BDR_OUTER)];
             LTOuterI = RBOuterI = LTRBOuterFlat[uType & (BDR_INNER | BDR_OUTER)];
 
-            if (LTInnerI != -1) LTInnerI = RBInnerI = COLOR_BTNFACE;
+            if (LTInnerI != -1)
+                LTInnerI = RBInnerI = COLOR_BTNFACE;
         } else if ((uFlags & BF_SOFT) != 0) {
             LTInnerI = LTInnerSoft[uType & (BDR_INNER | BDR_OUTER)];
             LTOuterI = LTOuterSoft[uType & (BDR_INNER | BDR_OUTER)];
@@ -574,15 +534,23 @@ public class UiTools extends WinAPI {
             RBOuterI = RBOuterNormal[uType & (BDR_INNER | BDR_OUTER)];
         }
 
-        if ((uFlags & BF_BOTTOMLEFT) == BF_BOTTOMLEFT) LBpenplus = 1;
-        if ((uFlags & BF_TOPRIGHT) == BF_TOPRIGHT) RTpenplus = 1;
-        if ((uFlags & BF_BOTTOMRIGHT) == BF_BOTTOMRIGHT) RBpenplus = 1;
-        if ((uFlags & BF_TOPLEFT) == BF_TOPLEFT) LTpenplus = 1;
+        if ((uFlags & BF_BOTTOMLEFT) == BF_BOTTOMLEFT)
+            LBpenplus = 1;
+        if ((uFlags & BF_TOPRIGHT) == BF_TOPRIGHT)
+            RTpenplus = 1;
+        if ((uFlags & BF_BOTTOMRIGHT) == BF_BOTTOMRIGHT)
+            RBpenplus = 1;
+        if ((uFlags & BF_TOPLEFT) == BF_TOPLEFT)
+            LTpenplus = 1;
 
-        if (LTInnerI != -1) LTInnerPen = SysParams.GetSysColorPen(LTInnerI);
-        if (LTOuterI != -1) LTOuterPen = SysParams.GetSysColorPen(LTOuterI);
-        if (RBInnerI != -1) RBInnerPen = SysParams.GetSysColorPen(RBInnerI);
-        if (RBOuterI != -1) RBOuterPen = SysParams.GetSysColorPen(RBOuterI);
+        if (LTInnerI != -1)
+            LTInnerPen = SysParams.GetSysColorPen(LTInnerI);
+        if (LTOuterI != -1)
+            LTOuterPen = SysParams.GetSysColorPen(LTOuterI);
+        if (RBInnerI != -1)
+            RBInnerPen = SysParams.GetSysColorPen(RBInnerI);
+        if (RBOuterI != -1)
+            RBOuterPen = SysParams.GetSysColorPen(RBOuterI);
 
         int SavePoint = getTempBuffer(WinPoint.SIZE);
         PaintingGDI.MoveToEx(hdc, 0, 0, SavePoint);
@@ -628,17 +596,22 @@ public class UiTools extends WinAPI {
             PaintingGDI.LineTo(hdc, InnerRect.right - 2, InnerRect.bottom - 2 + RTpenplus);
         }
 
-        if (((uFlags & BF_MIDDLE) != 0 && retval != 0) || (uFlags & BF_ADJUST) != 0) {
+        if ((uFlags & BF_MIDDLE) != 0 && retval != 0 || (uFlags & BF_ADJUST) != 0) {
             int add = (LTRBInnerMono[uType & (BDR_INNER | BDR_OUTER)] != -1 ? 1 : 0)
-                    + (LTRBOuterMono[uType & (BDR_INNER | BDR_OUTER)] != -1 ? 1 : 0);
+                + (LTRBOuterMono[uType & (BDR_INNER | BDR_OUTER)] != -1 ? 1 : 0);
 
-            if ((uFlags & BF_LEFT) != 0) InnerRect.left += add;
-            if ((uFlags & BF_RIGHT) != 0) InnerRect.right -= add;
-            if ((uFlags & BF_TOP) != 0) InnerRect.top += add;
-            if ((uFlags & BF_BOTTOM) != 0) InnerRect.bottom -= add;
+            if ((uFlags & BF_LEFT) != 0)
+                InnerRect.left += add;
+            if ((uFlags & BF_RIGHT) != 0)
+                InnerRect.right -= add;
+            if ((uFlags & BF_TOP) != 0)
+                InnerRect.top += add;
+            if ((uFlags & BF_BOTTOM) != 0)
+                InnerRect.bottom -= add;
 
             if ((uFlags & BF_MIDDLE) != 0 && retval != 0) {
-                WinDC.FillRect(hdc, InnerRect.allocTemp(), SysParams.GetSysColorBrush((uFlags & BF_MONO) != 0 ? COLOR_WINDOW : COLOR_BTNFACE));
+                WinDC.FillRect(hdc, InnerRect.allocTemp(),
+                    SysParams.GetSysColorBrush((uFlags & BF_MONO) != 0 ? COLOR_WINDOW : COLOR_BTNFACE));
             }
 
             if ((uFlags & BF_ADJUST) != 0)
@@ -658,7 +631,8 @@ public class UiTools extends WinAPI {
      * <p/>
      * Jams in the requested type in the dc
      */
-    static private int UITOOLS_DrawStateJam(int hdc, int opcode, int func, int lp, int wp, WinRect rc, int dtflags, boolean unicode) {
+    private static int UITOOLS_DrawStateJam(int hdc, int opcode, int func, int lp, int wp, WinRect rc, int dtflags,
+        boolean unicode) {
         int cx = rc.width();
         int cy = rc.height();
 
@@ -676,7 +650,8 @@ public class UiTools extends WinAPI {
 
             case DST_BITMAP:
                 int memdc = WinDC.CreateCompatibleDC(hdc);
-                if (memdc == 0) return FALSE;
+                if (memdc == 0)
+                    return FALSE;
                 int hbmsave = WinDC.SelectObject(memdc, lp);
                 if (hbmsave == 0) {
                     WinDC.DeleteDC(memdc);
@@ -710,13 +685,15 @@ public class UiTools extends WinAPI {
      * *******************************************************************
      * UITOOLS_DrawState()
      */
-    static private int UITOOLS_DrawState(int hdc, int hbr, int func, int lp, int wp, int x, int y, int cx, int cy, int flags, boolean unicode) {
+    private static int UITOOLS_DrawState(int hdc, int hbr, int func, int lp, int wp, int x, int y, int cx, int cy,
+        int flags, boolean unicode) {
         int dtflags = DT_NOCLIP;
         int opcode = flags & 0xf;
         int len = wp;
 
-        if ((opcode == DST_TEXT || opcode == DST_PREFIXTEXT) && len == 0) {   /* The string is '\0' terminated */
-            if (lp == 0) return FALSE;
+        if ((opcode == DST_TEXT || opcode == DST_PREFIXTEXT) && len == 0) { /* The string is '\0' terminated */
+            if (lp == 0)
+                return FALSE;
 
             if (unicode)
                 len = StringUtil.strlenW(lp);
@@ -736,7 +713,8 @@ public class UiTools extends WinAPI {
                         retval = WinFont.GetTextExtentPoint32W(hdc, lp, len, lpSize);
                     else
                         retval = WinFont.GetTextExtentPoint32A(hdc, lp, len, lpSize);
-                    if (retval == 0) return FALSE;
+                    if (retval == 0)
+                        return FALSE;
                     break;
                 }
                 case DST_ICON: {
@@ -759,8 +737,10 @@ public class UiTools extends WinAPI {
                     return FALSE;
             }
 
-            if (cx == 0) cx = s.cx;
-            if (cy == 0) cy = s.cy;
+            if (cx == 0)
+                cx = s.cx;
+            if (cy == 0)
+                cy = s.cy;
         }
 
         WinRect rc = new WinRect();
@@ -769,7 +749,7 @@ public class UiTools extends WinAPI {
         rc.right = x + cx;
         rc.bottom = y + cy;
 
-        if ((flags & DSS_RIGHT) != 0)    /* This one is not documented in the win32.hlp file */
+        if ((flags & DSS_RIGHT) != 0) /* This one is not documented in the win32.hlp file */
             dtflags |= DT_RIGHT;
         if (opcode == DST_TEXT)
             dtflags |= DT_NOPREFIX;
@@ -783,7 +763,6 @@ public class UiTools extends WinAPI {
         /* before it is displayed */
         int fg = WinDC.SetTextColor(hdc, RGB(0, 0, 0));
         int bg = WinDC.SetBkColor(hdc, RGB(255, 255, 255));
-        int hbm = NULL;
         int hbmsave = NULL;
         int hbrtmp = 0;
         int memdc = NULL;
@@ -791,17 +770,21 @@ public class UiTools extends WinAPI {
         retval = FALSE; /* assume failure */
 
         /* From here on we must use "goto cleanup" when something goes wrong */
-        hbm = WinBitmap.CreateBitmap(cx, cy, 1, 32, NULL);
+        int hbm = WinBitmap.CreateBitmap(cx, cy, 1, 32, NULL);
         try {
-            if (hbm == 0) return FALSE;
+            if (hbm == 0)
+                return FALSE;
             memdc = WinDC.CreateCompatibleDC(hdc);
-            if (memdc == 0) return FALSE;
+            if (memdc == 0)
+                return FALSE;
             hbmsave = WinDC.SelectObject(memdc, hbm);
-            if (hbmsave == 0) return FALSE;
+            if (hbmsave == 0)
+                return FALSE;
             rc.left = rc.top = 0;
             rc.right = cx;
             rc.bottom = cy;
-            if (WinDC.FillRect(memdc, rc.allocTemp(), GdiObj.GetStockObject(WHITE_BRUSH)) == 0) return FALSE;
+            if (WinDC.FillRect(memdc, rc.allocTemp(), GdiObj.GetStockObject(WHITE_BRUSH)) == 0)
+                return FALSE;
             WinDC.SetBkColor(memdc, RGB(255, 255, 255));
             WinDC.SetTextColor(memdc, RGB(0, 0, 0));
             int hfsave = WinDC.SelectObject(memdc, GdiObj.GetCurrentObject(hdc, OBJ_FONT));
@@ -809,18 +792,23 @@ public class UiTools extends WinAPI {
             /* DST_COMPLEX may draw text as well,
              * so we must be sure that correct font is selected
              */
-            if (hfsave == 0 && (opcode <= DST_PREFIXTEXT)) return FALSE;
+            if (hfsave == 0 && opcode <= DST_PREFIXTEXT)
+                return FALSE;
             int tmp = UITOOLS_DrawStateJam(memdc, opcode, func, lp, len, rc, dtflags, unicode);
-            if (hfsave != 0) WinDC.SelectObject(memdc, hfsave);
-            if (tmp == 0) return FALSE;
+            if (hfsave != 0)
+                WinDC.SelectObject(memdc, hfsave);
+            if (tmp == 0)
+                return FALSE;
 
             /* This state cause the image to be dithered */
             if ((flags & DSS_UNION) != 0) {
                 hbsave = WinDC.SelectObject(memdc, StaticData.SYSCOLOR_55AABrush);
-                if (hbsave == 0) return FALSE;
+                if (hbsave == 0)
+                    return FALSE;
                 tmp = WinDC.PatBlt(memdc, 0, 0, cx, cy, 0x00FA0089);
                 WinDC.SelectObject(memdc, hbsave);
-                if (tmp == 0) return FALSE;
+                if (tmp == 0)
+                    return FALSE;
             }
 
             if ((flags & DSS_DISABLED) != 0)
@@ -830,10 +818,11 @@ public class UiTools extends WinAPI {
 
             /* Draw light or dark shadow */
             if ((flags & (DSS_DISABLED | DSS_DEFAULT)) != 0) {
-                if (hbrtmp == 0) return FALSE;
+                if (hbrtmp == 0)
+                    return FALSE;
                 hbsave = WinDC.SelectObject(hdc, hbrtmp);
-                if (hbsave == 0) return FALSE;
-                if (BitBlt.BitBlt(hdc, x + 1, y + 1, cx, cy, memdc, 0, 0, 0x00B8074A) == 0) return FALSE;
+                if ((hbsave == 0) || (BitBlt.BitBlt(hdc, x + 1, y + 1, cx, cy, memdc, 0, 0, 0x00B8074A) == 0))
+                    return FALSE;
                 WinDC.SelectObject(hdc, hbsave);
                 GdiObj.DeleteObject(hbrtmp);
                 hbrtmp = 0;
@@ -841,25 +830,32 @@ public class UiTools extends WinAPI {
 
             if ((flags & DSS_DISABLED) != 0) {
                 hbr = hbrtmp = WinBrush.CreateSolidBrush(SysParams.GetSysColor(COLOR_3DSHADOW));
-                if (hbrtmp == 0) return FALSE;
+                if (hbrtmp == 0)
+                    return FALSE;
             } else if (hbr == 0) {
                 hbr = GdiObj.GetStockObject(BLACK_BRUSH);
             }
 
             hbsave = WinDC.SelectObject(hdc, hbr);
 
-            if (BitBlt.BitBlt(hdc, x, y, cx, cy, memdc, 0, 0, 0x00B8074A) == 0) return FALSE;
+            if (BitBlt.BitBlt(hdc, x, y, cx, cy, memdc, 0, 0, 0x00B8074A) == 0)
+                return FALSE;
 
             return TRUE; /* We succeeded */
         } finally {
             WinDC.SetTextColor(hdc, fg);
             WinDC.SetBkColor(hdc, bg);
 
-            if (hbsave != 0) WinDC.SelectObject(hdc, hbsave);
-            if (hbmsave != 0) WinDC.SelectObject(memdc, hbmsave);
-            if (hbrtmp != 0) GdiObj.DeleteObject(hbrtmp);
-            if (hbm != 0) GdiObj.DeleteObject(hbm);
-            if (memdc != 0) WinDC.DeleteDC(memdc);
+            if (hbsave != 0)
+                WinDC.SelectObject(hdc, hbsave);
+            if (hbmsave != 0)
+                WinDC.SelectObject(memdc, hbmsave);
+            if (hbrtmp != 0)
+                GdiObj.DeleteObject(hbrtmp);
+            if (hbm != 0)
+                GdiObj.DeleteObject(hbm);
+            if (memdc != 0)
+                WinDC.DeleteDC(memdc);
         }
     }
 
@@ -890,11 +886,10 @@ public class UiTools extends WinAPI {
      * <p/>
      * Draw a push button coming from DrawFrameControl()
      * <p/>
-     * Does a pretty good job in emulating MS behavior. Some quirks are
-     * however there because MS uses a TrueType font (Marlett) to draw
-     * the buttons.
+     * Does a pretty good job in emulating MS behavior. Some quirks are however
+     * there because MS uses a TrueType font (Marlett) to draw the buttons.
      */
-    static private int UITOOLS95_DFC_ButtonPush(int dc, int r, int uFlags) {
+    private static int UITOOLS95_DFC_ButtonPush(int dc, int r, int uFlags) {
         int edge;
 
         if ((uFlags & (DFCS_PUSHED | DFCS_CHECKED | DFCS_FLAT)) != 0)
@@ -906,7 +901,7 @@ public class UiTools extends WinAPI {
             if ((uFlags & DFCS_MONO) != 0)
                 UITOOLS95_DrawRectEdge(dc, r, edge, BF_MONO | BF_RECT | BF_ADJUST);
             else
-                UITOOLS95_DrawRectEdge(dc, r, edge, (uFlags & DFCS_FLAT) | BF_RECT | BF_SOFT | BF_ADJUST);
+                UITOOLS95_DrawRectEdge(dc, r, edge, uFlags & DFCS_FLAT | BF_RECT | BF_SOFT | BF_ADJUST);
 
             if ((uFlags & DFCS_TRANSPARENT) == 0)
                 UITOOLS_DrawCheckedRect(dc, r);
@@ -916,7 +911,8 @@ public class UiTools extends WinAPI {
                 if ((uFlags & DFCS_TRANSPARENT) == 0)
                     WinDC.FillRect(dc, r, SysParams.GetSysColorBrush(COLOR_BTNFACE));
             } else {
-                UITOOLS95_DrawRectEdge(dc, r, edge, (uFlags & DFCS_FLAT) | ((uFlags & DFCS_TRANSPARENT) != 0 ? 0 : BF_MIDDLE) | BF_RECT | BF_SOFT);
+                UITOOLS95_DrawRectEdge(dc, r, edge,
+                    uFlags & DFCS_FLAT | ((uFlags & DFCS_TRANSPARENT) != 0 ? 0 : BF_MIDDLE) | BF_RECT | BF_SOFT);
             }
         }
 
@@ -956,12 +952,11 @@ public class UiTools extends WinAPI {
      * <p/>
      * Draw a check/3state button coming from DrawFrameControl()
      * <p/>
-     * Does a pretty good job in emulating MS behavior. Some quirks are
-     * however there because MS uses a TrueType font (Marlett) to draw
-     * the buttons.
+     * Does a pretty good job in emulating MS behavior. Some quirks are however
+     * there because MS uses a TrueType font (Marlett) to draw the buttons.
      */
 
-    static private int UITOOLS95_DFC_ButtonCheck(int dc, int r, int uFlags) {
+    private static int UITOOLS95_DFC_ButtonCheck(int dc, int r, int uFlags) {
         int flags = BF_RECT | BF_ADJUST;
         WinRect myr = new WinRect();
 
@@ -986,7 +981,8 @@ public class UiTools extends WinAPI {
 
         if ((uFlags & DFCS_CHECKED) != 0) {
             int i, k;
-            i = (uFlags & DFCS_INACTIVE) != 0 || (uFlags & 0xff) == DFCS_BUTTON3STATE ? COLOR_BTNSHADOW : COLOR_WINDOWTEXT;
+            i = (uFlags & DFCS_INACTIVE) != 0
+                || (uFlags & 0xff) == DFCS_BUTTON3STATE ? COLOR_BTNSHADOW : COLOR_WINDOWTEXT;
 
             /* draw 7 bars, with h=3w to form the check */
             WinRect bar = new WinRect();
@@ -994,7 +990,7 @@ public class UiTools extends WinAPI {
             bar.top = myr.top + 2;
             for (k = 0; k < 7; k++) {
                 bar.left = bar.left + 1;
-                bar.top = (k < 3) ? bar.top + 1 : bar.top - 1;
+                bar.top = k < 3 ? bar.top + 1 : bar.top - 1;
                 bar.bottom = bar.top + 3;
                 bar.right = bar.left + 1;
                 WinDC.FillRect(dc, bar.allocTemp(), SysParams.GetSysColorBrush(i));
@@ -1018,7 +1014,7 @@ public class UiTools extends WinAPI {
         dst.copy(src);
 
         /* Make it a square box */
-        if (Width < Height)      /* SmallDiam == Width */ {
+        if (Width < Height) /* SmallDiam == Width */ {
             dst.top += (Height - Width) / 2;
             dst.bottom = dst.top + SmallDiam;
         } else if (Width > Height) /* SmallDiam == Height */ {
@@ -1035,11 +1031,10 @@ public class UiTools extends WinAPI {
      * <p/>
      * Draw a radio/radioimage/radiomask button coming from DrawFrameControl()
      * <p/>
-     * Does a pretty good job in emulating MS behavior. Some quirks are
-     * however there because MS uses a TrueType font (Marlett) to draw
-     * the buttons.
+     * Does a pretty good job in emulating MS behavior. Some quirks are however
+     * there because MS uses a TrueType font (Marlett) to draw the buttons.
      */
-    static private int UITOOLS95_DFC_ButtonRadio(int dc, int r, int uFlags) {
+    private static int UITOOLS95_DFC_ButtonRadio(int dc, int r, int uFlags) {
         WinRect myr = new WinRect();
         int i;
         int SmallDiam = UITOOLS_MakeSquareRect(r, myr);
@@ -1048,7 +1043,8 @@ public class UiTools extends WinAPI {
         int hbsave;
         int xc, yc;
 
-        if (BorderShrink < 1) BorderShrink = 1;
+        if (BorderShrink < 1)
+            BorderShrink = 1;
 
         if ((uFlags & 0xff) == DFCS_BUTTONRADIOIMAGE)
             WinDC.FillRect(dc, r, GdiObj.GetStockObject(BLACK_BRUSH));
@@ -1079,11 +1075,13 @@ public class UiTools extends WinAPI {
             } else {
                 hpsave = WinDC.SelectObject(dc, SysParams.GetSysColorPen(COLOR_BTNHIGHLIGHT));
                 hbsave = WinDC.SelectObject(dc, SysParams.GetSysColorBrush(COLOR_BTNHIGHLIGHT));
-                Painting.Pie(dc, myr.left, myr.top, myr.right + 1, myr.bottom + 1, myr.left - 1, myr.bottom, myr.right + 1, myr.top);
+                Painting.Pie(dc, myr.left, myr.top, myr.right + 1, myr.bottom + 1, myr.left - 1, myr.bottom,
+                    myr.right + 1, myr.top);
 
                 WinDC.SelectObject(dc, SysParams.GetSysColorPen(COLOR_BTNSHADOW));
                 WinDC.SelectObject(dc, SysParams.GetSysColorBrush(COLOR_BTNSHADOW));
-                Painting.Pie(dc, myr.left, myr.top, myr.right + 1, myr.bottom + 1, myr.right + 1, myr.top, myr.left - 1, myr.bottom);
+                Painting.Pie(dc, myr.left, myr.top, myr.right + 1, myr.bottom + 1, myr.right + 1, myr.top, myr.left - 1,
+                    myr.bottom);
 
                 myr.left += BorderShrink;
                 myr.right -= BorderShrink;
@@ -1092,11 +1090,13 @@ public class UiTools extends WinAPI {
 
                 WinDC.SelectObject(dc, SysParams.GetSysColorPen(COLOR_3DLIGHT));
                 WinDC.SelectObject(dc, SysParams.GetSysColorBrush(COLOR_3DLIGHT));
-                Painting.Pie(dc, myr.left, myr.top, myr.right + 1, myr.bottom + 1, myr.left - 1, myr.bottom, myr.right + 1, myr.top);
+                Painting.Pie(dc, myr.left, myr.top, myr.right + 1, myr.bottom + 1, myr.left - 1, myr.bottom,
+                    myr.right + 1, myr.top);
 
                 WinDC.SelectObject(dc, SysParams.GetSysColorPen(COLOR_3DDKSHADOW));
                 WinDC.SelectObject(dc, SysParams.GetSysColorBrush(COLOR_3DDKSHADOW));
-                Painting.Pie(dc, myr.left, myr.top, myr.right + 1, myr.bottom + 1, myr.right + 1, myr.top, myr.left - 1, myr.bottom);
+                Painting.Pie(dc, myr.left, myr.top, myr.right + 1, myr.bottom + 1, myr.right + 1, myr.top, myr.left - 1,
+                    myr.bottom);
                 WinDC.SelectObject(dc, hbsave);
                 WinDC.SelectObject(dc, hpsave);
             }

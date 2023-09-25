@@ -32,19 +32,24 @@ public class Prop_int extends Property {
         max.set(max);
     }
 
+    @Override
     public void SetValue(String str) {
         SetVal(new Value(str, Value.Etype.V_INT), false, true);
     }
 
+    @Override
     public boolean CheckValue(Value in, boolean warn) {
-        if (suggested_values.isEmpty() && super.CheckValue(in, warn)) return true;
+        if (suggested_values.isEmpty() && super.CheckValue(in, warn))
+            return true;
         int mi = min.getInt();
         int ma = max.getInt();
         int va = in.getInt();
-        if (mi == -1 && ma == -1) return true;
-        if (va >= mi && va <= ma) return true;
+        if ((mi == -1 && ma == -1) || (va >= mi && va <= ma))
+            return true;
         if (warn)
-            Log.log_msg(in.toString() + " lies outside the range " + min.toString() + "-" + max.toString() + " for variable: " + propname + ".\nIt might now be reset to the default value: " + default_value.toString());
+            Log.log_msg(
+                in.toString() + " lies outside the range " + min.toString() + "-" + max.toString() + " for variable: "
+                    + propname + ".\nIt might now be reset to the default value: " + default_value.toString());
         return false;
     }
 }

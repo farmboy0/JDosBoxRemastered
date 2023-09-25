@@ -17,14 +17,18 @@ public class IDirectInput extends IUnknown {
     static Guid GUID_Joystick = new Guid(0x6F1D2B70, 0xD5A0, 0x11CF, 0xBF, 0xC7, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00);
     static Guid GUID_SysMouseEm = new Guid(0x6F1D2B80, 0xD5A0, 0x11CF, 0xBF, 0xC7, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00);
     static Guid GUID_SysMouseEm2 = new Guid(0x6F1D2B81, 0xD5A0, 0x11CF, 0xBF, 0xC7, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00);
-    static Guid GUID_SysKeyboardEm = new Guid(0x6F1D2B82, 0xD5A0, 0x11CF, 0xBF, 0xC7, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00);
-    static Guid GUID_SysKeyboardEm2 = new Guid(0x6F1D2B83, 0xD5A0, 0x11CF, 0xBF, 0xC7, 0x44, 0x45, 0x53, 0x54, 0x00, 0x00);
+    static Guid GUID_SysKeyboardEm = new Guid(0x6F1D2B82, 0xD5A0, 0x11CF, 0xBF, 0xC7, 0x44, 0x45, 0x53, 0x54, 0x00,
+        0x00);
+    static Guid GUID_SysKeyboardEm2 = new Guid(0x6F1D2B83, 0xD5A0, 0x11CF, 0xBF, 0xC7, 0x44, 0x45, 0x53, 0x54, 0x00,
+        0x00);
     // HRESULT CreateDevice(this, REFGUID rguid, LPDIRECTINPUTDEVICEA * lplpDirectInputDevice, LPUNKNOWN)
-    static private final Callback.Handler CreateDevice = new HandlerBase() {
+    private static final Callback.Handler CreateDevice = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInput.CreateDevice";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int rguid = CPU.CPU_Pop32();
@@ -38,11 +42,13 @@ public class IDirectInput extends IUnknown {
         }
     };
     // HRESULT EnumDevices(this, DWORD dwDevType, LPDIENUMDEVICESCALLBACKA lpCallback, LPVOID pvRef, DWORD dwFlags)
-    static private final Callback.Handler EnumDevices = new HandlerBase() {
+    private static final Callback.Handler EnumDevices = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInput.EnumDevices";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int dwDevType = CPU.CPU_Pop32();
@@ -53,11 +59,13 @@ public class IDirectInput extends IUnknown {
         }
     };
     // HRESULT GetDeviceStatus(this, REFGUID rguid)
-    static private final Callback.Handler GetDeviceStatus = new HandlerBase() {
+    private static final Callback.Handler GetDeviceStatus = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInput.GetDeviceStatus";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int rguid = CPU.CPU_Pop32();
@@ -65,11 +73,13 @@ public class IDirectInput extends IUnknown {
         }
     };
     // HRESULT RunControlPanel(this, HWND hwndOwner, DWORD dwFlags)
-    static private final Callback.Handler RunControlPanel = new HandlerBase() {
+    private static final Callback.Handler RunControlPanel = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInput.RunControlPanel";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int hwndOwner = CPU.CPU_Pop32();
@@ -78,11 +88,13 @@ public class IDirectInput extends IUnknown {
         }
     };
     // HRESULT Initialize(this, HINSTANCE hinst, DWORD dwVersion)
-    static private final Callback.Handler Initialize = new HandlerBase() {
+    private static final Callback.Handler Initialize = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInput.Initialize";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int hinst = CPU.CPU_Pop32();
@@ -103,8 +115,7 @@ public class IDirectInput extends IUnknown {
         address = add(address, EnumDevices);
         address = add(address, GetDeviceStatus);
         address = add(address, RunControlPanel);
-        address = add(address, Initialize);
-        return address;
+        return add(address, Initialize);
     }
 
     public static int create() {

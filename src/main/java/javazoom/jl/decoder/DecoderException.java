@@ -21,13 +21,12 @@
 package javazoom.jl.decoder;
 
 /**
- * The <code>DecoderException</code> represents the class of
- * errors that can occur when decoding MPEG audio.
+ * The <code>DecoderException</code> represents the class of errors that can
+ * occur when decoding MPEG audio.
  *
  * @author MDM
  */
-public class DecoderException extends JavaLayerException
-        implements DecoderErrors {
+public class DecoderException extends JavaLayerException implements DecoderErrors {
     private int errorcode = UNKNOWN_ERROR;
 
     public DecoderException(String msg, Throwable t) {
@@ -39,7 +38,7 @@ public class DecoderException extends JavaLayerException
         this.errorcode = errorcode;
     }
 
-    static public String getErrorString(int errorcode) {
+    public static String getErrorString(int errorcode) {
         // REVIEW: use resource file to map error codes
         // to locale-sensitive strings.
 
@@ -50,6 +49,4 @@ public class DecoderException extends JavaLayerException
         return errorcode;
     }
 
-
 }
-

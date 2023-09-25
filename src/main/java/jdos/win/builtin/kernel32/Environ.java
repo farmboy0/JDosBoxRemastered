@@ -6,7 +6,7 @@ import jdos.win.utils.StringUtil;
 
 public class Environ extends WinAPI {
     // BOOL WINAPI SetEnvironmentVariable(LPCTSTR lpName, LPCTSTR lpValue)
-    static public int SetEnvironmentVariableA(int lpName, int lpValue) {
+    public static int SetEnvironmentVariableA(int lpName, int lpValue) {
         if (lpValue != 0)
             WinSystem.getCurrentProcess().env.put(StringUtil.getString(lpName), StringUtil.getString(lpValue));
         else

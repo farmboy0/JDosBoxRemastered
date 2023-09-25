@@ -42,30 +42,34 @@ public class InputStreamSource implements Source {
         this.in = in;
     }
 
-    public int read(byte[] b, int offs, int len)
-            throws IOException {
-        int read = in.read(b, offs, len);
-        return read;
+    @Override
+    public int read(byte[] b, int offs, int len) throws IOException {
+        return in.read(b, offs, len);
     }
 
+    @Override
     public boolean willReadBlock() {
         return true;
         //boolean block = (in.available()==0);
         //return block;
     }
 
+    @Override
     public boolean isSeekable() {
         return false;
     }
 
+    @Override
     public long tell() {
         return -1;
     }
 
+    @Override
     public long seek(long to) {
         return -1;
     }
 
+    @Override
     public long length() {
         return -1;
     }

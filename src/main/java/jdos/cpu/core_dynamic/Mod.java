@@ -1,7 +1,7 @@
 package jdos.cpu.core_dynamic;
 
 public class Mod extends Helper {
-    static public Reg eb(int rm) {
+    public static Reg eb(int rm) {
         switch (rm & 7) {
             case 0:
                 return reg_eax;
@@ -23,8 +23,8 @@ public class Mod extends Helper {
         return null;
     }
 
-    static public Reg gb(int rm) {
-        switch ((rm >> 3) & 7) {
+    public static Reg gb(int rm) {
+        switch (rm >> 3 & 7) {
             case 0:
                 return reg_eax;
             case 1:
@@ -45,7 +45,7 @@ public class Mod extends Helper {
         return null;
     }
 
-    static public Reg ew(int rm) {
+    public static Reg ew(int rm) {
         switch (rm & 7) {
             case 0:
                 return reg_eax;
@@ -67,8 +67,8 @@ public class Mod extends Helper {
         return null;
     }
 
-    static public Reg gw(int rm) {
-        switch ((rm >> 3) & 7) {
+    public static Reg gw(int rm) {
+        switch (rm >> 3 & 7) {
             case 0:
                 return reg_eax;
             case 1:
@@ -89,7 +89,7 @@ public class Mod extends Helper {
         return null;
     }
 
-    static public Reg ed(int rm) {
+    public static Reg ed(int rm) {
         switch (rm & 7) {
             case 0:
                 return reg_eax;
@@ -111,8 +111,8 @@ public class Mod extends Helper {
         return null;
     }
 
-    static public Reg gd(int rm) {
-        switch ((rm >> 3) & 7) {
+    public static Reg gd(int rm) {
+        switch (rm >> 3 & 7) {
             case 0:
                 return reg_eax;
             case 1:
@@ -133,7 +133,7 @@ public class Mod extends Helper {
         return null;
     }
 
-    static public EaaBase getEaa32(int rm) {
+    public static EaaBase getEaa32(int rm) {
         if (rm < 0x40) {
             switch (rm & 7) {
                 case 0x00:
@@ -195,7 +195,7 @@ public class Mod extends Helper {
         return null;
     }
 
-    static public EaaBase getEaa16(int rm) {
+    public static EaaBase getEaa16(int rm) {
         if (rm < 0x40) {
             switch (rm & 7) {
                 case 0x00:
@@ -257,8 +257,9 @@ public class Mod extends Helper {
         return null;
     }
 
-    static public EaaBase getEaa(int rm) {
-        if (EA16) return getEaa16(rm);
+    public static EaaBase getEaa(int rm) {
+        if (EA16)
+            return getEaa16(rm);
         return getEaa32(rm);
     }
 }

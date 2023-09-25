@@ -11,8 +11,10 @@ public class WINDOWPOS extends WinAPI {
     int cx;
     int cy;
     int flags;
+
     public WINDOWPOS() {
     }
+
     public WINDOWPOS(int hwnd, int hwndInsertAfter, int x, int y, int cx, int cy, int flags) {
         this.hwnd = hwnd;
         this.hwndInsertAfter = hwndInsertAfter;

@@ -10,6 +10,7 @@ public class StringRef {
         this.value = value;
     }
 
+    @Override
     public String toString() {
         throw new RuntimeException("Ooops");
     }

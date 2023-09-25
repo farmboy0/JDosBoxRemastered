@@ -5,13 +5,14 @@ import jdos.win.system.WinPoint;
 import jdos.win.system.WinRect;
 
 public class WINDOWPLACEMENT extends WinAPI {
-    static public final int SIZE = 44;
+    public static final int SIZE = 44;
     int length = SIZE;
     int flags;
     int showCmd;
     WinPoint ptMinPosition = new WinPoint();
     WinPoint ptMaxPosition = new WinPoint();
     WinRect rcNormalPosition = new WinRect();
+
     public WINDOWPLACEMENT() {
     }
 

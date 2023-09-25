@@ -10,11 +10,11 @@ public class Dos_FCB extends MemStruct {
     private boolean extended;
     private final /*PhysPt*/ int real_pt;
 
-    public Dos_FCB(/*Bit16u*/int seg,/*Bit16u*/int off) {
+    public Dos_FCB(/*Bit16u*/int seg, /*Bit16u*/int off) {
         this(seg, off, true);
     }
 
-    public Dos_FCB(/*Bit16u*/int seg,/*Bit16u*/int off, boolean allow_extended/*=true*/) {
+    public Dos_FCB(/*Bit16u*/int seg, /*Bit16u*/int off, boolean allow_extended/*=true*/) {
         SetPt(seg, off);
         real_pt = pt;
         extended = false;
@@ -29,17 +29,21 @@ public class Dos_FCB extends MemStruct {
     public void Create(boolean _extended) {
         /*Bitu*/
         int fill;
-        if (_extended) fill = 36 + 7;
-        else fill = 36;
+        if (_extended)
+            fill = 36 + 7;
+        else
+            fill = 36;
         /*Bitu*/
         int i;
-        for (i = 0; i < fill; i++) Memory.mem_writeb(real_pt + i, 0);
+        for (i = 0; i < fill; i++)
+            Memory.mem_writeb(real_pt + i, 0);
         pt = real_pt;
         if (_extended) {
             Memory.mem_writeb(real_pt, 0xff);
             pt += 7;
             extended = true;
-        } else extended = false;
+        } else
+            extended = false;
     }
 
     public void SetName(/*Bit8u*/short _drive, String _fname, String _ext) {
@@ -48,13 +52,13 @@ public class Dos_FCB extends MemStruct {
         Memory.MEM_BlockWrite(pt + 9/*offsetof(sFCB,ext)*/, _ext, 3);
     }
 
-    public void SetSizeDateTime(/*Bit32u*/long _size,/*Bit16u*/int _date,/*Bit16u*/int _time) {
+    public void SetSizeDateTime(/*Bit32u*/long _size, /*Bit16u*/int _date, /*Bit16u*/int _time) {
         SaveIt(4, 16, (int) _size); //sSave(sFCB,filesize,_size);
         SaveIt(2, 20, _date); //sSave(sFCB,date,_date);
         SaveIt(2, 22, _time); //sSave(sFCB,time,_time);
     }
 
-    public void GetSizeDateTime(/*Bit32u*/LongRef _size,/*Bit16u*/IntRef _date,/*Bit16u*/IntRef _time) {
+    public void GetSizeDateTime(/*Bit32u*/LongRef _size, /*Bit16u*/IntRef _date, /*Bit16u*/IntRef _time) {
         _size.value = GetIt(4, 16);//sGet(sFCB,filesize);
         _date.value = GetIt(2, 20);//(/*Bit16u*/int)sGet(sFCB,date);
         _time.value = GetIt(2, 22);//(/*Bit16u*/int)sGet(sFCB,time);
@@ -91,18 +95,18 @@ public class Dos_FCB extends MemStruct {
         SaveIt(1, 27, 0xff);//sSave(sFCB,file_handle,0xff);
     }
 
-    public void GetRecord(/*Bit16u*/IntRef _cur_block,/*Bit8u*/ShortRef _cur_rec) {
+    public void GetRecord(/*Bit16u*/IntRef _cur_block, /*Bit8u*/ShortRef _cur_rec) {
         /*Bit16u*/
         _cur_block.value = GetIt(2, 12);//sGet(sFCB,cur_block);
         _cur_rec.value = (/*Bit8u*/short) GetIt(1, 32);//sGet(sFCB,cur_rec);
     }
 
-    public void SetRecord(/*Bit16u*/int _cur_block,/*Bit8u*/short _cur_rec) {
+    public void SetRecord(/*Bit16u*/int _cur_block, /*Bit8u*/short _cur_rec) {
         SaveIt(2, 12, _cur_block); //sSave(sFCB,cur_block,_cur_block);
         SaveIt(1, 32, _cur_rec); //sSave(sFCB,cur_rec,_cur_rec);
     }
 
-    public void GetSeqData(/*Bit8u*/ShortRef _fhandle,/*Bit16u*/IntRef _rec_size) {
+    public void GetSeqData(/*Bit8u*/ShortRef _fhandle, /*Bit16u*/IntRef _rec_size) {
         _fhandle.value = (/*Bit8u*/short) GetIt(1, 27);//sGet(sFCB,file_handle);
         /*Bit16u*/
         _rec_size.value = GetIt(2, 14);//sGet(sFCB,rec_size);
@@ -119,8 +123,10 @@ public class Dos_FCB extends MemStruct {
     public /*Bit8u*/short GetDrive() {
         /*Bit8u*/
         short drive = (/*Bit8u*/short) GetIt(1, 0);//sGet(sFCB,drive);
-        if (drive == 0) return Dos_files.DOS_GetDefaultDrive();
-        else return (short) (drive - 1);
+        if (drive == 0)
+            return Dos_files.DOS_GetDefaultDrive();
+        else
+            return (short) (drive - 1);
     }
 
     public boolean Extended() {
@@ -128,11 +134,13 @@ public class Dos_FCB extends MemStruct {
     }
 
     public void GetAttr(/*Bit8u*/ShortRef attr) {
-        if (extended) attr.value = (short) Memory.mem_readb(pt - 1);
+        if (extended)
+            attr.value = (short) Memory.mem_readb(pt - 1);
     }
 
     public void SetAttr(/*Bit8u*/short attr) {
-        if (extended) Memory.mem_writeb(pt - 1, attr);
+        if (extended)
+            Memory.mem_writeb(pt - 1, attr);
     }
 
     void SetResultAttr(/*Bit8u*/short attr) {

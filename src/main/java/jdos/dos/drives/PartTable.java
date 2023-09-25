@@ -5,8 +5,10 @@ import jdos.util.Ptr;
 public class PartTable {
     public /*Bit8u*/ byte[] booter = new byte[446];
     Pentry[] pentry = new Pentry[4];
-    /*Bit8u*/ byte magic1; /* 0x55 */
+    /*Bit8u*/ byte magic1;
+    /* 0x55 */
     /*Bit8u*/ byte magic2; /* 0xaa */
+
     public PartTable() {
         for (int i = 0; i < pentry.length; i++)
             pentry[i] = new Pentry();

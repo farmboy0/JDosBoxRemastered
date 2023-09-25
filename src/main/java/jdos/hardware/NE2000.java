@@ -1,6 +1,5 @@
 package jdos.hardware;
 
-
 /* Couldn't find a real spec for the NE2000 out there, hence this is adapted heavily from Bochs */
 
 /////////////////////////////////////////////////////////////////////////
@@ -45,54 +44,33 @@ public class NE2000 extends Module_base {
     //#define /*bx_bool*/int int
     //#define bx_param_c Bit8u
 
-
-    static final public boolean BX_DEBUG = false;
-    static final public boolean BX_INFO = true;
-    static final public boolean BX_PANIC = true;
-    static final public boolean BX_ERROR = true;
+    public static final boolean BX_DEBUG = false;
+    public static final boolean BX_INFO = true;
+    public static final boolean BX_PANIC = true;
+    public static final boolean BX_ERROR = true;
     //Never completely fill the ne2k ring so that we never
     // hit the unclear completely full buffer condition.
-    static private final int BX_NE2K_NEVER_FULL_RING = 1;
-    static private final int BX_RESET_HARDWARE = 0;
-    static private final int BX_RESET_SOFTWARE = 1;
-    static private final int BX_NE2K_MEMSIZ = 32 * 1024;
+    private static final int BX_NE2K_NEVER_FULL_RING = 1;
+    private static final int BX_RESET_HARDWARE = 0;
+    private static final int BX_RESET_SOFTWARE = 1;
+    private static final int BX_NE2K_MEMSIZ = 32 * 1024;
 
     //#  define BX_NE2K_SMF
-    static private final int BX_NE2K_MEMSTART = 16 * 1024;
-    static private final int BX_NE2K_MEMEND = (BX_NE2K_MEMSTART + BX_NE2K_MEMSIZ);
-    static private bx_ne2k_c theNE2kDevice = null;
-    static final private IoHandler.IO_ReadHandler dosbox_read = new IoHandler.IO_ReadHandler() {
-        public /*Bitu*/int call(/*Bitu*/int port, /*Bitu*/int iolen) {
-            return (int) theNE2kDevice.read(port, iolen);
-        }
+    private static final int BX_NE2K_MEMSTART = 16 * 1024;
+    private static final int BX_NE2K_MEMEND = BX_NE2K_MEMSTART + BX_NE2K_MEMSIZ;
+    private static bx_ne2k_c theNE2kDevice = null;
+    private static final IoHandler.IO_ReadHandler dosbox_read = (port, iolen) -> (int) theNE2kDevice.read(port, iolen);
+    private static final Pic.PIC_EventHandler NE2000_TX_Event = val -> theNE2kDevice.tx_timer();
+    private static NE2000 test;
+    private static final IoHandler.IO_WriteHandler dosbox_write = (port, val, iolen) -> theNE2kDevice.write(port, val & 0xFFFFFFFFL, iolen);
+    private static final Timer.TIMER_TickHandler NE2000_Poller = () -> test.ethernet.receive(theNE2kDevice);
+    private static final Section.SectionFunction NE2000_ShutDown = section -> {
+        test.close();
+        test = null;
     };
-    static private final Pic.PIC_EventHandler NE2000_TX_Event = new Pic.PIC_EventHandler() {
-        public void call(/*Bitu*/int val) {
-            theNE2kDevice.tx_timer();
-        }
-    };
-    static private NE2000 test;
-    static final private IoHandler.IO_WriteHandler dosbox_write = new IoHandler.IO_WriteHandler() {
-        public void call(/*Bitu*/int port, /*Bitu*/int val, /*Bitu*/int iolen) {
-            theNE2kDevice.write(port, val & 0xFFFFFFFFl, iolen);
-        }
-    };
-    static final private Timer.TIMER_TickHandler NE2000_Poller = new Timer.TIMER_TickHandler() {
-        public void call() {
-            test.ethernet.receive(theNE2kDevice);
-        }
-    };
-    private static final Section.SectionFunction NE2000_ShutDown = new Section.SectionFunction() {
-        public void call(Section section) {
-            test.close();
-            test = null;
-        }
-    };
-    public static Section.SectionFunction NE2000_Init = new Section.SectionFunction() {
-        public void call(Section section) {
-            test = new NE2000(section);
-            section.AddDestroyFunction(NE2000_ShutDown, true);
-        }
+    public static Section.SectionFunction NE2000_Init = section -> {
+        test = new NE2000(section);
+        section.AddDestroyFunction(NE2000_ShutDown, true);
     };
     // Data
     IoHandler.IO_ReadHandleObject[] ReadHandler8 = new IoHandler.IO_ReadHandleObject[0x20];
@@ -102,7 +80,7 @@ public class NE2000 extends Module_base {
 
     public NE2000(Section configuration) {
         super(configuration);
-        Section_prop section = (Section_prop) (configuration);
+        Section_prop section = (Section_prop) configuration;
 
         load_success = true;
         // enabled?
@@ -115,8 +93,8 @@ public class NE2000 extends Module_base {
         // get irq and base
         /*Bitu*/
         int irq = section.Get_int("nicirq");
-        if (!(irq == 3 || irq == 4 || irq == 5 || irq == 6 || irq == 7 ||
-                irq == 9 || irq == 10 || irq == 11 || irq == 12 || irq == 14 || irq == 15)) {
+        if (!(irq == 3 || irq == 4 || irq == 5 || irq == 6 || irq == 7 || irq == 9 || irq == 10 || irq == 11
+            || irq == 12 || irq == 14 || irq == 15)) {
             irq = 3;
         }
         /*Bitu*/
@@ -189,9 +167,11 @@ public class NE2000 extends Module_base {
         // install I/O-handlers and timer
         for (/*Bitu*/int i = 0; i < 0x20; i++) {
             ReadHandler8[i] = new IoHandler.IO_ReadHandleObject();
-            ReadHandler8[i].Install((int) (i + theNE2kDevice.s.base_address), dosbox_read, IoHandler.IO_MB | IoHandler.IO_MW);
+            ReadHandler8[i].Install((int) (i + theNE2kDevice.s.base_address), dosbox_read,
+                IoHandler.IO_MB | IoHandler.IO_MW);
             WriteHandler8[i] = new IoHandler.IO_WriteHandleObject();
-            WriteHandler8[i].Install((int) (i + theNE2kDevice.s.base_address), dosbox_write, IoHandler.IO_MB | IoHandler.IO_MW);
+            WriteHandler8[i].Install((int) (i + theNE2kDevice.s.base_address), dosbox_write,
+                IoHandler.IO_MB | IoHandler.IO_MW);
         }
         Timer.TIMER_AddTickHandler(NE2000_Poller);
     }
@@ -215,28 +195,28 @@ public class NE2000 extends Module_base {
         public TCR_t TCR = new TCR_t();
         public TSR_t TSR = new TSR_t();
         public RSR_t RSR = new RSR_t();
-        public /*Bit16u*/ int local_dma;    // 01,02h read ; current local DMA addr
-        public /*Bit8u*/ short page_start;  // 01h write ; page start register
-        public /*Bit8u*/ short page_stop;   // 02h write ; page stop register
-        public /*Bit8u*/ short bound_ptr;   // 03h read/write ; boundary pointer
+        public /*Bit16u*/ int local_dma; // 01,02h read ; current local DMA addr
+        public /*Bit8u*/ short page_start; // 01h write ; page start register
+        public /*Bit8u*/ short page_stop; // 02h write ; page stop register
+        public /*Bit8u*/ short bound_ptr; // 03h read/write ; boundary pointer
         public /*Bit8u*/ short tx_page_start; // 04h write ; transmit page start register
-        public /*Bit8u*/ short num_coll;    // 05h read  ; number-of-collisions register
-        public /*Bit16u*/ int tx_bytes;    // 05,06h write ; transmit byte-count register
-        public /*Bit8u*/ short fifo;    // 06h read  ; FIFO
-        public /*Bit16u*/ int remote_dma;  // 08,09h read ; current remote DMA addr
-        public /*Bit16u*/ int remote_start;  // 08,09h write ; remote start address register
-        public /*Bit16u*/ int remote_bytes;  // 0a,0bh write ; remote byte-count register
-        public /*Bit8u*/ short tallycnt_0;  // 0dh read  ; tally counter 0 (frame align errors)
-        public /*Bit8u*/ short tallycnt_1;  // 0eh read  ; tally counter 1 (CRC errors)
-        public /*Bit8u*/ short tallycnt_2;  // 0fh read  ; tally counter 2 (missed pkt errors)
+        public /*Bit8u*/ short num_coll; // 05h read  ; number-of-collisions register
+        public /*Bit16u*/ int tx_bytes; // 05,06h write ; transmit byte-count register
+        public /*Bit8u*/ short fifo; // 06h read  ; FIFO
+        public /*Bit16u*/ int remote_dma; // 08,09h read ; current remote DMA addr
+        public /*Bit16u*/ int remote_start; // 08,09h write ; remote start address register
+        public /*Bit16u*/ int remote_bytes; // 0a,0bh write ; remote byte-count register
+        public /*Bit8u*/ short tallycnt_0; // 0dh read  ; tally counter 0 (frame align errors)
+        public /*Bit8u*/ short tallycnt_1; // 0eh read  ; tally counter 1 (CRC errors)
+        public /*Bit8u*/ short tallycnt_2; // 0fh read  ; tally counter 2 (missed pkt errors)
         //
         // Page 1
         //
         //   Command Register 00h (repeated)
         //
-        public /*Bit8u*/ byte[] physaddr = new byte[6];  // 01-06h read/write ; MAC address
-        public /*Bit8u*/ short curr_page;    // 07h read/write ; current page register
-        public /*Bit8u*/ byte[] mchash = new byte[8];    // 08-0fh read/write ; multicast hash array
+        public /*Bit8u*/ byte[] physaddr = new byte[6]; // 01-06h read/write ; MAC address
+        public /*Bit8u*/ short curr_page; // 07h read/write ; current page register
+        public /*Bit8u*/ byte[] mchash = new byte[8]; // 08-0fh read/write ; multicast hash array
         //
         // Page 2  - diagnostic use only
         //
@@ -251,12 +231,12 @@ public class NE2000 extends Module_base {
         //   Data Configuration Register 0eh read (repeated)
         //   Interrupt Mask Register 0fh read (repeated)
         //
-        public /*Bit8u*/ short rempkt_ptr;   // 03h read/write ; remote next-packet pointer
+        public /*Bit8u*/ short rempkt_ptr; // 03h read/write ; remote next-packet pointer
         public /*Bit8u*/ short localpkt_ptr; // 05h read/write ; local next-packet pointer
-        public /*Bit16u*/ int address_cnt;  // 06,07h read/write ; address counter
+        public /*Bit16u*/ int address_cnt; // 06,07h read/write ; address counter
         // Novell ASIC state
-        public /*Bit8u*/ byte[] macaddr = new byte[32];          // ASIC ROM'd MAC address, even bytes
-        public /*Bit8u*/ Ptr mem = new Ptr(BX_NE2K_MEMSIZ);  // on-chip packet memory
+        public /*Bit8u*/ byte[] macaddr = new byte[32]; // ASIC ROM'd MAC address, even bytes
+        public /*Bit8u*/ Ptr mem = new Ptr(BX_NE2K_MEMSIZ); // on-chip packet memory
         // ne2k internal state
         public /*Bit32u*/ long base_address;
         public int base_irq;
@@ -268,23 +248,23 @@ public class NE2000 extends Module_base {
         //
         //  Command Register - 00h read/write
         public static final class CR_t {
-            public int stop;        // STP - Software Reset command
-            public int start;        // START - start the NIC
-            public int tx_packet;    // TXP - initiate packet transmission
-            public /*Bit8u*/ short rdma_cmd;      // RD0,RD1,RD2 - Remote DMA command
-            public /*Bit8u*/ short pgsel;        // PS0,PS1 - Page select
+            public int stop; // STP - Software Reset command
+            public int start; // START - start the NIC
+            public int tx_packet; // TXP - initiate packet transmission
+            public /*Bit8u*/ short rdma_cmd; // RD0,RD1,RD2 - Remote DMA command
+            public /*Bit8u*/ short pgsel; // PS0,PS1 - Page select
         }
 
         // Interrupt Status Register - 07h read/write
         public static final class ISR_t {
-            public int pkt_rx;           // PRX - packet received with no errors
-            public int pkt_tx;           // PTX - packet transmitted with no errors
-            public int rx_err;    // RXE - packet received with 1 or more errors
-            public int tx_err;    // TXE - packet tx'd       "  " "    "    "
-            public int overwrite;    // OVW - rx buffer resources exhausted
-            public int cnt_oflow;     // CNT - network tally counter MSB's set
-            public int rdma_done;     // RDC - remote DMA complete
-            public int reset;        // RST - reset status
+            public int pkt_rx; // PRX - packet received with no errors
+            public int pkt_tx; // PTX - packet transmitted with no errors
+            public int rx_err; // RXE - packet received with 1 or more errors
+            public int tx_err; // TXE - packet tx'd       "  " "    "    "
+            public int overwrite; // OVW - rx buffer resources exhausted
+            public int cnt_oflow; // CNT - network tally counter MSB's set
+            public int rdma_done; // RDC - remote DMA complete
+            public int reset; // RST - reset status
         }
 
         //
@@ -293,68 +273,68 @@ public class NE2000 extends Module_base {
 
         // Interrupt Mask Register - 0fh write
         public static final class IMR_t {
-            public int rx_inte;    // PRXE - packet rx interrupt enable
-            public int tx_inte;    // PTXE - packet tx interrput enable
-            public int rxerr_inte;    // RXEE - rx error interrupt enable
-            public int txerr_inte;    // TXEE - tx error interrupt enable
-            public int overw_inte;    // OVWE - overwrite warn int enable
-            public int cofl_inte;    // CNTE - counter o'flow int enable
-            public int rdma_inte;    // RDCE - remote DMA complete int enable
-            public int reserved;    //  D7 - reserved
+            public int rx_inte; // PRXE - packet rx interrupt enable
+            public int tx_inte; // PTXE - packet tx interrput enable
+            public int rxerr_inte; // RXEE - rx error interrupt enable
+            public int txerr_inte; // TXEE - tx error interrupt enable
+            public int overw_inte; // OVWE - overwrite warn int enable
+            public int cofl_inte; // CNTE - counter o'flow int enable
+            public int rdma_inte; // RDCE - remote DMA complete int enable
+            public int reserved; //  D7 - reserved
         }
 
         // Data Configuration Register - 0eh write
         public static final class DCR_t {
-            public int wdsize;    // WTS - 8/16-bit select
-            public int endian;    // BOS - byte-order select
-            public int longaddr;    // LAS - long-address select
-            public int loop;        // LS  - loopback select
-            public int auto_rx;    // AR  - auto-remove rx packets with remote DMA
-            public /*Bit8u*/ short fifo_size;    // FT0,FT1 - fifo threshold
+            public int wdsize; // WTS - 8/16-bit select
+            public int endian; // BOS - byte-order select
+            public int longaddr; // LAS - long-address select
+            public int loop; // LS  - loopback select
+            public int auto_rx; // AR  - auto-remove rx packets with remote DMA
+            public /*Bit8u*/ short fifo_size; // FT0,FT1 - fifo threshold
         }
 
         // Transmit Configuration Register - 0dh write
         public static final class TCR_t {
-            public int crc_disable;    // CRC - inhibit tx CRC
-            public /*Bit8u*/ short loop_cntl;    // LB0,LB1 - loopback control
-            public int ext_stoptx;    // ATD - allow tx disable by external mcast
-            public int coll_prio;    // OFST - backoff algorithm select
-            public /*Bit8u*/ short reserved;      //  D5,D6,D7 - reserved
+            public int crc_disable; // CRC - inhibit tx CRC
+            public /*Bit8u*/ short loop_cntl; // LB0,LB1 - loopback control
+            public int ext_stoptx; // ATD - allow tx disable by external mcast
+            public int coll_prio; // OFST - backoff algorithm select
+            public /*Bit8u*/ short reserved; //  D5,D6,D7 - reserved
         }
 
         // Transmit Status Register - 04h read
         public static final class TSR_t {
-            public int tx_ok;        // PTX - tx complete without error
-            public int reserved;    //  D1 - reserved
-            public int collided;    // COL - tx collided >= 1 times
-            public int aborted;    // ABT - aborted due to excessive collisions
-            public int no_carrier;    // CRS - carrier-sense lost
-            public int fifo_ur;    // FU  - FIFO underrun
-            public int cd_hbeat;    // CDH - no tx cd-heartbeat from transceiver
-            public int ow_coll;    // OWC - out-of-window collision
+            public int tx_ok; // PTX - tx complete without error
+            public int reserved; //  D1 - reserved
+            public int collided; // COL - tx collided >= 1 times
+            public int aborted; // ABT - aborted due to excessive collisions
+            public int no_carrier; // CRS - carrier-sense lost
+            public int fifo_ur; // FU  - FIFO underrun
+            public int cd_hbeat; // CDH - no tx cd-heartbeat from transceiver
+            public int ow_coll; // OWC - out-of-window collision
         }
 
         // Receive Configuration Register - 0ch write
         public static final class RCR_t {
-            public int errors_ok;    // SEP - accept pkts with rx errors
-            public int runts_ok;    // AR  - accept < 64-byte runts
-            public int broadcast;    // AB  - accept eth broadcast address
-            public int multicast;    // AM  - check mcast hash array
-            public int promisc;    // PRO - accept all packets
-            public int monitor;    // MON - check pkts, but don't rx
-            public /*Bit8u*/ short reserved;    //  D6,D7 - reserved
+            public int errors_ok; // SEP - accept pkts with rx errors
+            public int runts_ok; // AR  - accept < 64-byte runts
+            public int broadcast; // AB  - accept eth broadcast address
+            public int multicast; // AM  - check mcast hash array
+            public int promisc; // PRO - accept all packets
+            public int monitor; // MON - check pkts, but don't rx
+            public /*Bit8u*/ short reserved; //  D6,D7 - reserved
         }
 
         // Receive Status Register - 0ch read
         public static final class RSR_t {
-            public int rx_ok;        // PRX - rx complete without error
-            public int bad_crc;    // CRC - Bad CRC detected
-            public int bad_falign;    // FAE - frame alignment error
-            public int fifo_or;    // FO  - FIFO overrun
-            public int rx_missed;    // MPA - missed packet error
-            public int rx_mbit;    // PHY - unicast or mcast/bcast address match
-            public int rx_disabled;   // DIS - set when in monitor mode
-            public int deferred;    // DFR - collision active
+            public int rx_ok; // PRX - rx complete without error
+            public int bad_crc; // CRC - Bad CRC detected
+            public int bad_falign; // FAE - frame alignment error
+            public int fifo_or; // FO  - FIFO overrun
+            public int rx_missed; // MPA - missed packet error
+            public int rx_mbit; // PHY - unicast or mcast/bcast address match
+            public int rx_disabled; // DIS - set when in monitor mode
+            public int deferred; // DFR - collision active
         }
     }
 
@@ -367,15 +347,11 @@ public class NE2000 extends Module_base {
 
         public void init() {
             if (BX_INFO)
-                Log.log_msg(StringHelper.sprintf("[NE2000] port 0x%x/32 irq %d mac %02x:%02x:%02x:%02x:%02x:%02x", new Object[]{
-                        new Long(s.base_address),
-                        new Integer(s.base_irq),
-                        new Integer(s.physaddr[0]),
-                        new Integer(s.physaddr[1]),
-                        new Integer(s.physaddr[2]),
-                        new Integer(s.physaddr[3]),
-                        new Integer(s.physaddr[4]),
-                        new Integer(s.physaddr[5])}));
+                Log.log_msg(StringHelper.sprintf("[NE2000] port 0x%x/32 irq %d mac %02x:%02x:%02x:%02x:%02x:%02x",
+                    new Object[] { Long.valueOf(s.base_address), Integer.valueOf(s.base_irq),
+                        Integer.valueOf(s.physaddr[0]), Integer.valueOf(s.physaddr[1]), Integer.valueOf(s.physaddr[2]),
+                        Integer.valueOf(s.physaddr[3]), Integer.valueOf(s.physaddr[4]),
+                        Integer.valueOf(s.physaddr[5]) }));
 
             // Initialise the mac address area by doubling the physical address
             s.macaddr[0] = s.physaddr[0];
@@ -400,7 +376,8 @@ public class NE2000 extends Module_base {
         }
 
         public void reset(int type) {
-            if (BX_DEBUG) Log.log_msg("[NE2000] reset");
+            if (BX_DEBUG)
+                Log.log_msg("[NE2000] reset");
             // Zero out registers and memory
             s.CR = new bx_ne2k_t.CR_t();
             s.ISR = new bx_ne2k_t.ISR_t();
@@ -452,15 +429,18 @@ public class NE2000 extends Module_base {
         //
         public /*Bit32u*/int read_cr() {
             /*Bit32u*/
-            int val = (((s.CR.pgsel & 0x03) << 6) | ((s.CR.rdma_cmd & 0x07) << 3) | (s.CR.tx_packet << 2) | (s.CR.start << 1) | (s.CR.stop));
+            int val = (s.CR.pgsel & 0x03) << 6 | (s.CR.rdma_cmd & 0x07) << 3 | s.CR.tx_packet << 2 | s.CR.start << 1
+                | s.CR.stop;
             if (BX_DEBUG)
-                Log.log_msg(StringHelper.sprintf("[NE2000] read CR returns 0x%08x", new Object[]{new Integer(val)}));
+                Log.log_msg(
+                    StringHelper.sprintf("[NE2000] read CR returns 0x%08x", new Object[] { Integer.valueOf(val) }));
             return val;
         }
 
         public void write_cr(/*Bit32u*/int value) {
             if (BX_DEBUG)
-                Log.log_msg(StringHelper.sprintf("[NE2000] wrote 0x%02x to CR", new Object[]{new Integer(value)}));
+                Log.log_msg(
+                    StringHelper.sprintf("[NE2000] wrote 0x%02x to CR", new Object[] { Integer.valueOf(value) }));
 
             // Validate remote-DMA
             if ((value & 0x38) == 0x00) {
@@ -486,17 +466,17 @@ public class NE2000 extends Module_base {
                 s.ISR.reset = 0;
             }
 
-            s.CR.start = ((value & 0x02) == 0x02) ? 1 : 0;
+            s.CR.start = (value & 0x02) == 0x02 ? 1 : 0;
             s.CR.pgsel = (short) ((value & 0xc0) >> 6);
 
             // Check for send-packet command
             if (s.CR.rdma_cmd == 3) {
                 // Set up DMA read from receive ring
-                s.remote_start = s.remote_dma =
-                        s.bound_ptr * 256;
+                s.remote_start = s.remote_dma = s.bound_ptr * 256;
                 s.remote_bytes = s.mem.readw(s.bound_ptr * 256 + 2 - BX_NE2K_MEMSTART);
                 if (BX_INFO)
-                    Log.log_msg("[NE2000] Sending buffer #x" + Integer.toString(s.remote_start, 16) + " length " + s.remote_bytes);
+                    Log.log_msg("[NE2000] Sending buffer #x" + Integer.toString(s.remote_start, 16) + " length "
+                        + s.remote_bytes);
             }
 
             // Check for start-tx
@@ -591,23 +571,23 @@ public class NE2000 extends Module_base {
             /*Bit32u*/
             long retval = 0;
 
-            if ((io_len == 2) && (address & 0x1) != 0)
+            if (io_len == 2 && (address & 0x1) != 0)
                 if (BX_PANIC)
                     Log.log_msg("[NE2000] unaligned chipmem word read");
 
             // ROM'd MAC address
-            if ((address >= 0) && (address <= 31)) {
+            if (address >= 0 && address <= 31) {
                 retval = s.macaddr[address];
-                if ((io_len == 2) || (io_len == 4)) {
-                    retval |= (s.macaddr[address + 1] << 8);
+                if (io_len == 2 || io_len == 4) {
+                    retval |= s.macaddr[address + 1] << 8;
                     if (io_len == 4) {
-                        retval |= (s.macaddr[address + 2] << 16);
-                        retval |= (s.macaddr[address + 3] << 24);
+                        retval |= s.macaddr[address + 2] << 16;
+                        retval |= s.macaddr[address + 3] << 24;
                     }
                 }
-                return (retval);
+                return retval;
             }
-            if ((address >= BX_NE2K_MEMSTART) && (address < BX_NE2K_MEMEND)) {
+            if (address >= BX_NE2K_MEMSTART && address < BX_NE2K_MEMEND) {
                 if (io_len == 1) {
                     return s.mem.readb(address - BX_NE2K_MEMSTART);
                 } else if (io_len == 2) {
@@ -617,17 +597,18 @@ public class NE2000 extends Module_base {
                 }
             }
             if (BX_DEBUG)
-                Log.log_msg(StringHelper.sprintf("out-of-bounds chipmem read, %04X", new Object[]{new Integer(address)}));
+                Log.log_msg(StringHelper.sprintf("out-of-bounds chipmem read, %04X",
+                    new Object[] { Integer.valueOf(address) }));
 
-            return (0xff);
+            return 0xff;
         }
 
         public void chipmem_write(/*Bit32u*/int address, /*Bit32u*/long value, /*unsigned*/int io_len) {
-            if ((io_len == 2) && (address & 0x1) != 0)
+            if (io_len == 2 && (address & 0x1) != 0)
                 if (BX_PANIC)
                     Log.log_msg("[NE2000] unaligned chipmem word write");
 
-            if ((address >= BX_NE2K_MEMSTART) && (address < BX_NE2K_MEMEND)) {
+            if (address >= BX_NE2K_MEMSTART && address < BX_NE2K_MEMEND) {
                 if (io_len == 1) {
                     s.mem.writeb(address - BX_NE2K_MEMSTART, (short) value);
                 } else if (io_len == 2) {
@@ -653,7 +634,7 @@ public class NE2000 extends Module_base {
             long retval = 0;
 
             switch (offset) {
-                case 0x0:  // Data register
+                case 0x0: // Data register
                     //
                     // A read remote-DMA command must have been issued,
                     // and the source-address and length registers must
@@ -661,7 +642,8 @@ public class NE2000 extends Module_base {
                     //
                     if (io_len > s.remote_bytes) {
                         if (BX_ERROR)
-                            Log.log_msg("[NE2000] dma read underrun iolen=" + io_len + " remote_bytes=" + s.remote_bytes);
+                            Log.log_msg(
+                                "[NE2000] dma read underrun iolen=" + io_len + " remote_bytes=" + s.remote_bytes);
                         //return 0;
                     }
 
@@ -672,13 +654,13 @@ public class NE2000 extends Module_base {
                     // by the selected word size after every access, not by
                     // the amount of data requested by the host (io_len).
                     //
-                    s.remote_dma += (s.DCR.wdsize + 1);
+                    s.remote_dma += s.DCR.wdsize + 1;
                     if (s.remote_dma == s.page_stop << 8) {
                         s.remote_dma = s.page_start << 8;
                     }
                     // keep s.remote_bytes from underflowing
                     if (s.remote_bytes > 1)
-                        s.remote_bytes -= (s.DCR.wdsize + 1);
+                        s.remote_bytes -= s.DCR.wdsize + 1;
                     else
                         s.remote_bytes = 0;
 
@@ -691,13 +673,14 @@ public class NE2000 extends Module_base {
                         }
                     }
                     break;
-                case 0xf:  // Reset register
+                case 0xf: // Reset register
                     reset(BX_RESET_SOFTWARE);
                     //retval=0x1;
                     break;
                 default:
                     if (BX_INFO)
-                        Log.log_msg(StringHelper.sprintf("[NE2000] asic read invalid address %04x", new Object[]{new Integer(offset)}));
+                        Log.log_msg(StringHelper.sprintf("[NE2000] asic read invalid address %04x",
+                            new Object[] { Integer.valueOf(offset) }));
                     break;
             }
             return retval;
@@ -705,11 +688,12 @@ public class NE2000 extends Module_base {
 
         public void asic_write(/*Bit32u*/int offset, /*Bit32u*/long value, /*unsigned*/int io_len) {
             if (BX_DEBUG)
-                Log.log_msg(StringHelper.sprintf("[NE2000] asic write addr=0x%02x, value=0x%04x", new Object[]{new Integer(offset), new Long(value)}));
+                Log.log_msg(StringHelper.sprintf("[NE2000] asic write addr=0x%02x, value=0x%04x",
+                    new Object[] { Integer.valueOf(offset), Long.valueOf(value) }));
             switch (offset) {
-                case 0x0:  // Data register - see asic_read for a description
+                case 0x0: // Data register - see asic_read for a description
 
-                    if ((io_len == 2) && (s.DCR.wdsize == 0)) {
+                    if (io_len == 2 && s.DCR.wdsize == 0) {
                         if (BX_PANIC)
                             Log.log_msg("[NE2000] dma write length 2 on byte mode operation");
                         break;
@@ -740,13 +724,14 @@ public class NE2000 extends Module_base {
                     }
                     break;
 
-                case 0xf:  // Reset register
+                case 0xf: // Reset register
                     reset(BX_RESET_SOFTWARE);
                     break;
 
                 default: // this is invalid, but happens under win95 device detection
                     if (BX_INFO)
-                        Log.log_msg(StringHelper.sprintf("[NE2000] asic write invalid address %04x, ignoring", new Object[]{new Long(offset)}));
+                        Log.log_msg(StringHelper.sprintf("[NE2000] asic write invalid address %04x, ignoring",
+                            new Object[] { Long.valueOf(offset) }));
                     break;
             }
         }
@@ -757,127 +742,113 @@ public class NE2000 extends Module_base {
         //
         public /*Bit32u*/long page0_read(/*Bit32u*/int offset, /*unsigned*/int io_len) {
             if (BX_DEBUG)
-                Log.log_msg(StringHelper.sprintf("[NE2000] page 0 read from port %04x, len=%d", new Object[]{new Integer(offset), new Integer(io_len)}));
+                Log.log_msg(StringHelper.sprintf("[NE2000] page 0 read from port %04x, len=%d",
+                    new Object[] { Integer.valueOf(offset), Integer.valueOf(io_len) }));
             if (io_len > 1) {
                 if (BX_ERROR) {
                     /* encountered with win98 hardware probe */
-                    Log.log_msg(StringHelper.sprintf("[NE2000] bad length! page 0 read from port %04x, len=%u", new Object[]{new Integer(offset), new Integer(io_len)}));
+                    Log.log_msg(StringHelper.sprintf("[NE2000] bad length! page 0 read from port %04x, len=%u",
+                        new Object[] { Integer.valueOf(offset), Integer.valueOf(io_len) }));
                 }
                 return 0;
             }
 
-
             switch (offset) {
-                case 0x1:  // CLDA0
-                    return (s.local_dma & 0xff);
-                case 0x2:  // CLDA1
-                    return (s.local_dma >> 8);
-                case 0x3:  // BNRY
-                    return (s.bound_ptr);
-                case 0x4:  // TSR
-                    return ((s.TSR.ow_coll << 7) |
-                            (s.TSR.cd_hbeat << 6) |
-                            (s.TSR.fifo_ur << 5) |
-                            (s.TSR.no_carrier << 4) |
-                            (s.TSR.aborted << 3) |
-                            (s.TSR.collided << 2) |
-                            (s.TSR.tx_ok));
-                case 0x5:  // NCR
-                    return (s.num_coll);
-                case 0x6:  // FIFO
+                case 0x1: // CLDA0
+                    return s.local_dma & 0xff;
+                case 0x2: // CLDA1
+                    return s.local_dma >> 8;
+                case 0x3: // BNRY
+                    return s.bound_ptr;
+                case 0x4: // TSR
+                    return s.TSR.ow_coll << 7 | s.TSR.cd_hbeat << 6 | s.TSR.fifo_ur << 5 | s.TSR.no_carrier << 4
+                        | s.TSR.aborted << 3 | s.TSR.collided << 2 | s.TSR.tx_ok;
+                case 0x5: // NCR
+                    return s.num_coll;
+                case 0x6: // FIFO
                     // reading FIFO is only valid in loopback mode
                     if (BX_ERROR)
                         Log.log_msg("[NE2000] reading FIFO not supported yet");
-                    return (s.fifo);
-                case 0x7:  // ISR
-                    return ((s.ISR.reset << 7) |
-                            (s.ISR.rdma_done << 6) |
-                            (s.ISR.cnt_oflow << 5) |
-                            (s.ISR.overwrite << 4) |
-                            (s.ISR.tx_err << 3) |
-                            (s.ISR.rx_err << 2) |
-                            (s.ISR.pkt_tx << 1) |
-                            (s.ISR.pkt_rx));
-                case 0x8:  // CRDA0
-                    return (s.remote_dma & 0xff);
-                case 0x9:  // CRDA1
-                    return (s.remote_dma >> 8);
-                case 0xa:  // reserved
+                    return s.fifo;
+                case 0x7: // ISR
+                    return s.ISR.reset << 7 | s.ISR.rdma_done << 6 | s.ISR.cnt_oflow << 5 | s.ISR.overwrite << 4
+                        | s.ISR.tx_err << 3 | s.ISR.rx_err << 2 | s.ISR.pkt_tx << 1 | s.ISR.pkt_rx;
+                case 0x8: // CRDA0
+                    return s.remote_dma & 0xff;
+                case 0x9: // CRDA1
+                    return s.remote_dma >> 8;
+                case 0xa: // reserved
                     if (BX_INFO)
                         Log.log_msg("[NE2000] reserved read - page 0, 0xa");
-                    return (0xff);
-                case 0xb:  // reserved
+                    return 0xff;
+                case 0xb: // reserved
                     if (BX_INFO)
                         Log.log_msg("[NE2000] reserved read - page 0, 0xb");
-                    return (0xff);
-                case 0xc:  // RSR
-                    return ((s.RSR.deferred << 7) |
-                            (s.RSR.rx_disabled << 6) |
-                            (s.RSR.rx_mbit << 5) |
-                            (s.RSR.rx_missed << 4) |
-                            (s.RSR.fifo_or << 3) |
-                            (s.RSR.bad_falign << 2) |
-                            (s.RSR.bad_crc << 1) |
-                            (s.RSR.rx_ok));
-                case 0xd:  // CNTR0
-                    return (s.tallycnt_0);
-                case 0xe:  // CNTR1
-                    return (s.tallycnt_1);
-                case 0xf:  // CNTR2
-                    return (s.tallycnt_2);
+                    return 0xff;
+                case 0xc: // RSR
+                    return s.RSR.deferred << 7 | s.RSR.rx_disabled << 6 | s.RSR.rx_mbit << 5 | s.RSR.rx_missed << 4
+                        | s.RSR.fifo_or << 3 | s.RSR.bad_falign << 2 | s.RSR.bad_crc << 1 | s.RSR.rx_ok;
+                case 0xd: // CNTR0
+                    return s.tallycnt_0;
+                case 0xe: // CNTR1
+                    return s.tallycnt_1;
+                case 0xf: // CNTR2
+                    return s.tallycnt_2;
                 default:
                     if (BX_PANIC)
-                        Log.log_msg(StringHelper.sprintf("[NE2000] page 0 read offset %04x out of range", new Object[]{new Integer(offset)}));
+                        Log.log_msg(StringHelper.sprintf("[NE2000] page 0 read offset %04x out of range",
+                            new Object[] { Integer.valueOf(offset) }));
             }
-            return (0);
+            return 0;
         }
 
         public void page0_write(/*Bit32u*/int offset, /*Bit32u*/long val, /*unsigned*/int io_len) {
             int value = (int) val;
             if (BX_DEBUG)
-                Log.log_msg(StringHelper.sprintf("[NE2000] page 0 write to port %04x, len=%d", new Object[]{new Integer(offset), new Integer(io_len)}));
+                Log.log_msg(StringHelper.sprintf("[NE2000] page 0 write to port %04x, len=%d",
+                    new Object[] { Integer.valueOf(offset), Integer.valueOf(io_len) }));
 
             // It appears to be a common practice to use outw on page0 regs...
 
             // break up outw into two outb's
             if (io_len == 2) {
-                page0_write(offset, (value & 0xff), 1);
-                page0_write(offset + 1, ((value >> 8) & 0xff), 1);
+                page0_write(offset, value & 0xff, 1);
+                page0_write(offset + 1, value >> 8 & 0xff, 1);
                 return;
             }
 
             switch (offset) {
-                case 0x1:  // PSTART
+                case 0x1: // PSTART
                     s.page_start = (short) value;
                     break;
 
-                case 0x2:  // PSTOP
+                case 0x2: // PSTOP
                     // BX_INFO(("Writing to PSTOP: %02x", value));
                     s.page_stop = (short) value;
                     break;
 
-                case 0x3:  // BNRY
+                case 0x3: // BNRY
                     s.bound_ptr = (short) value;
                     break;
 
-                case 0x4:  // TPSR
+                case 0x4: // TPSR
                     s.tx_page_start = (short) value;
                     break;
 
-                case 0x5:  // TBCR0
+                case 0x5: // TBCR0
                     // Clear out low byte and re-insert
                     s.tx_bytes &= 0xff00;
-                    s.tx_bytes |= (value & 0xff);
+                    s.tx_bytes |= value & 0xff;
                     break;
 
-                case 0x6:  // TBCR1
+                case 0x6: // TBCR1
                     // Clear out high byte and re-insert
                     s.tx_bytes &= 0x00ff;
-                    s.tx_bytes |= ((value & 0xff) << 8);
+                    s.tx_bytes |= (value & 0xff) << 8;
                     break;
 
-                case 0x7:  // ISR
-                    value &= 0x7f;  // clear RST bit - status-only bit
+                case 0x7: // ISR
+                    value &= 0x7f; // clear RST bit - status-only bit
                     // All other values are cleared iff the ISR bit is 1
                     /*bx_bool*/
                     s.ISR.pkt_rx &= ~((value & 0x01) == 0x01 ? 1 : 0);
@@ -893,64 +864,54 @@ public class NE2000 extends Module_base {
                     s.ISR.cnt_oflow &= ~((value & 0x20) == 0x20 ? 1 : 0);
                     /*bx_bool*/
                     s.ISR.rdma_done &= ~((value & 0x40) == 0x40 ? 1 : 0);
-                    value = ((s.ISR.rdma_done << 6) |
-                            (s.ISR.cnt_oflow << 5) |
-                            (s.ISR.overwrite << 4) |
-                            (s.ISR.tx_err << 3) |
-                            (s.ISR.rx_err << 2) |
-                            (s.ISR.pkt_tx << 1) |
-                            (s.ISR.pkt_rx));
-                    value &= ((s.IMR.rdma_inte << 6) |
-                            (s.IMR.cofl_inte << 5) |
-                            (s.IMR.overw_inte << 4) |
-                            (s.IMR.txerr_inte << 3) |
-                            (s.IMR.rxerr_inte << 2) |
-                            (s.IMR.tx_inte << 1) |
-                            (s.IMR.rx_inte));
+                    value = s.ISR.rdma_done << 6 | s.ISR.cnt_oflow << 5 | s.ISR.overwrite << 4 | s.ISR.tx_err << 3
+                        | s.ISR.rx_err << 2 | s.ISR.pkt_tx << 1 | s.ISR.pkt_rx;
+                    value &= s.IMR.rdma_inte << 6 | s.IMR.cofl_inte << 5 | s.IMR.overw_inte << 4 | s.IMR.txerr_inte << 3
+                        | s.IMR.rxerr_inte << 2 | s.IMR.tx_inte << 1 | s.IMR.rx_inte;
                     if (value == 0)
                         Pic.PIC_DeActivateIRQ(s.base_irq);
                     //DEV_pic_lower_irq(s.base_irq);
                     break;
 
-                case 0x8:  // RSAR0
+                case 0x8: // RSAR0
                     // Clear out low byte and re-insert
                     s.remote_start &= 0xff00;
-                    s.remote_start |= (value & 0xff);
+                    s.remote_start |= value & 0xff;
                     s.remote_dma = s.remote_start;
                     break;
 
-                case 0x9:  // RSAR1
+                case 0x9: // RSAR1
                     // Clear out high byte and re-insert
                     s.remote_start &= 0x00ff;
-                    s.remote_start |= ((value & 0xff) << 8);
+                    s.remote_start |= (value & 0xff) << 8;
                     s.remote_dma = s.remote_start;
                     break;
 
-                case 0xa:  // RBCR0
+                case 0xa: // RBCR0
                     // Clear out low byte and re-insert
                     s.remote_bytes &= 0xff00;
-                    s.remote_bytes |= (value & 0xff);
+                    s.remote_bytes |= value & 0xff;
                     break;
 
-                case 0xb:  // RBCR1
+                case 0xb: // RBCR1
                     // Clear out high byte and re-insert
                     s.remote_bytes &= 0x00ff;
-                    s.remote_bytes |= ((value & 0xff) << 8);
+                    s.remote_bytes |= (value & 0xff) << 8;
                     break;
 
-                case 0xc:  // RCR
+                case 0xc: // RCR
                     // Check if the reserved bits are set
                     if ((value & 0xc0) != 0)
                         if (BX_INFO)
                             Log.log_msg("[NE2000] RCR write, reserved bits set");
 
                     // Set all other bit-fields
-                    s.RCR.errors_ok = ((value & 0x01) == 0x01) ? 1 : 0;
-                    s.RCR.runts_ok = ((value & 0x02) == 0x02) ? 1 : 0;
-                    s.RCR.broadcast = ((value & 0x04) == 0x04) ? 1 : 0;
-                    s.RCR.multicast = ((value & 0x08) == 0x08) ? 1 : 0;
-                    s.RCR.promisc = ((value & 0x10) == 0x10) ? 1 : 0;
-                    s.RCR.monitor = ((value & 0x20) == 0x20) ? 1 : 0;
+                    s.RCR.errors_ok = (value & 0x01) == 0x01 ? 1 : 0;
+                    s.RCR.runts_ok = (value & 0x02) == 0x02 ? 1 : 0;
+                    s.RCR.broadcast = (value & 0x04) == 0x04 ? 1 : 0;
+                    s.RCR.multicast = (value & 0x08) == 0x08 ? 1 : 0;
+                    s.RCR.promisc = (value & 0x10) == 0x10 ? 1 : 0;
+                    s.RCR.monitor = (value & 0x20) == 0x20 ? 1 : 0;
 
                     // Monitor bit is a little suspicious...
                     if ((value & 0x20) != 0)
@@ -958,7 +919,7 @@ public class NE2000 extends Module_base {
                             Log.log_msg("[NE2000] RCR write, monitor bit set!");
                     break;
 
-                case 0xd:  // TCR
+                case 0xd: // TCR
                     // Check reserved bits
                     if ((value & 0xe0) != 0)
                         if (BX_ERROR)
@@ -984,10 +945,10 @@ public class NE2000 extends Module_base {
                             Log.log_msg("[NE2000] TCR write, auto transmit disable not supported");
 
                     // Allow collision-offset to be set, although not used
-                    s.TCR.coll_prio = ((value & 0x08) == 0x08) ? 1 : 0;
+                    s.TCR.coll_prio = (value & 0x08) == 0x08 ? 1 : 0;
                     break;
 
-                case 0xe:  // DCR
+                case 0xe: // DCR
                     // the loopback mode is not suppported yet
                     if ((value & 0x08) == 0) {
                         if (BX_ERROR)
@@ -1003,28 +964,28 @@ public class NE2000 extends Module_base {
                             Log.log_msg("[NE2000] DCR write - AR set ???");
 
                     // Set other values.
-                    s.DCR.wdsize = ((value & 0x01) == 0x01) ? 1 : 0;
-                    s.DCR.endian = ((value & 0x02) == 0x02) ? 1 : 0;
-                    s.DCR.longaddr = ((value & 0x04) == 0x04) ? 1 : 0; // illegal ?
-                    s.DCR.loop = ((value & 0x08) == 0x08) ? 1 : 0;
-                    s.DCR.auto_rx = ((value & 0x10) == 0x10) ? 1 : 0; // also illegal ?
+                    s.DCR.wdsize = (value & 0x01) == 0x01 ? 1 : 0;
+                    s.DCR.endian = (value & 0x02) == 0x02 ? 1 : 0;
+                    s.DCR.longaddr = (value & 0x04) == 0x04 ? 1 : 0; // illegal ?
+                    s.DCR.loop = (value & 0x08) == 0x08 ? 1 : 0;
+                    s.DCR.auto_rx = (value & 0x10) == 0x10 ? 1 : 0; // also illegal ?
                     s.DCR.fifo_size = (short) ((value & 0x50) >> 5);
                     break;
 
-                case 0xf:  // IMR
+                case 0xf: // IMR
                     // Check for reserved bit
                     if ((value & 0x80) != 0)
                         if (BX_PANIC)
                             Log.log_msg("[NE2000] IMR write, reserved bit set");
 
                     // Set other values
-                    s.IMR.rx_inte = ((value & 0x01) == 0x01) ? 1 : 0;
-                    s.IMR.tx_inte = ((value & 0x02) == 0x02) ? 1 : 0;
-                    s.IMR.rxerr_inte = ((value & 0x04) == 0x04) ? 1 : 0;
-                    s.IMR.txerr_inte = ((value & 0x08) == 0x08) ? 1 : 0;
-                    s.IMR.overw_inte = ((value & 0x10) == 0x10) ? 1 : 0;
-                    s.IMR.cofl_inte = ((value & 0x20) == 0x20) ? 1 : 0;
-                    s.IMR.rdma_inte = ((value & 0x40) == 0x40) ? 1 : 0;
+                    s.IMR.rx_inte = (value & 0x01) == 0x01 ? 1 : 0;
+                    s.IMR.tx_inte = (value & 0x02) == 0x02 ? 1 : 0;
+                    s.IMR.rxerr_inte = (value & 0x04) == 0x04 ? 1 : 0;
+                    s.IMR.txerr_inte = (value & 0x08) == 0x08 ? 1 : 0;
+                    s.IMR.overw_inte = (value & 0x10) == 0x10 ? 1 : 0;
+                    s.IMR.cofl_inte = (value & 0x20) == 0x20 ? 1 : 0;
+                    s.IMR.rdma_inte = (value & 0x40) == 0x40 ? 1 : 0;
                     if (s.ISR.pkt_tx != 0 && s.IMR.tx_inte != 0) {
                         Log.log_msg("[NE2000] tx irq retrigger");
                         Pic.PIC_ActivateIRQ(s.base_irq);
@@ -1042,30 +1003,32 @@ public class NE2000 extends Module_base {
         //
         public /*Bit32u*/long page1_read(/*Bit32u*/int offset, /*unsigned*/int io_len) {
             if (BX_DEBUG)
-                Log.log_msg(StringHelper.sprintf("[NE2000] page 1 read from port %04x, len=%d", new Object[]{new Integer(offset), new Integer(io_len)}));
+                Log.log_msg(StringHelper.sprintf("[NE2000] page 1 read from port %04x, len=%d",
+                    new Object[] { Integer.valueOf(offset), Integer.valueOf(io_len) }));
             if (io_len > 1) {
                 if (BX_ERROR) {
                     /* encountered with win98 hardware probe */
-                    Log.log_msg(StringHelper.sprintf("[NE2000] bad length! page 1 read from port %04x, len=%u", new Object[]{new Integer(offset), new Integer(io_len)}));
+                    Log.log_msg(StringHelper.sprintf("[NE2000] bad length! page 1 read from port %04x, len=%u",
+                        new Object[] { Integer.valueOf(offset), Integer.valueOf(io_len) }));
                 }
                 return 0;
             }
 
             switch (offset) {
-                case 0x1:  // PAR0-5
+                case 0x1: // PAR0-5
                 case 0x2:
                 case 0x3:
                 case 0x4:
                 case 0x5:
                 case 0x6:
-                    return (s.physaddr[offset - 1]);
+                    return s.physaddr[offset - 1];
 
-                case 0x7:  // CURR
+                case 0x7: // CURR
                     if (BX_DEBUG)
                         Log.log_msg("[NE2000] returning current page: " + s.curr_page);
-                    return (s.curr_page);
+                    return s.curr_page;
 
-                case 0x8:  // MAR0-7
+                case 0x8: // MAR0-7
                 case 0x9:
                 case 0xa:
                 case 0xb:
@@ -1073,21 +1036,23 @@ public class NE2000 extends Module_base {
                 case 0xd:
                 case 0xe:
                 case 0xf:
-                    return (s.mchash[offset - 8]);
+                    return s.mchash[offset - 8];
 
                 default:
                     if (BX_PANIC)
-                        Log.log_msg(StringHelper.sprintf("[NE2000] page 1 read offset %04x out of range", new Object[]{new Integer(offset)}));
+                        Log.log_msg(StringHelper.sprintf("[NE2000] page 1 read offset %04x out of range",
+                            new Object[] { Integer.valueOf(offset) }));
             }
             return 0;
         }
 
         public void page1_write(/*Bit32u*/int offset, /*Bit32u*/long value, /*unsigned*/int io_len) {
             if (BX_DEBUG)
-                Log.log_msg(StringHelper.sprintf("[NE2000] page 1 write to port %04x, len=%d", new Object[]{new Integer(offset), new Integer(io_len)}));
+                Log.log_msg(StringHelper.sprintf("[NE2000] page 1 write to port %04x, len=%d",
+                    new Object[] { Integer.valueOf(offset), Integer.valueOf(io_len) }));
 
             switch (offset) {
-                case 0x1:  // PAR0-5
+                case 0x1: // PAR0-5
                 case 0x2:
                 case 0x3:
                 case 0x4:
@@ -1096,11 +1061,11 @@ public class NE2000 extends Module_base {
                     s.physaddr[offset - 1] = (byte) value;
                     break;
 
-                case 0x7:  // CURR
+                case 0x7: // CURR
                     s.curr_page = (short) value;
                     break;
 
-                case 0x8:  // MAR0-7
+                case 0x8: // MAR0-7
                 case 0x9:
                 case 0xa:
                 case 0xb:
@@ -1123,67 +1088,55 @@ public class NE2000 extends Module_base {
         //
         public /*Bit32u*/long page2_read(/*Bit32u*/int offset, /*unsigned*/int io_len) {
             if (BX_DEBUG)
-                Log.log_msg(StringHelper.sprintf("[NE2000] page 2 read from port %04x, len=%d", new Object[]{new Integer(offset), new Integer(io_len)}));
+                Log.log_msg(StringHelper.sprintf("[NE2000] page 2 read from port %04x, len=%d",
+                    new Object[] { Integer.valueOf(offset), Integer.valueOf(io_len) }));
             if (io_len > 1) {
                 if (BX_ERROR) {
                     /* encountered with win98 hardware probe */
-                    Log.log_msg(StringHelper.sprintf("[NE2000] bad length! page 2 read from port %04x, len=%u", new Object[]{new Integer(offset), new Integer(io_len)}));
+                    Log.log_msg(StringHelper.sprintf("[NE2000] bad length! page 2 read from port %04x, len=%u",
+                        new Object[] { Integer.valueOf(offset), Integer.valueOf(io_len) }));
                 }
                 return 0;
             }
 
             switch (offset) {
-                case 0x1:  // PSTART
-                    return (s.page_start);
-                case 0x2:  // PSTOP
-                    return (s.page_stop);
-                case 0x3:  // Remote Next-packet pointer
-                    return (s.rempkt_ptr);
-                case 0x4:  // TPSR
-                    return (s.tx_page_start);
-                case 0x5:  // Local Next-packet pointer
-                    return (s.localpkt_ptr);
-                case 0x6:  // Address counter (upper)
-                    return (s.address_cnt >> 8);
-                case 0x7:  // Address counter (lower)
-                    return (s.address_cnt & 0xff);
-                case 0x8:  // Reserved
+                case 0x1: // PSTART
+                    return s.page_start;
+                case 0x2: // PSTOP
+                    return s.page_stop;
+                case 0x3: // Remote Next-packet pointer
+                    return s.rempkt_ptr;
+                case 0x4: // TPSR
+                    return s.tx_page_start;
+                case 0x5: // Local Next-packet pointer
+                    return s.localpkt_ptr;
+                case 0x6: // Address counter (upper)
+                    return s.address_cnt >> 8;
+                case 0x7: // Address counter (lower)
+                    return s.address_cnt & 0xff;
+                case 0x8: // Reserved
                 case 0x9:
                 case 0xa:
                 case 0xb:
                     if (BX_ERROR)
                         Log.log_msg("reserved read - page 2, 0x" + Integer.toString(offset, 16));
-                    return (0xff);
-                case 0xc:  // RCR
-                    return ((s.RCR.monitor << 5) |
-                            (s.RCR.promisc << 4) |
-                            (s.RCR.multicast << 3) |
-                            (s.RCR.broadcast << 2) |
-                            (s.RCR.runts_ok << 1) |
-                            (s.RCR.errors_ok));
-                case 0xd:  // TCR
-                    return ((s.TCR.coll_prio << 4) |
-                            (s.TCR.ext_stoptx << 3) |
-                            ((s.TCR.loop_cntl & 0x3) << 1) |
-                            (s.TCR.crc_disable));
-                case 0xe:  // DCR
-                    return (((s.DCR.fifo_size & 0x3) << 5) |
-                            (s.DCR.auto_rx << 4) |
-                            (s.DCR.loop << 3) |
-                            (s.DCR.longaddr << 2) |
-                            (s.DCR.endian << 1) |
-                            (s.DCR.wdsize));
-                case 0xf:  // IMR
-                    return ((s.IMR.rdma_inte << 6) |
-                            (s.IMR.cofl_inte << 5) |
-                            (s.IMR.overw_inte << 4) |
-                            (s.IMR.txerr_inte << 3) |
-                            (s.IMR.rxerr_inte << 2) |
-                            (s.IMR.tx_inte << 1) |
-                            (s.IMR.rx_inte));
+                    return 0xff;
+                case 0xc: // RCR
+                    return s.RCR.monitor << 5 | s.RCR.promisc << 4 | s.RCR.multicast << 3 | s.RCR.broadcast << 2
+                        | s.RCR.runts_ok << 1 | s.RCR.errors_ok;
+                case 0xd: // TCR
+                    return s.TCR.coll_prio << 4 | s.TCR.ext_stoptx << 3 | (s.TCR.loop_cntl & 0x3) << 1
+                        | s.TCR.crc_disable;
+                case 0xe: // DCR
+                    return (s.DCR.fifo_size & 0x3) << 5 | s.DCR.auto_rx << 4 | s.DCR.loop << 3 | s.DCR.longaddr << 2
+                        | s.DCR.endian << 1 | s.DCR.wdsize;
+                case 0xf: // IMR
+                    return s.IMR.rdma_inte << 6 | s.IMR.cofl_inte << 5 | s.IMR.overw_inte << 4 | s.IMR.txerr_inte << 3
+                        | s.IMR.rxerr_inte << 2 | s.IMR.tx_inte << 1 | s.IMR.rx_inte;
                 default:
                     if (BX_PANIC)
-                        Log.log_msg(StringHelper.sprintf("[NE2000] page 2 read offset %04x out of range", new Object[]{new Integer(offset)}));
+                        Log.log_msg(StringHelper.sprintf("[NE2000] page 2 read offset %04x out of range",
+                            new Object[] { Integer.valueOf(offset) }));
             }
             return 0;
         }
@@ -1197,19 +1150,19 @@ public class NE2000 extends Module_base {
                     Log.log_msg("[NE2000] page 2 write ?");
 
             switch (offset) {
-                case 0x1:  // CLDA0
+                case 0x1: // CLDA0
                     // Clear out low byte and re-insert
                     s.local_dma &= 0xff00;
-                    s.local_dma |= (value & 0xff);
+                    s.local_dma |= value & 0xff;
                     break;
 
-                case 0x2:  // CLDA1
+                case 0x2: // CLDA1
                     // Clear out high byte and re-insert
                     s.local_dma &= 0x00ff;
-                    s.local_dma |= ((value & 0xff) << 8);
+                    s.local_dma |= (value & 0xff) << 8;
                     break;
 
-                case 0x3:  // Remote Next-pkt pointer
+                case 0x3: // Remote Next-pkt pointer
                     s.rempkt_ptr = (short) value;
                     break;
 
@@ -1218,20 +1171,20 @@ public class NE2000 extends Module_base {
                         Log.log_msg("page 2 write to reserved offset 4");
                     break;
 
-                case 0x5:  // Local Next-packet pointer
+                case 0x5: // Local Next-packet pointer
                     s.localpkt_ptr = (short) value;
                     break;
 
-                case 0x6:  // Address counter (upper)
+                case 0x6: // Address counter (upper)
                     // Clear out high byte and re-insert
                     s.address_cnt &= 0x00ff;
-                    s.address_cnt |= ((value & 0xff) << 8);
+                    s.address_cnt |= (value & 0xff) << 8;
                     break;
 
-                case 0x7:  // Address counter (lower)
+                case 0x7: // Address counter (lower)
                     // Clear out low byte and re-insert
                     s.address_cnt &= 0xff00;
-                    s.address_cnt |= (value & 0xff);
+                    s.address_cnt |= value & 0xff;
                     break;
 
                 case 0x8:
@@ -1289,7 +1242,8 @@ public class NE2000 extends Module_base {
 
         public /*Bit32u*/long read(/*Bit32u*/long address, /*unsigned*/int io_len) {
             if (BX_DEBUG)
-                Log.log_msg(StringHelper.sprintf("[NE2000] read addr %x, len %d", new Object[]{new Long(address), new Integer(io_len)}));
+                Log.log_msg(StringHelper.sprintf("[NE2000] read addr %x, len %d",
+                    new Object[] { Long.valueOf(address), Integer.valueOf(io_len) }));
             /*Bit32u*/
             long retval = 0;
             int offset = (int) (address - s.base_address);
@@ -1376,14 +1330,14 @@ public class NE2000 extends Module_base {
             int carry, i, j;
             byte b;
 
-            for (i = 6; --i >= 0; ) {
+            for (i = 6; --i >= 0;) {
                 b = dst[offset++];
-                for (j = 8; --j >= 0; ) {
-                    carry = ((crc & 0x80000000L) != 0 ? 1 : 0) ^ (b & 0x01);
+                for (j = 8; --j >= 0;) {
+                    carry = ((crc & 0x80000000L) != 0 ? 1 : 0) ^ b & 0x01;
                     crc <<= 1;
                     b >>>= 1;
                     if (carry != 0)
-                        crc = ((crc ^ POLYNOMIAL) | carry);
+                        crc = crc ^ POLYNOMIAL | carry;
                 }
             }
             return crc >>> 26;
@@ -1398,8 +1352,9 @@ public class NE2000 extends Module_base {
          * rx ring has enough room, it is copied into it and
          * the receive process is updated
          */
+        @Override
         public boolean rx_frame(Ptr buf, /*unsigned*/int io_len) {
-            if ((s.DCR.loop == 0) || (s.TCR.loop_cntl != 0))
+            if (s.DCR.loop == 0 || s.TCR.loop_cntl != 0)
                 return false;
             int pages;
             int avail;
@@ -1410,7 +1365,7 @@ public class NE2000 extends Module_base {
             byte[] pkthdr = new byte[4];
             Ptr pktbuf = buf;
             Ptr startptr;
-            final byte[] bcast_addr = new byte[]{(byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff};
+            final byte[] bcast_addr = { (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff };
 
             if (io_len != 60) {
                 if (BX_DEBUG)
@@ -1420,10 +1375,9 @@ public class NE2000 extends Module_base {
             //LOG_MSG("stop=%d, pagestart=%x, dcr_loop=%x, tcr_loopcntl=%x",
             //	s.CR.stop, s.page_start,
             //	s.DCR.loop, s.TCR.loop_cntl);
-            if ((s.CR.stop != 0) ||
-                    (s.page_start == 0) /*||
-                  ((s.DCR.loop == 0) &&
-                   (s.TCR.loop_cntl != 0))*/) {
+            if (s.CR.stop != 0 || s.page_start == 0 /*||
+                                                    ((s.DCR.loop == 0) &&
+                                                    (s.TCR.loop_cntl != 0))*/) {
                 return true;
             }
 
@@ -1434,8 +1388,7 @@ public class NE2000 extends Module_base {
             if (s.curr_page < s.bound_ptr) {
                 avail = s.bound_ptr - s.curr_page;
             } else {
-                avail = (s.page_stop - s.page_start) -
-                        (s.curr_page - s.bound_ptr);
+                avail = s.page_stop - s.page_start - (s.curr_page - s.bound_ptr);
                 wrapped = 1;
             }
 
@@ -1456,7 +1409,7 @@ public class NE2000 extends Module_base {
                 }
 
             }
-            if ((io_len < 60) && s.RCR.runts_ok == 0) {
+            if (io_len < 60 && s.RCR.runts_ok == 0) {
                 if (BX_DEBUG)
                     Log.log_msg("[NE2000] rejected small packet, length " + io_len);
                 return true;
@@ -1475,7 +1428,7 @@ public class NE2000 extends Module_base {
                         return true;
                     }
                     idx = mcast_index(buf.p, buf.off);
-                    if ((s.mchash[idx >> 3] & (1 << (idx & 0x7))) == 0) {
+                    if ((s.mchash[idx >> 3] & 1 << (idx & 0x7)) == 0) {
                         return true;
                     }
                 } else if (0 != Ptr.memcmp(buf, s.physaddr, 6)) {
@@ -1497,19 +1450,19 @@ public class NE2000 extends Module_base {
             }
 
             // Setup packet header
-            pkthdr[0] = 0;    // rx status - old behavior
-            pkthdr[0] = 1;        // Probably better to set it all the time
+            pkthdr[0] = 0; // rx status - old behavior
+            pkthdr[0] = 1; // Probably better to set it all the time
             // rather than set it to 0, which is clearly wrong.
             if ((pktbuf.readb(0) & 0x01) != 0) {
-                pkthdr[0] |= 0x20;  // rx status += multicast packet
+                pkthdr[0] |= 0x20; // rx status += multicast packet
             }
-            pkthdr[1] = (byte) nextpage;    // ptr to next packet
-            pkthdr[2] = (byte) ((io_len + 4) & 0xff);    // length-low
-            pkthdr[3] = (byte) ((io_len + 4) >> 8);    // length-hi
+            pkthdr[1] = (byte) nextpage; // ptr to next packet
+            pkthdr[2] = (byte) (io_len + 4 & 0xff); // length-low
+            pkthdr[3] = (byte) (io_len + 4 >> 8); // length-hi
 
             // copy into buffer, update curpage, and signal interrupt if config'd
             startptr = new Ptr(s.mem, s.curr_page * 256 - BX_NE2K_MEMSTART);
-            if ((nextpage > s.curr_page) || ((s.curr_page + pages) == s.page_stop)) {
+            if (nextpage > s.curr_page || s.curr_page + pages == s.page_stop) {
                 Ptr.memcpy(startptr, pkthdr, 4);
                 startptr.inc(4);
                 Ptr.memcpy(startptr, buf, io_len);
@@ -1540,8 +1493,3 @@ public class NE2000 extends Module_base {
         }
     }
 }
-
-
-
-
-

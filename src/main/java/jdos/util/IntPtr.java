@@ -25,14 +25,17 @@ public class IntPtr extends Ptr {
         super(p, 0);
     }
 
+    @Override
     public int dataWidth() {
         return 4;
     }
 
+    @Override
     public void set(int off, int val) {
         writed(off, val);
     }
 
+    @Override
     public int get(int off) {
         return readd(off);
     }

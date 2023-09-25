@@ -1,5 +1,13 @@
 package jdos.win.builtin.gdi32;
 
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.font.FontRenderContext;
+import java.awt.font.LineMetrics;
+import java.awt.image.BufferedImage;
+
 import jdos.gui.Main;
 import jdos.hardware.Memory;
 import jdos.win.Win;
@@ -11,11 +19,6 @@ import jdos.win.system.WinObject;
 import jdos.win.system.WinRect;
 import jdos.win.utils.Pixel;
 import jdos.win.utils.StringUtil;
-
-import java.awt.*;
-import java.awt.font.FontRenderContext;
-import java.awt.font.LineMetrics;
-import java.awt.image.BufferedImage;
 
 public class WinDC extends WinObject {
     private static final int PHYSICALWIDTH = 110;
@@ -56,6 +59,7 @@ public class WinDC extends WinObject {
     int hClipRgn;
     int ROPmode = R2_COPYPEN;
     float miterLimit = 10.0f; /* 10.0 is the default, from MSDN */
+
     public WinDC(int handle, JavaBitmap image, boolean owner) {
         super(handle);
         this.image = image;
@@ -77,15 +81,15 @@ public class WinDC extends WinObject {
         hFont = defaultFont.handle;
     }
 
-    static public WinDC create(JavaBitmap image, boolean owner) {
+    public static WinDC create(JavaBitmap image, boolean owner) {
         return new WinDC(nextObjectId(), image, owner);
     }
 
-    static public WinDC create() {
+    public static WinDC create() {
         return new WinDC(nextObjectId(), null, false);
     }
 
-    static public WinDC get(int handle) {
+    public static WinDC get(int handle) {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinDC))
             return null;
@@ -93,10 +97,11 @@ public class WinDC extends WinObject {
     }
 
     // int FillRect(HDC hDC, const RECT *lprc, HBRUSH hbr)
-    static public int FillRect(int hDC, int lprc, int hbr) {
+    public static int FillRect(int hDC, int lprc, int hbr) {
         int prev_brush;
 
-        if (hbr <= COLOR_MAX + 1) hbr = SysParams.GetSysColorBrush(hbr - 1);
+        if (hbr <= COLOR_MAX + 1)
+            hbr = SysParams.GetSysColorBrush(hbr - 1);
 
         prev_brush = SelectObject(hDC, hbr);
         if (prev_brush != 0) {
@@ -109,19 +114,19 @@ public class WinDC extends WinObject {
     }
 
     // HDC CreateCompatibleDC(HDC hdc)
-    static public int CreateCompatibleDC(int hdc) {
+    public static int CreateCompatibleDC(int hdc) {
         WinDC dc = create();
         return dc.handle;
     }
 
     // HDC CreateDC(LPCTSTR lpszDriver, LPCTSTR lpszDevice, LPCTSTR lpszOutput, const DEVMODE *lpInitData)
-    static public int CreateDCA(int driver, int device, int output, int initData) {
+    public static int CreateDCA(int driver, int device, int output, int initData) {
         WinDC dc = create();
         return dc.handle;
     }
 
     // BOOL DeleteDC(HDC hdc)
-    static public int DeleteDC(int hdc) {
+    public static int DeleteDC(int hdc) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return FALSE;
@@ -130,17 +135,17 @@ public class WinDC extends WinObject {
     }
 
     // BOOL ExtTextOut(HDC hdc, int X, int Y, UINT fuOptions, const RECT *lprc, LPCTSTR lpString, UINT cbCount, const INT *lpDx)
-    static public int ExtTextOutA(int hdc, int X, int Y, int fuOptions, int lprc, int lpString, int cbCount, int lpDx) {
+    public static int ExtTextOutA(int hdc, int X, int Y, int fuOptions, int lprc, int lpString, int cbCount, int lpDx) {
         String text = StringUtil.getString(lpString, cbCount);
         return ExtTextOut(hdc, X, Y, fuOptions, lprc, text, lpDx);
     }
 
-    static public int ExtTextOutW(int hdc, int X, int Y, int fuOptions, int lprc, int lpString, int cbCount, int lpDx) {
+    public static int ExtTextOutW(int hdc, int X, int Y, int fuOptions, int lprc, int lpString, int cbCount, int lpDx) {
         String text = StringUtil.getStringW(lpString, cbCount);
         return ExtTextOut(hdc, X, Y, fuOptions, lprc, text, lpDx);
     }
 
-    static public int ExtTextOut(int hdc, int X, int Y, int fuOptions, int lprc, String text, int lpDx) {
+    public static int ExtTextOut(int hdc, int X, int Y, int fuOptions, int lprc, String text, int lpDx) {
         log("ExtTextOutA not fully implemented yet");
         WinDC dc = WinDC.get(hdc);
         if (dc == null) {
@@ -170,9 +175,10 @@ public class WinDC extends WinObject {
     }
 
     // int GetClipBox(HDC hdc,  LPRECT lprc)
-    static public int GetClipBox(int hdc, int rect) {
+    public static int GetClipBox(int hdc, int rect) {
         WinDC dc = WinDC.get(hdc);
-        if (dc == null) return ERROR;
+        if (dc == null)
+            return ERROR;
         if (dc.hClipRgn != 0)
             return WinRegion.GetRgnBox(dc.hClipRgn, rect);
         new WinRect(0, 0, dc.clipCx, dc.clipCy).write(rect);
@@ -180,7 +186,7 @@ public class WinDC extends WinObject {
     }
 
     // int GetDeviceCaps(HDC hdc, int nIndex)
-    static public int GetDeviceCaps(int hdc, int nIndex) {
+    public static int GetDeviceCaps(int hdc, int nIndex) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return 0;
@@ -210,7 +216,7 @@ public class WinDC extends WinObject {
     }
 
     // UINT GetSystemPaletteEntries(HDC hdc, UINT iStartIndex, UINT nEntries, LPPALETTEENTRY lppe)
-    static public int GetSystemPaletteEntries(int hdc, int iStartIndex, int nEntries, int lppe) {
+    public static int GetSystemPaletteEntries(int hdc, int iStartIndex, int nEntries, int lppe) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return 0;
@@ -226,16 +232,16 @@ public class WinDC extends WinObject {
     }
 
     // COLORREF GetPixel(HDC hdc, int nXPos, int nYPos)
-    static public int GetPixel(int hdc, int nXPos, int nYPos) {
+    public static int GetPixel(int hdc, int nXPos, int nYPos) {
         WinDC dc = WinDC.get(hdc);
-        if (dc == null || (nXPos >= 0 && nXPos < dc.clipCx && nYPos >= 0 && nYPos < dc.clipCy))
+        if (dc == null || nXPos >= 0 && nXPos < dc.clipCx && nYPos >= 0 && nYPos < dc.clipCy)
             return CLR_INVALID;
         BufferedImage bi = dc.getImage();
         return bi.getRGB(dc.x + nXPos, dc.y + nYPos);
     }
 
     // COLORREF GetTextColor(HDC hdc)
-    static public int GetTextColor(int hdc) {
+    public static int GetTextColor(int hdc) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return CLR_INVALID;
@@ -243,7 +249,7 @@ public class WinDC extends WinObject {
     }
 
     // BOOL PatBlt(HDC hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, DWORD dwRop)
-    static public int PatBlt(int hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int dwRop) {
+    public static int PatBlt(int hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, int dwRop) {
         System.out.println("PatBlt not fully implemented yet");
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
@@ -260,7 +266,7 @@ public class WinDC extends WinObject {
     }
 
     // UINT RealizePalette(HDC hdc)
-    static public int RealizePalette(int hdc) {
+    public static int RealizePalette(int hdc) {
 //        WinDC dc = WinDC.get(hdc);
 //        if (dc == null)
 //            return 0;
@@ -283,7 +289,7 @@ public class WinDC extends WinObject {
     }
 
     // int SelectClipRgn(HDC hdc, HRGN hrgn)
-    static public int SelectClipRgn(int hdc, int hrgn) {
+    public static int SelectClipRgn(int hdc, int hrgn) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return 0;
@@ -297,7 +303,7 @@ public class WinDC extends WinObject {
     }
 
     // HGDIOBJ SelectObject(HDC hdc, HGDIOBJ hgdiobj)
-    static public int SelectObject(int hdc, int obj) {
+    public static int SelectObject(int hdc, int obj) {
         WinDC dc = WinDC.get(hdc);
         WinGDI gdi = WinGDI.getGDI(obj);
 
@@ -336,13 +342,13 @@ public class WinDC extends WinObject {
     }
 
     // HPALETTE SelectPalette(HDC hdc, HPALETTE hpal, BOOL bForceBackground)
-    static public int SelectPalette(int hdc, int hpal, int bForceBackground) {
+    public static int SelectPalette(int hdc, int hpal, int bForceBackground) {
         // :TODO:
         return SelectObject(hdc, hpal);
     }
 
     // COLORREF SetBkColor(HDC hdc, COLORREF crColor)
-    static public int SetBkColor(int hdc, int crColor) {
+    public static int SetBkColor(int hdc, int crColor) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return CLR_INVALID;
@@ -352,7 +358,7 @@ public class WinDC extends WinObject {
     }
 
     // int SetBkMode(HDC hdc, int iBkMode)
-    static public int SetBkMode(int hdc, int iBkMode) {
+    public static int SetBkMode(int hdc, int iBkMode) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return 0;
@@ -362,9 +368,9 @@ public class WinDC extends WinObject {
     }
 
     // COLORREF SetPixel(HDC hdc, int X, int Y, COLORREF crColor)
-    static public int SetPixel(int hdc, int X, int Y, int crColor) {
+    public static int SetPixel(int hdc, int X, int Y, int crColor) {
         WinDC dc = WinDC.get(hdc);
-        if (dc == null || (X >= 0 && X < dc.clipCx && Y >= 0 && Y < dc.clipCy))
+        if (dc == null || X >= 0 && X < dc.clipCx && Y >= 0 && Y < dc.clipCy)
             return CLR_INVALID;
         BufferedImage bi = dc.getImage();
         bi.setRGB(dc.x + X, dc.y + Y, crColor);
@@ -372,7 +378,7 @@ public class WinDC extends WinObject {
     }
 
     // int SetROP2(HDC hdc, int fnDrawMode)
-    static public int SetROP2(int hdc, int fnDrawMode) {
+    public static int SetROP2(int hdc, int fnDrawMode) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return 0;
@@ -382,7 +388,7 @@ public class WinDC extends WinObject {
     }
 
     // COLORREF SetTextColor(HDC hdc, COLORREF crColor)
-    static public int SetTextColor(int hdc, int crColor) {
+    public static int SetTextColor(int hdc, int crColor) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return CLR_INVALID;
@@ -392,15 +398,15 @@ public class WinDC extends WinObject {
     }
 
     // BOOL WINAPI TextOutA( HDC hdc, INT x, INT y, LPCSTR str, INT count )
-    static public int TextOutA(int hdc, int x, int y, int str, int count) {
+    public static int TextOutA(int hdc, int x, int y, int str, int count) {
         return ExtTextOutA(hdc, x, y, 0, NULL, str, count, NULL);
     }
 
-    static public int TextOutW(int hdc, int x, int y, int str, int count) {
+    public static int TextOutW(int hdc, int x, int y, int str, int count) {
         return ExtTextOutW(hdc, x, y, 0, NULL, str, count, NULL);
     }
 
-    static public int TextOut(int hdc, int x, int y, String text) {
+    public static int TextOut(int hdc, int x, int y, String text) {
         return ExtTextOut(hdc, x, y, 0, NULL, text, NULL);
     }
 
@@ -422,6 +428,7 @@ public class WinDC extends WinObject {
         return g;
     }
 
+    @Override
     protected void onFree() {
         if (owner) {
             image.close();
@@ -435,6 +442,6 @@ public class WinDC extends WinObject {
     }
 
     public boolean isScreen() {
-        return (image == StaticData.screen);
+        return image == StaticData.screen;
     }
 }

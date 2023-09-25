@@ -22,9 +22,9 @@ public class CPU_Regs extends Flags {
 
     public static final int MAYBE = 0x10000000;
 
-    public static final int FMASK_TEST = (CF | PF | AF | ZF | SF | OF);
-    public static final int FMASK_NORMAL = (FMASK_TEST | DF | TF | IF);
-    public static final int FMASK_ALL = (FMASK_NORMAL | IOPL | NT);
+    public static final int FMASK_TEST = CF | PF | AF | ZF | SF | OF;
+    public static final int FMASK_NORMAL = FMASK_TEST | DF | TF | IF;
+    public static final int FMASK_ALL = FMASK_NORMAL | IOPL | NT;
     // SegNames
     public static final int es = 0;
     public static final int cs = 1;
@@ -32,33 +32,34 @@ public class CPU_Regs extends Flags {
     public static final int ds = 3;
     public static final int fs = 4;
     public static final int gs = 5;
-    final static public Reg reg_zero = new Reg("zero");
-    final static public Reg reg_eax = new Reg("eax");
-    final static public Reg reg_ebx = new Reg("ebx");
-    final static public Reg reg_ecx = new Reg("ecx");
-    final static public Reg reg_edx = new Reg("edx");
-    final static public Reg reg_esi = new Reg("esi");
-    final static public Reg reg_edi = new Reg("edi");
-    final static public Reg reg_esp = new Reg("esp");
-    final static public Reg reg_ebp = new Reg("ebp");
-    final static public Reg reg_ah = new Reg(reg_eax);
-    final static public Reg reg_bh = new Reg(reg_ebx);
-    final static public Reg reg_ch = new Reg(reg_ecx);
-    final static public Reg reg_dh = new Reg(reg_edx);
-    final static public Reg reg_esPhys = new Reg("esPhys");
-    final static public Reg reg_csPhys = new Reg("csPhys");
-    final static public Reg reg_ssPhys = new Reg("ssPhys");
-    final static public Reg reg_dsPhys = new Reg("dsPhys");
-    final static public Reg reg_fsPhys = new Reg("fsPhys");
-    final static public Reg reg_gsPhys = new Reg("gsPhys");
-    final static public Reg reg_esVal = new Reg("es");
-    final static public Reg reg_csVal = new Reg("cs");
-    final static public Reg reg_ssVal = new Reg("ss");
-    final static public Reg reg_dsVal = new Reg("ds");
-    final static public Reg reg_fsVal = new Reg("fs");
-    final static public Reg reg_gsVal = new Reg("gs");
-    static public int reg_eip;
-    static public /*Bitu*/ int flags;
+    public static final Reg reg_zero = new Reg("zero");
+    public static final Reg reg_eax = new Reg("eax");
+    public static final Reg reg_ebx = new Reg("ebx");
+    public static final Reg reg_ecx = new Reg("ecx");
+    public static final Reg reg_edx = new Reg("edx");
+    public static final Reg reg_esi = new Reg("esi");
+    public static final Reg reg_edi = new Reg("edi");
+    public static final Reg reg_esp = new Reg("esp");
+    public static final Reg reg_ebp = new Reg("ebp");
+    public static final Reg reg_ah = new Reg(reg_eax);
+    public static final Reg reg_bh = new Reg(reg_ebx);
+    public static final Reg reg_ch = new Reg(reg_ecx);
+    public static final Reg reg_dh = new Reg(reg_edx);
+    public static final Reg reg_esPhys = new Reg("esPhys");
+    public static final Reg reg_csPhys = new Reg("csPhys");
+    public static final Reg reg_ssPhys = new Reg("ssPhys");
+    public static final Reg reg_dsPhys = new Reg("dsPhys");
+    public static final Reg reg_fsPhys = new Reg("fsPhys");
+    public static final Reg reg_gsPhys = new Reg("gsPhys");
+    public static final Reg reg_esVal = new Reg("es");
+    public static final Reg reg_csVal = new Reg("cs");
+    public static final Reg reg_ssVal = new Reg("ss");
+    public static final Reg reg_dsVal = new Reg("ds");
+    public static final Reg reg_fsVal = new Reg("fs");
+    public static final Reg reg_gsVal = new Reg("gs");
+    public static int reg_eip;
+    public static /*Bitu*/ int flags;
+
     public CPU_Regs() {
     }
 
@@ -74,7 +75,7 @@ public class CPU_Regs extends Flags {
     }
 
     public static boolean GETFLAGBOOL(int flag) {
-        return ((CPU_Regs.flags & flag) != 0);
+        return (CPU_Regs.flags & flag) != 0;
     }
 
     public static int GETFLAG_IOPL() {
@@ -133,7 +134,7 @@ public class CPU_Regs extends Flags {
     }
 
     public static void reg_ip(int value) {
-        reg_eip = value & 0xFFFF | (reg_eip & 0xFFFF0000);
+        reg_eip = value & 0xFFFF | reg_eip & 0xFFFF0000;
     }
 
     public static final class Reg {
@@ -199,36 +200,36 @@ public class CPU_Regs extends Flags {
                 parent.high(s);
         }
 
-        final public void dword(long l) {
+        public void dword(long l) {
             dword = (int) l;
         }
 
-        final public void word_dec() {
+        public void word_dec() {
             word(word() - 1);
         }
 
-        final public int word() {
+        public int word() {
             return dword & 0xFFFF;
         }
 
-        final public void word(int value) {
-            dword = (value & 0xFFFF) | (dword & 0xFFFF0000);
+        public void word(int value) {
+            dword = value & 0xFFFF | dword & 0xFFFF0000;
         }
 
-        final public int low() {
+        public int low() {
             return dword & 0xff;
         }
 
-        final public void low(int value) {
-            dword = (value & 0xFF) | (dword & 0xFFFFFF00);
+        public void low(int value) {
+            dword = value & 0xFF | dword & 0xFFFFFF00;
         }
 
-        final public int high() {
-            return (dword >> 8) & 0xff;
+        public int high() {
+            return dword >> 8 & 0xff;
         }
 
-        final public void high(int value) {
-            dword = ((value & 0xFF) << 8) | (dword & 0xFFFF00FF);
+        public void high(int value) {
+            dword = (value & 0xFF) << 8 | dword & 0xFFFF00FF;
         }
     }
 }

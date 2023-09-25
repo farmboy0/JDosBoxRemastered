@@ -1,5 +1,9 @@
 package jdos.win.loader;
 
+import java.lang.reflect.Method;
+import java.util.Hashtable;
+import java.util.Vector;
+
 import jdos.cpu.CPU;
 import jdos.cpu.CPU_Regs;
 import jdos.cpu.Callback;
@@ -20,19 +24,16 @@ import jdos.win.system.WinSystem;
 import jdos.win.utils.Ptr;
 import jdos.win.utils.StringUtil;
 
-import java.lang.reflect.Method;
-import java.util.Hashtable;
-import java.util.Vector;
-
 public class BuiltinModule extends Module {
     public static int indent = 0;
     public static boolean inPre = false;
     private static long startTime;
     public Loader loader;
-    private final Hashtable<String, Callback.Handler> functions = new Hashtable<String, Callback.Handler>();
+    private final Hashtable<String, Callback.Handler> functions = new Hashtable<>();
     private final String fileName;
-    private final Hashtable<String, Integer> registeredCallbacks = new Hashtable<String, Integer>();
-    private final Hashtable<Integer, String> ordinalToName = new Hashtable<Integer, String>();
+    private final Hashtable<String, Integer> registeredCallbacks = new Hashtable<>();
+    private final Hashtable<Integer, String> ordinalToName = new Hashtable<>();
+
     public BuiltinModule(Loader loader, String name, int handle) {
         super(handle);
         this.name = name.substring(0, name.lastIndexOf("."));
@@ -378,6 +379,7 @@ public class BuiltinModule extends Module {
         return result;
     }
 
+    @Override
     public int getProcAddress(final String functionName, boolean loadFake) {
         Integer result = registeredCallbacks.get(functionName);
         if (result != null)
@@ -388,10 +390,12 @@ public class BuiltinModule extends Module {
             System.out.println("Unknown " + name + " function: " + functionName);
             if (loadFake) {
                 handler = new HandlerBase() {
+                    @Override
                     public void onCall() {
                         notImplemented();
                     }
 
+                    @Override
                     public String getName() {
                         return name + " -> " + functionName;
                     }
@@ -407,48 +411,59 @@ public class BuiltinModule extends Module {
         return 0;
     }
 
+    @Override
     public String getFileName(boolean fullPath) {
         if (fullPath)
             return WinAPI.SYSTEM32_PATH + fileName;
         return fileName;
     }
 
+    @Override
     public void callDllMain(int dwReason) {
     }
 
+    @Override
     public void unload() {
     }
 
+    @Override
     public boolean RtlImageDirectoryEntryToData(int dir, LongRef address, LongRef size) {
         return dir == HeaderImageOptional.IMAGE_DIRECTORY_ENTRY_EXPORT;
     }
 
+    @Override
     public Vector getImportDescriptors(long address) {
         return null;
     }
 
+    @Override
     public String getVirtualString(long address) {
         return null;
     }
 
+    @Override
     public long[] getImportList(HeaderImageImportDescriptor desc) {
         return null;
     }
 
+    @Override
     public long findNameExport(long exportAddress, long exportsSize, String name, int hint) {
         return getProcAddress(name, true);
     }
 
+    @Override
     public long findOrdinalExport(long exportAddress, long exportsSize, int ordinal) {
-        String name = ordinalToName.get(new Integer(ordinal));
+        String name = ordinalToName.get(Integer.valueOf(ordinal));
         if (name != null)
             return getProcAddress(name, true);
         return 0;
     }
 
+    @Override
     public void getImportFunctionName(long address, StringRef name, IntRef hint) {
     }
 
+    @Override
     public void writeThunk(HeaderImageImportDescriptor desc, int index, long value) {
     }
 
@@ -467,6 +482,7 @@ public class BuiltinModule extends Module {
             this.params = params;
         }
 
+        @Override
         public int processReturn() {
             for (int i = 0; i < args.length; i++) {
                 if (pop)
@@ -479,7 +495,8 @@ public class BuiltinModule extends Module {
                     preLog(name, args, params);
                 Integer result = (Integer) method.invoke(null, args);
                 if (LOG && params != null)
-                    postLog(name, result, (params != null && params.length > args.length) ? params[args.length] : null, args, params);
+                    postLog(name, result, params != null && params.length > args.length ? params[args.length] : null,
+                        args, params);
                 return result;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -488,6 +505,7 @@ public class BuiltinModule extends Module {
             }
         }
 
+        @Override
         public String getName() {
             return name;
         }
@@ -508,6 +526,7 @@ public class BuiltinModule extends Module {
             this.params = params;
         }
 
+        @Override
         public void onCall() {
             for (int i = 0; i < args.length; i++) {
                 if (pop)
@@ -527,6 +546,7 @@ public class BuiltinModule extends Module {
             }
         }
 
+        @Override
         public String getName() {
             return name;
         }
@@ -549,12 +569,14 @@ public class BuiltinModule extends Module {
             this.params = params;
         }
 
+        @Override
         public boolean preCall() {
             eip = CPU_Regs.reg_eip - 4; // -4 because the callback instruction called SAVEIP
             esp = CPU_Regs.reg_esp.dword;
             return true;
         }
 
+        @Override
         public void onCall() {
             for (int i = 0; i < args.length; i++) {
                 if (pop)
@@ -577,7 +599,8 @@ public class BuiltinModule extends Module {
                     Scheduler.wait(Scheduler.getCurrentThread());
                 } else {
                     if (LOG && params != null)
-                        postLog(name, result, (params != null && params.length > args.length) ? params[args.length] : null, args, params);
+                        postLog(name, result,
+                            params != null && params.length > args.length ? params[args.length] : null, args, params);
                     CPU_Regs.reg_eax.dword = result;
                 }
             } catch (Exception e) {
@@ -586,6 +609,7 @@ public class BuiltinModule extends Module {
             }
         }
 
+        @Override
         public String getName() {
             return name;
         }

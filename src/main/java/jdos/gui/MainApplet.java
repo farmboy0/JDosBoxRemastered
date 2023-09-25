@@ -1,15 +1,27 @@
 package jdos.gui;
 
-import jdos.Dosbox;
-import jdos.sdl.GUI;
-import jdos.util.FileHelper;
-import jdos.util.Progress;
-import jdos.util.StringHelper;
-import jdos.util.UnZip;
-
 import java.applet.Applet;
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.Color;
+import java.awt.Container;
+import java.awt.Cursor;
+import java.awt.FontMetrics;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.Robot;
+import java.awt.Toolkit;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.MemoryImageSource;
 import java.io.BufferedInputStream;
@@ -20,18 +32,26 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Vector;
 
+import jdos.Dosbox;
+import jdos.sdl.GUI;
+import jdos.util.FileHelper;
+import jdos.util.Progress;
+import jdos.util.StringHelper;
+import jdos.util.UnZip;
+
 public class MainApplet extends Applet implements GUI, KeyListener, Runnable, MouseListener, MouseMotionListener {
-    final private static String base_dir = ".jdosbox";
+    private static final String base_dir = ".jdosbox";
     static Thread thread;
-    static private int current_id = 0;
-    static private int fullscreen_cx = 0;
-    static private int fullscreen_cy = 0;
-    static private int monitor_cx = 0;
-    static private int monitor_cy = 0;
-    static private int fullscreen_cx_offset = 0;
+    private static int current_id = 0;
+    private static int fullscreen_cx = 0;
+    private static int fullscreen_cy = 0;
+    private static int monitor_cx = 0;
+    private static int monitor_cy = 0;
+    private static int fullscreen_cx_offset = 0;
     int[] pixels = new int[16 * 16];
     Image image = Toolkit.getDefaultToolkit().createImage(new MemoryImageSource(16, 16, pixels, 0, 16));
-    Cursor transparentCursor = Toolkit.getDefaultToolkit().createCustomCursor(image, new Point(0, 0), "invisibleCursor");
+    Cursor transparentCursor = Toolkit.getDefaultToolkit()
+        .createCustomCursor(image, new Point(0, 0), "invisibleCursor");
     Frame frame = new Frame();
     Container parent;
     boolean fullscreen = false;
@@ -42,29 +62,36 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
     private long progressTotal = 0;
     private long progressCompleted = 0;
     Progress progressBar = new Progress() {
+        @Override
         public void set(int value) {
         }
 
+        @Override
         public void status(String value) {
             progressMsg = value;
             repaint();
         }
 
+        @Override
         public void done() {
         }
 
+        @Override
         public boolean hasCancelled() {
             return false;
         }
 
+        @Override
         public void speed(String value) {
         }
 
+        @Override
         public void initializeSpeedValue(long totalExpected) {
             progressTotal = totalExpected;
             progressCompleted = 0;
         }
 
+        @Override
         public void incrementSpeedValue(long value) {
             progressCompleted += value;
             progressPercent = (int) (progressCompleted * 100 / progressTotal);
@@ -74,18 +101,21 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
     private Color backgroundColor = Color.darkGray;
     private int id;
 
+    @Override
     public void showProgress(String msg, int percent) {
         progressMsg = msg;
         progressPercent = percent;
         repaint();
     }
 
+    @Override
     public void captureMouse(boolean on) {
         if (MainFrame.robot != null) {
             MainFrame.robotCenter(getLocationOnScreen());
         }
     }
 
+    @Override
     public void showCursor(boolean on) {
         if (on)
             setCursor(Cursor.getDefaultCursor());
@@ -93,6 +123,7 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
             setCursor(transparentCursor);
     }
 
+    @Override
     public void fullScreenToggle() {
         if (!fullscreen) {
             if (this.parent == null)
@@ -100,8 +131,8 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
             this.frame = new Frame();
 
             Toolkit tk = Toolkit.getDefaultToolkit();
-            monitor_cx = fullscreen_cx = ((int) tk.getScreenSize().getWidth());
-            monitor_cy = fullscreen_cy = ((int) tk.getScreenSize().getHeight());
+            monitor_cx = fullscreen_cx = (int) tk.getScreenSize().getWidth();
+            monitor_cy = fullscreen_cy = (int) tk.getScreenSize().getHeight();
             frame.dispose();
             frame.setVisible(false);
             this.frame.add(this);
@@ -129,14 +160,17 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
         this.requestFocus();
     }
 
+    @Override
     public void setSize(int width, int height) {
         //resize(width, height);
     }
 
+    @Override
     public void dopaint() {
         repaint();
     }
 
+    @Override
     public void setTitle(String title) {
     }
 
@@ -190,14 +224,16 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if (bis != null) try {
-                bis.close();
-            } catch (Exception e) {
-            }
-            if (bos != null) try {
-                bos.close();
-            } catch (Exception e) {
-            }
+            if (bis != null)
+                try {
+                    bis.close();
+                } catch (Exception e) {
+                }
+            if (bos != null)
+                try {
+                    bos.close();
+                } catch (Exception e) {
+                }
         }
         progressMsg = "FAILED to download file: " + urlLocation;
         progressPercent = 0;
@@ -216,13 +252,14 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
                 r = Integer.parseInt(s.substring(1, 3), 16);
                 g = Integer.parseInt(s.substring(3, 5), 16);
                 b = Integer.parseInt(s.substring(5, 7), 16);
-                return (new Color(r, g, b));
+                return new Color(r, g, b);
             } catch (Exception e) {
             }
         }
-        return (Color.black);
+        return Color.black;
     }
 
+    @Override
     public void run() {
         System.out.println("About to start DosBox");
         // Not sure why this pause helps so much or what the right value is
@@ -235,9 +272,11 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
                 if (url != null) {
                     String fullName = url.substring(url.lastIndexOf('/') + 1);
                     String name = url.substring(url.lastIndexOf('/') + 1, url.lastIndexOf('.'));
-                    File dir = new File(FileHelper.getHomeDirectory() + File.separator + base_dir + File.separator + name);
+                    File dir = new File(
+                        FileHelper.getHomeDirectory() + File.separator + base_dir + File.separator + name);
                     if (!dir.exists()) {
-                        File downloadFile = new File(FileHelper.getHomeDirectory() + File.separator + base_dir + File.separator + "temp" + File.separator + fullName);
+                        File downloadFile = new File(FileHelper.getHomeDirectory() + File.separator + base_dir
+                            + File.separator + "temp" + File.separator + fullName);
                         if (download(url, downloadFile)) {
                             unzip(downloadFile, dir);
                             downloadFile.delete();
@@ -267,8 +306,8 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
             }
             if (param.startsWith("-")) {
                 String[] p = StringHelper.split(param, " ");
-                for (int j = 0; j < p.length; j++) {
-                    params.addElement(p[j]);
+                for (String element : p) {
+                    params.addElement(element);
                 }
             } else {
                 params.add("-c");
@@ -280,9 +319,10 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
 
         // should help with the tab key in a browser
         setFocusTraversalKeysEnabled(false);
-        Main.main(this, cmds);
+        MainBase.main(this, cmds);
     }
 
+    @Override
     public void init() {
         System.out.println("Applet.init()");
         try {
@@ -305,32 +345,34 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
         addMouseListener(this);
 
         addFocusListener(new FocusListener() {
-            private final KeyEventDispatcher altDisabler = new KeyEventDispatcher() {
-                public boolean dispatchKeyEvent(KeyEvent e) {
-                    if (e.getKeyCode() == 18) {
-                        Main.addEvent(e);
-                        return true;
-                    }
-                    return false;
+            private final KeyEventDispatcher altDisabler = e -> {
+                if (e.getKeyCode() == 18) {
+                    MainBase.addEvent(e);
+                    return true;
                 }
+                return false;
             };
 
+            @Override
             public void focusGained(FocusEvent e) {
                 KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(altDisabler);
             }
 
+            @Override
             public void focusLost(FocusEvent e) {
                 KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(altDisabler);
             }
         });
     }
 
+    @Override
     public void destroy() {
         removeKeyListener(this);
         removeMouseMotionListener(this);
         removeMouseListener(this);
     }
 
+    @Override
     public void start() {
         current_id++;
         id = current_id;
@@ -343,6 +385,7 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
         thread.start();
     }
 
+    @Override
     public void stop() {
         if (id == current_id)
             i_stop();
@@ -350,10 +393,10 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
 
     public void i_stop() {
         System.out.println("Applet.stop");
-        synchronized (Main.pauseMutex) {
-            Main.pauseMutex.notify();
+        synchronized (MainBase.pauseMutex) {
+            MainBase.pauseMutex.notify();
         }
-        Main.addEvent(null);
+        MainBase.addEvent(null);
         try {
             thread.join(5000);
         } catch (Exception e) {
@@ -368,14 +411,13 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
     }
 
     private void drawProgress(Graphics g, int width, int height) {
-        int barHeight = 0;
         int yOffset = 5;
 
         FontMetrics fm = g.getFontMetrics(g.getFont());
         java.awt.geom.Rectangle2D rect = fm.getStringBounds(progressMsg, g);
-        barHeight = (int) (rect.getHeight() * 1.7);
-        int textHeight = (int) (rect.getHeight());
-        int textWidth = (int) (rect.getWidth());
+        int barHeight = (int) (rect.getHeight() * 1.7);
+        int textHeight = (int) rect.getHeight();
+        int textWidth = (int) rect.getWidth();
         int x = (width - textWidth) / 2;
         int y = height - barHeight + (barHeight - textHeight) / 2 + fm.getAscent();
 
@@ -414,7 +456,8 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
                 g.fillRect(0, 0, fullscreen_cx_offset, fullscreen_cy);
                 g.fillRect(monitor_cx - fullscreen_cx_offset, 0, fullscreen_cx_offset, fullscreen_cy);
             }
-            g.drawImage(Main.buffer2[Main.front], fullscreen_cx_offset, 0, fullscreen_cx + fullscreen_cx_offset, fullscreen_cy, 0, 0, Main.buffer_width, Main.buffer_height, null);
+            g.drawImage(Main.buffer2[Main.front], fullscreen_cx_offset, 0, fullscreen_cx + fullscreen_cx_offset,
+                fullscreen_cy, 0, 0, Main.buffer_width, Main.buffer_height, null);
         } else {
             int x = 0;
             int y = 0;
@@ -430,18 +473,22 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
                 g.fillRect(0, 0, getWidth(), y);
                 g.fillRect(0, y + Main.screen_height, getWidth(), getHeight() - (y + Main.screen_height));
             }
-            if (Render.render != null && Render.render.aspect && (Main.screen_height % Main.buffer_height) != 0) {
-                BufferedImage resized = MainFrame.resizeImage(Main.buffer2[Main.front], Main.screen_width, Main.screen_height, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-                g.drawImage(resized, x, y, Main.screen_width + x, Main.screen_height + y, 0, 0, Main.screen_width, Main.screen_height, null);
+            if (Render.render != null && Render.render.aspect && Main.screen_height % Main.buffer_height != 0) {
+                BufferedImage resized = MainFrame.resizeImage(Main.buffer2[Main.front], Main.screen_width,
+                    Main.screen_height, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                g.drawImage(resized, x, y, Main.screen_width + x, Main.screen_height + y, 0, 0, Main.screen_width,
+                    Main.screen_height, null);
             } else {
-                g.drawImage(Main.buffer2[Main.front], x, y, Main.screen_width + x, Main.screen_height + y, 0, 0, Main.buffer_width, Main.buffer_height, null);
+                g.drawImage(Main.buffer2[Main.front], x, y, Main.screen_width + x, Main.screen_height + y, 0, 0,
+                    Main.buffer_width, Main.buffer_height, null);
             }
         }
     }
 
+    @Override
     public void update(Graphics g) {
         if (Main.buffer2[Main.front] != null) {
-            synchronized (Main.paintMutex) {
+            synchronized (MainBase.paintMutex) {
                 if (progressMsg != null) {
                     drawProgress(Main.buffer2[Main.front].getGraphics(), Main.screen_width, Main.screen_height);
                 }
@@ -459,10 +506,12 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
         }
     }
 
+    @Override
     public void paint(Graphics g) {
         update(g);
     }
 
+    @Override
     public void keyTyped(KeyEvent e) {
 
     }
@@ -470,6 +519,7 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
     /**
      * Handle the key pressed event from the text field.
      */
+    @Override
     public void keyPressed(KeyEvent e) {
         Main.addKeyEvent(e);
     }
@@ -477,34 +527,42 @@ public class MainApplet extends Applet implements GUI, KeyListener, Runnable, Mo
     /**
      * Handle the key released event from the text field.
      */
+    @Override
     public void keyReleased(KeyEvent e) {
         Main.addKeyEvent(e);
     }
 
+    @Override
     public void mouseClicked(MouseEvent e) {
         if (e.getClickCount() == 2 && e.getButton() == MouseEvent.BUTTON3) {
-            Main.GFX_CaptureMouse();
+            MainBase.GFX_CaptureMouse();
         }
     }
 
+    @Override
     public void mousePressed(MouseEvent e) {
         Main.addMouseEvent(e);
     }
 
+    @Override
     public void mouseReleased(MouseEvent e) {
         Main.addMouseEvent(e);
     }
 
+    @Override
     public void mouseEntered(MouseEvent e) {
     }
 
+    @Override
     public void mouseExited(MouseEvent e) {
     }
 
+    @Override
     public void mouseDragged(MouseEvent e) {
         MainFrame.robotMouse(e, getLocationOnScreen(), getScreenX(), getScreenY());
     }
 
+    @Override
     public void mouseMoved(MouseEvent e) {
         MainFrame.robotMouse(e, getLocationOnScreen(), getScreenX(), getScreenY());
     }

@@ -6,86 +6,86 @@ import jdos.types.LogSeverities;
 import jdos.types.LogTypes;
 
 public abstract class Core extends CPU_Regs {
-    final static public int PREFIX_ADDR = 0x1;
-    final static public int PREFIX_REP = 0x2;
-    final static public int PREFIX_LOCK = 0x4;
-    static public /*Bitu*/ int opcode_index;
-    static public /*PhysPt*/ int cseip;
-    static public int base_val_ds;
-    static public boolean rep_zero;
-    static public /*PhysPt*/ int base_ds, base_ss;
-    static public /*Bitu*/ int prefixes;
-    static public Table_ea.GetEAHandler[] ea_table;
+    public static final int PREFIX_ADDR = 0x1;
+    public static final int PREFIX_REP = 0x2;
+    public static final int PREFIX_LOCK = 0x4;
+    public static /*Bitu*/ int opcode_index;
+    public static /*PhysPt*/ int cseip;
+    public static int base_val_ds;
+    public static boolean rep_zero;
+    public static /*PhysPt*/ int base_ds, base_ss;
+    public static /*Bitu*/ int prefixes;
+    public static Table_ea.GetEAHandler[] ea_table;
 
-    static public int Fetchb() {
+    public static int Fetchb() {
         return Memory.mem_readb(cseip++);
     }
 
-    static public int Fetchbs() {
+    public static int Fetchbs() {
         return (byte) Memory.mem_readb(cseip++);
     }
 
-    static public int Fetchw() {
+    public static int Fetchw() {
         int temp = Memory.mem_readw(cseip);
         cseip += 2;
         return temp;
     }
 
-    static public int Fetchws() {
+    public static int Fetchws() {
         int temp = (short) Memory.mem_readw(cseip);
         cseip += 2;
         return temp;
     }
 
-    static public int Fetchd() {
+    public static int Fetchd() {
         int temp = Memory.mem_readd(cseip);
         cseip += 4;
         return temp;
     }
 
-    static public int Fetchds() {
+    public static int Fetchds() {
         int temp = Memory.mem_readd(cseip);
         cseip += 4;
         return temp;
     }
 
-    static public void DO_PREFIX_SEG_ES() {
+    public static void DO_PREFIX_SEG_ES() {
         base_ds = CPU_Regs.reg_esPhys.dword;
         base_ss = CPU_Regs.reg_esPhys.dword;
         base_val_ds = CPU_Regs.es;
     }
 
-    static public void DO_PREFIX_SEG_CS() {
+    public static void DO_PREFIX_SEG_CS() {
         base_ds = CPU_Regs.reg_csPhys.dword;
         base_ss = CPU_Regs.reg_csPhys.dword;
         base_val_ds = CPU_Regs.cs;
     }
 
-    static public void DO_PREFIX_SEG_SS() {
+    public static void DO_PREFIX_SEG_SS() {
         base_ds = CPU_Regs.reg_ssPhys.dword;
         base_ss = CPU_Regs.reg_ssPhys.dword;
         base_val_ds = CPU_Regs.ss;
     }
 
-    static public void DO_PREFIX_SEG_DS() {
+    public static void DO_PREFIX_SEG_DS() {
         base_ds = CPU_Regs.reg_dsPhys.dword;
         base_ss = CPU_Regs.reg_dsPhys.dword;
         base_val_ds = CPU_Regs.ds;
     }
 
-    static public void DO_PREFIX_SEG_FS() {
+    public static void DO_PREFIX_SEG_FS() {
         base_ds = CPU_Regs.reg_fsPhys.dword;
         base_ss = CPU_Regs.reg_fsPhys.dword;
         base_val_ds = CPU_Regs.fs;
     }
 
-    static public void DO_PREFIX_SEG_GS() {
+    public static void DO_PREFIX_SEG_GS() {
         base_ds = CPU_Regs.reg_gsPhys.dword;
         base_ss = CPU_Regs.reg_gsPhys.dword;
         base_val_ds = CPU_Regs.gs;
     }
 
-    static public boolean isInvalidLock(int op) {
+    public static boolean isInvalidLock(int op) {
         int b = op;
         int modrm;
         int mod;
@@ -103,10 +103,10 @@ public abstract class Core extends CPU_Regs {
             case 0x81:
             case 0x83:
                 modrm = Memory.mem_readb(cseip);
-                op = (modrm >> 3) & 7;
+                op = modrm >> 3 & 7;
                 if (op == 7) /* /7: CMP */
                     break;
-                mod = (modrm >> 6) & 3;
+                mod = modrm >> 6 & 3;
                 if (mod == 3) /* register destination */
                     break;
                 return false;
@@ -128,7 +128,7 @@ public abstract class Core extends CPU_Regs {
             case 0x30: /* /r: XOR reg/mem8, reg8 */
             case 0x31: /* /r: XOR reg/memY, regY */
                 modrm = Memory.mem_readb(cseip);
-                mod = (modrm >> 6) & 3;
+                mod = modrm >> 6 & 3;
                 if (mod == 3) /* register destination */
                     break;
                 return false;
@@ -138,7 +138,7 @@ public abstract class Core extends CPU_Regs {
             case 0xfe:
             case 0xff:
                 modrm = Memory.mem_readb(cseip);
-                mod = (modrm >> 6) & 3;
+                mod = modrm >> 6 & 3;
                 if (mod == 3) /* register destination */
                     break;
                 return false;
@@ -148,7 +148,7 @@ public abstract class Core extends CPU_Regs {
             case 0xf6:
             case 0xf7:
                 modrm = Memory.mem_readb(cseip);
-                mod = (modrm >> 6) & 3;
+                mod = modrm >> 6 & 3;
                 if (mod == 3) /* register destination */
                     break;
                 return false;
@@ -161,10 +161,10 @@ public abstract class Core extends CPU_Regs {
                     /* /5: BTS reg/memY, imm8 */
                     case 0xba:
                         modrm = Memory.mem_readb(cseip + 1);
-                        op = (modrm >> 3) & 7;
+                        op = modrm >> 3 & 7;
                         if (op < 5)
                             break;
-                        mod = (modrm >> 6) & 3;
+                        mod = modrm >> 6 & 3;
                         if (mod == 3) /* register destination */
                             break;
                         return false;
@@ -177,7 +177,7 @@ public abstract class Core extends CPU_Regs {
                     case 0xc0: /* /r: XADD reg/mem8, reg8 */
                     case 0xc1: /* /r: XADD reg/memY, regY */
                         modrm = Memory.mem_readb(cseip + 1);
-                        mod = (modrm >> 6) & 3;
+                        mod = modrm >> 6 & 3;
                         if (mod == 3) /* register destination */
                             break;
                         return false;
@@ -185,7 +185,7 @@ public abstract class Core extends CPU_Regs {
                     /* /1: CMPXCHG8B mem64 or CMPXCHG16B mem128 */
                     case 0xc7:
                         modrm = Memory.mem_readb(cseip + 1);
-                        op = (modrm >> 3) & 7;
+                        op = modrm >> 3 & 7;
                         if (op != 1)
                             break;
                         return false;

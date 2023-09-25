@@ -6,16 +6,16 @@ import jdos.win.utils.StringUtil;
 
 public class Wsprintf {
     // int __cdecl wsprintf(LPTSTR lpOut, LPCTSTR lpFmt, ...)
-    static public int wsprintfA(int lpOut, int lpFmt) {
+    public static int wsprintfA(int lpOut, int lpFmt) {
         String result = format(StringUtil.getString(lpFmt), false, 2);
         StringUtil.strcpy(lpOut, result);
         return result.length();
     }
 
-    static public String format(String format, boolean wide, int argIndex) {
+    public static String format(String format, boolean wide, int argIndex) {
         int pos = format.indexOf('%');
         if (pos >= 0) {
-            StringBuffer buffer = new StringBuffer();
+            StringBuilder buffer = new StringBuilder();
             while (pos >= 0) {
                 buffer.append(format, 0, pos);
                 if (pos + 1 < format.length()) {
@@ -129,9 +129,9 @@ public class Wsprintf {
                         boolean negnumber = false;
                         if (c == 'c') {
                             if (shortValue || wide || longValue)
-                                value = new Character((char) (CPU.CPU_Peek32(argIndex) & 0xFFFF)).toString();
+                                value = Character.toString((char) (CPU.CPU_Peek32(argIndex) & 0xFFFF));
                             else
-                                value = new Character((char) (CPU.CPU_Peek32(argIndex) & 0xFF)).toString();
+                                value = Character.toString((char) (CPU.CPU_Peek32(argIndex) & 0xFF));
                         } else if (c == 's') {
                             if (longValue || wide)
                                 value = new LittleEndianFile(CPU.CPU_Peek32(argIndex)).readCStringW();
@@ -151,11 +151,11 @@ public class Wsprintf {
                             }
                         } else if (c == 'x') {
                             if (longValue) {
-                                long l = (CPU.CPU_Peek32(argIndex) & 0xFFFFFFFFl) | CPU.CPU_Peek32(argIndex + 1) << 32l;
+                                long l = CPU.CPU_Peek32(argIndex) & 0xFFFFFFFFL | CPU.CPU_Peek32(argIndex + 1) << 32L;
                                 argIndex++;
                                 value = Long.toString(l, 16);
                             } else {
-                                value = Long.toString(CPU.CPU_Peek32(argIndex) & 0xFFFFFFFFl, 16);
+                                value = Long.toString(CPU.CPU_Peek32(argIndex) & 0xFFFFFFFFL, 16);
                             }
                             negnumber = value.startsWith("-");
                             if (negnumber)
@@ -169,11 +169,11 @@ public class Wsprintf {
                             }
                         } else if (c == 'X') {
                             if (longValue) {
-                                long l = (CPU.CPU_Peek32(argIndex) & 0xFFFFFFFFl) | CPU.CPU_Peek32(argIndex + 1) << 32l;
+                                long l = CPU.CPU_Peek32(argIndex) & 0xFFFFFFFFL | CPU.CPU_Peek32(argIndex + 1) << 32L;
                                 argIndex++;
                                 value = Long.toString(l, 16);
                             } else {
-                                value = Long.toString(CPU.CPU_Peek32(argIndex) & 0xFFFFFFFFl, 16);
+                                value = Long.toString(CPU.CPU_Peek32(argIndex) & 0xFFFFFFFFL, 16);
                             }
                             negnumber = value.startsWith("-");
                             if (negnumber)
@@ -193,7 +193,7 @@ public class Wsprintf {
                             }
                         } else if (c == 'd') {
                             if (longValue) {
-                                long l = (CPU.CPU_Peek32(argIndex) & 0xFFFFFFFFl) | CPU.CPU_Peek32(argIndex + 1) << 32l;
+                                long l = CPU.CPU_Peek32(argIndex) & 0xFFFFFFFFL | CPU.CPU_Peek32(argIndex + 1) << 32L;
                                 argIndex++;
                                 value = Long.toString(l, 10);
                             } else {
@@ -212,12 +212,12 @@ public class Wsprintf {
                                 }
                             }
                         } else if (c == 'u') {
-                            if (longValue) {  // :TODO: not truly 64-bit unsigned
-                                long l = CPU.CPU_Peek32(argIndex) | CPU.CPU_Peek32(argIndex + 1) << 32l;
+                            if (longValue) { // :TODO: not truly 64-bit unsigned
+                                long l = CPU.CPU_Peek32(argIndex) | CPU.CPU_Peek32(argIndex + 1) << 32L;
                                 argIndex++;
                                 value = Long.toString(l, 10);
                             } else {
-                                value = Long.toString(CPU.CPU_Peek32(argIndex) & 0xFFFFFFFFl, 10);
+                                value = Long.toString(CPU.CPU_Peek32(argIndex) & 0xFFFFFFFFL, 10);
                             }
                             negnumber = value.startsWith("-");
                             if (negnumber)

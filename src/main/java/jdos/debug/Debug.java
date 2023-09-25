@@ -1,11 +1,11 @@
 package jdos.debug;
 
-import jdos.cpu.CPU_Regs;
-import jdos.misc.setup.Section;
-
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
+
+import jdos.cpu.CPU_Regs;
+import jdos.misc.setup.Section;
 
 public class Debug {
     public static final int INSTRUCTION = 1;
@@ -58,19 +58,17 @@ public class Debug {
     public static final int CSEIP4 = 46;
     public static final int DONE = 47;
     public static final int INSTRUCTION_DONE = 48;
-    static public final int TYPE_CPU = 0x01;
-    static public final int TYPE_INT10 = 0x02;
-    static public final int MASK = TYPE_CPU;
-    static public boolean logging = true;
-    static public /*Bitu*/ int cycle_count;
-    static public /*Bitu*/ int debugCallback;
-    public static Section.SectionFunction DEBUG_Init = new Section.SectionFunction() {
-        public void call(Section section) {
-        }
+    public static final int TYPE_CPU = 0x01;
+    public static final int TYPE_INT10 = 0x02;
+    public static final int MASK = TYPE_CPU;
+    public static boolean logging = true;
+    public static /*Bitu*/ int cycle_count;
+    public static /*Bitu*/ int debugCallback;
+    public static Section.SectionFunction DEBUG_Init = section -> {
     };
     static long[] last = new long[50];
     static DataOutputStream log = null;
-    static private int lastType;
+    private static int lastType;
 
     static {
         try {
@@ -79,7 +77,7 @@ public class Debug {
         }
     }
 
-    static public void start(int type, int c) {
+    public static void start(int type, int c) {
         lastType = type;
         if ((type & MASK) != 0) {
             Debug.log(Debug.INSTRUCTION, c);
@@ -103,7 +101,7 @@ public class Debug {
         }
     }
 
-    static public void stop(int type, int c) {
+    public static void stop(int type, int c) {
         lastType = type;
         if ((type & MASK) != 0) {
             Debug.log(Debug.INSTRUCTION_DONE, c);
@@ -128,7 +126,7 @@ public class Debug {
         }
     }
 
-    static public void close() {
+    public static void close() {
         if (log != null) {
             try {
                 log.close();
@@ -137,7 +135,7 @@ public class Debug {
         }
     }
 
-    static public void log(int type, String value) {
+    public static void log(int type, String value) {
         if (logging) {
             try {
                 byte[] b = value.getBytes();
@@ -150,7 +148,7 @@ public class Debug {
         }
     }
 
-    static public void log(int type, long value) {
+    public static void log(int type, long value) {
         if (logging && (lastType & MASK) != 0) {
             try {
                 if (type > 34 || last[type] != value) {
@@ -164,7 +162,7 @@ public class Debug {
         }
     }
 
-    static public void log_long(int type, long value) {
+    public static void log_long(int type, long value) {
         if (logging && (lastType & MASK) != 0) {
             try {
                 if (type > 34 || last[type] != value) {
@@ -178,7 +176,7 @@ public class Debug {
         }
     }
 
-    static public void log(int type, long value, long value1) {
+    public static void log(int type, long value, long value1) {
         if (logging && (lastType & MASK) != 0) {
             try {
                 log.writeByte(type);
@@ -190,19 +188,19 @@ public class Debug {
         }
     }
 
-    static public void DEBUG_HeavyWriteLogInstruction() {
+    public static void DEBUG_HeavyWriteLogInstruction() {
 
     }
 
-    static public boolean DEBUG_IntBreakpoint(/*Bit8u*/int intNum) {
+    public static boolean DEBUG_IntBreakpoint(/*Bit8u*/int intNum) {
         return false;
     }
 
-    static public boolean DEBUG_HeavyIsBreakpoint() {
+    public static boolean DEBUG_HeavyIsBreakpoint() {
         return false;
     }
 
-    static public boolean DEBUG_Breakpoint() {
+    public static boolean DEBUG_Breakpoint() {
         return false;
     }
 

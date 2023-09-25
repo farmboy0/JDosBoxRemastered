@@ -1,14 +1,15 @@
 package jdos.util;
 
-import javax.swing.filechooser.FileSystemView;
 import java.io.File;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.swing.filechooser.FileSystemView;
+
 public class HomeDirectory {
     static final Pattern p = Pattern.compile(" \\([A-Za-z]:\\)");
 
-    static public String get() {
+    public static String get() {
         String result = System.getenv("USERPROFILE");
         if (result == null) {
             result = System.getenv("HOMEPATH");

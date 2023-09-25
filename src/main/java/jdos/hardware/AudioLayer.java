@@ -1,7 +1,5 @@
 package jdos.hardware;
 
-import jdos.misc.Program;
-
 import javax.sound.midi.MidiDevice;
 import javax.sound.midi.MidiSystem;
 import javax.sound.sampled.AudioFormat;
@@ -9,13 +7,14 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
 
+import jdos.misc.Program;
+
 public class AudioLayer {
-    static public SourceDataLine line;
-    static private byte[] audioBuffer;
-    static private boolean audioThreadExit = false;
+    public static SourceDataLine line;
+    private static byte[] audioBuffer;
+    private static boolean audioThreadExit = false;
 
-
-    static private Thread audioThread;
+    private static Thread audioThread;
 
     public static boolean open(int bufferSize, int freq) {
         AudioFormat format = new AudioFormat(freq, 16, 2, true, false);
@@ -26,6 +25,7 @@ public class AudioLayer {
             line.start();
             audioThreadExit = false;
             audioThread = new Thread() {
+                @Override
                 public void run() {
                     while (!audioThreadExit) {
                         boolean result;
@@ -66,7 +66,7 @@ public class AudioLayer {
         MidiDevice.Info[] devices = MidiSystem.getMidiDeviceInfo();
 
         for (int i = 0; i < devices.length; i++) {
-            program.WriteOut("%2d\t \"%s\"\n", new Object[]{new Integer(i), devices[i].getName()});
+            program.WriteOut("%2d\t \"%s\"\n", new Object[] { Integer.valueOf(i), devices[i].getName() });
         }
     }
 }

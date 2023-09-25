@@ -1,5 +1,10 @@
 package jdos.win.loader;
 
+import java.io.IOException;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Vector;
+
 import jdos.hardware.Memory;
 import jdos.misc.Log;
 import jdos.util.IntRef;
@@ -7,7 +12,17 @@ import jdos.util.LongRef;
 import jdos.util.StringRef;
 import jdos.win.Console;
 import jdos.win.Win;
-import jdos.win.builtin.*;
+import jdos.win.builtin.Advapi32;
+import jdos.win.builtin.Comdlg32;
+import jdos.win.builtin.Crtdll;
+import jdos.win.builtin.Imm32;
+import jdos.win.builtin.Lz32;
+import jdos.win.builtin.Msvfw32;
+import jdos.win.builtin.Ole32;
+import jdos.win.builtin.Shell32;
+import jdos.win.builtin.Version;
+import jdos.win.builtin.Winspool;
+import jdos.win.builtin.Wsock32;
 import jdos.win.builtin.Msacm32.Msacm32;
 import jdos.win.builtin.comctl32.Comctl32;
 import jdos.win.builtin.directx.DDraw;
@@ -27,11 +42,6 @@ import jdos.win.loader.winpe.HeaderImageOptional;
 import jdos.win.system.WinSystem;
 import jdos.win.utils.Path;
 
-import java.io.IOException;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Vector;
-
 public class Loader {
     public NativeModule main = null;
     long nextFunctionAddress = WinProcess.ADDRESS_CALLBACK_START;
@@ -43,16 +53,19 @@ public class Loader {
     private final KernelHeap callbackHeap;
     private int nextModuleHandle = 1;
     private final WinProcess process;
+
     public Loader(WinProcess process, KernelMemory memory, int page_directory, Vector paths) {
         this.paths = paths;
         this.process = process;
         this.page_directory = page_directory;
-        callbackHeap = new KernelHeap(memory, page_directory, nextFunctionAddress, maxFunctionAddress, maxFunctionAddress, false, true);
+        callbackHeap = new KernelHeap(memory, page_directory, nextFunctionAddress, maxFunctionAddress,
+            maxFunctionAddress, false, true);
     }
 
     public int registerFunction(int cb) {
         if (nextFunctionAddress >= maxFunctionAddress) {
-            Log.exit("Need to increase maximum number of function lookups to more than " + (nextFunctionAddress - maxFunctionAddress));
+            Log.exit("Need to increase maximum number of function lookups to more than "
+                + (nextFunctionAddress - maxFunctionAddress));
         }
         Memory.mem_writed((int) nextFunctionAddress, (cb << 16) + 0x38FE);
         long result = nextFunctionAddress;
@@ -103,13 +116,15 @@ public class Loader {
                     if (main == null) {
                         main = module;
                         // we need to create the main thread as soon as possible so that DllMain can run
-                        WinThread thread = WinThread.create(process, module.getEntryPoint(), (int) module.header.imageOptional.SizeOfStackCommit, (int) module.header.imageOptional.SizeOfStackReserve, true);
+                        WinThread thread = WinThread.create(process, module.getEntryPoint(),
+                            (int) module.header.imageOptional.SizeOfStackCommit,
+                            (int) module.header.imageOptional.SizeOfStackReserve, true);
                         process.threads.add(thread);
                         WinSystem.getCurrentProcess().mainModule = module;
                     }
                     // :TODO: reloc dll
                     modulesByName.put(name.toLowerCase(), module);
-                    modulesByHandle.put(new Integer(module.getHandle()), module);
+                    modulesByHandle.put(Integer.valueOf(module.getHandle()), module);
                     if (resolveImports(module)) {
                         if (main != module) {
                             module.callDllMain(Module.DLL_PROCESS_ATTACH);
@@ -117,7 +132,7 @@ public class Loader {
                         return module;
                     }
                     modulesByName.remove(name);
-                    modulesByHandle.remove(new Integer(module.getHandle()));
+                    modulesByHandle.remove(Integer.valueOf(module.getHandle()));
                 }
             }
         } catch (Exception e) {
@@ -173,7 +188,7 @@ public class Loader {
         }
         if (module != null) {
             modulesByName.put(name.toLowerCase(), module);
-            modulesByHandle.put(new Integer(module.getHandle()), module);
+            modulesByHandle.put(Integer.valueOf(module.getHandle()), module);
         }
         return module;
     }
@@ -183,7 +198,7 @@ public class Loader {
     }
 
     public Module getModuleByHandle(int handle) {
-        return (Module) modulesByHandle.get(new Integer(handle));
+        return (Module) modulesByHandle.get(Integer.valueOf(handle));
     }
 
     private Module internalLoadModule(String name) {
@@ -231,13 +246,14 @@ public class Loader {
         }
         LongRef exportAddress = new LongRef(0);
         LongRef exportSize = new LongRef(0);
-        if (!import_module.RtlImageDirectoryEntryToData(HeaderImageOptional.IMAGE_DIRECTORY_ENTRY_EXPORT, exportAddress, exportSize)) {
+        if (!import_module.RtlImageDirectoryEntryToData(HeaderImageOptional.IMAGE_DIRECTORY_ENTRY_EXPORT, exportAddress,
+            exportSize)) {
             Console.out(name + ": could not find exports.\n\n");
             return false;
         }
         long[] import_list = module.getImportList(importDescriptor);
         for (int i = 0; i < import_list.length; i++) {
-            if ((import_list[i] & 0x80000000l) != 0) {
+            if ((import_list[i] & 0x80000000L) != 0) {
                 int ordinal = (int) import_list[i] & 0xFFFF;
                 long thunk = import_module.findOrdinalExport(exportAddress.value, exportSize.value, ordinal);
                 if (thunk == 0) {
@@ -250,7 +266,8 @@ public class Loader {
                 StringRef functionName = new StringRef();
                 IntRef hint = new IntRef(0);
                 module.getImportFunctionName(import_list[i], functionName, hint);
-                long thunk = import_module.findNameExport(exportAddress.value, exportSize.value, functionName.value, hint.value);
+                long thunk = import_module.findNameExport(exportAddress.value, exportSize.value, functionName.value,
+                    hint.value);
                 if (thunk == 0) {
                     Console.out("Could not find " + functionName.value + " in " + name + "\n");
                     return false;

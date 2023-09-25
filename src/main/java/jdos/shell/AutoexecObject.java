@@ -1,9 +1,9 @@
 package jdos.shell;
 
+import java.util.Vector;
+
 import jdos.dos.drives.Drive_virtual;
 import jdos.misc.Log;
-
-import java.util.Vector;
 
 /* Object to manage lines in the autoexec.bat The lines get removed from
  * the file if the object gets destroyed. The environment is updated
@@ -19,7 +19,8 @@ public class AutoexecObject {
     }
 
     public void Install(String in) {
-        if (installed) Log.exit("autoexec: already created " + buf);
+        if (installed)
+            Log.exit("autoexec: already created " + buf);
         installed = true;
         buf = in;
         autoexec_strings.add(buf);
@@ -70,7 +71,8 @@ public class AutoexecObject {
 //    }
 
     public void InstallBefore(String in) {
-        if (installed) Log.exit("autoexec: already created " + buf);
+        if (installed)
+            Log.exit("autoexec: already created " + buf);
         installed = true;
         buf = in;
         autoexec_strings.add(buf);
@@ -79,7 +81,8 @@ public class AutoexecObject {
 
     private void CreateAutoexec() {
         /* Remove old autoexec.bat if the shell exists */
-        if (Shell.first_shell != null) Drive_virtual.VFILE_Remove("AUTOEXEC.BAT");
+        if (Shell.first_shell != null)
+            Drive_virtual.VFILE_Remove("AUTOEXEC.BAT");
         autoexec_data = new StringBuffer();
         for (int i = 0; i < autoexec_strings.size(); i++) {
             String s = (String) autoexec_strings.elementAt(i);

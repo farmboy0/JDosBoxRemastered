@@ -19,14 +19,12 @@ import java.util.Map;
 
 /**
  * An LRU cache, based on <code>LinkedHashMap</code>.
- *
  * <p>
  * This cache has a fixed maximum number of elements (<code>cacheSize</code>).
- * If the cache is full and another entry is added, the LRU (least recently used) entry is dropped.
- *
+ * If the cache is full and another entry is added, the LRU (least recently
+ * used) entry is dropped.
  * <p>
  * This class is thread-safe. All methods of this class are synchronized.
- *
  * <p>
  * Author: Christian d'Heureuse, Inventec Informatik AG, Zurich, Switzerland<br>
  * Multi-licensed: EPL / LGPL / GPL / AL / BSD.
@@ -41,7 +39,8 @@ public class LRUCache {
     /**
      * Creates a new LRU cache.
      *
-     * @param cacheSize the maximum number of entries that will be kept in this cache.
+     * @param cacheSize the maximum number of entries that will be kept in this
+     *                  cache.
      */
     public LRUCache(int cacheSize) {
         this.cacheSize = cacheSize;
@@ -50,6 +49,7 @@ public class LRUCache {
             // (an anonymous inner class)
             private static final long serialVersionUID = 1;
 
+            @Override
             protected boolean removeEldestEntry(Map.Entry eldest) {
                 return size() > LRUCache.this.cacheSize;
             }
@@ -61,17 +61,19 @@ public class LRUCache {
      * The retrieved entry becomes the MRU (most recently used) entry.
      *
      * @param key the key whose associated value is to be returned.
-     * @return the value associated to this key, or null if no value with this key exists in the cache.
+     *
+     * @return the value associated to this key, or null if no value with this key
+     *         exists in the cache.
      */
     public synchronized Object get(Object key) {
         return map.get(key);
     }
 
     /**
-     * Adds an entry to this cache.
-     * The new entry becomes the MRU (most recently used) entry.
-     * If an entry with the specified key already exists in the cache, it is replaced by the new entry.
-     * If the cache is full, the LRU (least recently used) entry is removed from the cache.
+     * Adds an entry to this cache. The new entry becomes the MRU (most recently
+     * used) entry. If an entry with the specified key already exists in the cache,
+     * it is replaced by the new entry. If the cache is full, the LRU (least
+     * recently used) entry is removed from the cache.
      *
      * @param key   the key with which the specified value is to be associated.
      * @param value a value to be associated with the specified key.
@@ -95,6 +97,5 @@ public class LRUCache {
     public synchronized int usedEntries() {
         return map.size();
     }
-
 
 } // end class LRUCache

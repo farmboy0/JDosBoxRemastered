@@ -267,7 +267,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);
-        runRegb((byte) 0x10, 192, 128, false, 65);  // test the +1 carry
+        runRegb((byte) 0x10, 192, 128, false, 65); // test the +1 carry
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
     }
@@ -282,7 +282,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);
-        runRegw((byte) 0x11, 0xC000, 0x8000, false, 0x4001);  // test the +1 carry
+        runRegw((byte) 0x11, 0xC000, 0x8000, false, 0x4001); // test the +1 carry
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
     }
@@ -297,7 +297,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);
-        runRegb((byte) 0x12, 192, 128, true, 65);  // test the +1 carry
+        runRegb((byte) 0x12, 192, 128, true, 65); // test the +1 carry
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
     }
@@ -312,7 +312,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);
-        runRegw((byte) 0x13, 0xC000, 0x8000, true, 0x4001);  // test the +1 carry
+        runRegw((byte) 0x13, 0xC000, 0x8000, true, 0x4001); // test the +1 carry
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
     }
@@ -426,7 +426,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);
-        runRegb((byte) 0x18, 128, 192, false, -65);  // test the -1 carry
+        runRegb((byte) 0x18, 128, 192, false, -65); // test the -1 carry
     }
 
     // 0x19
@@ -442,7 +442,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);
-        runRegw((byte) 0x19, 0x8000, 0xC000, false, -0x4001);  // test the -1 carry
+        runRegw((byte) 0x19, 0x8000, 0xC000, false, -0x4001); // test the -1 carry
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
     }
@@ -460,7 +460,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);
-        runRegb((byte) 0x1a, 192, 128, true, -65);  // test the -1 carry
+        runRegb((byte) 0x1a, 192, 128, true, -65); // test the -1 carry
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
     }
@@ -478,7 +478,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);
-        runRegw((byte) 0x1b, 0xC000, 0x8000, true, -0x4001);  // test the -1 carry
+        runRegw((byte) 0x1b, 0xC000, 0x8000, true, -0x4001); // test the -1 carry
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
     }
@@ -1831,11 +1831,7 @@ public class testPrefix_none extends InstructionsTestCase {
         CPU_Regs.reg_ecx.dword(1);
         CPU_Regs.reg_edi.dword(0);
         CPU_Regs.SegSet16ES(CPU_Regs.reg_dsVal.dword + 0x100);
-        IoHandler.IO_ReadHandler handler = new IoHandler.IO_ReadHandler() {
-            public int call(int port, int iolen) {
-                return 0xAB;
-            }
-        };
+        IoHandler.IO_ReadHandler handler = (port, iolen) -> 0xAB;
         IoHandler.IO_RegisterReadHandler(17000, handler, IoHandler.IO_MB);
         decoder.call();
         assertTrue(RAM.readb(CPU_Regs.reg_esPhys.dword) == 0xAB);
@@ -1851,11 +1847,7 @@ public class testPrefix_none extends InstructionsTestCase {
         CPU_Regs.reg_ecx.dword(1);
         CPU_Regs.reg_edi.dword(0);
         CPU_Regs.SegSet16ES(CPU_Regs.reg_dsVal.dword + 0x100);
-        IoHandler.IO_ReadHandler handler = new IoHandler.IO_ReadHandler() {
-            public int call(int port, int iolen) {
-                return 0xAB;
-            }
-        };
+        IoHandler.IO_ReadHandler handler = (port, iolen) -> 0xAB;
         IoHandler.IO_RegisterReadHandler(17000, handler, IoHandler.IO_MW);
         decoder.call();
         assertTrue(RAM.readw(CPU_Regs.reg_esPhys.dword) == 0xAB);
@@ -1869,11 +1861,7 @@ public class testPrefix_none extends InstructionsTestCase {
         CPU_Regs.reg_ecx.dword(1);
         CPU_Regs.reg_esi.dword(0);
         result = 0;
-        IoHandler.IO_WriteHandler handler = new IoHandler.IO_WriteHandler() {
-            public void call(int port, int val, int iolen) {
-                result = val;
-            }
-        };
+        IoHandler.IO_WriteHandler handler = (port, val, iolen) -> result = val;
         IoHandler.IO_RegisterWriteHandler(17000, handler, IoHandler.IO_MB);
         RAM.writew(CPU_Regs.reg_dsPhys.dword, 0xABCD);
         decoder.call();
@@ -1890,11 +1878,7 @@ public class testPrefix_none extends InstructionsTestCase {
         CPU_Regs.reg_ecx.dword(1);
         CPU_Regs.reg_esi.dword(0);
         result = 0;
-        IoHandler.IO_WriteHandler handler = new IoHandler.IO_WriteHandler() {
-            public void call(int port, int val, int iolen) {
-                result = val;
-            }
-        };
+        IoHandler.IO_WriteHandler handler = (port, val, iolen) -> result = val;
         IoHandler.IO_RegisterWriteHandler(17000, handler, IoHandler.IO_MW);
         RAM.writed(CPU_Regs.reg_dsPhys.dword, 0xABCDEF01);
         decoder.call();
@@ -1916,7 +1900,7 @@ public class testPrefix_none extends InstructionsTestCase {
         CPU_Regs.SETFLAGBIT(flag, cond);
         eip = CPU_Regs.reg_eip;
         decoder.call();
-        assertTrue(CPU_Regs.reg_eip == ((eip - 32 + 2) & 0xFFFF));
+        assertTrue(CPU_Regs.reg_eip == (eip - 32 + 2 & 0xFFFF));
     }
 
     private void doJumpOr(int instruction, int flag1, int flag2, boolean cond) {
@@ -1935,7 +1919,7 @@ public class testPrefix_none extends InstructionsTestCase {
             CPU_Regs.SETFLAGBIT(flag1, cond);
             eip = CPU_Regs.reg_eip;
             decoder.call();
-            assertTrue(CPU_Regs.reg_eip == ((eip - 32 + 2) & 0xFFFF));
+            assertTrue(CPU_Regs.reg_eip == (eip - 32 + 2 & 0xFFFF));
 
             newInstruction(instruction);
             pushIb((byte) -32);
@@ -1943,7 +1927,7 @@ public class testPrefix_none extends InstructionsTestCase {
             CPU_Regs.SETFLAGBIT(flag2, !cond);
             eip = CPU_Regs.reg_eip;
             decoder.call();
-            assertTrue(CPU_Regs.reg_eip == ((eip - 32 + 2) & 0xFFFF));
+            assertTrue(CPU_Regs.reg_eip == (eip - 32 + 2 & 0xFFFF));
         } else {
             newInstruction(instruction);
             pushIb((byte) -32);
@@ -1968,7 +1952,7 @@ public class testPrefix_none extends InstructionsTestCase {
         CPU_Regs.SETFLAGBIT(flag2, cond);
         eip = CPU_Regs.reg_eip;
         decoder.call();
-        assertTrue(CPU_Regs.reg_eip == ((eip - 32 + 2) & 0xFFFF));
+        assertTrue(CPU_Regs.reg_eip == (eip - 32 + 2 & 0xFFFF));
     }
 
     private void doJumpEqual(int instruction, int flag1, int flag2, boolean cond) {
@@ -1981,7 +1965,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (cond)
             assertTrue(CPU_Regs.reg_eip == eip + 2);
         else
-            assertTrue(CPU_Regs.reg_eip == ((eip - 32 + 2) & 0xFFFF));
+            assertTrue(CPU_Regs.reg_eip == (eip - 32 + 2 & 0xFFFF));
 
         newInstruction(instruction);
         pushIb((byte) -32);
@@ -1992,7 +1976,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (cond)
             assertTrue(CPU_Regs.reg_eip == eip + 2);
         else
-            assertTrue(CPU_Regs.reg_eip == ((eip - 32 + 2) & 0xFFFF));
+            assertTrue(CPU_Regs.reg_eip == (eip - 32 + 2 & 0xFFFF));
 
         newInstruction(instruction);
         pushIb((byte) -32);
@@ -2001,10 +1985,9 @@ public class testPrefix_none extends InstructionsTestCase {
         eip = CPU_Regs.reg_eip;
         decoder.call();
         if (cond)
-            assertTrue(CPU_Regs.reg_eip == ((eip - 32 + 2) & 0xFFFF));
+            assertTrue(CPU_Regs.reg_eip == (eip - 32 + 2 & 0xFFFF));
         else
             assertTrue(CPU_Regs.reg_eip == eip + 2);
-
 
         newInstruction(instruction);
         pushIb((byte) -32);
@@ -2013,7 +1996,7 @@ public class testPrefix_none extends InstructionsTestCase {
         eip = CPU_Regs.reg_eip;
         decoder.call();
         if (cond)
-            assertTrue(CPU_Regs.reg_eip == ((eip - 32 + 2) & 0xFFFF));
+            assertTrue(CPU_Regs.reg_eip == (eip - 32 + 2 & 0xFFFF));
         else
             assertTrue(CPU_Regs.reg_eip == eip + 2);
     }
@@ -2136,7 +2119,7 @@ public class testPrefix_none extends InstructionsTestCase {
         CPU_Regs.SETFLAGBIT(CPU_Regs.OF, true);
         int eip = CPU_Regs.reg_eip;
         decoder.call();
-        assertTrue(CPU_Regs.reg_eip == ((eip - 32 + 2) & 0xFFFF));
+        assertTrue(CPU_Regs.reg_eip == (eip - 32 + 2 & 0xFFFF));
     }
 
     // 0x7f
@@ -2184,7 +2167,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);
-        runRegbi((byte) 0x80, 2 << 3, 192, 128, 65);  // test the +1 carry
+        runRegbi((byte) 0x80, 2 << 3, 192, 128, 65); // test the +1 carry
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.flags = 0;
@@ -2200,7 +2183,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);
-        runRegbi((byte) 0x80, 3 << 3, 128, 192, -65);  // test the -1 carry
+        runRegbi((byte) 0x80, 3 << 3, 128, 192, -65); // test the -1 carry
 
         // ANDB
         runRegsbi((byte) 0x80, (byte) (4 << 3), 1, (byte) 2, 0);
@@ -2267,7 +2250,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);
-        runRegwi((byte) 0x81, 2 << 3, 0xC000, 0x8000, 0x4001);  // test the +1 carry
+        runRegwi((byte) 0x81, 2 << 3, 0xC000, 0x8000, 0x4001); // test the +1 carry
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.flags = 0;
@@ -2283,7 +2266,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);
-        runRegwi((byte) 0x81, 3 << 3, 0x8000, 0xC000, -0x4001);  // test the -1 carry
+        runRegwi((byte) 0x81, 3 << 3, 0x8000, 0xC000, -0x4001); // test the -1 carry
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
 
@@ -2352,7 +2335,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);
-        runRegwix((byte) 0x83, 2 << 3, 0x00C0, (byte) 0x80, 0x0041);  // test the +1 carry
+        runRegwix((byte) 0x83, 2 << 3, 0x00C0, (byte) 0x80, 0x0041); // test the +1 carry
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.flags = 0;
@@ -2368,7 +2351,7 @@ public class testPrefix_none extends InstructionsTestCase {
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);
-        runRegwix((byte) 0x83, 3 << 3, 0x0080, (byte) 0xC0, 0x00BF);  // test the -1 carry
+        runRegwix((byte) 0x83, 3 << 3, 0x0080, (byte) 0xC0, 0x00BF); // test the -1 carry
         if (!jdos.cpu.core_dynamic.Compiler.alwayUseFastVersion)
             assertTrue(Flags.get_CF());
 

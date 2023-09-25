@@ -9,6 +9,7 @@ public class DIDataFormat {
     public int dwDataSize;
     public int dwNumObjs;
     public DIObjectDataFormat[] rgodf;
+
     public DIDataFormat(int address) {
         dwSize = Memory.mem_readd(address);
         address += 4;

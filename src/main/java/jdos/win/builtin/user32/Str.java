@@ -6,14 +6,14 @@ import jdos.win.utils.StringUtil;
 
 public class Str extends WinAPI {
     // LPTSTR WINAPI CharUpper(LPTSTR lpsz)
-    static public int CharUpperA(int lpsz) {
+    public static int CharUpperA(int lpsz) {
         String value = StringUtil.getString(lpsz);
         StringUtil.strcpy(lpsz, value.toUpperCase());
         return lpsz;
     }
 
     // DWORD WINAPI CharUpperBuff(LPTSTR lpsz, DWORD cchLength)
-    static public int CharUpperBuffA(int lpsz, int cchLength) {
+    public static int CharUpperBuffA(int lpsz, int cchLength) {
         String value = StringUtil.getString(lpsz, cchLength);
         byte[] b = value.getBytes();
         if (b.length < cchLength)

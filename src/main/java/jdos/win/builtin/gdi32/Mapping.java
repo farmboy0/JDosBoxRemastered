@@ -4,7 +4,7 @@ import jdos.win.builtin.WinAPI;
 
 public class Mapping extends WinAPI {
     // BOOL OffsetViewportOrgEx(HDC hdc, int nXOffset, int nYOffset, LPPOINT lpPoint)
-    static public int OffsetViewportOrgEx(int hdc, int nXOffset, int nYOffset, int lpPoint) {
+    public static int OffsetViewportOrgEx(int hdc, int nXOffset, int nYOffset, int lpPoint) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return FALSE;

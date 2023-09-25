@@ -1,40 +1,36 @@
 package jdos.debug;
 
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+
 import jdos.misc.setup.Section;
 import jdos.misc.setup.Section_prop;
 import jdos.types.LogTypes;
 
-import java.io.FileOutputStream;
-import java.io.OutputStream;
-
 public class Debug_gui {
     static _LogGroup[] loggrp = new _LogGroup[LogTypes.LOG_MAX];
     static OutputStream debuglog;
-    static Section.SectionFunction LOG_Destroy = new Section.SectionFunction() {
-        public void call(Section section) {
-            if (debuglog != null) {
-                try {
-                    debuglog.close();
-                } catch (Exception e) {
-                }
+    static Section.SectionFunction LOG_Destroy = section -> {
+        if (debuglog != null) {
+            try {
+                debuglog.close();
+            } catch (Exception e) {
             }
         }
     };
-    static Section.SectionFunction LOG_Init = new Section.SectionFunction() {
-        public void call(Section section) {
-            Section_prop sect = (Section_prop) section;
-            String blah = sect.Get_string("logfile");
-            if (blah != null && blah.length() != 0) {
-                try {
-                    debuglog = new FileOutputStream(blah);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+    static Section.SectionFunction LOG_Init = section -> {
+        Section_prop sect = (Section_prop) section;
+        String blah = sect.Get_string("logfile");
+        if (blah != null && blah.length() != 0) {
+            try {
+                debuglog = new FileOutputStream(blah);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            sect.AddDestroyFunction(LOG_Destroy);
-            for (int i = 1; i < LogTypes.LOG_MAX; i++) {
-                loggrp[i].enabled = sect.Get_bool(loggrp[i].front.toLowerCase());
-            }
+        }
+        sect.AddDestroyFunction(LOG_Destroy);
+        for (int i = 1; i < LogTypes.LOG_MAX; i++) {
+            loggrp[i].enabled = sect.Get_bool(loggrp[i].front.toLowerCase());
         }
     };
 

@@ -12,9 +12,10 @@ import jdos.win.utils.StringUtil;
 public class DDraw extends BuiltinModule {
     public DDraw(Loader loader, int handle) {
         super(loader, "DDraw.dll", handle);
-        add(DDraw.class, "DirectDrawCreate", new String[]{"(GUID)lpGUID", "lplpDD", "pUnkOuter", "(HRESULT)result"});
-        add(DDraw.class, "DirectDrawCreateEx", new String[]{"(GUID)lpGUID", "lplpDD", "(GUID)iid", "pUnkOuter", "(HRESULT)result"});
-        add(DDraw.class, "DirectDrawEnumerateA", new String[]{"(HEX)lpCallback", "lpContext"});
+        add(DDraw.class, "DirectDrawCreate", new String[] { "(GUID)lpGUID", "lplpDD", "pUnkOuter", "(HRESULT)result" });
+        add(DDraw.class, "DirectDrawCreateEx",
+            new String[] { "(GUID)lpGUID", "lplpDD", "(GUID)iid", "pUnkOuter", "(HRESULT)result" });
+        add(DDraw.class, "DirectDrawEnumerateA", new String[] { "(HEX)lpCallback", "lpContext" });
     }
 
     // HRESULT WINAPI DirectDrawCreate(GUID FAR* lpGUID, LPDIRECTDRAW FAR* lplpDD, IUnknown FAR* pUnkOuter)
@@ -32,7 +33,8 @@ public class DDraw extends BuiltinModule {
     // HRESULT WINAPI DirectDrawEnumerate(LPDDENUMCALLBACK lpCallback, LPVOID lpContext)
     public static int DirectDrawEnumerateA(int lpCallback, int lpContext) {
         // BOOL WINAPI DDEnumCallback(GUID FAR *lpGUID, LPSTR lpDriverDescription, LPSTR lpDriverName, LPVOID lpContext)
-        WinSystem.call(lpCallback, NULL, StringUtil.allocateTempA("DirectDraw HAL"), StringUtil.allocateTempA("display"), lpContext);
+        WinSystem.call(lpCallback, NULL, StringUtil.allocateTempA("DirectDraw HAL"),
+            StringUtil.allocateTempA("display"), lpContext);
         return Error.S_OK;
     }
 }

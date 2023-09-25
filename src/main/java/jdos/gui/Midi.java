@@ -1,5 +1,16 @@
 package jdos.gui;
 
+import java.io.InputStream;
+
+import javax.sound.midi.MidiDevice;
+import javax.sound.midi.MidiDevice.Info;
+import javax.sound.midi.MidiSystem;
+import javax.sound.midi.Receiver;
+import javax.sound.midi.ShortMessage;
+import javax.sound.midi.Soundbank;
+import javax.sound.midi.Synthesizer;
+import javax.sound.midi.SysexMessage;
+
 import jdos.Dosbox;
 import jdos.misc.Log;
 import jdos.misc.setup.Module_base;
@@ -9,55 +20,47 @@ import jdos.types.LogSeverities;
 import jdos.types.LogTypes;
 import jdos.util.StringHelper;
 
-import javax.sound.midi.*;
-import java.io.InputStream;
-
 public class Midi extends Module_base {
-    static final private int SYSEX_SIZE = 1024;
-    static final private int RAWBUF = 1024;
+    private static final int SYSEX_SIZE = 1024;
+    private static final int RAWBUF = 1024;
 
-    static final private byte[] MIDI_evt_len = new byte[]{
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 0x00
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 0x10
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 0x20
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 0x30
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 0x40
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 0x50
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 0x60
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 0x70
+    private static final byte[] MIDI_evt_len = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x00
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x10
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x20
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x30
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x40
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x50
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x60
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x70
 
-            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // 0x80
-            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // 0x90
-            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // 0xa0
-            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // 0xb0
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 0x80
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 0x90
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 0xa0
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 0xb0
 
-            2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // 0xc0
-            2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // 0xd0
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 0xc0
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 0xd0
 
-            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,  // 0xe0
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 0xe0
 
-            0, 2, 3, 2, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0   // 0xf0
+        0, 2, 3, 2, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0 // 0xf0
     };
-    static private _midi midi;
-    static private final ShortMessage msg = new ShortMessage();
-    static private final SysexMessage sysex_msg = new SysexMessage();
+    private static _midi midi;
+    private static final ShortMessage msg = new ShortMessage();
+    private static final SysexMessage sysex_msg = new SysexMessage();
     private static Midi test;
-    public static Section.SectionFunction MIDI_Destroy = new Section.SectionFunction() {
-        public void call(Section section) {
-            if (midi.device != null) {
-                midi.handler.close();
-                midi.device.close();
-            }
-            test = null;
-            midi = null;
+    public static Section.SectionFunction MIDI_Destroy = section -> {
+        if (midi.device != null) {
+            midi.handler.close();
+            midi.device.close();
         }
+        test = null;
+        midi = null;
     };
-    public static Section.SectionFunction MIDI_Init = new Section.SectionFunction() {
-        public void call(Section section) {
-            midi = new _midi();
-            test = new Midi(section);
-            section.AddDestroyFunction(MIDI_Destroy);
-        }
+    public static Section.SectionFunction MIDI_Init = section -> {
+        midi = new _midi();
+        test = new Midi(section);
+        section.AddDestroyFunction(MIDI_Destroy);
     };
 
     public Midi(Section configuration) {
@@ -89,8 +92,8 @@ public class Midi extends Module_base {
 
         if (!def) {
             if (devices != null) {
-                for (int i = 0; i < devices.length; i++) {
-                    if (devices[i].getName().equalsIgnoreCase(dev)) {
+                for (Info element : devices) {
+                    if (element.getName().equalsIgnoreCase(dev)) {
                         try {
                             MidiDevice device = MidiSystem.getMidiDevice(devices[0]);
                             device.open();
@@ -175,14 +178,15 @@ public class Midi extends Module_base {
         }
     }
 
-    static public void MIDI_RawOutByte(/*Bit8u*/int data) {
+    public static void MIDI_RawOutByte(/*Bit8u*/int data) {
         if (midi.sysex.start != 0) {
             /*Bit32u*/
             long passed_ticks = System.currentTimeMillis() - midi.sysex.start;
-            if (passed_ticks < midi.sysex.delay) try {
-                Thread.sleep(midi.sysex.delay - passed_ticks);
-            } catch (InterruptedException e) {
-            }
+            if (passed_ticks < midi.sysex.delay)
+                try {
+                    Thread.sleep(midi.sysex.delay - passed_ticks);
+                } catch (InterruptedException e) {
+                }
         }
         /* Test for a realtime MIDI message */
         if (data >= 0xf8) {
@@ -196,14 +200,17 @@ public class Midi extends Module_base {
         /* Test for a active sysex tranfer */
         if (midi.status == 0xf0) {
             if ((data & 0x80) == 0) {
-                if (midi.sysex.used < (SYSEX_SIZE - 1)) midi.sysex.buf[midi.sysex.used++] = (byte) data;
+                if (midi.sysex.used < SYSEX_SIZE - 1)
+                    midi.sysex.buf[midi.sysex.used++] = (byte) data;
                 return;
             } else {
                 midi.sysex.buf[midi.sysex.used++] = (byte) 0xf7;
 
-                if ((midi.sysex.start != 0) && (midi.sysex.used >= 4) && (midi.sysex.used <= 9) && (midi.sysex.buf[1] == 0x41) && (midi.sysex.buf[3] == 0x16)) {
+                if (midi.sysex.start != 0 && midi.sysex.used >= 4 && midi.sysex.used <= 9 && midi.sysex.buf[1] == 0x41
+                    && midi.sysex.buf[3] == 0x16) {
                     if (Log.level <= LogSeverities.LOG_ERROR)
-                        Log.log(LogTypes.LOG_ALL, LogSeverities.LOG_ERROR, "MIDI:Skipping invalid MT-32 SysEx midi message (too short to contain a checksum)");
+                        Log.log(LogTypes.LOG_ALL, LogSeverities.LOG_ERROR,
+                            "MIDI:Skipping invalid MT-32 SysEx midi message (too short to contain a checksum)");
                 } else {
                     //				LOG(LOG_ALL,LOG_NORMAL)("Play sysex; address:%02X %02X %02X, length:%4d, delay:%3d", midi.sysex.buf[5], midi.sysex.buf[6], midi.sysex.buf[7], midi.sysex.used, midi.sysex.delay);
                     try {
@@ -214,12 +221,14 @@ public class Midi extends Module_base {
                     if (midi.sysex.start != 0) {
                         if (midi.sysex.buf[5] == 0x7F) {
                             midi.sysex.delay = 290; // All Parameters reset
-                        } else if (midi.sysex.buf[5] == 0x10 && midi.sysex.buf[6] == 0x00 && midi.sysex.buf[7] == 0x04) {
+                        } else if (midi.sysex.buf[5] == 0x10 && midi.sysex.buf[6] == 0x00
+                            && midi.sysex.buf[7] == 0x04) {
                             midi.sysex.delay = 145; // Viking Child
-                        } else if (midi.sysex.buf[5] == 0x10 && midi.sysex.buf[6] == 0x00 && midi.sysex.buf[7] == 0x01) {
+                        } else if (midi.sysex.buf[5] == 0x10 && midi.sysex.buf[6] == 0x00
+                            && midi.sysex.buf[7] == 0x01) {
                             midi.sysex.delay = 30; // Dark Sun 1
                         } else
-                            midi.sysex.delay = (/*Bitu*/int) (((float) (midi.sysex.used) * 1.25f) * 1000.0f / 3125.0f) + 2;
+                            midi.sysex.delay = (/*Bitu*/int) (midi.sysex.used * 1.25f * 1000.0f / 3125.0f) + 2;
                         midi.sysex.start = System.currentTimeMillis();
                     }
                 }
@@ -251,16 +260,16 @@ public class Midi extends Module_base {
                 } catch (Exception e) {
                 }
                 midi.handler.send(msg, -1);
-                midi.cmd_pos = 1;        //Use Running status
+                midi.cmd_pos = 1; //Use Running status
             }
         }
     }
 
-    static public boolean MIDI_Available() {
+    public static boolean MIDI_Available() {
         return midi.device != null;
     }
 
-    static private class _midi {
+    private static class _midi {
         public Sysex sysex = new Sysex();
         int status;
         int cmd_len;

@@ -4,7 +4,7 @@ import jdos.win.utils.StringUtil;
 
 public class WinLocale {
     // UINT GetOEMCP(void);
-    static public int GetOEMCP() {
+    public static int GetOEMCP() {
         return 437;
     }
 

@@ -1,10 +1,10 @@
 package jdos.cpu.core_dynamic;
 
+import java.util.Vector;
+
 import jdos.Dosbox;
 import jdos.cpu.core_switch.SwitchBlock;
 import jdos.misc.Log;
-
-import java.util.Vector;
 
 public class CacheBlockDynRec {
     public Page page = new Page();
@@ -74,17 +74,18 @@ public class CacheBlockDynRec {
     // link this cache block to another block, index specifies the code
     // path (always zero for unconditional links, 0/1 for conditional ones
     public void LinkTo(/*Bitu*/int index, CacheBlockDynRec toblock) {
-        if (toblock == null) throw new NullPointerException();
+        if (toblock == null)
+            throw new NullPointerException();
         if (link[index].to != null) {
             Log.exit("Dynamic cache failure");
         }
         link[index].to = toblock;
         if (toblock.link[index].from == null)
             toblock.link[index].from = new Vector();
-        toblock.link[index].from.add(this);                // remember who links me
+        toblock.link[index].from.add(this); // remember who links me
     }
 
-    static public class _Cache {
+    public static class _Cache {
         public CacheBlockDynRec next;
         // writemap masking maskpointer/start/length
         // to allow holes in the writemap
@@ -93,19 +94,18 @@ public class CacheBlockDynRec {
         public /*Bit16u*/ int masklen;
     }
 
-    static public class _Hash {
+    public static class _Hash {
         /*Bitu*/ int index;
         CacheBlockDynRec next;
     }
 
-    static public class _Link {
-        public CacheBlockDynRec to;        // this block can transfer control to the to-block
-        public Vector from = new Vector();    // the from-block can transfer control to this block
+    public static class _Link {
+        public CacheBlockDynRec to; // this block can transfer control to the to-block
+        public Vector from = new Vector(); // the from-block can transfer control to this block
     }
 
     public class Page {
-        public int start, end;        // where in the page is the original code
-        public CodePageHandlerDynRec handler;            // page containing this code
+        public int start, end; // where in the page is the original code
+        public CodePageHandlerDynRec handler; // page containing this code
     }
 }
-

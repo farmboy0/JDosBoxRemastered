@@ -1,13 +1,13 @@
 package jdos.win.builtin.user32;
 
+import java.util.Iterator;
+
 import jdos.hardware.Memory;
 import jdos.util.IntRef;
 import jdos.win.builtin.WinAPI;
 import jdos.win.builtin.kernel32.WinThread;
 import jdos.win.system.Scheduler;
 import jdos.win.system.StaticData;
-
-import java.util.Iterator;
 
 public class Focus extends WinAPI {
     // HWND WINAPI GetActiveWindow(void)
@@ -31,7 +31,7 @@ public class Focus extends WinAPI {
             int style = WinWindow.GetWindowLongA(hWnd, GWL_STYLE);
 
             if ((style & (WS_POPUP | WS_CHILD)) == WS_CHILD)
-                return GetActiveWindow();  /* Windows doesn't seem to return an error here */
+                return GetActiveWindow(); /* Windows doesn't seem to return an error here */
         }
         IntRef previous = new IntRef(0);
         set_active_window(hWnd, previous, false, true);
@@ -45,34 +45,40 @@ public class Focus extends WinAPI {
 
         if (hwnd != 0) {
             /* Check if we can set the focus to this window */
-            if (hwnd == previous) return previous;  /* nothing to do */
-            for (; ; ) {
+            if (hwnd == previous)
+                return previous; /* nothing to do */
+            for (;;) {
                 int parent;
                 int style = WinWindow.GetWindowLongA(hwndTop, GWL_STYLE);
-                if ((style & (WS_MINIMIZE | WS_DISABLED)) != 0) return 0;
+                if ((style & (WS_MINIMIZE | WS_DISABLED)) != 0)
+                    return 0;
                 parent = WinWindow.GetAncestor(hwndTop, GA_PARENT);
                 if (parent == 0) {
-                    if ((style & (WS_POPUP | WS_CHILD)) == WS_CHILD) return 0;
+                    if ((style & (WS_POPUP | WS_CHILD)) == WS_CHILD)
+                        return 0;
                     break;
                 }
-                if (parent == WinThread.current().msg_window) return 0;
+                if (parent == WinThread.current().msg_window)
+                    return 0;
                 hwndTop = parent;
             }
 
             /* call hooks */
-            if (Hook.HOOK_CallHooks(WH_CBT, HCBT_SETFOCUS, hwnd, previous) != 0) return 0;
+            if (Hook.HOOK_CallHooks(WH_CBT, HCBT_SETFOCUS, hwnd, previous) != 0)
+                return 0;
 
             /* activate hwndTop if needed. */
             if (hwndTop != GetActiveWindow()) {
-                if (!set_active_window(hwndTop, null, false, false)) return 0;
-                if (WinWindow.IsWindow(hwnd) == 0) return 0;  /* Abort if window destroyed */
+                 /* Abort if window destroyed */
 
                 /* Do not change focus if the window is no longer active */
-                if (hwndTop != GetActiveWindow()) return 0;
+                if (!set_active_window(hwndTop, null, false, false) || (WinWindow.IsWindow(hwnd) == 0) || (hwndTop != GetActiveWindow()))
+                    return 0;
             }
         } else /* NULL hwnd passed in */ {
-            if (previous == 0) return 0;  /* nothing to do */
-            if (Hook.HOOK_CallHooks(WH_CBT, HCBT_SETFOCUS, 0, previous) != 0) return 0;
+             /* nothing to do */
+            if ((previous == 0) || (Hook.HOOK_CallHooks(WH_CBT, HCBT_SETFOCUS, 0, previous) != 0))
+                return 0;
         }
 
         /* change focus and send messages */
@@ -80,20 +86,22 @@ public class Focus extends WinAPI {
     }
 
     // BOOL WINAPI SetForegroundWindow(HWND hWnd)
-    static public int SetForegroundWindow(int hWnd) {
+    public static int SetForegroundWindow(int hWnd) {
         if (StaticData.foregroundWindow == hWnd)
             return TRUE;
         StaticData.foregroundWindow = hWnd;
         return BOOL(set_active_window(hWnd, null, false, true));
     }
 
-    static private int set_focus_window(int hwnd) {
+    private static int set_focus_window(int hwnd) {
         int previous = GetFocus();
-        if (previous == hwnd) return previous;
+        if (previous == hwnd)
+            return previous;
         Scheduler.getCurrentThread().GetGUIThreadInfo().hwndFocus = hwnd;
         if (previous != 0) {
             Message.SendMessageA(previous, WM_KILLFOCUS, hwnd, 0);
-            if (GetFocus() != hwnd) return previous; /* changed by the message */
+            if (GetFocus() != hwnd)
+                return previous; /* changed by the message */
         }
         if (WinWindow.IsWindow(hwnd) != 0) {
             Message.SendMessageA(hwnd, WM_SETFOCUS, previous, 0);
@@ -101,7 +109,7 @@ public class Focus extends WinAPI {
         return previous;
     }
 
-    static private boolean set_active_window(int hwnd, IntRef prev, boolean mouse, boolean focus) {
+    private static boolean set_active_window(int hwnd, IntRef prev, boolean mouse, boolean focus) {
         int previous = GetActiveWindow();
         boolean ret;
 
@@ -129,7 +137,8 @@ public class Focus extends WinAPI {
             /* send palette messages */
             if (Message.SendMessageA(hwnd, WM_QUERYNEWPALETTE, 0, 0) != 0)
                 Message.SendMessageA(HWND_BROADCAST, WM_PALETTEISCHANGING, hwnd, 0);
-            if (WinWindow.IsWindow(hwnd) == 0) return false;
+            if (WinWindow.IsWindow(hwnd) == 0)
+                return false;
         }
 
         int old_thread = previous != 0 ? WinWindow.GetWindowThreadProcessId(previous, 0) : 0;
@@ -150,7 +159,8 @@ public class Focus extends WinAPI {
 
         if (WinWindow.IsWindow(hwnd) != 0) {
             Message.SendMessageA(hwnd, WM_NCACTIVATE, BOOL(hwnd == GetForegroundWindow()), previous);
-            Message.SendMessageA(hwnd, WM_ACTIVATE, MAKEWPARAM(mouse ? WA_CLICKACTIVE : WA_ACTIVE, WinPos.IsIconic(hwnd)), previous);
+            Message.SendMessageA(hwnd, WM_ACTIVATE,
+                MAKEWPARAM(mouse ? WA_CLICKACTIVE : WA_ACTIVE, WinPos.IsIconic(hwnd)), previous);
         }
 
         /* now change focus if necessary */

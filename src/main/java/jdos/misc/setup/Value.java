@@ -113,9 +113,11 @@ public class Value {
     }
 
     public void SetValue(String in, int _type) throws WrongType {
-        if (_type == Etype.V_CURRENT && type == Etype.V_NONE) throw new WrongType();
+        if (_type == Etype.V_CURRENT && type == Etype.V_NONE)
+            throw new WrongType();
         if (_type != Etype.V_CURRENT) {
-            if (type != Etype.V_NONE && type != _type) throw new WrongType();
+            if (type != Etype.V_NONE && type != _type)
+                throw new WrongType();
             type = _type;
         }
         if (type == Etype.V_HEX)
@@ -138,6 +140,7 @@ public class Value {
         SetValue(in, Etype.V_CURRENT);
     }
 
+    @Override
     public String toString() {
         if (type == Etype.V_HEX)
             return Integer.toString(_hex._hex, 16);
@@ -170,6 +173,7 @@ public class Value {
         _string = in._string;
     }
 
+    @Override
     public boolean equals(Object obj) {
         if (obj == this)
             return true;

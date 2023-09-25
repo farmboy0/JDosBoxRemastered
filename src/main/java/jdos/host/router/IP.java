@@ -1,18 +1,18 @@
 package jdos.host.router;
 
 public class IP extends EtherUtil {
-    static public final int LEN = 20;
+    public static final int LEN = 20;
 
-    static public final int MAXTTL = 255;        /* maximum time to live (seconds) */
-    static public final int IPDEFTTL = 64;        /* default ttl, from RFC 1340 */
-    static public final int IPFRAGTTL = 60;        /* time to live for frags, slowhz */
-    static public final int IPTTLDEC = 1;        /* subtracted when forwarding */
+    public static final int MAXTTL = 255; /* maximum time to live (seconds) */
+    public static final int IPDEFTTL = 64; /* default ttl, from RFC 1340 */
+    public static final int IPFRAGTTL = 60; /* time to live for frags, slowhz */
+    public static final int IPTTLDEC = 1; /* subtracted when forwarding */
 
     public static final int IPTOS_LOWDELAY = 0x10;
 
-    public static final int IP_DF = 0x4000;            /* don't fragment flag */
-    public static final int IP_MF = 0x2000;            /* more fragments flag */
-    public static final int IP_OFFMASK = 0x1fff;        /* mask for fragmenting bits */
+    public static final int IP_DF = 0x4000; /* don't fragment flag */
+    public static final int IP_MF = 0x2000; /* more fragments flag */
+    public static final int IP_OFFMASK = 0x1fff; /* mask for fragmenting bits */
     // Protocols
     final static UDP udp = new UDP();
     final static ICMP icmp = new ICMP();
@@ -29,9 +29,10 @@ public class IP extends EtherUtil {
     int sourceIP;
     int destIP;
 
-    static public void output(byte[] buffer, int offset, int protocol, int sourceIP, int destIP, int len, int iptos, int ttl) {
+    public static void output(byte[] buffer, int offset, int protocol, int sourceIP, int destIP, int len, int iptos,
+        int ttl) {
         int originalOffset = offset;
-        buffer[offset++] = (byte) (4 << 4 | 5);  // version & headerLen
+        buffer[offset++] = (byte) (4 << 4 | 5); // version & headerLen
         buffer[offset++] = (byte) iptos;
         writeWord(buffer, offset, len);
         offset += 2;

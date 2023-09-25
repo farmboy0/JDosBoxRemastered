@@ -1,17 +1,17 @@
 package jdos.win.builtin.kernel32;
 
+import java.util.Vector;
+
 import jdos.cpu.CPU_Regs;
 import jdos.win.builtin.HandlerBase;
 import jdos.win.system.WinObject;
 
-import java.util.Vector;
-
 public class WaitObject extends WinObject {
-    static public final int WAIT_ABANDONED = 0x00000080;
-    static public final int WAIT_OBJECT_0 = 0x00000000;
-    static public final int WAIT_TIMEOUT = 0x00000102;
+    public static final int WAIT_ABANDONED = 0x00000080;
+    public static final int WAIT_OBJECT_0 = 0x00000000;
+    public static final int WAIT_TIMEOUT = 0x00000102;
     public WinObject owner;
-    public Vector<WaitGroup> waiting = new Vector<WaitGroup>();
+    public Vector<WaitGroup> waiting = new Vector<>();
 
     public WaitObject(int handle) {
         super(handle);
@@ -23,11 +23,11 @@ public class WaitObject extends WinObject {
         owner = this;
     }
 
-    static public WaitObject create() {
+    public static WaitObject create() {
         return new WaitObject(nextObjectId());
     }
 
-    static public WaitObject getWait(int handle) {
+    public static WaitObject getWait(int handle) {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WaitObject))
             return null;

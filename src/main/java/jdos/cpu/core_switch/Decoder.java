@@ -1,13 +1,21 @@
 package jdos.cpu.core_switch;
 
-import jdos.cpu.*;
-import jdos.cpu.core_dynamic.*;
+import jdos.cpu.CPU;
+import jdos.cpu.CPU_Regs;
+import jdos.cpu.Core;
+import jdos.cpu.PageFaultException;
+import jdos.cpu.StringOp;
+import jdos.cpu.core_dynamic.Cache;
+import jdos.cpu.core_dynamic.CacheBlockDynRec;
+import jdos.cpu.core_dynamic.CodePageHandlerDynRec;
+import jdos.cpu.core_dynamic.Helper;
+import jdos.cpu.core_dynamic.Mod;
 import jdos.misc.Log;
 import jdos.types.LogSeverities;
 import jdos.types.LogTypes;
 
 public class Decoder extends Helper {
-    static protected boolean rep_zero = false;
+    protected static boolean rep_zero = false;
 
     private static void ea(SwitchBlock block, int rm) {
         block.eaa16 = EA16;
@@ -44,7 +52,7 @@ public class Decoder extends Helper {
                 }
                 block.eaa_r1 = reg_esp;
                 break;
-            case 5:    /* #1 Base */
+            case 5: /* #1 Base */
                 if (mode == 0) {
                     block.eaa_const = decode_fetchd();
                 } else {
@@ -62,7 +70,7 @@ public class Decoder extends Helper {
                 block.eaa_r1 = reg_edi;
                 break;
         }
-        int index = (sib >> 3) & 7;
+        int index = sib >> 3 & 7;
         block.eaa_sib = sib >> 6;
         switch (index) {
             case 0:
@@ -469,7 +477,7 @@ public class Decoder extends Helper {
     }
 
     private static void group2b(SwitchBlock block, int rm) {
-        switch ((rm >> 3) & 7) {
+        switch (rm >> 3 & 7) {
             case 0x00: // ROLB
                 if ((block.value & 0x7) == 0) {
                     if ((block.value & 0x18) != 0) {
@@ -495,31 +503,41 @@ public class Decoder extends Helper {
                 }
                 break;
             case 0x02:
-                if (block.value % 9 == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.RCLB_R8;
+                if (block.value % 9 == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.RCLB_R8;
                 break;
             case 0x03:
-                if (block.value % 9 == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.RCRB_R8;
+                if (block.value % 9 == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.RCRB_R8;
                 break;
             case 0x04:/* SHL and SAL are the same */
             case 0x06:
-                if (block.value == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.SHLB_R8;
+                if (block.value == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.SHLB_R8;
                 break;
             case 0x05:
-                if (block.value == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.SHRB_R8;
+                if (block.value == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.SHRB_R8;
                 break;
             case 0x07:
-                if (block.value == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.SARB_R8;
+                if (block.value == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.SARB_R8;
                 break;
         }
     }
 
     private static void group2bEA(SwitchBlock block, int rm) {
-        switch ((rm >> 3) & 7) {
+        switch (rm >> 3 & 7) {
             case 0x00: // ROLB
                 if ((block.value & 0x7) == 0) {
                     if ((block.value & 0x18) != 0) {
@@ -545,31 +563,41 @@ public class Decoder extends Helper {
                 }
                 break;
             case 0x02:
-                if (block.value % 9 == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.RCLB_E8;
+                if (block.value % 9 == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.RCLB_E8;
                 break;
             case 0x03:
-                if (block.value % 9 == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.RCRB_E8;
+                if (block.value % 9 == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.RCRB_E8;
                 break;
             case 0x04:/* SHL and SAL are the same */
             case 0x06:
-                if (block.value == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.SHLB_E8;
+                if (block.value == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.SHLB_E8;
                 break;
             case 0x05:
-                if (block.value == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.SHRB_E8;
+                if (block.value == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.SHRB_E8;
                 break;
             case 0x07:
-                if (block.value == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.SARB_E8;
+                if (block.value == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.SARB_E8;
                 break;
         }
     }
 
     private static void group2w(SwitchBlock block, int rm) {
-        switch ((rm >> 3) & 7) {
+        switch (rm >> 3 & 7) {
             case 0x00: // ROLW
                 if ((block.value & 0xf) == 0) {
                     if ((block.value & 0x10) != 0) {
@@ -595,31 +623,41 @@ public class Decoder extends Helper {
                 }
                 break;
             case 0x02:
-                if (block.value % 17 == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.RCLW_R16;
+                if (block.value % 17 == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.RCLW_R16;
                 break;
             case 0x03:
-                if (block.value % 17 == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.RCRW_R16;
+                if (block.value % 17 == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.RCRW_R16;
                 break;
             case 0x04:/* SHL and SAL are the same */
             case 0x06:
-                if (block.value == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.SHLW_R16;
+                if (block.value == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.SHLW_R16;
                 break;
             case 0x05:
-                if (block.value == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.SHRW_R16;
+                if (block.value == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.SHRW_R16;
                 break;
             case 0x07:
-                if (block.value == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.SARW_R16;
+                if (block.value == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.SARW_R16;
                 break;
         }
     }
 
     private static void group2wEA(SwitchBlock block, int rm) {
-        switch ((rm >> 3) & 7) {
+        switch (rm >> 3 & 7) {
             case 0x00: // ROLW
                 if ((block.value & 0xf) == 0) {
                     if ((block.value & 0x10) != 0) {
@@ -645,31 +683,41 @@ public class Decoder extends Helper {
                 }
                 break;
             case 0x02:
-                if (block.value % 17 == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.RCLW_E16;
+                if (block.value % 17 == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.RCLW_E16;
                 break;
             case 0x03:
-                if (block.value % 17 == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.RCRW_E16;
+                if (block.value % 17 == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.RCRW_E16;
                 break;
             case 0x04:/* SHL and SAL are the same */
             case 0x06:
-                if (block.value == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.SHLW_E16;
+                if (block.value == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.SHLW_E16;
                 break;
             case 0x05:
-                if (block.value == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.SHRW_E16;
+                if (block.value == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.SHRW_E16;
                 break;
             case 0x07:
-                if (block.value == 0) block.instruction = Inst.NOP;
-                else block.instruction = Inst.SARW_E16;
+                if (block.value == 0)
+                    block.instruction = Inst.NOP;
+                else
+                    block.instruction = Inst.SARW_E16;
                 break;
         }
     }
 
     private static void group2bCL(SwitchBlock block, int rm) {
-        switch ((rm >> 3) & 7) {
+        switch (rm >> 3 & 7) {
             case 0x00:
                 block.instruction = Inst.ROLB_R8_CL;
                 break;
@@ -696,7 +744,7 @@ public class Decoder extends Helper {
     }
 
     private static void group2bEACL(SwitchBlock block, int rm) {
-        switch ((rm >> 3) & 7) {
+        switch (rm >> 3 & 7) {
             case 0x00:
                 block.instruction = Inst.ROLB_E8_CL;
                 break;
@@ -723,7 +771,7 @@ public class Decoder extends Helper {
     }
 
     private static void group2wCL(SwitchBlock block, int rm) {
-        switch ((rm >> 3) & 7) {
+        switch (rm >> 3 & 7) {
             case 0x00:
                 block.instruction = Inst.ROLW_R16_CL;
                 break;
@@ -750,7 +798,7 @@ public class Decoder extends Helper {
     }
 
     private static void group2wEACL(SwitchBlock block, int rm) {
-        switch ((rm >> 3) & 7) {
+        switch (rm >> 3 & 7) {
             case 0x00:
                 block.instruction = Inst.ROLW_E16_CL;
                 break;
@@ -777,7 +825,7 @@ public class Decoder extends Helper {
     }
 
     private static void group2dCL(SwitchBlock block, int rm) {
-        switch ((rm >> 3) & 7) {
+        switch (rm >> 3 & 7) {
             case 0x00:
                 block.instruction = Inst.ROLD_R32_CL;
                 break;
@@ -804,7 +852,7 @@ public class Decoder extends Helper {
     }
 
     private static void group2dEACL(SwitchBlock block, int rm) {
-        switch ((rm >> 3) & 7) {
+        switch (rm >> 3 & 7) {
             case 0x00:
                 block.instruction = Inst.ROLD_E32_CL;
                 break;
@@ -836,7 +884,7 @@ public class Decoder extends Helper {
             block.instruction = Inst.NOP;
             return;
         }
-        switch ((rm >> 3) & 7) {
+        switch (rm >> 3 & 7) {
             case 0x00:
                 block.instruction = Inst.ROLD_R32;
                 break;
@@ -868,7 +916,7 @@ public class Decoder extends Helper {
             block.instruction = Inst.NOP;
             return;
         }
-        switch ((rm >> 3) & 7) {
+        switch (rm >> 3 & 7) {
             case 0x00:
                 block.instruction = Inst.ROLD_E32;
                 break;
@@ -894,7 +942,8 @@ public class Decoder extends Helper {
         }
     }
 
-    public static CacheBlockDynRec CreateCacheBlock(CodePageHandlerDynRec codepage,/*PhysPt*/int start,/*Bitu*/int max_opcodes) {
+    public static CacheBlockDynRec CreateCacheBlock(CodePageHandlerDynRec codepage, /*PhysPt*/int start,
+        /*Bitu*/int max_opcodes) {
         // initialize a load of variables
         decode.code_start = start;
         decode.code = start;
@@ -923,7 +972,6 @@ public class Decoder extends Helper {
             prefixes = 0;
             EA16 = true;
         }
-
 
         decode.op_start = decode.code;
         try {
@@ -1364,10 +1412,10 @@ public class Decoder extends Helper {
                         block.eaa_segVal = CPU_Regs.reg_gsVal;
                         continue;
                     case 0x066: /* Operand Size Prefix */
-                        opcode_index = (CPU.cpu.code.big ? 0 : 512);
+                        opcode_index = CPU.cpu.code.big ? 0 : 512;
                         continue;
                     case 0x067: /* Address Size Prefix */
-                        prefixes = (prefixes & ~Core.PREFIX_ADDR) | (CPU.cpu.code.big ? 0 : 1);
+                        prefixes = prefixes & ~Core.PREFIX_ADDR | (CPU.cpu.code.big ? 0 : 1);
                         EA16 = (prefixes & 1) == 0;
                         continue;
                     case 0x068: /* PUSH Iw */
@@ -1485,7 +1533,7 @@ public class Decoder extends Helper {
                     case 0x082:
                     case 0x282: /* Grpl Eb,Ib */ {
                         int rm = decode_fetchb();
-                        int which = (rm >> 3) & 7;
+                        int which = rm >> 3 & 7;
                         if (rm >= 0xc0) {
                             block.r1 = Mod.eb(rm);
                             block.value = decode_fetchb();
@@ -1549,7 +1597,7 @@ public class Decoder extends Helper {
                     }
                     case 0x081: /* Grpl Ew,Iw */ {
                         int rm = decode_fetchb();
-                        int which = (rm >> 3) & 7;
+                        int which = rm >> 3 & 7;
                         if (rm >= 0xc0) {
                             block.r1 = Mod.ew(rm);
                             block.value = decode_fetchw();
@@ -1613,10 +1661,10 @@ public class Decoder extends Helper {
                     }
                     case 0x083: /* Grpl Ew,Ix */ {
                         int rm = decode_fetchb();
-                        int which = (rm >> 3) & 7;
+                        int which = rm >> 3 & 7;
                         if (rm >= 0xc0) {
                             block.r1 = Mod.ew(rm);
-                            block.value = (((short) decode_fetchbs()) & 0xFFFF);
+                            block.value = (short) decode_fetchbs() & 0xFFFF;
                             switch (which) {
                                 case 0x00:
                                     block.instruction = Inst.ADD_R16;
@@ -1671,7 +1719,7 @@ public class Decoder extends Helper {
                                     break;
                             }
                             ea(block, rm);
-                            block.value = (((short) decode_fetchbs()) & 0xFFFF);
+                            block.value = (short) decode_fetchbs() & 0xFFFF;
                         }
                         break;
                     }
@@ -1706,23 +1754,23 @@ public class Decoder extends Helper {
                         break;
                     case 0x08c: /* Mov Ew,Sw */ {
                         int rm = decode_fetchb();
-                        switch ((rm >> 3) & 7) {
-                            case 0x00:                    /* MOV Ew,ES */
+                        switch (rm >> 3 & 7) {
+                            case 0x00: /* MOV Ew,ES */
                                 block.r2 = CPU_Regs.reg_esVal;
                                 break;
-                            case 0x01:                    /* MOV Ew,CS */
+                            case 0x01: /* MOV Ew,CS */
                                 block.r2 = CPU_Regs.reg_csVal;
                                 break;
-                            case 0x02:                    /* MOV Ew,SS */
+                            case 0x02: /* MOV Ew,SS */
                                 block.r2 = CPU_Regs.reg_ssVal;
                                 break;
-                            case 0x03:                    /* MOV Ew,DS */
+                            case 0x03: /* MOV Ew,DS */
                                 block.r2 = CPU_Regs.reg_dsVal;
                                 break;
-                            case 0x04:                    /* MOV Ew,FS */
+                            case 0x04: /* MOV Ew,FS */
                                 block.r2 = CPU_Regs.reg_fsVal;
                                 break;
-                            case 0x05:                    /* MOV Ew,GS */
+                            case 0x05: /* MOV Ew,GS */
                                 block.r2 = CPU_Regs.reg_gsVal;
                                 break;
                             default:
@@ -1753,7 +1801,7 @@ public class Decoder extends Helper {
                     case 0x28e: /* MOV Sw,Ew */ {
                         int rm = decode_fetchb();
                         if (rm >= 0xC0) {
-                            switch ((rm >> 3) & 7) {
+                            switch (rm >> 3 & 7) {
                                 case 0:
                                     block.instruction = Inst.MOV_ES_R16;
                                     break;
@@ -1776,7 +1824,7 @@ public class Decoder extends Helper {
                             }
                             block.r1 = Mod.ew(rm);
                         } else {
-                            switch ((rm >> 3) & 7) {
+                            switch (rm >> 3 & 7) {
                                 case 0:
                                     block.instruction = Inst.MOV_ES_E16;
                                     break;
@@ -1876,7 +1924,7 @@ public class Decoder extends Helper {
                         break;
                     case 0x0a0: /* MOV AL,Ob */
                         block.instruction = Inst.MOV_AL_0b;
-                        block.value = (EA16 ? decode_fetchw() : decode_fetchd());
+                        block.value = EA16 ? decode_fetchw() : decode_fetchd();
                         if (block.eaa_segPhys == null) {
                             block.eaa_segPhys = reg_dsPhys;
                             block.eaa_segVal = reg_dsVal;
@@ -1884,7 +1932,7 @@ public class Decoder extends Helper {
                         break;
                     case 0x0a1: /* MOV AX,Ow */
                         block.instruction = Inst.MOV_AX_0w;
-                        block.value = (EA16 ? decode_fetchw() : decode_fetchd());
+                        block.value = EA16 ? decode_fetchw() : decode_fetchd();
                         if (block.eaa_segPhys == null) {
                             block.eaa_segPhys = reg_dsPhys;
                             block.eaa_segVal = reg_dsVal;
@@ -1892,7 +1940,7 @@ public class Decoder extends Helper {
                         break;
                     case 0x0a2: /* MOV Ob,AL */
                         block.instruction = Inst.MOV_0b_AL;
-                        block.value = (EA16 ? decode_fetchw() : decode_fetchd());
+                        block.value = EA16 ? decode_fetchw() : decode_fetchd();
                         if (block.eaa_segPhys == null) {
                             block.eaa_segPhys = reg_dsPhys;
                             block.eaa_segVal = reg_dsVal;
@@ -1900,7 +1948,7 @@ public class Decoder extends Helper {
                         break;
                     case 0x0a3: /* MOV Ow,AX */
                         block.instruction = Inst.MOV_0w_AX;
-                        block.value = (EA16 ? decode_fetchw() : decode_fetchd());
+                        block.value = EA16 ? decode_fetchw() : decode_fetchd();
                         if (block.eaa_segPhys == null) {
                             block.eaa_segPhys = reg_dsPhys;
                             block.eaa_segVal = reg_dsVal;
@@ -2200,76 +2248,86 @@ public class Decoder extends Helper {
                             block.eaa_segPhys = reg_dsPhys;
                             block.eaa_segVal = reg_dsVal;
                         }
-                        if (EA16) block.instruction = Inst.XLAT16;
-                        else block.instruction = Inst.XLAT32;
+                        if (EA16)
+                            block.instruction = Inst.XLAT16;
+                        else
+                            block.instruction = Inst.XLAT32;
                         break;
                     case 0x0d8:
-                    case 0x2d8:                                                                                     /* FPU ESC 0 */
+                    case 0x2d8: /* FPU ESC 0 */
                         block.value = decode_fetchb();
-                        if (block.value >= 0xc0) block.instruction = Inst.FPU0_normal;
+                        if (block.value >= 0xc0)
+                            block.instruction = Inst.FPU0_normal;
                         else {
                             block.instruction = Inst.FPU0_ea;
                             ea(block, block.value);
                         }
                         break;
                     case 0x0d9:
-                    case 0x2d9:                                                                                     /* FPU ESC 1 */
+                    case 0x2d9: /* FPU ESC 1 */
                         block.value = decode_fetchb();
-                        if (block.value >= 0xc0) block.instruction = Inst.FPU1_normal;
+                        if (block.value >= 0xc0)
+                            block.instruction = Inst.FPU1_normal;
                         else {
                             block.instruction = Inst.FPU1_ea;
                             ea(block, block.value);
                         }
                         break;
                     case 0x0da:
-                    case 0x2da:                                                                                     /* FPU ESC 2 */
+                    case 0x2da: /* FPU ESC 2 */
                         block.value = decode_fetchb();
-                        if (block.value >= 0xc0) block.instruction = Inst.FPU2_normal;
+                        if (block.value >= 0xc0)
+                            block.instruction = Inst.FPU2_normal;
                         else {
                             block.instruction = Inst.FPU2_ea;
                             ea(block, block.value);
                         }
                         break;
                     case 0x0db:
-                    case 0x2db:                                                                                     /* FPU ESC 3 */
+                    case 0x2db: /* FPU ESC 3 */
                         block.value = decode_fetchb();
-                        if (block.value >= 0xc0) block.instruction = Inst.FPU3_normal;
+                        if (block.value >= 0xc0)
+                            block.instruction = Inst.FPU3_normal;
                         else {
                             block.instruction = Inst.FPU3_ea;
                             ea(block, block.value);
                         }
                         break;
                     case 0x0dc:
-                    case 0x2dc:                                                                                     /* FPU ESC 4 */
+                    case 0x2dc: /* FPU ESC 4 */
                         block.value = decode_fetchb();
-                        if (block.value >= 0xc0) block.instruction = Inst.FPU4_normal;
+                        if (block.value >= 0xc0)
+                            block.instruction = Inst.FPU4_normal;
                         else {
                             block.instruction = Inst.FPU4_ea;
                             ea(block, block.value);
                         }
                         break;
                     case 0x0dd:
-                    case 0x2dd:                                                                                     /* FPU ESC 5 */
+                    case 0x2dd: /* FPU ESC 5 */
                         block.value = decode_fetchb();
-                        if (block.value >= 0xc0) block.instruction = Inst.FPU5_normal;
+                        if (block.value >= 0xc0)
+                            block.instruction = Inst.FPU5_normal;
                         else {
                             block.instruction = Inst.FPU5_ea;
                             ea(block, block.value);
                         }
                         break;
                     case 0x0de:
-                    case 0x2de:                                                                                     /* FPU ESC 6 */
+                    case 0x2de: /* FPU ESC 6 */
                         block.value = decode_fetchb();
-                        if (block.value >= 0xc0) block.instruction = Inst.FPU6_normal;
+                        if (block.value >= 0xc0)
+                            block.instruction = Inst.FPU6_normal;
                         else {
                             block.instruction = Inst.FPU6_ea;
                             ea(block, block.value);
                         }
                         break;
                     case 0x0df:
-                    case 0x2df:                                                                                     /* FPU ESC 7 */
+                    case 0x2df: /* FPU ESC 7 */
                         block.value = decode_fetchb();
-                        if (block.value >= 0xc0) block.instruction = Inst.FPU7_normal;
+                        if (block.value >= 0xc0)
+                            block.instruction = Inst.FPU7_normal;
                         else {
                             block.instruction = Inst.FPU7_ea;
                             ea(block, block.value);
@@ -2277,26 +2335,34 @@ public class Decoder extends Helper {
                         break;
                     case 0x0e0: /* LOOPNZ */
                         block.value = decode_fetchbs();
-                        if (EA16) block.instruction = Inst.LOOPNZ16_CX;
-                        else block.instruction = Inst.LOOPNZ16_ECX;
+                        if (EA16)
+                            block.instruction = Inst.LOOPNZ16_CX;
+                        else
+                            block.instruction = Inst.LOOPNZ16_ECX;
                         done = true;
                         break;
                     case 0x0e1: /* LOOPZ */
                         block.value = decode_fetchbs();
-                        if (EA16) block.instruction = Inst.LOOPZ16_CX;
-                        else block.instruction = Inst.LOOPZ16_ECX;
+                        if (EA16)
+                            block.instruction = Inst.LOOPZ16_CX;
+                        else
+                            block.instruction = Inst.LOOPZ16_ECX;
                         done = true;
                         break;
                     case 0x0e2: /* LOOP */
                         block.value = decode_fetchbs();
-                        if (EA16) block.instruction = Inst.LOOP16_CX;
-                        else block.instruction = Inst.LOOP16_ECX;
+                        if (EA16)
+                            block.instruction = Inst.LOOP16_CX;
+                        else
+                            block.instruction = Inst.LOOP16_ECX;
                         done = true;
                         break;
                     case 0x0e3: /* JCXZ */
                         block.value = decode_fetchbs();
-                        if (EA16) block.instruction = Inst.JCXZ16_CX;
-                        else block.instruction = Inst.JCXZ16_ECX;
+                        if (EA16)
+                            block.instruction = Inst.JCXZ16_CX;
+                        else
+                            block.instruction = Inst.JCXZ16_ECX;
                         done = true;
                         break;
                     case 0x0e4:
@@ -2383,7 +2449,7 @@ public class Decoder extends Helper {
                     case 0x0f6:
                     case 0x2f6: /* GRP3 Eb(,Ib) */ {
                         int rm = decode_fetchb();
-                        switch ((rm >> 3) & 7) {
+                        switch (rm >> 3 & 7) {
                             case 0x00: /* TEST Eb,Ib */
                             case 0x01: /* TEST Eb,Ib Undocumented*/
                                 if (rm >= 0xc0) {
@@ -2455,7 +2521,7 @@ public class Decoder extends Helper {
                     }
                     case 0x0f7: /* GRP3 Ew(,Iw) */ {
                         int rm = decode_fetchb();
-                        switch ((rm >> 3) & 7) {
+                        switch (rm >> 3 & 7) {
                             case 0x00: /* TEST Ew,Iw */
                             case 0x01: /* TEST Ew,Iw Undocumented*/
                                 if (rm >= 0xc0) {
@@ -2552,7 +2618,7 @@ public class Decoder extends Helper {
                     case 0x0fe:
                     case 0x2fe: /* GRP4 Eb */ {
                         int rm = decode_fetchb();
-                        switch ((rm >> 3) & 7) {
+                        switch (rm >> 3 & 7) {
                             case 0x00: /* INC Eb */
                                 if (rm >= 0xc0) {
                                     block.instruction = Inst.INC_R8;
@@ -2577,14 +2643,14 @@ public class Decoder extends Helper {
                                 done = true;
                                 break;
                             default:
-                                Log.exit("Illegal GRP4 Call " + ((rm >> 3) & 7));
+                                Log.exit("Illegal GRP4 Call " + (rm >> 3 & 7));
                                 break;
                         }
                         break;
                     }
                     case 0x0ff: /* GRP5 Ew */ {
                         int rm = decode_fetchb();
-                        switch ((rm >> 3) & 7) {
+                        switch (rm >> 3 & 7) {
                             case 0x00: /* INC Ew */
                                 if (rm >= 0xc0) {
                                     block.instruction = Inst.INC_R16;
@@ -2653,7 +2719,8 @@ public class Decoder extends Helper {
                                 break;
                             default:
                                 if (Log.level <= LogSeverities.LOG_ERROR)
-                                    Log.log(LogTypes.LOG_CPU, LogSeverities.LOG_ERROR, "CPU:GRP5:Illegal Call " + Integer.toString((rm >> 3) & 7, 16));
+                                    Log.log(LogTypes.LOG_CPU, LogSeverities.LOG_ERROR,
+                                        "CPU:GRP5:Illegal Call " + Integer.toString(rm >> 3 & 7, 16));
                                 block.instruction = Inst.ILLEGAL;
                                 done = true;
                                 break;
@@ -2663,11 +2730,11 @@ public class Decoder extends Helper {
                     case 0x100:
                     case 0x300: /* GRP 6 Exxx */ {
                         int rm = decode_fetchb();
-                        switch ((rm >> 3) & 7) {
-                            case 0x00:    /* SLDT */
+                        switch (rm >> 3 & 7) {
+                            case 0x00: /* SLDT */
                                 instructionE32(block, Inst.SLDT_R16, Inst.SLDT_E16);
                                 break;
-                            case 0x01:    /* STR */
+                            case 0x01: /* STR */
                                 instructionE32(block, Inst.STR_R16, Inst.STR_E16);
                                 break;
                             case 0x02:
@@ -2691,7 +2758,7 @@ public class Decoder extends Helper {
                     }
                     case 0x101: /* Group 7 Ew */ {
                         int rm = decode_fetchb();
-                        int which = (rm >> 3) & 7;
+                        int which = rm >> 3 & 7;
                         if (rm < 0xc0) {
                             ea(block, rm);
                             switch (which) {
@@ -2982,7 +3049,7 @@ public class Decoder extends Helper {
                         break;
                     case 0x281: /* Grpl Ed,Id */ {
                         int rm = decode_fetchb();
-                        int which = (rm >> 3) & 7;
+                        int which = rm >> 3 & 7;
                         if (rm >= 0xc0) {
                             block.r1 = Mod.ed(rm);
                             block.value = decode_fetchd();
@@ -3046,7 +3113,7 @@ public class Decoder extends Helper {
                     }
                     case 0x283: /* Grpl Ed,Ix */ {
                         int rm = decode_fetchb();
-                        int which = (rm >> 3) & 7;
+                        int which = rm >> 3 & 7;
                         if (rm >= 0xc0) {
                             block.r1 = Mod.ed(rm);
                             block.value = decode_fetchbs();
@@ -3122,7 +3189,7 @@ public class Decoder extends Helper {
                         break;
                     case 0x28c: /* Mov Ew,Sw */ {
                         int rm = decode_fetchb();
-                        switch ((rm >> 3) & 7) {
+                        switch (rm >> 3 & 7) {
                             case 0x00:
                                 block.r2 = CPU_Regs.reg_esVal;
                                 break;
@@ -3225,7 +3292,7 @@ public class Decoder extends Helper {
                         break;
                     case 0x2a1: /* MOV EAX,Od */
                         block.instruction = Inst.MOV_EAX_0d;
-                        block.value = (EA16 ? decode_fetchw() : decode_fetchd());
+                        block.value = EA16 ? decode_fetchw() : decode_fetchd();
                         if (block.eaa_segPhys == null) {
                             block.eaa_segPhys = reg_dsPhys;
                             block.eaa_segVal = reg_dsVal;
@@ -3233,7 +3300,7 @@ public class Decoder extends Helper {
                         break;
                     case 0x2a3: /* MOV Od,EAX */
                         block.instruction = Inst.MOV_0d_EAX;
-                        block.value = (EA16 ? decode_fetchw() : decode_fetchd());
+                        block.value = EA16 ? decode_fetchw() : decode_fetchd();
                         if (block.eaa_segPhys == null) {
                             block.eaa_segPhys = reg_dsPhys;
                             block.eaa_segVal = reg_dsVal;
@@ -3389,26 +3456,34 @@ public class Decoder extends Helper {
                     }
                     case 0x2e0: /* LOOPNZ */
                         block.value = decode_fetchbs();
-                        if (EA16) block.instruction = Inst.LOOPNZ32_CX;
-                        else block.instruction = Inst.LOOPNZ32_ECX;
+                        if (EA16)
+                            block.instruction = Inst.LOOPNZ32_CX;
+                        else
+                            block.instruction = Inst.LOOPNZ32_ECX;
                         done = true;
                         break;
                     case 0x2e1: /* LOOPZ */
                         block.value = decode_fetchbs();
-                        if (EA16) block.instruction = Inst.LOOPZ32_CX;
-                        else block.instruction = Inst.LOOPZ32_ECX;
+                        if (EA16)
+                            block.instruction = Inst.LOOPZ32_CX;
+                        else
+                            block.instruction = Inst.LOOPZ32_ECX;
                         done = true;
                         break;
                     case 0x2e2: /* LOOP */
                         block.value = decode_fetchbs();
-                        if (EA16) block.instruction = Inst.LOOP32_CX;
-                        else block.instruction = Inst.LOOP32_ECX;
+                        if (EA16)
+                            block.instruction = Inst.LOOP32_CX;
+                        else
+                            block.instruction = Inst.LOOP32_ECX;
                         done = true;
                         break;
                     case 0x2e3: /* JCXZ */
                         block.value = decode_fetchbs();
-                        if (EA16) block.instruction = Inst.JCXZ32_CX;
-                        else block.instruction = Inst.JCXZ32_ECX;
+                        if (EA16)
+                            block.instruction = Inst.JCXZ32_CX;
+                        else
+                            block.instruction = Inst.JCXZ32_ECX;
                         done = true;
                         break;
                     case 0x2e5: /* IN EAX,Ib */
@@ -3449,7 +3524,7 @@ public class Decoder extends Helper {
                         break;
                     case 0x2f7: /* GRP3 Ed(,Id) */ {
                         int rm = decode_fetchb();
-                        switch ((rm >> 3) & 7) {
+                        switch (rm >> 3 & 7) {
                             case 0x00: /* TEST Ed,Id */
                             case 0x01: /* TEST Ed,Id Undocumented*/
                                 if (rm >= 0xc0) {
@@ -3521,7 +3596,7 @@ public class Decoder extends Helper {
                     }
                     case 0x2ff: /* GRP 5 Ed */ {
                         int rm = decode_fetchb();
-                        switch ((rm >> 3) & 7) {
+                        switch (rm >> 3 & 7) {
                             case 0x00: /* INC Ed */
                                 if (rm >= 0xc0) {
                                     block.instruction = Inst.INC_R32;
@@ -3590,7 +3665,8 @@ public class Decoder extends Helper {
                                 break;
                             default:
                                 if (Log.level <= LogSeverities.LOG_ERROR)
-                                    Log.log(LogTypes.LOG_CPU, LogSeverities.LOG_ERROR, "CPU:GRP5:Illegal Call " + Integer.toString((rm >> 3) & 7, 16));
+                                    Log.log(LogTypes.LOG_CPU, LogSeverities.LOG_ERROR,
+                                        "CPU:GRP5:Illegal Call " + Integer.toString(rm >> 3 & 7, 16));
                                 block.instruction = Inst.ILLEGAL;
                                 done = true;
                                 break;
@@ -3601,7 +3677,7 @@ public class Decoder extends Helper {
                         Log.exit("Unknown instruction: 0x" + Integer.toHexString(opcode));
                 }
                 currentInst++;
-                block.eipCount += (decode.code - decode.op_start);
+                block.eipCount += decode.code - decode.op_start;
 
                 if (decode.modifiedAlot) {
                     decode_putback(block.eipCount);
@@ -3619,7 +3695,8 @@ public class Decoder extends Helper {
                     EA16 = true;
                 }
                 decode.op_start = decode.code;
-                if (--max_opcodes <= 0 && !doAnother) done = true;
+                if (--max_opcodes <= 0 && !doAnother)
+                    done = true;
             }
         } catch (PageFaultException e) {
             currentInst--; // don't include the instruction that caused the PF

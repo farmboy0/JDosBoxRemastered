@@ -1,12 +1,12 @@
 package jdos.win.system;
 
+import java.util.Hashtable;
+import java.util.Vector;
+
 import jdos.hardware.Memory;
 import jdos.win.builtin.WinAPI;
 import jdos.win.kernel.KernelHeap;
 import jdos.win.utils.Error;
-
-import java.util.Hashtable;
-import java.util.Vector;
 
 public class WinHeap {
     private final Vector heaps = new Vector();
@@ -43,7 +43,6 @@ public class WinHeap {
         heaps.addElement(item);
         return heaps.size();
     }
-
 
     public int allocateHeap(int handle, int size) {
         if (handle - 1 >= heaps.size())
@@ -89,7 +88,7 @@ public class WinHeap {
         }
 
         public int free(int add) {
-            Integer size = (Integer) allocs.get(new Integer(add));
+            Integer size = (Integer) allocs.get(Integer.valueOf(add));
             if (size == null) {
                 System.out.println("VirtualFree could not find address: 0x" + Integer.toString(add, 16));
                 Scheduler.getCurrentThread().setLastError(Error.ERROR_INVALID_PARAMETER);
@@ -101,7 +100,7 @@ public class WinHeap {
         }
 
         public int size(int add) {
-            Integer size = (Integer) allocs.get(new Integer(add));
+            Integer size = (Integer) allocs.get(Integer.valueOf(add));
             if (size == null) {
                 return -1;
             }
@@ -109,10 +108,10 @@ public class WinHeap {
         }
 
         public int alloc(int size) {
-            if (maxSize != 0 && (currentSize + size) > maxSize)
+            if (maxSize != 0 && currentSize + size > maxSize)
                 return 0;
             int result = heap.alloc(size, false);
-            allocs.put(new Integer(result), new Integer(size));
+            allocs.put(Integer.valueOf(result), Integer.valueOf(size));
             return result;
         }
 

@@ -25,9 +25,11 @@ class StartupInfo extends WinAPI {
     public int hStdInput;
     public int hStdOutput;
     public int hStdError;
+
     public StartupInfo() {
         cb = SIZE;
     }
+
     public StartupInfo(int address) {
         cb = readd(address);
         address += 4;

@@ -3,7 +3,7 @@ package jdos.cpu.core_dynamic;
 import jdos.cpu.Core;
 
 public abstract class EaaBase {
-    abstract public int call();
+    public abstract int call();
 
     public String description8() {
         return "b" + "@0x" + Integer.toHexString(call());

@@ -22,11 +22,13 @@
 package javazoom.jl.decoder;
 
 /**
- * This interface describes all error codes that can be thrown
- * in <code>BistreamException</code>s.
+ * This interface describes all error codes that can be thrown in
+ * <code>BistreamException</code>s.
  *
- * @author MDM        12/12/99
+ * @author MDM 12/12/99
+ *
  * @since 0.0.6
+ *
  * @see BitstreamException
  */
 

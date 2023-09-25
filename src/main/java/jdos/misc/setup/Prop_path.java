@@ -1,8 +1,8 @@
 package jdos.misc.setup;
 
-import jdos.misc.Cross;
-
 import java.io.File;
+
+import jdos.misc.Cross;
 
 public class Prop_path extends Prop_string {
     public String realpath;
@@ -14,6 +14,7 @@ public class Prop_path extends Prop_string {
         realpath = _value;
     }
 
+    @Override
     public void SetValue(String str) {
         SetVal(new Value(str, Value.Etype.V_STRING), false, true);
         if (str.length() == 0) {
@@ -22,8 +23,10 @@ public class Prop_path extends Prop_string {
         }
         String workcopy = Cross.ResolveHomedir(str); //Parse ~ and friends
         //Prepend config directory in it exists. Check for absolute paths later
-        if (Config.current_config_dir.length() == 0) realpath = workcopy;
-        else realpath = Config.current_config_dir + File.separator + workcopy;
+        if (Config.current_config_dir.length() == 0)
+            realpath = workcopy;
+        else
+            realpath = Config.current_config_dir + File.separator + workcopy;
         try {
             if (new File(workcopy).getAbsolutePath().charAt(0) == workcopy.charAt(0))
                 realpath = workcopy;

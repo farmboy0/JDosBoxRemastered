@@ -6,7 +6,7 @@ import jdos.win.system.StaticData;
 
 public class GdiObj extends WinAPI {
     // BOOL WINAPI DeleteObject( HGDIOBJ obj )
-    static public int DeleteObject(int obj) {
+    public static int DeleteObject(int obj) {
         WinGDI gdi = WinGDI.getGDI(obj);
         if (gdi == null)
             return FALSE;
@@ -15,12 +15,12 @@ public class GdiObj extends WinAPI {
     }
 
     // DWORD GdiSetBatchLimit(DWORD dwLimit)
-    static public int GdiSetBatchLimit(int dwLimit) {
+    public static int GdiSetBatchLimit(int dwLimit) {
         return 1;
     }
 
     // HGDIOBJ GetCurrentObject(HDC hdc, UINT uObjectType)
-    static public int GetCurrentObject(int hdc, int uObjectType) {
+    public static int GetCurrentObject(int hdc, int uObjectType) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null) {
             return 0;
@@ -47,7 +47,7 @@ public class GdiObj extends WinAPI {
     }
 
     // int GetObjectA(HGDIOBJ hgdiobj, int cbBuffer, LPVOID lpvObject)
-    static public int GetObjectA(int hgdiobj, int cbBuffer, int lpvObject) {
+    public static int GetObjectA(int hgdiobj, int cbBuffer, int lpvObject) {
         WinGDI gdi = WinGDI.getGDI(hgdiobj);
         if (gdi == null)
             return 0;
@@ -61,14 +61,14 @@ public class GdiObj extends WinAPI {
     }
 
     // HGDIOBJ GetStockObject(int fnObject)
-    static public int GetStockObject(int fnObject) {
+    public static int GetStockObject(int fnObject) {
         if (fnObject >= 0 && fnObject < StaticData.stockObjects.length)
             return StaticData.stockObjects[fnObject];
         return 0;
     }
 
     // BOOL WINAPI UnrealizeObject( HGDIOBJ obj )
-    static public int UnrealizeObject(int obj) {
+    public static int UnrealizeObject(int obj) {
         log("UnrealizeObject not implemented yet");
         return TRUE;
     }

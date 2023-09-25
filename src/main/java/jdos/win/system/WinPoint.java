@@ -4,7 +4,7 @@ import jdos.hardware.Memory;
 import jdos.win.builtin.WinAPI;
 
 public class WinPoint extends WinAPI {
-    static public final int SIZE = 8;
+    public static final int SIZE = 8;
     public int x;
     public int y;
 
@@ -16,6 +16,7 @@ public class WinPoint extends WinAPI {
     public WinPoint(int address) {
         copy(address);
     }
+
     public WinPoint(int x, int y) {
         this.x = x;
         this.y = y;
@@ -51,6 +52,7 @@ public class WinPoint extends WinAPI {
         return p;
     }
 
+    @Override
     public String toString() {
         return "(" + x + "," + y + ")";
     }

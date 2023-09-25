@@ -1,18 +1,19 @@
 package jdos.hardware;
 
-import jdos.misc.Log;
-
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
+import jdos.misc.Log;
+
 public class IPXServer {
-    static private final IPX.packetBuffer[] connBuffer = new IPX.packetBuffer[IPX.SOCKETTABLESIZE];
-    static private final IPX.IPXAddress[] ipconn = new IPX.IPXAddress[IPX.SOCKETTABLESIZE];  // Active TCP/IP connection
-    static private final DatagramSocket[] tcpconn = new DatagramSocket[IPX.SOCKETTABLESIZE];  // Active TCP/IP connections
-    static private IPX.IPXAddress ipxServerIp;  // IPAddress for server's listening port
-    static private DatagramSocket ipxServerSocket;  // Listening server socket
-    static private final Thread serverThread = new Thread() {
+    private static final IPX.packetBuffer[] connBuffer = new IPX.packetBuffer[IPX.SOCKETTABLESIZE];
+    private static final IPX.IPXAddress[] ipconn = new IPX.IPXAddress[IPX.SOCKETTABLESIZE]; // Active TCP/IP connection
+    private static final DatagramSocket[] tcpconn = new DatagramSocket[IPX.SOCKETTABLESIZE]; // Active TCP/IP connections
+    private static IPX.IPXAddress ipxServerIp; // IPAddress for server's listening port
+    private static DatagramSocket ipxServerSocket; // Listening server socket
+    private static final Thread serverThread = new Thread() {
+        @Override
         public void run() {
             byte[] tmpBuffer = new byte[IPX.IPXBUFFERSIZE];
             while (true) {
@@ -35,14 +36,16 @@ public class IPXServer {
                                 ipconn[i] = new IPX.IPXAddress();
                                 ipconn[i].address = receivePacket.getAddress();
                                 byte[] b = ipconn[i].address.getAddress();
-                                ipconn[i].host = ((b[3] & 0xFF) << 24) | ((b[2] & 0xFF) << 16) | ((b[1] & 0xFF) << 8) | ((b[0] & 0xFF));
+                                ipconn[i].host = (b[3] & 0xFF) << 24 | (b[2] & 0xFF) << 16 | (b[1] & 0xFF) << 8
+                                    | b[0] & 0xFF;
                                 ipconn[i].port = receivePacket.getPort();
 
                                 connBuffer[i].connected = true;
                                 Log.log_msg("IPXSERVER: Connect from " + receivePacket.getAddress().getHostAddress());
                                 ackClient(ipconn[i]);
                                 break;
-                            } else if ((ipconn[i].host == tmpHeader.src.addr.host()) && (ipconn[i].port == tmpHeader.src.addr.port())) {
+                            } else if (ipconn[i].host == tmpHeader.src.addr.host()
+                                && ipconn[i].port == tmpHeader.src.addr.port()) {
                                 Log.log_msg("IPXSERVER: Reconnect from " + receivePacket.getAddress().getHostAddress());
                                 // Update anonymous port number if changed
                                 ipconn[i].port = receivePacket.getPort();
@@ -55,21 +58,22 @@ public class IPXServer {
                         sendIPXPacket(tmpBuffer, receivePacket.getLength());
                     }
                 } catch (Exception e) {
-                    if (ipxServerSocket.isClosed()) break;
+                    if (ipxServerSocket.isClosed())
+                        break;
                     e.printStackTrace();
                 }
             }
         }
     };
-    static private Timer.TIMER_TickHandler serverTimer;
+    private static Timer.TIMER_TickHandler serverTimer;
 
     /*
     static void closeSocket(Bit16u sockidx) {
         Bit32u host;
-
+    
         host = ipconn[sockidx].host;
         LOG_MSG("IPXSERVER: %d.%d.%d.%d disconnected", CONVIP(host));
-
+    
         SDLNet_TCP_DelSocket(serverSocketSet,tcpconn[sockidx]);
         SDLNet_TCP_Close(tcpconn[sockidx]);
         connBuffer[sockidx].connected = false;
@@ -77,7 +81,7 @@ public class IPXServer {
     }
     */
 
-    static private /*Bit8u*/byte packetCRC(/*Bit8u*/byte[] buffer, /*Bit16u*/int bufSize) {
+    private static /*Bit8u*/byte packetCRC(/*Bit8u*/byte[] buffer, /*Bit16u*/int bufSize) {
         /*Bit8u*/
         byte tmpCRC = 0;
         /*Bit16u*/
@@ -106,11 +110,10 @@ public class IPXServer {
         srcport = tmpHeader.src.addr.port();
         destport = tmpHeader.dest.addr.port();
 
-
         if (desthost == 0xffffffff) {
             // Broadcast
             for (i = 0; i < IPX.SOCKETTABLESIZE; i++) {
-                if (connBuffer[i].connected && ((ipconn[i].host != srchost) || (ipconn[i].port != srcport))) {
+                if (connBuffer[i].connected && (ipconn[i].host != srchost || ipconn[i].port != srcport)) {
                     DatagramPacket outPacket = new DatagramPacket(buffer, bufSize, ipconn[i].address, ipconn[i].port);
                     try {
                         ipxServerSocket.send(outPacket);
@@ -123,7 +126,7 @@ public class IPXServer {
         } else {
             // Specific address
             for (i = 0; i < IPX.SOCKETTABLESIZE; i++) {
-                if ((connBuffer[i].connected) && (ipconn[i].host == desthost) && (ipconn[i].port == destport)) {
+                if (connBuffer[i].connected && ipconn[i].host == desthost && ipconn[i].port == destport) {
                     DatagramPacket outPacket = new DatagramPacket(buffer, bufSize, ipconn[i].address, ipconn[i].port);
                     try {
                         ipxServerSocket.send(outPacket);
@@ -137,8 +140,7 @@ public class IPXServer {
     }
 
     static IPX.IPXAddress IPX_isConnectedToServer(/*Bits*/int tableNum) {
-        if (tableNum >= IPX.SOCKETTABLESIZE) return null;
-        if (!connBuffer[tableNum].connected)
+        if ((tableNum >= IPX.SOCKETTABLESIZE) || !connBuffer[tableNum].connected)
             return null;
         return ipconn[tableNum];
     }
@@ -187,7 +189,8 @@ public class IPXServer {
         }
 
         for (int i = 0; i < IPX.SOCKETTABLESIZE; i++) {
-            if (connBuffer[i] == null) connBuffer[i] = new IPX.packetBuffer();
+            if (connBuffer[i] == null)
+                connBuffer[i] = new IPX.packetBuffer();
             connBuffer[i].connected = false;
         }
         return true;

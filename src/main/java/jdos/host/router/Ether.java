@@ -1,9 +1,9 @@
 package jdos.host.router;
 
 public class Ether extends EtherUtil {
-    static final public int IP = 0x0800;
-    static final public int ARP = 0x0806;
-    static public final int LEN = 14;
+    public static final int IP = 0x0800;
+    public static final int ARP = 0x0806;
+    public static final int LEN = 14;
     // Protocols
     final static IP ip = new IP();
     final static ARP arp = new ARP();

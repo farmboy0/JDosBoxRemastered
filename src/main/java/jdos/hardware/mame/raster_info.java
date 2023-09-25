@@ -1,18 +1,18 @@
 package jdos.hardware.mame;
 
 public class raster_info {
-    public poly_draw_scanline_func callback;           /* callback pointer */
-    public boolean is_generic;             /* TRUE if this is one of the generic rasterizers */
-    public int display;                /* display index */
-    public int hits;                   /* how many hits (pixels) we've used this for */
-    public int polys;                  /* how many polys we've used this for */
-    public int eff_color_path;         /* effective fbzColorPath value */
-    public int eff_alpha_mode;         /* effective alphaMode value */
-    public int eff_fog_mode;           /* effective fogMode value */
-    public int eff_fbz_mode;           /* effective fbzMode value */
-    public int eff_tex_mode_0;         /* effective textureMode value for TMU #0 */
-    public int eff_tex_mode_1;         /* effective textureMode value for TMU #1 */
-    raster_info next;                   /* pointer to next entry with the same hash */
+    public poly_draw_scanline_func callback; /* callback pointer */
+    public boolean is_generic; /* TRUE if this is one of the generic rasterizers */
+    public int display; /* display index */
+    public int hits; /* how many hits (pixels) we've used this for */
+    public int polys; /* how many polys we've used this for */
+    public int eff_color_path; /* effective fbzColorPath value */
+    public int eff_alpha_mode; /* effective alphaMode value */
+    public int eff_fog_mode; /* effective fogMode value */
+    public int eff_fbz_mode; /* effective fbzMode value */
+    public int eff_tex_mode_0; /* effective textureMode value for TMU #0 */
+    public int eff_tex_mode_1; /* effective textureMode value for TMU #1 */
+    raster_info next; /* pointer to next entry with the same hash */
 
     public void copy(raster_info info) {
         this.next = info.next;

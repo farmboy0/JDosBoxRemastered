@@ -1,31 +1,32 @@
 package jdos.win.builtin.winmm;
 
+import java.util.Vector;
+
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.SourceDataLine;
+
 import jdos.hardware.Memory;
 import jdos.win.Win;
 import jdos.win.builtin.WinAPI;
 import jdos.win.system.WinObject;
 import jdos.win.utils.Ptr;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.SourceDataLine;
-import java.util.Vector;
-
 public class Waveform extends WinAPI {
-    static final public int WAVECAPS_PITCH = 0x0001;   /* supports pitch control */
-    static final public int WAVECAPS_PLAYBACKRATE = 0x0002;   /* supports playback rate control */
-    static final public int WAVECAPS_VOLUME = 0x0004;   /* supports volume control */
-    static final public int WAVECAPS_LRVOLUME = 0x0008;   /* separate left-right volume control */
-    static final public int WAVECAPS_SYNC = 0x0010;     /* driver is synchronous and playing is blocking */
-    static final public int WAVECAPS_SAMPLEACCURATE = 0x0020;     /* position is sample accurate */
-    static final public int WAVECAPS_DIRECTSOUND = 0x0040;   /* ? */
+    public static final int WAVECAPS_PITCH = 0x0001; /* supports pitch control */
+    public static final int WAVECAPS_PLAYBACKRATE = 0x0002; /* supports playback rate control */
+    public static final int WAVECAPS_VOLUME = 0x0004; /* supports volume control */
+    public static final int WAVECAPS_LRVOLUME = 0x0008; /* separate left-right volume control */
+    public static final int WAVECAPS_SYNC = 0x0010; /* driver is synchronous and playing is blocking */
+    public static final int WAVECAPS_SAMPLEACCURATE = 0x0020; /* position is sample accurate */
+    public static final int WAVECAPS_DIRECTSOUND = 0x0040; /* ? */
 
     //MMRESULT waveOutClose(HWAVEOUT hwo)
     public static int waveOutClose(int hwo) {
         WaveObject obj = WaveObject.get(hwo);
         if (obj == null)
-            return WinMM.MMSYSERR_INVALHANDLE;
+            return WinAPI.MMSYSERR_INVALHANDLE;
         obj.thread.exit = true;
         synchronized (obj.thread.buffers) {
             obj.thread.buffers.notify();
@@ -35,13 +36,13 @@ public class Waveform extends WinAPI {
         } catch (Exception e) {
         }
         obj.close();
-        return WinMM.MMSYSERR_NOERROR;
+        return WinAPI.MMSYSERR_NOERROR;
     }
 
     // MMRESULT waveOutGetDevCaps(UINT_PTR uDeviceID, LPWAVEOUTCAPS pwoc, UINT cbwoc)
     public static int waveOutGetDevCapsA(int uDeviceID, int pwoc, int cbwoc) {
         if (pwoc == 0)
-            return WinMM.MMSYSERR_INVALPARAM;
+            return WinAPI.MMSYSERR_INVALPARAM;
 
         WAVEOUTCAPS mapper_caps = new WAVEOUTCAPS();
         mapper_caps.wMid = 0xFF;
@@ -49,32 +50,32 @@ public class Waveform extends WinAPI {
         mapper_caps.vDriverVersion = 0x00010001;
         mapper_caps.dwFormats = 0xFFFFFFFF;
         mapper_caps.wReserved1 = 0;
-        mapper_caps.dwSupport = WAVECAPS_LRVOLUME | WAVECAPS_VOLUME |
-                WAVECAPS_SAMPLEACCURATE;
+        mapper_caps.dwSupport = WAVECAPS_LRVOLUME | WAVECAPS_VOLUME | WAVECAPS_SAMPLEACCURATE;
         mapper_caps.wChannels = 2;
         mapper_caps.szPname = "Wine Sound Mapper";
         mapper_caps.write(pwoc);
-        return WinMM.MMSYSERR_NOERROR;
+        return WinAPI.MMSYSERR_NOERROR;
     }
 
     //MMRESULT waveOutOpen(LPHWAVEOUT phwo, UINT_PTR uDeviceID, LPWAVEFORMATEX pwfx, DWORD_PTR dwCallback, DWORD_PTR dwCallbackInstance, DWORD fdwOpen)
-    public static int waveOutOpen(int lphWaveOut, int uDeviceID, int pwfx, int dwCallback, int dwCallbackInstance, int fdwOpen) {
+    public static int waveOutOpen(int lphWaveOut, int uDeviceID, int pwfx, int dwCallback, int dwCallbackInstance,
+        int fdwOpen) {
 //        WINMM_OpenInfo info;
 //        WINMM_CBInfo cb_info;
 //
 //        if(!WINMM_StartDevicesThread())
 //            return MMSYSERR_ERROR;
 
-        if (lphWaveOut == 0 && (fdwOpen & WinMM.WAVE_FORMAT_QUERY) == 0)
-            return WinMM.MMSYSERR_INVALPARAM;
+        if (lphWaveOut == 0 && (fdwOpen & WinAPI.WAVE_FORMAT_QUERY) == 0)
+            return WinAPI.MMSYSERR_INVALPARAM;
 
         int res = WinMM.WINMM_CheckCallback(dwCallback, fdwOpen, false);
-        if (res != WinMM.MMSYSERR_NOERROR)
+        if (res != WinAPI.MMSYSERR_NOERROR)
             return res;
 
         if (fdwOpen != 0)
             Win.panic("WinMM.waveOutOpen fdwOpen=" + Ptr.toString(fdwOpen) + " not supported yet");
-        if (uDeviceID != WinMM.WAVE_MAPPER)
+        if (uDeviceID != WinAPI.WAVE_MAPPER)
             Win.panic("WinMM.waveOutOpen uDeviceID=" + uDeviceID + " not supported yet");
 
         writed(lphWaveOut, WaveObject.create(new WAVEFORMATEX(pwfx)).handle);
@@ -103,67 +104,67 @@ public class Waveform extends WinAPI {
     }
 
     // MMRESULT waveOutPrepareHeader(HWAVEOUT hwo, LPWAVEHDR pwh, UINT cbwh)
-    static public int waveOutPrepareHeader(int hwo, int pwh, int cbwh) {
+    public static int waveOutPrepareHeader(int hwo, int pwh, int cbwh) {
         if (pwh == 0 || cbwh < WAVEHDR.SIZE)
-            return WinMM.MMSYSERR_INVALPARAM;
+            return WinAPI.MMSYSERR_INVALPARAM;
 
         WAVEHDR hdr = new WAVEHDR(pwh);
         if ((hdr.dwFlags & WAVEHDR.WHDR_INQUEUE) != 0)
-            return WinMM.WAVERR_STILLPLAYING;
+            return WinAPI.WAVERR_STILLPLAYING;
 
         WaveObject obj = WaveObject.get(hwo);
         if (obj == null)
-            return WinMM.MMSYSERR_INVALHANDLE;
+            return WinAPI.MMSYSERR_INVALHANDLE;
 
         hdr.dwFlags |= WAVEHDR.WHDR_PREPARED;
         hdr.dwFlags &= ~WAVEHDR.WHDR_DONE;
         hdr.reserved = pwh;
         hdr.writeFlags();
-        return WinMM.MMSYSERR_NOERROR;
+        return WinAPI.MMSYSERR_NOERROR;
     }
 
     // MMRESULT waveOutReset(HWAVEOUT hwo)
-    static public int waveOutReset(int hwo) {
+    public static int waveOutReset(int hwo) {
         WaveObject obj = WaveObject.get(hwo);
         if (obj == null)
-            return WinMM.MMSYSERR_INVALHANDLE;
+            return WinAPI.MMSYSERR_INVALHANDLE;
         obj.thread.reset();
-        return WinMM.MMSYSERR_NOERROR;
+        return WinAPI.MMSYSERR_NOERROR;
     }
 
     // MMRESULT waveOutUnprepareHeader(HWAVEOUT hwo, LPWAVEHDR pwh, UINT cbwh)
-    static public int waveOutUnprepareHeader(int hwo, int pwh, int cbwh) {
+    public static int waveOutUnprepareHeader(int hwo, int pwh, int cbwh) {
         if (pwh == 0 || cbwh < WAVEHDR.SIZE)
-            return WinMM.MMSYSERR_INVALPARAM;
+            return WinAPI.MMSYSERR_INVALPARAM;
 
         WaveObject obj = WaveObject.get(hwo);
         if (obj == null)
-            return WinMM.MMSYSERR_INVALHANDLE;
+            return WinAPI.MMSYSERR_INVALHANDLE;
 
         WAVEHDR hdr = new WAVEHDR(pwh);
         if ((hdr.dwFlags & WAVEHDR.WHDR_INQUEUE) != 0)
-            return WinMM.WAVERR_STILLPLAYING;
+            return WinAPI.WAVERR_STILLPLAYING;
         hdr.dwFlags &= ~WAVEHDR.WHDR_PREPARED;
         hdr.dwFlags |= WAVEHDR.WHDR_DONE;
         hdr.writeFlags();
-        return WinMM.MMSYSERR_NOERROR;
+        return WinAPI.MMSYSERR_NOERROR;
     }
 
     // MMRESULT waveOutWrite(HWAVEOUT hwo, LPWAVEHDR pwh, UINT cbwh)
-    static public int waveOutWrite(int hwo, int pwh, int cbwh) {
+    public static int waveOutWrite(int hwo, int pwh, int cbwh) {
         if (pwh == 0 || cbwh < WAVEHDR.SIZE)
-            return WinMM.MMSYSERR_INVALPARAM;
+            return WinAPI.MMSYSERR_INVALPARAM;
 
         WaveObject obj = WaveObject.get(hwo);
         if (obj == null)
-            return WinMM.MMSYSERR_INVALHANDLE;
+            return WinAPI.MMSYSERR_INVALHANDLE;
 
         WAVEHDR hdr = new WAVEHDR(pwh);
         if (hdr.lpData == 0 || (hdr.dwFlags & WAVEHDR.WHDR_PREPARED) == 0)
-            return WinMM.WAVERR_UNPREPARED;
+            return WinAPI.WAVERR_UNPREPARED;
 
         if ((hdr.dwFlags & WAVEHDR.WHDR_INQUEUE) != 0)
-            return WinMM.WAVERR_STILLPLAYING;
+            return WinAPI.WAVERR_STILLPLAYING;
 
         hdr.dwFlags |= WAVEHDR.WHDR_INQUEUE;
         hdr.dwFlags &= ~WAVEHDR.WHDR_DONE;
@@ -180,7 +181,7 @@ public class Waveform extends WinAPI {
             obj.thread.buffers.add(hdr);
             obj.thread.buffers.notify();
         }
-        return WinMM.MMSYSERR_NOERROR;
+        return WinAPI.MMSYSERR_NOERROR;
     }
 
     private static class WaveObject extends WinObject {
@@ -192,11 +193,11 @@ public class Waveform extends WinAPI {
             thread.start();
         }
 
-        static public WaveObject create(WAVEFORMATEX format) {
+        public static WaveObject create(WAVEFORMATEX format) {
             return new WaveObject(nextObjectId(), format);
         }
 
-        static public WaveObject get(int handle) {
+        public static WaveObject get(int handle) {
             WinObject object = getObject(handle);
             if (object == null || !(object instanceof WaveObject))
                 return null;
@@ -205,10 +206,11 @@ public class Waveform extends WinAPI {
     }
 
     private static class WaveOutThread extends Thread {
-        final Vector<WAVEHDR> buffers = new Vector<WAVEHDR>();
+        final Vector<WAVEHDR> buffers = new Vector<>();
         WAVEFORMATEX format;
         boolean exit = false;
         SourceDataLine line;
+
         public WaveOutThread(WAVEFORMATEX format) {
             this.format = format;
             open();
@@ -216,7 +218,8 @@ public class Waveform extends WinAPI {
 
         public boolean open() {
             try {
-                AudioFormat af = new AudioFormat(format.nSamplesPerSec, format.wBitsPerSample, format.nChannels, true, false);
+                AudioFormat af = new AudioFormat(format.nSamplesPerSec, format.wBitsPerSample, format.nChannels, true,
+                    false);
                 DataLine.Info info = new DataLine.Info(SourceDataLine.class, af);
                 line = (SourceDataLine) AudioSystem.getLine(info);
                 line.open(af, 8192);
@@ -232,6 +235,7 @@ public class Waveform extends WinAPI {
             buffers.clear();
         }
 
+        @Override
         public void run() {
             while (!exit) {
                 while (buffers.size() > 0) {

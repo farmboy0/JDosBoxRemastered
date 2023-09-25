@@ -1,5 +1,7 @@
 package jdos.win.builtin.user32;
 
+import java.util.Hashtable;
+
 import jdos.win.Win;
 import jdos.win.builtin.gdi32.WinDC;
 import jdos.win.loader.winpe.LittleEndianFile;
@@ -7,8 +9,6 @@ import jdos.win.system.WinObject;
 import jdos.win.system.WinSystem;
 import jdos.win.utils.Error;
 import jdos.win.utils.StringUtil;
-
-import java.util.Hashtable;
 
 public class WinClass extends WinObject {
     public WinDC dc;
@@ -32,18 +32,18 @@ public class WinClass extends WinObject {
         this.id = id;
     }
 
-    static public WinClass create() {
+    public static WinClass create() {
         int id = nextObjectId();
         if (id > 0xFFFF)
             Win.panic("CLASS atom can not be greater than 0xFFFF");
         return new WinClass(id);
     }
 
-    static public WinClass create(int id) {
+    public static WinClass create(int id) {
         return new WinClass(id);
     }
 
-    static public WinClass get(int handle) {
+    public static WinClass get(int handle) {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinClass))
             return null;
@@ -51,7 +51,7 @@ public class WinClass extends WinObject {
     }
 
     // BOOL WINAPI GetClassInfo(HINSTANCE hInstance, LPCTSTR lpClassName, LPWNDCLASS lpWndClass)
-    static public int GetClassInfoA(int hInstance, int lpClassName, int lpWndClass) {
+    public static int GetClassInfoA(int hInstance, int lpClassName, int lpWndClass) {
         WinClass winClass;
 
         if (IS_INTRESOURCE(lpClassName)) {
@@ -69,12 +69,12 @@ public class WinClass extends WinObject {
     }
 
     // DWORD WINAPI GetClassLong(HWND hWnd, int nIndex)
-    static public int GetClassLongA(int hWnd, int nIndex) {
+    public static int GetClassLongA(int hWnd, int nIndex) {
         WinWindow window = WinWindow.get(hWnd);
         if (window == null)
             return 0;
         if (nIndex >= 0) {
-            Integer old = (Integer) window.winClass.extra.get(new Integer(nIndex));
+            Integer old = (Integer) window.winClass.extra.get(Integer.valueOf(nIndex));
             if (old != null)
                 return old;
             return 0;
@@ -106,7 +106,7 @@ public class WinClass extends WinObject {
     }
 
     // int WINAPI GetClassName(HWND hWnd, LPTSTR lpClassName, int nMaxCount)
-    static public int GetClassNameA(int hWnd, int lpClassName, int nMaxCount) {
+    public static int GetClassNameA(int hWnd, int lpClassName, int nMaxCount) {
         WinWindow window = WinWindow.get(hWnd);
         if (window == null)
             return 0;
@@ -114,7 +114,7 @@ public class WinClass extends WinObject {
     }
 
     // ATOM WINAPI RegisterClass(const WNDCLASS *lpWndClass)
-    static public int RegisterClassA(int lpWndClass) {
+    public static int RegisterClassA(int lpWndClass) {
         WinClass c = WinClass.create();
         if (!c.load(lpWndClass)) {
             SetLastError(Error.ERROR_CLASS_ALREADY_EXISTS);
@@ -125,7 +125,7 @@ public class WinClass extends WinObject {
     }
 
     // ATOM WINAPI RegisterClassEx(const WNDCLASSEX *lpwcx)
-    static public int RegisterClassExA(int lpwcx) {
+    public static int RegisterClassExA(int lpwcx) {
         WinClass c = WinClass.create();
         if (!c.loadEx(lpwcx)) {
             SetLastError(Error.ERROR_CLASS_ALREADY_EXISTS);
@@ -136,13 +136,13 @@ public class WinClass extends WinObject {
     }
 
     // DWORD WINAPI SetClassLong(HWND hWnd, int nIndex, LONG dwNewLong)
-    static public int SetClassLongA(int hWnd, int nIndex, int dwNewLong) {
+    public static int SetClassLongA(int hWnd, int nIndex, int dwNewLong) {
         WinWindow window = WinWindow.get(hWnd);
         if (window == null)
             return 0;
         if (nIndex >= 0) {
-            Integer old = (Integer) window.winClass.extra.get(new Integer(nIndex));
-            window.winClass.extra.put(new Integer(nIndex), new Integer(dwNewLong));
+            Integer old = (Integer) window.winClass.extra.get(Integer.valueOf(nIndex));
+            window.winClass.extra.put(Integer.valueOf(nIndex), Integer.valueOf(dwNewLong));
             if (old != null)
                 return old.intValue();
             return 0;
@@ -192,7 +192,7 @@ public class WinClass extends WinObject {
     }
 
     // BOOL WINAPI UnregisterClass(LPCTSTR lpClassName, HINSTANCE hInstance)
-    static public int UnregisterClassA(int lpClassName, int hInstance) {
+    public static int UnregisterClassA(int lpClassName, int hInstance) {
         String name = StringUtil.getString(lpClassName);
         WinClass c = WinSystem.getCurrentProcess().classNames.get(name);
         if (c == null)
@@ -299,6 +299,7 @@ public class WinClass extends WinObject {
         address += 4;
     }
 
+    @Override
     public void onFree() {
         WinSystem.getCurrentProcess().classNames.remove(className.toLowerCase());
     }

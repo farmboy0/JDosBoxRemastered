@@ -1,127 +1,149 @@
 package jdos.cpu;
 
 public class Modrm {
-    static final public CPU_Regs.Reg[] Getrw = new CPU_Regs.Reg[]{
-            CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
-            CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
-            CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
-            CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
-            CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
-            CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
-            CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
-            CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
+    public static final CPU_Regs.Reg[] Getrw = { CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
+        CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
+        CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
+        CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
+        CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
+        CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
 
-            CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
-            CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
-            CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
-            CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
-            CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
-            CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
-            CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
-            CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
+        CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
+        CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
+        CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
+        CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
+        CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
 
-            CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
-            CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
-            CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
-            CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
-            CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
-            CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
-            CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
-            CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
+        CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
+        CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
+        CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
+        CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
+        CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
 
-            CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
-            CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
-            CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
-            CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
-            CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
-            CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
-            CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
-            CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
-    };
-    static final public CPU_Regs.Reg[] Getrd = new CPU_Regs.Reg[]{
-            CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
-            CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
-            CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
-            CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
-            CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
-            CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
-            CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
-            CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
+        CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
+        CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
+        CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
+        CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
+        CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, };
+    public static final CPU_Regs.Reg[] Getrd = { CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
+        CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
+        CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
+        CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
+        CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
+        CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
 
-            CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
-            CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
-            CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
-            CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
-            CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
-            CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
-            CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
-            CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
+        CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
+        CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
+        CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
+        CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
+        CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
 
-            CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
-            CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
-            CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
-            CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
-            CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
-            CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
-            CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
-            CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
+        CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
+        CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
+        CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
+        CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
+        CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
 
-            CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
-            CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
-            CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
-            CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
-            CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
-            CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
-            CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
-            CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi
-    };
-    static final public CPU_Regs.Reg[] GetEArw = new CPU_Regs.Reg[]{
-            /* 12 lines of 16*0 should give nice errors when used */
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi
-    };
-    static final public CPU_Regs.Reg[] GetEArd = new CPU_Regs.Reg[]{
-            /* 12 lines of 16*0 should give nice errors when used */
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
-            CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi
-    };
-    //    static final public Move[] earb_to_rb = new Move[] {
+        CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_eax,
+        CPU_Regs.reg_eax, CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx, CPU_Regs.reg_edx,
+        CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_ebx,
+        CPU_Regs.reg_ebx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp,
+        CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_esi,
+        CPU_Regs.reg_esi, CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi, CPU_Regs.reg_edi };
+    public static final CPU_Regs.Reg[] GetEArw = {
+        /* 12 lines of 16*0 should give nice errors when used */
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, CPU_Regs.reg_eax, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx,
+        CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_eax, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx,
+        CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_eax, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_esi, CPU_Regs.reg_edi };
+    public static final CPU_Regs.Reg[] GetEArd = {
+        /* 12 lines of 16*0 should give nice errors when used */
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, CPU_Regs.reg_eax, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx,
+        CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_eax, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx,
+        CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi, CPU_Regs.reg_eax, CPU_Regs.reg_ecx,
+        CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp, CPU_Regs.reg_esi, CPU_Regs.reg_edi,
+        CPU_Regs.reg_eax, CPU_Regs.reg_ecx, CPU_Regs.reg_edx, CPU_Regs.reg_ebx, CPU_Regs.reg_esp, CPU_Regs.reg_ebp,
+        CPU_Regs.reg_esi, CPU_Regs.reg_edi };
+    //    public static final Move[] earb_to_rb = new Move[] {
 //            null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,
 //            null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,
 //            null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,	null,
@@ -206,377 +228,96 @@ public class Modrm {
 //            new Move() {final public void call() { CPU_Regs.reg_ebx.high(CPU_Regs.reg_edx.high()); }},
 //            new Move() {final public void call() { CPU_Regs.reg_ebx.high(CPU_Regs.reg_ebx.high()); }},
 //    };
-    static final public Move[] eard_to_rd = new Move[]{
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            new Move() {
-                final public void call() { /*CPU_Regs.reg_eax.dword = CPU_Regs.reg_eax.dword;*/ }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_eax.dword = CPU_Regs.reg_ecx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_eax.dword = CPU_Regs.reg_edx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_eax.dword = CPU_Regs.reg_ebx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_eax.dword = CPU_Regs.reg_esp.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_eax.dword = CPU_Regs.reg_ebp.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_eax.dword = CPU_Regs.reg_esi.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_eax.dword = CPU_Regs.reg_edi.dword;
-                }
-            },
+    public static final Move[] eard_to_rd = { null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        () -> {
+            /*CPU_Regs.reg_eax.dword = CPU_Regs.reg_eax.dword;*/ }, () -> CPU_Regs.reg_eax.dword = CPU_Regs.reg_ecx.dword, () -> CPU_Regs.reg_eax.dword = CPU_Regs.reg_edx.dword, () -> CPU_Regs.reg_eax.dword = CPU_Regs.reg_ebx.dword, () -> CPU_Regs.reg_eax.dword = CPU_Regs.reg_esp.dword, () -> CPU_Regs.reg_eax.dword = CPU_Regs.reg_ebp.dword, () -> CPU_Regs.reg_eax.dword = CPU_Regs.reg_esi.dword, () -> CPU_Regs.reg_eax.dword = CPU_Regs.reg_edi.dword,
 
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ecx.dword = CPU_Regs.reg_eax.dword;
-                }
-            },
-            new Move() {
-                final public void call() { /*CPU_Regs.reg_ecx.dword = CPU_Regs.reg_ecx.dword;*/ }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ecx.dword = CPU_Regs.reg_edx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ecx.dword = CPU_Regs.reg_ebx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ecx.dword = CPU_Regs.reg_esp.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ecx.dword = CPU_Regs.reg_ebp.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ecx.dword = CPU_Regs.reg_esi.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ecx.dword = CPU_Regs.reg_edi.dword;
-                }
-            },
+        () -> CPU_Regs.reg_ecx.dword = CPU_Regs.reg_eax.dword, () -> {
+            /*CPU_Regs.reg_ecx.dword = CPU_Regs.reg_ecx.dword;*/ }, () -> CPU_Regs.reg_ecx.dword = CPU_Regs.reg_edx.dword, () -> CPU_Regs.reg_ecx.dword = CPU_Regs.reg_ebx.dword, () -> CPU_Regs.reg_ecx.dword = CPU_Regs.reg_esp.dword, () -> CPU_Regs.reg_ecx.dword = CPU_Regs.reg_ebp.dword, () -> CPU_Regs.reg_ecx.dword = CPU_Regs.reg_esi.dword, () -> CPU_Regs.reg_ecx.dword = CPU_Regs.reg_edi.dword,
 
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_edx.dword = CPU_Regs.reg_eax.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_edx.dword = CPU_Regs.reg_ecx.dword;
-                }
-            },
-            new Move() {
-                final public void call() { /*CPU_Regs.reg_edx.dword = CPU_Regs.reg_edx.dword;*/ }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_edx.dword = CPU_Regs.reg_ebx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_edx.dword = CPU_Regs.reg_esp.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_edx.dword = CPU_Regs.reg_ebp.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_edx.dword = CPU_Regs.reg_esi.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_edx.dword = CPU_Regs.reg_edi.dword;
-                }
-            },
+        () -> CPU_Regs.reg_edx.dword = CPU_Regs.reg_eax.dword, () -> CPU_Regs.reg_edx.dword = CPU_Regs.reg_ecx.dword, () -> {
+            /*CPU_Regs.reg_edx.dword = CPU_Regs.reg_edx.dword;*/ }, () -> CPU_Regs.reg_edx.dword = CPU_Regs.reg_ebx.dword, () -> CPU_Regs.reg_edx.dword = CPU_Regs.reg_esp.dword, () -> CPU_Regs.reg_edx.dword = CPU_Regs.reg_ebp.dword, () -> CPU_Regs.reg_edx.dword = CPU_Regs.reg_esi.dword, () -> CPU_Regs.reg_edx.dword = CPU_Regs.reg_edi.dword,
 
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ebx.dword = CPU_Regs.reg_eax.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ebx.dword = CPU_Regs.reg_ecx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ebx.dword = CPU_Regs.reg_edx.dword;
-                }
-            },
-            new Move() {
-                final public void call() { /*CPU_Regs.reg_ebx.dword = CPU_Regs.reg_ebx.dword;*/ }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ebx.dword = CPU_Regs.reg_esp.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ebx.dword = CPU_Regs.reg_ebp.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ebx.dword = CPU_Regs.reg_esi.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ebx.dword = CPU_Regs.reg_edi.dword;
-                }
-            },
+        () -> CPU_Regs.reg_ebx.dword = CPU_Regs.reg_eax.dword, () -> CPU_Regs.reg_ebx.dword = CPU_Regs.reg_ecx.dword, () -> CPU_Regs.reg_ebx.dword = CPU_Regs.reg_edx.dword, () -> {
+            /*CPU_Regs.reg_ebx.dword = CPU_Regs.reg_ebx.dword;*/ }, () -> CPU_Regs.reg_ebx.dword = CPU_Regs.reg_esp.dword, () -> CPU_Regs.reg_ebx.dword = CPU_Regs.reg_ebp.dword, () -> CPU_Regs.reg_ebx.dword = CPU_Regs.reg_esi.dword, () -> CPU_Regs.reg_ebx.dword = CPU_Regs.reg_edi.dword,
 
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_esp.dword = CPU_Regs.reg_eax.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_esp.dword = CPU_Regs.reg_ecx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_esp.dword = CPU_Regs.reg_edx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_esp.dword = CPU_Regs.reg_ebx.dword;
-                }
-            },
-            new Move() {
-                final public void call() { /*CPU_Regs.reg_esp.dword = CPU_Regs.reg_esp.dword;*/ }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_esp.dword = CPU_Regs.reg_ebp.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_esp.dword = CPU_Regs.reg_esi.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_esp.dword = CPU_Regs.reg_edi.dword;
-                }
-            },
+        () -> CPU_Regs.reg_esp.dword = CPU_Regs.reg_eax.dword, () -> CPU_Regs.reg_esp.dword = CPU_Regs.reg_ecx.dword, () -> CPU_Regs.reg_esp.dword = CPU_Regs.reg_edx.dword, () -> CPU_Regs.reg_esp.dword = CPU_Regs.reg_ebx.dword, () -> {
+            /*CPU_Regs.reg_esp.dword = CPU_Regs.reg_esp.dword;*/ }, () -> CPU_Regs.reg_esp.dword = CPU_Regs.reg_ebp.dword, () -> CPU_Regs.reg_esp.dword = CPU_Regs.reg_esi.dword, () -> CPU_Regs.reg_esp.dword = CPU_Regs.reg_edi.dword,
 
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ebp.dword = CPU_Regs.reg_eax.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ebp.dword = CPU_Regs.reg_ecx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ebp.dword = CPU_Regs.reg_edx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ebp.dword = CPU_Regs.reg_ebx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ebp.dword = CPU_Regs.reg_esp.dword;
-                }
-            },
-            new Move() {
-                final public void call() { /*CPU_Regs.reg_ebp.dword = CPU_Regs.reg_ebp.dword;*/ }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ebp.dword = CPU_Regs.reg_esi.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_ebp.dword = CPU_Regs.reg_edi.dword;
-                }
-            },
+        () -> CPU_Regs.reg_ebp.dword = CPU_Regs.reg_eax.dword, () -> CPU_Regs.reg_ebp.dword = CPU_Regs.reg_ecx.dword, () -> CPU_Regs.reg_ebp.dword = CPU_Regs.reg_edx.dword, () -> CPU_Regs.reg_ebp.dword = CPU_Regs.reg_ebx.dword, () -> CPU_Regs.reg_ebp.dword = CPU_Regs.reg_esp.dword, () -> {
+            /*CPU_Regs.reg_ebp.dword = CPU_Regs.reg_ebp.dword;*/ }, () -> CPU_Regs.reg_ebp.dword = CPU_Regs.reg_esi.dword, () -> CPU_Regs.reg_ebp.dword = CPU_Regs.reg_edi.dword,
 
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_esi.dword = CPU_Regs.reg_eax.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_esi.dword = CPU_Regs.reg_ecx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_esi.dword = CPU_Regs.reg_edx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_esi.dword = CPU_Regs.reg_ebx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_esi.dword = CPU_Regs.reg_esp.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_esi.dword = CPU_Regs.reg_ebp.dword;
-                }
-            },
-            new Move() {
-                final public void call() { /*CPU_Regs.reg_esi.dword = CPU_Regs.reg_esi.dword;*/ }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_esi.dword = CPU_Regs.reg_edi.dword;
-                }
-            },
+        () -> CPU_Regs.reg_esi.dword = CPU_Regs.reg_eax.dword, () -> CPU_Regs.reg_esi.dword = CPU_Regs.reg_ecx.dword, () -> CPU_Regs.reg_esi.dword = CPU_Regs.reg_edx.dword, () -> CPU_Regs.reg_esi.dword = CPU_Regs.reg_ebx.dword, () -> CPU_Regs.reg_esi.dword = CPU_Regs.reg_esp.dword, () -> CPU_Regs.reg_esi.dword = CPU_Regs.reg_ebp.dword, () -> {
+            /*CPU_Regs.reg_esi.dword = CPU_Regs.reg_esi.dword;*/ }, () -> CPU_Regs.reg_esi.dword = CPU_Regs.reg_edi.dword,
 
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_edi.dword = CPU_Regs.reg_eax.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_edi.dword = CPU_Regs.reg_ecx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_edi.dword = CPU_Regs.reg_edx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_edi.dword = CPU_Regs.reg_ebx.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_edi.dword = CPU_Regs.reg_esp.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_edi.dword = CPU_Regs.reg_ebp.dword;
-                }
-            },
-            new Move() {
-                final public void call() {
-                    CPU_Regs.reg_edi.dword = CPU_Regs.reg_esi.dword;
-                }
-            },
-            new Move() {
-                final public void call() { /*CPU_Regs.reg_edi.dword = CPU_Regs.reg_edi.dword;*/ }
-            },
-    };
-    static final private Getrb_interface al = new Getrb_interface() {
+        () -> CPU_Regs.reg_edi.dword = CPU_Regs.reg_eax.dword, () -> CPU_Regs.reg_edi.dword = CPU_Regs.reg_ecx.dword, () -> CPU_Regs.reg_edi.dword = CPU_Regs.reg_edx.dword, () -> CPU_Regs.reg_edi.dword = CPU_Regs.reg_ebx.dword, () -> CPU_Regs.reg_edi.dword = CPU_Regs.reg_esp.dword, () -> CPU_Regs.reg_edi.dword = CPU_Regs.reg_ebp.dword, () -> CPU_Regs.reg_edi.dword = CPU_Regs.reg_esi.dword, () -> {
+            /*CPU_Regs.reg_edi.dword = CPU_Regs.reg_edi.dword;*/ }, };
+    private static final Getrb_interface al = new Getrb_interface() {
+        @Override
         final public void set(int value) {
             CPU_Regs.reg_eax.low(value);
         }
 
+        @Override
         final public int get() {
             return CPU_Regs.reg_eax.low();
         }
     };
-    static final private Getrb_interface cl = new Getrb_interface() {
+    private static final Getrb_interface cl = new Getrb_interface() {
+        @Override
         final public void set(int value) {
             CPU_Regs.reg_ecx.low(value);
         }
 
+        @Override
         final public int get() {
             return CPU_Regs.reg_ecx.low();
         }
     };
-    static final private Getrb_interface dl = new Getrb_interface() {
+    private static final Getrb_interface dl = new Getrb_interface() {
+        @Override
         final public void set(int value) {
             CPU_Regs.reg_edx.low(value);
         }
 
+        @Override
         final public int get() {
             return CPU_Regs.reg_edx.low();
         }
     };
-    static final private Getrb_interface bl = new Getrb_interface() {
+    private static final Getrb_interface bl = new Getrb_interface() {
+        @Override
         final public void set(int value) {
             CPU_Regs.reg_ebx.low(value);
         }
 
+        @Override
         final public int get() {
             return CPU_Regs.reg_ebx.low();
         }
     };
-    static final private Getrb_interface ah = new Getrb_interface() {
+    private static final Getrb_interface ah = new Getrb_interface() {
+        @Override
         final public void set(int value) {
             CPU_Regs.reg_eax.high(value);
         }
 
+        @Override
         final public int get() {
             return CPU_Regs.reg_eax.high();
         }
     };
-//    static public void Getrb(int rm, short value) {
+//    public static void Getrb(int rm, short value) {
 //        switch ((rm / 8) % 8) {
 //            case 0: CPU_Regs.reg_eax.low(value);break;
 //            case 1: CPU_Regs.reg_ecx.low(value);break;
@@ -591,7 +332,7 @@ public class Modrm {
 //        }
 //    }
 
-//    static public short Getrb(int rm) {
+//    public static short Getrb(int rm) {
 //        switch ((rm / 8) % 8) {
 //            case 0: return CPU_Regs.reg_eax.low();
 //            case 1: return CPU_Regs.reg_ecx.low();
@@ -605,16 +346,18 @@ public class Modrm {
 //                throw new RuntimeException("WTF "+rm);
 //        }
 //    }
-    static final private Getrb_interface ch = new Getrb_interface() {
+    private static final Getrb_interface ch = new Getrb_interface() {
+        @Override
         final public void set(int value) {
             CPU_Regs.reg_ecx.high(value);
         }
 
+        @Override
         final public int get() {
             return CPU_Regs.reg_ecx.high();
         }
     };
-//    static public void Getrw(short rm, int value) {
+//    public static void Getrw(short rm, int value) {
 //        switch ((rm / 8) % 8) {
 //            case 0: CPU_Regs.reg_eax.word(value);break;
 //            case 1: CPU_Regs.reg_ecx.word(value);break;
@@ -628,7 +371,7 @@ public class Modrm {
 //                throw new RuntimeException("WTF "+rm);
 //        }
 //    }
-//    static public int Getrw(short rm) {
+//    public static int Getrw(short rm) {
 //        switch ((rm / 8) % 8) {
 //            case 0: return CPU_Regs.reg_eax.word();
 //            case 1: return CPU_Regs.reg_ecx.word();
@@ -642,27 +385,30 @@ public class Modrm {
 //                throw new RuntimeException("WTF "+rm);
 //        }
 //    }
-    static final private Getrb_interface dh = new Getrb_interface() {
+    private static final Getrb_interface dh = new Getrb_interface() {
+        @Override
         final public void set(int value) {
             CPU_Regs.reg_edx.high(value);
         }
 
+        @Override
         final public int get() {
             return CPU_Regs.reg_edx.high();
         }
     };
-    static final private Getrb_interface bh = new Getrb_interface() {
+    private static final Getrb_interface bh = new Getrb_interface() {
+        @Override
         final public void set(int value) {
             CPU_Regs.reg_ebx.high(value);
         }
 
+        @Override
         final public int get() {
             return CPU_Regs.reg_ebx.high();
         }
     };
 
-
-//    static public void Getrd(short rm, long value) {
+//    public static void Getrd(short rm, long value) {
 //        switch ((rm / 8) % 8) {
 //            case 0: CPU_Regs.reg_eax.dword(value);break;
 //            case 1: CPU_Regs.reg_ecx.dword(value);break;
@@ -677,7 +423,7 @@ public class Modrm {
 //        }
 //    }
 //
-//    static public long Getrd(short rm) {
+//    public static long Getrd(short rm) {
 //        switch ((rm / 8) % 8) {
 //            case 0: return CPU_Regs.reg_eax.dword();
 //            case 1: return CPU_Regs.reg_ecx.dword();
@@ -691,44 +437,22 @@ public class Modrm {
 //                throw new RuntimeException("WTF "+rm);
 //        }
 //    }
-    final static public Getrb_interface[] Getrb = new Getrb_interface[]{
-            al, al, al, al, al, al, al, al,
-            cl, cl, cl, cl, cl, cl, cl, cl,
-            dl, dl, dl, dl, dl, dl, dl, dl,
-            bl, bl, bl, bl, bl, bl, bl, bl,
-            ah, ah, ah, ah, ah, ah, ah, ah,
-            ch, ch, ch, ch, ch, ch, ch, ch,
-            dh, dh, dh, dh, dh, dh, dh, dh,
-            bh, bh, bh, bh, bh, bh, bh, bh,
+    public static final Getrb_interface[] Getrb = { al, al, al, al, al, al, al, al, cl, cl, cl, cl, cl, cl, cl, cl, dl,
+        dl, dl, dl, dl, dl, dl, dl, bl, bl, bl, bl, bl, bl, bl, bl, ah, ah, ah, ah, ah, ah, ah, ah, ch, ch, ch, ch, ch,
+        ch, ch, ch, dh, dh, dh, dh, dh, dh, dh, dh, bh, bh, bh, bh, bh, bh, bh, bh,
 
-            al, al, al, al, al, al, al, al,
-            cl, cl, cl, cl, cl, cl, cl, cl,
-            dl, dl, dl, dl, dl, dl, dl, dl,
-            bl, bl, bl, bl, bl, bl, bl, bl,
-            ah, ah, ah, ah, ah, ah, ah, ah,
-            ch, ch, ch, ch, ch, ch, ch, ch,
-            dh, dh, dh, dh, dh, dh, dh, dh,
-            bh, bh, bh, bh, bh, bh, bh, bh,
+        al, al, al, al, al, al, al, al, cl, cl, cl, cl, cl, cl, cl, cl, dl, dl, dl, dl, dl, dl, dl, dl, bl, bl, bl, bl,
+        bl, bl, bl, bl, ah, ah, ah, ah, ah, ah, ah, ah, ch, ch, ch, ch, ch, ch, ch, ch, dh, dh, dh, dh, dh, dh, dh, dh,
+        bh, bh, bh, bh, bh, bh, bh, bh,
 
-            al, al, al, al, al, al, al, al,
-            cl, cl, cl, cl, cl, cl, cl, cl,
-            dl, dl, dl, dl, dl, dl, dl, dl,
-            bl, bl, bl, bl, bl, bl, bl, bl,
-            ah, ah, ah, ah, ah, ah, ah, ah,
-            ch, ch, ch, ch, ch, ch, ch, ch,
-            dh, dh, dh, dh, dh, dh, dh, dh,
-            bh, bh, bh, bh, bh, bh, bh, bh,
+        al, al, al, al, al, al, al, al, cl, cl, cl, cl, cl, cl, cl, cl, dl, dl, dl, dl, dl, dl, dl, dl, bl, bl, bl, bl,
+        bl, bl, bl, bl, ah, ah, ah, ah, ah, ah, ah, ah, ch, ch, ch, ch, ch, ch, ch, ch, dh, dh, dh, dh, dh, dh, dh, dh,
+        bh, bh, bh, bh, bh, bh, bh, bh,
 
-            al, al, al, al, al, al, al, al,
-            cl, cl, cl, cl, cl, cl, cl, cl,
-            dl, dl, dl, dl, dl, dl, dl, dl,
-            bl, bl, bl, bl, bl, bl, bl, bl,
-            ah, ah, ah, ah, ah, ah, ah, ah,
-            ch, ch, ch, ch, ch, ch, ch, ch,
-            dh, dh, dh, dh, dh, dh, dh, dh,
-            bh, bh, bh, bh, bh, bh, bh, bh
-    };
-//    static public void GetEArb(short index, short value) {
+        al, al, al, al, al, al, al, al, cl, cl, cl, cl, cl, cl, cl, cl, dl, dl, dl, dl, dl, dl, dl, dl, bl, bl, bl, bl,
+        bl, bl, bl, bl, ah, ah, ah, ah, ah, ah, ah, ah, ch, ch, ch, ch, ch, ch, ch, ch, dh, dh, dh, dh, dh, dh, dh, dh,
+        bh, bh, bh, bh, bh, bh, bh, bh };
+//    public static void GetEArb(short index, short value) {
 //        /* 12 lines of 16*0 should give nice errors when used */
 //        if (index<12*16) throw new NullPointerException();
 //        switch (index % 8) {
@@ -745,7 +469,7 @@ public class Modrm {
 //        }
 //    }
 //
-//    static public short GetEArb(short index) {
+//    public static short GetEArb(short index) {
 //        /* 12 lines of 16*0 should give nice errors when used */
 //        if (index<12*16) throw new NullPointerException();
 //        switch (index % 8) {
@@ -761,30 +485,22 @@ public class Modrm {
 //                throw new RuntimeException("WTF "+index);
 //        }
 //    }
-    static final public Getrb_interface[] GetEArb = new Getrb_interface[]{
-            /* 12 lines of 16*0 should give nice errors when used */
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-            al, cl, dl, bl, ah, ch, dh, bh,
-            al, cl, dl, bl, ah, ch, dh, bh,
-            al, cl, dl, bl, ah, ch, dh, bh,
-            al, cl, dl, bl, ah, ch, dh, bh,
-            al, cl, dl, bl, ah, ch, dh, bh,
-            al, cl, dl, bl, ah, ch, dh, bh,
-            al, cl, dl, bl, ah, ch, dh, bh,
-            al, cl, dl, bl, ah, ch, dh, bh
-    };
-//    static public void GetEArw(short index, int value) {
+    public static final Getrb_interface[] GetEArb = {
+        /* 12 lines of 16*0 should give nice errors when used */
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, al, cl, dl, bl, ah, ch, dh, bh, al, cl,
+        dl, bl, ah, ch, dh, bh, al, cl, dl, bl, ah, ch, dh, bh, al, cl, dl, bl, ah, ch, dh, bh, al, cl, dl, bl, ah, ch,
+        dh, bh, al, cl, dl, bl, ah, ch, dh, bh, al, cl, dl, bl, ah, ch, dh, bh, al, cl, dl, bl, ah, ch, dh, bh };
+//    public static void GetEArw(short index, int value) {
 //        /* 12 lines of 16*0 should give nice errors when used */
 //        if (index<12*16) throw new NullPointerException();
 //        switch (index % 8) {
@@ -801,7 +517,7 @@ public class Modrm {
 //        }
 //    }
 //
-//    static public int GetEArw(short index) {
+//    public static int GetEArw(short index) {
 //        /* 12 lines of 16*0 should give nice errors when used */
 //        if (index<12*16) throw new NullPointerException();
 //        switch (index % 8) {
@@ -833,7 +549,7 @@ public class Modrm {
     public interface Move {
         void call();
     }
-//    static public void GetEArd(short index, long value) {
+//    public static void GetEArd(short index, long value) {
 //        /* 12 lines of 16*0 should give nice errors when used */
 //        if (index<12*16) throw new NullPointerException();
 //        switch (index % 8) {
@@ -850,7 +566,7 @@ public class Modrm {
 //        }
 //    }
 //
-//    static public long GetEArd(short index) {
+//    public static long GetEArd(short index) {
 //        /* 12 lines of 16*0 should give nice errors when used */
 //        if (index<12*16) throw new NullPointerException();
 //        switch (index % 8) {

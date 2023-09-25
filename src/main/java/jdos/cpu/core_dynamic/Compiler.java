@@ -1,6 +1,18 @@
 package jdos.cpu.core_dynamic;
 
-import javassist.*;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.LinkedList;
+
+import javassist.ClassPath;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtConstructor;
+import javassist.CtMethod;
+import javassist.CtNewConstructor;
+import javassist.CtNewMethod;
+import javassist.NotFoundException;
 import jdos.Dosbox;
 import jdos.cpu.CPU_Regs;
 import jdos.cpu.Instructions;
@@ -11,31 +23,24 @@ import jdos.misc.Log;
 import jdos.misc.setup.Section;
 import jdos.misc.setup.Section_prop;
 
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.LinkedList;
-
 public class Compiler extends Helper {
-    static public final boolean ENABLED = true;
-    static final boolean combineEIP = true;  // about 3-4% improvement
+    public static final boolean ENABLED = true;
+    static final boolean combineEIP = true; // about 3-4% improvement
     static final boolean combineMemoryAccessEIP = false; // less than 1% improvement
-    static final private boolean inlineFlags = true;
-    static final private boolean cacheSegments = true;
+    private static final boolean inlineFlags = true;
+    private static final boolean cacheSegments = true;
     private static final LinkedList compilerQueue = new LinkedList();
-    static private final boolean testLocalVariableAccess = false;
+    private static final boolean testLocalVariableAccess = false;
     public static int compiledMethods = 0;
     public static long compiledOps = 0;
     public static boolean saveClasses = false;
 
     // :TODO: update CMPXCHG to update flags like in normal core
     public static int min_block_size = 1;
-    final public static Section.SectionFunction Compiler_Init = new Section.SectionFunction() {
-        public void call(Section newconfig) {
-            Section_prop section = (Section_prop) newconfig;
-            DecodeBlock.compileThreshold = section.Get_int("threshold");
-            min_block_size = section.Get_int("min_block_size");
-        }
+    public static final Section.SectionFunction Compiler_Init = newconfig -> {
+        Section_prop section = (Section_prop) newconfig;
+        DecodeBlock.compileThreshold = section.Get_int("threshold");
+        min_block_size = section.Get_int("min_block_size");
     };
     public static boolean alwayUseFastVersion = false; // useful for unit test
     // Set to 0 during unit test
@@ -48,49 +53,47 @@ public class Compiler extends Helper {
     static boolean shortValStarted = false;
     static java.security.MessageDigest md;
     private static Thread[] compilerThread = null;
-    static private Op opThatSetFlags = null;
-    static private final ClassPool pool = ClassPool.getDefault();
-    static private int count = 0;
+    private static Op opThatSetFlags = null;
+    private static final ClassPool pool = ClassPool.getDefault();
+    private static int count = 0;
 
     static {
         compilerThread = new Thread[processorCount];
         for (int i = 0; i < compilerThread.length; i++) {
-            compilerThread[i] = new Thread(new Runnable() {
-                public void run() {
-                    try {
-                        while (true) {
-                            DecodeBlock nextBlock = null;
-                            synchronized (compilerQueue) {
-                                if (compilerQueue.isEmpty())
-                                    compilerQueue.wait();
-                                if (!compilerQueue.isEmpty())
-                                    nextBlock = (DecodeBlock) compilerQueue.pop();
-                            }
-                            if (nextBlock == null) {
-                                break;
-                            }
-                            if (nextBlock.active) {
-                                Op result = do_compile(nextBlock);
-                                if (result != null) {
-                                    //nextBlock.op = nextBlock.next;
-                                    // In Doom, bypassing the DecodeBlock call and instead having Core_dynamic call
-                                    // the compiled code directly led to a nice increase in performance (10% at the time
-                                    // of testing).  Keep in mind self modified code detection is not enabled within
-                                    // the compiled code, hopefully by having the code run in the dynamic core 100-1000
-                                    // times before being marked as needing compiling will weed out all the blocks
-                                    // that modify themselves.
-                                    //
-                                    // Do not set nextBlock.parent.code on this thread, because depending on the timing
-                                    // on the machine it is being run on, it may result in weird behavior.
-                                    nextBlock.compiledOp = result;
-                                }
+            compilerThread[i] = new Thread(() -> {
+                try {
+                    while (true) {
+                        DecodeBlock nextBlock = null;
+                        synchronized (compilerQueue) {
+                            if (compilerQueue.isEmpty())
+                                compilerQueue.wait();
+                            if (!compilerQueue.isEmpty())
+                                nextBlock = (DecodeBlock) compilerQueue.pop();
+                        }
+                        if (nextBlock == null) {
+                            break;
+                        }
+                        if (nextBlock.active) {
+                            Op result = do_compile(nextBlock);
+                            if (result != null) {
+                                //nextBlock.op = nextBlock.next;
+                                // In Doom, bypassing the DecodeBlock call and instead having Core_dynamic call
+                                // the compiled code directly led to a nice increase in performance (10% at the time
+                                // of testing).  Keep in mind self modified code detection is not enabled within
+                                // the compiled code, hopefully by having the code run in the dynamic core 100-1000
+                                // times before being marked as needing compiling will weed out all the blocks
+                                // that modify themselves.
+                                //
+                                // Do not set nextBlock.parent.code on this thread, because depending on the timing
+                                // on the machine it is being run on, it may result in weird behavior.
+                                nextBlock.compiledOp = result;
                             }
                         }
-                    } catch (Exception e) {
-                        e.printStackTrace();
                     }
-                    System.out.println("Compiler thread has exited");
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
+                System.out.println("Compiler thread has exited");
             });
             compilerThread[i].start();
         }
@@ -105,6 +108,7 @@ public class Compiler extends Helper {
         pool.importPackage("jdos.cpu.core_normal");
         pool.importPackage("jdos.cpu.core_share");
         pool.insertClassPath(new ClassPath() {
+            @Override
             public InputStream openClassfile(String s) throws NotFoundException {
                 if (s.startsWith("jdos.")) {
                     s = "/" + s.replace('.', '/') + ".class";
@@ -113,6 +117,7 @@ public class Compiler extends Helper {
                 return null;
             }
 
+            @Override
             public URL find(String s) {
                 if (s.startsWith("jdos.")) {
                     s = "/" + s.replace('.', '/') + ".class";
@@ -121,6 +126,7 @@ public class Compiler extends Helper {
                 return null;
             }
 
+            @Override
             public void close() {
             }
         });
@@ -131,7 +137,7 @@ public class Compiler extends Helper {
         }
     }
 
-    static private byte[] getOpCode(int start, int len) {
+    private static byte[] getOpCode(int start, int len) {
         byte[] opCode = new byte[len];
         int src = Paging.getDirectIndexRO(start);
         if (src >= 0)
@@ -141,11 +147,11 @@ public class Compiler extends Helper {
         return opCode;
     }
 
-    static public void compile(DecodeBlock block) {
+    public static void compile(DecodeBlock block) {
         if (block == null) {
-            for (int i = 0; i < compilerThread.length; i++)
+            for (Thread element : compilerThread)
                 try {
-                    compilerThread[i].join();
+                    element.join();
                 } catch (Exception e) {
                 }
             return;
@@ -162,13 +168,13 @@ public class Compiler extends Helper {
         }
     }
 
-    static public void removeFromQueue(DecodeBlock block) {
+    public static void removeFromQueue(DecodeBlock block) {
         synchronized (compilerQueue) {
             compilerQueue.remove(block);
         }
     }
 
-    static private int searchFlag(Op searchOp, int flag, int result) {
+    private static int searchFlag(Op searchOp, int flag, int result) {
         while (searchOp != null) {
             if ((searchOp.gets() & flag) != 0)
                 return result | flag;
@@ -180,11 +186,13 @@ public class Compiler extends Helper {
         return result | flag;
     }
 
-    static private boolean isDec(Op op) {
-        return (op instanceof Inst3.Decd_reg || op instanceof Inst3.Decd_mem || op instanceof Inst1.Decw_reg || op instanceof Inst1.Decb_reg || op instanceof Inst1.Decb_mem || op instanceof Inst1.Decw_mem || op instanceof Inst1.Decw);
+    private static boolean isDec(Op op) {
+        return op instanceof Inst3.Decd_reg || op instanceof Inst3.Decd_mem || op instanceof Inst1.Decw_reg
+            || op instanceof Inst1.Decb_reg || op instanceof Inst1.Decb_mem || op instanceof Inst1.Decw_mem
+            || op instanceof Inst1.Decw;
     }
 
-    static public Op do_compile(Op op) {
+    public static Op do_compile(Op op) {
         Op prev = op;
         op = op.next;
         StringBuilder method = new StringBuilder();
@@ -216,7 +224,7 @@ public class Compiler extends Helper {
                     start = prev;
                 }
                 if (combineEIP) {
-                    if (loop || op.usesEip() || op.next == null || (!combineMemoryAccessEIP && op.accessesMemory())) {
+                    if (loop || op.usesEip() || op.next == null || !combineMemoryAccessEIP && op.accessesMemory()) {
                         if (runningEipCount > 0) {
                             method.append("CPU_Regs.reg_eip+=");
                             method.append(runningEipCount);
@@ -372,7 +380,8 @@ public class Compiler extends Helper {
                 boolean reset = seg.wasSet;
                 if (shouldSet > 0)
                     opThatSetFlags = op;
-                if (!loopClosed && compile_op(op, alwayUseFastVersion ? 0 : shouldSet, method, (runningEipCount > 0) ? "CPU_Regs.reg_eip+=" + runningEipCount + ";" : "", seg)) {
+                if (!loopClosed && compile_op(op, alwayUseFastVersion ? 0 : shouldSet, method,
+                    runningEipCount > 0 ? "CPU_Regs.reg_eip+=" + runningEipCount + ";" : "", seg)) {
                     if (combineEIP) {
                         if (testLocalVariableAccess)
                             method.append("}");
@@ -423,7 +432,8 @@ public class Compiler extends Helper {
                         method.append("throw e;}");
                     }
                     if (op.next != null) {
-                        Log.exit("Instruction " + Integer.toHexString(op.c) + " jumped but there was another instruction after it: " + Integer.toHexString(op.next.c));
+                        Log.exit("Instruction " + Integer.toHexString(op.c)
+                            + " jumped but there was another instruction after it: " + Integer.toHexString(op.next.c));
                     }
                 }
                 if (reset) {
@@ -443,8 +453,9 @@ public class Compiler extends Helper {
                 start.next = compiled;
                 compiledMethods++;
                 compiledOps += count;
-                if ((compiledMethods % 250) == 0) {
-                    System.out.println("Compiled " + compiledMethods + " blocks (" + compilerQueue.size() + " in queue, ave ops/block: " + ((float) compiledOps / compiledMethods));
+                if (compiledMethods % 250 == 0) {
+                    System.out.println("Compiled " + compiledMethods + " blocks (" + compilerQueue.size()
+                        + " in queue, ave ops/block: " + (float) compiledOps / compiledMethods);
                 }
                 return compiled;
             }
@@ -488,7 +499,8 @@ public class Compiler extends Helper {
     }
 
     static String nameGet32(CPU_Regs.Reg reg) {
-        if (reg.getName() == null) return String.valueOf(reg.dword);
+        if (reg.getName() == null)
+            return String.valueOf(reg.dword);
         return "CPU_Regs.reg_" + reg.getName() + ".dword";
     }
 
@@ -537,7 +549,8 @@ public class Compiler extends Helper {
         method.append(")");
     }
 
-    static void nameSet16(CPU_Regs.Reg reg, String value, String value2, String value3, String value4, String value5, StringBuilder method) {
+    static void nameSet16(CPU_Regs.Reg reg, String value, String value2, String value3, String value4, String value5,
+        StringBuilder method) {
         method.append("CPU_Regs.reg_");
         method.append(reg.getName());
         method.append(".word(");
@@ -549,7 +562,8 @@ public class Compiler extends Helper {
         method.append(")");
     }
 
-    static void nameSet16(CPU_Regs.Reg reg, String value, String value2, String value3, String value4, String value5, String value6, String value7, StringBuilder method) {
+    static void nameSet16(CPU_Regs.Reg reg, String value, String value2, String value3, String value4, String value5,
+        String value6, String value7, StringBuilder method) {
         method.append("CPU_Regs.reg_");
         method.append(reg.getName());
         method.append(".word(");
@@ -1791,7 +1805,8 @@ public class Compiler extends Helper {
             nameGet32(reg, method);
     }
 
-    static void instructionEG(boolean fast, int bits, CPU_Regs.Reg e, CPU_Regs.Reg g, String inst, String extraInst, String instCall, StringBuilder method) {
+    static void instructionEG(boolean fast, int bits, CPU_Regs.Reg e, CPU_Regs.Reg g, String inst, String extraInst,
+        String instCall, StringBuilder method) {
         nameSet(e, bits, method);
         if (fast) {
             nameGet(e, bits, method);
@@ -1812,7 +1827,8 @@ public class Compiler extends Helper {
         }
     }
 
-    static void instructionEG(boolean fast, int bits, EaaBase e, CPU_Regs.Reg g, String inst, String extraInst, String instCall, Seg seg, StringBuilder method) {
+    static void instructionEG(boolean fast, int bits, EaaBase e, CPU_Regs.Reg g, String inst, String extraInst,
+        String instCall, Seg seg, StringBuilder method) {
         memory_start(e, seg, method);
         if (bits == 8)
             memory_writeb(method);
@@ -1849,7 +1865,8 @@ public class Compiler extends Helper {
         }
     }
 
-    static void instructionGE(boolean fast, int bits, CPU_Regs.Reg e, EaaBase g, String inst, String extraInst, String instCall, Seg seg, StringBuilder method) {
+    static void instructionGE(boolean fast, int bits, CPU_Regs.Reg e, EaaBase g, String inst, String extraInst,
+        String instCall, Seg seg, StringBuilder method) {
         memory_start(g, seg, method);
         nameSet(e, bits, method);
         if (fast) {
@@ -1881,7 +1898,8 @@ public class Compiler extends Helper {
         }
     }
 
-    static void instructionAI(boolean fast, int bits, int i, String inst, String extraInst, String instCall, StringBuilder method) {
+    static void instructionAI(boolean fast, int bits, int i, String inst, String extraInst, String instCall,
+        StringBuilder method) {
         nameSet(CPU_Regs.reg_eax, bits, method);
         if (fast) {
             nameGet(CPU_Regs.reg_eax, bits, method);
@@ -1952,7 +1970,7 @@ public class Compiler extends Helper {
         }
     }
 
-    static private boolean compile_op(Op op, int setFlags, StringBuilder method, String preException, Seg seg) {
+    private static boolean compile_op(Op op, int setFlags, StringBuilder method, String preException, Seg seg) {
         switch (op.c) {
             case 0x00: // ADD Eb,Gb
             case 0x200:
@@ -2029,7 +2047,9 @@ public class Compiler extends Helper {
             case 0x07: // POP ES
                 if (op instanceof Inst1.PopES) {
                     Inst1.PopES o = (Inst1.PopES) op;
-                    method.append("if (CPU.CPU_PopSegES(false)) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("if (CPU.CPU_PopSegES(false)) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     return true;
                 }
                 break;
@@ -2112,24 +2132,28 @@ public class Compiler extends Helper {
             case 0x210:
                 if (op instanceof Inst1.Adcb_reg) {
                     Inst1.Adcb_reg o = (Inst1.Adcb_reg) op;
-                    instructionEG((setFlags & o.sets()) == 0, 8, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCB", method);
+                    instructionEG((setFlags & o.sets()) == 0, 8, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCB",
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.AdcEbGb_mem) {
                     Inst1.AdcEbGb_mem o = (Inst1.AdcEbGb_mem) op;
-                    instructionEG((setFlags & o.sets()) == 0, 8, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCB", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 8, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCB", seg,
+                        method);
                     return true;
                 }
                 break;
             case 0x11: // ADC Ew,Gw
                 if (op instanceof Inst1.Adcw_reg) {
                     Inst1.Adcw_reg o = (Inst1.Adcw_reg) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCW", method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCW",
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.AdcEwGw_mem) {
                     Inst1.AdcEwGw_mem o = (Inst1.AdcEwGw_mem) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCW", seg,
+                        method);
                     return true;
                 }
                 break;
@@ -2137,24 +2161,28 @@ public class Compiler extends Helper {
             case 0x212:
                 if (op instanceof Inst1.Adcb_reg) {
                     Inst1.Adcb_reg o = (Inst1.Adcb_reg) op;
-                    instructionEG((setFlags & o.sets()) == 0, 8, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCB", method);
+                    instructionEG((setFlags & o.sets()) == 0, 8, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCB",
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.AdcGbEb_mem) {
                     Inst1.AdcGbEb_mem o = (Inst1.AdcGbEb_mem) op;
-                    instructionGE((setFlags & o.sets()) == 0, 8, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCB", seg, method);
+                    instructionGE((setFlags & o.sets()) == 0, 8, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCB", seg,
+                        method);
                     return true;
                 }
                 break;
             case 0x13: // ADC Gw,Ew
                 if (op instanceof Inst1.Adcw_reg) {
                     Inst1.Adcw_reg o = (Inst1.Adcw_reg) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCW", method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCW",
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.AdcGwEw_mem) {
                     Inst1.AdcGwEw_mem o = (Inst1.AdcGwEw_mem) op;
-                    instructionGE((setFlags & o.sets()) == 0, 16, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCW", seg, method);
+                    instructionGE((setFlags & o.sets()) == 0, 16, o.e, o.g, "+", "+(Flags.get_CF()?1:0)", "ADCW", seg,
+                        method);
                     return true;
                 }
                 break;
@@ -2183,7 +2211,9 @@ public class Compiler extends Helper {
             case 0x17: // POP SS
                 if (op instanceof Inst1.PopSS) {
                     Inst1.PopSS o = (Inst1.PopSS) op;
-                    method.append("if (CPU.CPU_PopSegSS(false)) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("if (CPU.CPU_PopSegSS(false)) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     return true;
                 }
                 break;
@@ -2191,25 +2221,29 @@ public class Compiler extends Helper {
             case 0x218:
                 if (op instanceof Inst1.Sbbb_reg) {
                     Inst1.Sbbb_reg o = (Inst1.Sbbb_reg) op;
-                    instructionEG((setFlags & o.sets()) == 0, 8, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBB", method);
+                    instructionEG((setFlags & o.sets()) == 0, 8, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBB",
+                        method);
                     method.append(";");
                     return true;
                 }
                 if (op instanceof Inst1.SbbEbGb_mem) {
                     Inst1.SbbEbGb_mem o = (Inst1.SbbEbGb_mem) op;
-                    instructionEG((setFlags & o.sets()) == 0, 8, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBB", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 8, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBB", seg,
+                        method);
                     return true;
                 }
                 break;
             case 0x19: // SBB Ew,Gw
                 if (op instanceof Inst1.Sbbw_reg) {
                     Inst1.Sbbw_reg o = (Inst1.Sbbw_reg) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBW", method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBW",
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.SbbEwGw_mem) {
                     Inst1.SbbEwGw_mem o = (Inst1.SbbEwGw_mem) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBW", seg,
+                        method);
                     return true;
                 }
                 break;
@@ -2217,24 +2251,28 @@ public class Compiler extends Helper {
             case 0x21a:
                 if (op instanceof Inst1.Sbbb_reg) {
                     Inst1.Sbbb_reg o = (Inst1.Sbbb_reg) op;
-                    instructionEG((setFlags & o.sets()) == 0, 8, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBB", method);
+                    instructionEG((setFlags & o.sets()) == 0, 8, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBB",
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.SbbGbEb_mem) {
                     Inst1.SbbGbEb_mem o = (Inst1.SbbGbEb_mem) op;
-                    instructionGE((setFlags & o.sets()) == 0, 8, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBB", seg, method);
+                    instructionGE((setFlags & o.sets()) == 0, 8, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBB", seg,
+                        method);
                     return true;
                 }
                 break;
             case 0x1b: // SBB Gw,Ew
                 if (op instanceof Inst1.Sbbw_reg) {
                     Inst1.Sbbw_reg o = (Inst1.Sbbw_reg) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBW", method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBW",
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.SbbGwEw_mem) {
                     Inst1.SbbGwEw_mem o = (Inst1.SbbGwEw_mem) op;
-                    instructionGE((setFlags & o.sets()) == 0, 16, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBW", seg, method);
+                    instructionGE((setFlags & o.sets()) == 0, 16, o.e, o.g, "-", "-(Flags.get_CF()?1:0)", "SBBW", seg,
+                        method);
                     return true;
                 }
                 break;
@@ -2263,7 +2301,9 @@ public class Compiler extends Helper {
             case 0x1f: // POP DS
                 if (op instanceof Inst1.PopDS) {
                     Inst1.PopDS o = (Inst1.PopDS) op;
-                    method.append("if (CPU.CPU_PopSegDS(false)) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("if (CPU.CPU_PopSegDS(false)) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     return true;
                 }
                 break;
@@ -2885,16 +2925,19 @@ public class Compiler extends Helper {
                     declareVal2(method);
                     method.append("val2=CPU_Regs.reg_esp.word();");
                     declareVal(method);
-                    method.append("val = CPU_Regs.reg_esp.dword;val = CPU.CPU_Push16(val, CPU_Regs.reg_eax.word());val = CPU.CPU_Push16(val, CPU_Regs.reg_ecx.word());val = CPU.CPU_Push16(val, CPU_Regs.reg_edx.word());val = CPU.CPU_Push16(val, CPU_Regs.reg_ebx.word());val = CPU.CPU_Push16(val, val2);val = CPU.CPU_Push16(val, ");
+                    method.append(
+                        "val = CPU_Regs.reg_esp.dword;val = CPU.CPU_Push16(val, CPU_Regs.reg_eax.word());val = CPU.CPU_Push16(val, CPU_Regs.reg_ecx.word());val = CPU.CPU_Push16(val, CPU_Regs.reg_edx.word());val = CPU.CPU_Push16(val, CPU_Regs.reg_ebx.word());val = CPU.CPU_Push16(val, val2);val = CPU.CPU_Push16(val, ");
                     nameGet16(CPU_Regs.reg_ebp, method);
-                    method.append(");val = CPU.CPU_Push16(val, CPU_Regs.reg_esi.word());val = CPU.CPU_Push16(val, CPU_Regs.reg_edi.word());CPU_Regs.reg_esp.word(val);");
+                    method.append(
+                        ");val = CPU.CPU_Push16(val, CPU_Regs.reg_esi.word());val = CPU.CPU_Push16(val, CPU_Regs.reg_edi.word());CPU_Regs.reg_esp.word(val);");
                     return true;
                 }
                 break;
             case 0x61: // POPA
                 if (op instanceof Inst1.Popa) {
                     //Inst1.Popa o = (Inst1.Popa) op;
-                    method.append("CPU_Regs.reg_edi.word(CPU.CPU_Pop16());CPU_Regs.reg_esi.word(CPU.CPU_Pop16());CPU_Regs.reg_ebp.word(CPU.CPU_Pop16());CPU.CPU_Pop16();CPU_Regs.reg_ebx.word(CPU.CPU_Pop16());CPU_Regs.reg_edx.word(CPU.CPU_Pop16());CPU_Regs.reg_ecx.word(CPU.CPU_Pop16());CPU_Regs.reg_eax.word(CPU.CPU_Pop16());");
+                    method.append(
+                        "CPU_Regs.reg_edi.word(CPU.CPU_Pop16());CPU_Regs.reg_esi.word(CPU.CPU_Pop16());CPU_Regs.reg_ebp.word(CPU.CPU_Pop16());CPU.CPU_Pop16();CPU_Regs.reg_ebx.word(CPU.CPU_Pop16());CPU_Regs.reg_edx.word(CPU.CPU_Pop16());CPU_Regs.reg_ecx.word(CPU.CPU_Pop16());CPU_Regs.reg_eax.word(CPU.CPU_Pop16());");
                     return true;
                 }
                 break;
@@ -2907,14 +2950,18 @@ public class Compiler extends Helper {
                     method.append(";");
                     memory_start(o.get_eaa, seg, method);
                     method.append(";{short bound_min, bound_max;");
-                    method.append("bound_min=(short)Memory.mem_readw(eaa); bound_max=(short)Memory.mem_readw(eaa+2);if ( (sval < bound_min) || (sval > bound_max) ) {").append(preException).append("return EXCEPTION(5);}}");
+                    method.append(
+                        "bound_min=(short)Memory.mem_readw(eaa); bound_max=(short)Memory.mem_readw(eaa+2);if ( (sval < bound_min) || (sval > bound_max) ) {")
+                        .append(preException)
+                        .append("return EXCEPTION(5);}}");
                     return true;
                 }
                 break;
             case 0x63: // ARPL Ew,Rw
                 if (op instanceof Inst1.ArplEwRw_reg) {
                     Inst1.ArplEwRw_reg o = (Inst1.ArplEwRw_reg) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
                     declareVal(method);
                     method.append("val=");
                     method.append(nameGet16(o.earw));
@@ -2927,7 +2974,8 @@ public class Compiler extends Helper {
                 }
                 if (op instanceof Inst1.ArplEwRw_mem) {
                     Inst1.ArplEwRw_mem o = (Inst1.ArplEwRw_mem) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
                     memory_start(o.get_eaa, seg, method);
                     declareVal(method);
                     method.append("val=Memory.mem_readw(eaa);val=CPU.CPU_ARPL(val,");
@@ -2968,7 +3016,8 @@ public class Compiler extends Helper {
             case 0x69: // IMUL Gw,Ew,Iw
                 if (op instanceof Inst1.IMULGwEwIw_reg) {
                     Inst1.IMULGwEwIw_reg o = (Inst1.IMULGwEwIw_reg) op;
-                    nameSet16(o.rw, "Instructions.DIMULW(", nameGet16(o.earw), ", ", String.valueOf(o.op3), ")", method);
+                    nameSet16(o.rw, "Instructions.DIMULW(", nameGet16(o.earw), ", ", String.valueOf(o.op3), ")",
+                        method);
                     method.append(";");
                     return true;
                 }
@@ -2992,7 +3041,8 @@ public class Compiler extends Helper {
             case 0x6b: // IMUL Gw,Ew,Ib
                 if (op instanceof Inst1.IMULGwEwIb_reg) {
                     Inst1.IMULGwEwIb_reg o = (Inst1.IMULGwEwIb_reg) op;
-                    nameSet16(o.rw, "Instructions.DIMULW(", nameGet16(o.earw), ", ", String.valueOf(o.op3), ")", method);
+                    nameSet16(o.rw, "Instructions.DIMULW(", nameGet16(o.earw), ", ", String.valueOf(o.op3), ")",
+                        method);
                     method.append(";");
                     return true;
                 }
@@ -3200,12 +3250,14 @@ public class Compiler extends Helper {
                 }
                 if (op instanceof Inst1.GrplEbIb_reg_adc) {
                     Inst1.GrplEbIb_reg_adc o = (Inst1.GrplEbIb_reg_adc) op;
-                    instructionEG((setFlags & o.sets()) == 0, 8, o.earb, new Reg(o.ib), "+", "+(Flags.get_CF()?1:0)", "ADCB", method);
+                    instructionEG((setFlags & o.sets()) == 0, 8, o.earb, new Reg(o.ib), "+", "+(Flags.get_CF()?1:0)",
+                        "ADCB", method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEbIb_reg_sbb) {
                     Inst1.GrplEbIb_reg_sbb o = (Inst1.GrplEbIb_reg_sbb) op;
-                    instructionEG((setFlags & o.sets()) == 0, 8, o.earb, new Reg(o.ib), "-", "-(Flags.get_CF()?1:0)", "SBBB", method);
+                    instructionEG((setFlags & o.sets()) == 0, 8, o.earb, new Reg(o.ib), "-", "-(Flags.get_CF()?1:0)",
+                        "SBBB", method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEbIb_reg_and) {
@@ -3234,7 +3286,8 @@ public class Compiler extends Helper {
                 }
                 if (op instanceof Inst1.GrplEbIb_mem_add) {
                     Inst1.GrplEbIb_mem_add o = (Inst1.GrplEbIb_mem_add) op;
-                    instructionEG((setFlags & o.sets()) == 0, 8, o.get_eaa, new Reg(o.ib), "+", "", "ADDB", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 8, o.get_eaa, new Reg(o.ib), "+", "", "ADDB", seg,
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEbIb_mem_or) {
@@ -3244,27 +3297,32 @@ public class Compiler extends Helper {
                 }
                 if (op instanceof Inst1.GrplEbIb_mem_adc) {
                     Inst1.GrplEbIb_mem_adc o = (Inst1.GrplEbIb_mem_adc) op;
-                    instructionEG((setFlags & o.sets()) == 0, 8, o.get_eaa, new Reg(o.ib), "+", "+(Flags.get_CF()?1:0)", "ADCB", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 8, o.get_eaa, new Reg(o.ib), "+", "+(Flags.get_CF()?1:0)",
+                        "ADCB", seg, method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEbIb_mem_sbb) {
                     Inst1.GrplEbIb_mem_sbb o = (Inst1.GrplEbIb_mem_sbb) op;
-                    instructionEG((setFlags & o.sets()) == 0, 8, o.get_eaa, new Reg(o.ib), "-", "-(Flags.get_CF()?1:0)", "SBBB", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 8, o.get_eaa, new Reg(o.ib), "-", "-(Flags.get_CF()?1:0)",
+                        "SBBB", seg, method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEbIb_mem_and) {
                     Inst1.GrplEbIb_mem_and o = (Inst1.GrplEbIb_mem_and) op;
-                    instructionEG((setFlags & o.sets()) == 0, 8, o.get_eaa, new Reg(o.ib), "&", "", "ANDB", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 8, o.get_eaa, new Reg(o.ib), "&", "", "ANDB", seg,
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEbIb_mem_sub) {
                     Inst1.GrplEbIb_mem_sub o = (Inst1.GrplEbIb_mem_sub) op;
-                    instructionEG((setFlags & o.sets()) == 0, 8, o.get_eaa, new Reg(o.ib), "-", "", "SUBB", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 8, o.get_eaa, new Reg(o.ib), "-", "", "SUBB", seg,
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEbIb_mem_xor) {
                     Inst1.GrplEbIb_mem_xor o = (Inst1.GrplEbIb_mem_xor) op;
-                    instructionEG((setFlags & o.sets()) == 0, 8, o.get_eaa, new Reg(o.ib), "^", "", "XORB", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 8, o.get_eaa, new Reg(o.ib), "^", "", "XORB", seg,
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEbIb_mem_cmp) {
@@ -3292,12 +3350,14 @@ public class Compiler extends Helper {
                 }
                 if (op instanceof Inst1.GrplEwIw_reg_adc) {
                     Inst1.GrplEwIw_reg_adc o = (Inst1.GrplEwIw_reg_adc) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.earw, new Reg(o.ib), "+", "+(Flags.get_CF()?1:0)", "ADCW", method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.earw, new Reg(o.ib), "+", "+(Flags.get_CF()?1:0)",
+                        "ADCW", method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_reg_sbb) {
                     Inst1.GrplEwIw_reg_sbb o = (Inst1.GrplEwIw_reg_sbb) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.earw, new Reg(o.ib), "-", "-(Flags.get_CF()?1:0)", "SBBW", method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.earw, new Reg(o.ib), "-", "-(Flags.get_CF()?1:0)",
+                        "SBBW", method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_reg_and) {
@@ -3326,37 +3386,44 @@ public class Compiler extends Helper {
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_add) {
                     Inst1.GrplEwIw_mem_add o = (Inst1.GrplEwIw_mem_add) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "+", "", "ADDW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "+", "", "ADDW", seg,
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_or) {
                     Inst1.GrplEwIw_mem_or o = (Inst1.GrplEwIw_mem_or) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "|", "", "ORW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "|", "", "ORW", seg,
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_adc) {
                     Inst1.GrplEwIw_mem_adc o = (Inst1.GrplEwIw_mem_adc) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "+", "+(Flags.get_CF()?1:0)", "ADCW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "+",
+                        "+(Flags.get_CF()?1:0)", "ADCW", seg, method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_sbb) {
                     Inst1.GrplEwIw_mem_sbb o = (Inst1.GrplEwIw_mem_sbb) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "-", "-(Flags.get_CF()?1:0)", "SBBW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "-",
+                        "-(Flags.get_CF()?1:0)", "SBBW", seg, method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_and) {
                     Inst1.GrplEwIw_mem_and o = (Inst1.GrplEwIw_mem_and) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "&", "", "ANDW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "&", "", "ANDW", seg,
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_sub) {
                     Inst1.GrplEwIw_mem_sub o = (Inst1.GrplEwIw_mem_sub) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "-", "", "SUBW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "-", "", "SUBW", seg,
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_xor) {
                     Inst1.GrplEwIw_mem_xor o = (Inst1.GrplEwIw_mem_xor) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "^", "", "XORW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "^", "", "XORW", seg,
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_cmp) {
@@ -3381,12 +3448,14 @@ public class Compiler extends Helper {
                 }
                 if (op instanceof Inst1.GrplEwIw_reg_adc) {
                     Inst1.GrplEwIw_reg_adc o = (Inst1.GrplEwIw_reg_adc) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.earw, new Reg(o.ib), "+", "+(Flags.get_CF()?1:0)", "ADCW", method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.earw, new Reg(o.ib), "+", "+(Flags.get_CF()?1:0)",
+                        "ADCW", method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_reg_sbb) {
                     Inst1.GrplEwIw_reg_sbb o = (Inst1.GrplEwIw_reg_sbb) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.earw, new Reg(o.ib), "-", "-(Flags.get_CF()?1:0)", "SBBW", method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.earw, new Reg(o.ib), "-", "-(Flags.get_CF()?1:0)",
+                        "SBBW", method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_reg_and) {
@@ -3415,37 +3484,44 @@ public class Compiler extends Helper {
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_add) {
                     Inst1.GrplEwIw_mem_add o = (Inst1.GrplEwIw_mem_add) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "+", "", "ADDW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "+", "", "ADDW", seg,
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_or) {
                     Inst1.GrplEwIw_mem_or o = (Inst1.GrplEwIw_mem_or) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "|", "", "ORW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "|", "", "ORW", seg,
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_adc) {
                     Inst1.GrplEwIw_mem_adc o = (Inst1.GrplEwIw_mem_adc) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "+", "+(Flags.get_CF()?1:0)", "ADCW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "+",
+                        "+(Flags.get_CF()?1:0)", "ADCW", seg, method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_sbb) {
                     Inst1.GrplEwIw_mem_sbb o = (Inst1.GrplEwIw_mem_sbb) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "-", "-(Flags.get_CF()?1:0)", "SBBW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "-",
+                        "-(Flags.get_CF()?1:0)", "SBBW", seg, method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_and) {
                     Inst1.GrplEwIw_mem_and o = (Inst1.GrplEwIw_mem_and) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "&", "", "ANDW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "&", "", "ANDW", seg,
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_sub) {
                     Inst1.GrplEwIw_mem_sub o = (Inst1.GrplEwIw_mem_sub) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "-", "", "SUBW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "-", "", "SUBW", seg,
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_xor) {
                     Inst1.GrplEwIw_mem_xor o = (Inst1.GrplEwIw_mem_xor) op;
-                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "^", "", "XORW", seg, method);
+                    instructionEG((setFlags & o.sets()) == 0, 16, o.get_eaa, new Reg(o.ib), "^", "", "XORW", seg,
+                        method);
                     return true;
                 }
                 if (op instanceof Inst1.GrplEwIw_mem_cmp) {
@@ -3557,9 +3633,13 @@ public class Compiler extends Helper {
                 }
                 if (op instanceof Inst1.MovEbGb_mem_5) {
                     Inst1.MovEbGb_mem_5 o = (Inst1.MovEbGb_mem_5) op;
-                    method.append("if (CPU.cpu.pmode && !CPU.cpu.code.big) {jdos.cpu.CPU.Descriptor desc=new jdos.cpu.CPU.Descriptor();CPU.cpu.gdt.GetDescriptor(CPU.seg_value(");
+                    method.append(
+                        "if (CPU.cpu.pmode && !CPU.cpu.code.big) {jdos.cpu.CPU.Descriptor desc=new jdos.cpu.CPU.Descriptor();CPU.cpu.gdt.GetDescriptor(CPU.seg_value(");
                     method.append(seg.val);
-                    method.append("),desc);if ((desc.Type()==CPU.DESC_CODE_R_NC_A) || (desc.Type()==CPU.DESC_CODE_R_NC_NA)) {").append(preException).append("CPU.CPU_PrepareException(CPU.EXCEPTION_GP,CPU.seg_value(");
+                    method.append(
+                        "),desc);if ((desc.Type()==CPU.DESC_CODE_R_NC_A) || (desc.Type()==CPU.DESC_CODE_R_NC_NA)) {")
+                        .append(preException)
+                        .append("CPU.CPU_PrepareException(CPU.EXCEPTION_GP,CPU.seg_value(");
                     method.append(seg.val);
                     method.append(") & 0xfffc);return RUNEXCEPTION();}}");
                     memory_start(o.get_eaa, seg, method);
@@ -3732,7 +3812,9 @@ public class Compiler extends Helper {
                 if (op instanceof Inst1.MovEsEw_mem) {
                     Inst1.MovEsEw_mem o = (Inst1.MovEsEw_mem) op;
                     memory_start(o.get_eaa, seg, method);
-                    method.append("if (CPU.CPU_SetSegGeneralES(Memory.mem_readw(eaa))) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("if (CPU.CPU_SetSegGeneralES(Memory.mem_readw(eaa))) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     return true;
                 }
                 if (op instanceof Inst1.MovSsEw_reg) {
@@ -3745,7 +3827,9 @@ public class Compiler extends Helper {
                 if (op instanceof Inst1.MovSsEw_mem) {
                     Inst1.MovSsEw_mem o = (Inst1.MovSsEw_mem) op;
                     memory_start(o.get_eaa, seg, method);
-                    method.append("if (CPU.CPU_SetSegGeneralSS(Memory.mem_readw(eaa))) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("if (CPU.CPU_SetSegGeneralSS(Memory.mem_readw(eaa))) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     return true;
                 }
                 if (op instanceof Inst1.MovDsEw_reg) {
@@ -3758,7 +3842,9 @@ public class Compiler extends Helper {
                 if (op instanceof Inst1.MovDsEw_mem) {
                     Inst1.MovDsEw_mem o = (Inst1.MovDsEw_mem) op;
                     memory_start(o.get_eaa, seg, method);
-                    method.append("if (CPU.CPU_SetSegGeneralDS(Memory.mem_readw(eaa))) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("if (CPU.CPU_SetSegGeneralDS(Memory.mem_readw(eaa))) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     return true;
                 }
                 if (op instanceof Inst1.MovFsEw_reg) {
@@ -3771,7 +3857,9 @@ public class Compiler extends Helper {
                 if (op instanceof Inst1.MovFsEw_mem) {
                     Inst1.MovFsEw_mem o = (Inst1.MovFsEw_mem) op;
                     memory_start(o.get_eaa, seg, method);
-                    method.append("if (CPU.CPU_SetSegGeneralFS(Memory.mem_readw(eaa))) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("if (CPU.CPU_SetSegGeneralFS(Memory.mem_readw(eaa))) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     return true;
                 }
                 if (op instanceof Inst1.MovGsEw_reg) {
@@ -3784,7 +3872,9 @@ public class Compiler extends Helper {
                 if (op instanceof Inst1.MovGsEw_mem) {
                     Inst1.MovGsEw_mem o = (Inst1.MovGsEw_mem) op;
                     memory_start(o.get_eaa, seg, method);
-                    method.append("if (CPU.CPU_SetSegGeneralGS(Memory.mem_readw(eaa))) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("if (CPU.CPU_SetSegGeneralGS(Memory.mem_readw(eaa))) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     return true;
                 }
                 break;
@@ -3839,7 +3929,8 @@ public class Compiler extends Helper {
             case 0x99: // CWD
                 if (op instanceof Inst1.Cwd) {
                     Inst1.Cwd o = (Inst1.Cwd) op;
-                    method.append("if ((CPU_Regs.reg_eax.word() & 0x8000)!=0) CPU_Regs.reg_edx.word(0xffff);else CPU_Regs.reg_edx.word(0);");
+                    method.append(
+                        "if ((CPU_Regs.reg_eax.word() & 0x8000)!=0) CPU_Regs.reg_edx.word(0xffff);else CPU_Regs.reg_edx.word(0);");
                     return true;
                 }
                 break;
@@ -3854,7 +3945,8 @@ public class Compiler extends Helper {
                     method.append(o.eip_count);
                     method.append(");");
                     if (CPU_TRAP_CHECK) {
-                        method.append("if (CPU_Regs.GETFLAG(CPU_Regs.TF)!=0) {CPU.cpudecoder= Core_dynamic.CPU_Core_Dynrec_Trap_Run;return CB_NONE();}");
+                        method.append(
+                            "if (CPU_Regs.GETFLAG(CPU_Regs.TF)!=0) {CPU.cpudecoder= Core_dynamic.CPU_Core_Dynrec_Trap_Run;return CB_NONE();}");
                     }
                     method.append("return Constants.BR_Jump;");
                     return false;
@@ -3880,12 +3972,14 @@ public class Compiler extends Helper {
                     Inst1.PopF o = (Inst1.PopF) op;
                     method.append("if (CPU.CPU_POPF(false)) {").append(preException).append("return RUNEXCEPTION();}");
                     if (CPU_TRAP_CHECK) {
-                        method.append("if (CPU_Regs.GETFLAG(CPU_Regs.TF)!=0) {CPU.cpudecoder= Core_dynamic.CPU_Core_Dynrec_Trap_Run;return DECODE_END(");
+                        method.append(
+                            "if (CPU_Regs.GETFLAG(CPU_Regs.TF)!=0) {CPU.cpudecoder= Core_dynamic.CPU_Core_Dynrec_Trap_Run;return DECODE_END(");
                         method.append(o.eip_count);
                         method.append(");}");
                     }
                     if (CPU_PIC_CHECK) {
-                        method.append(" if (CPU_Regs.GETFLAG(CPU_Regs.IF)!=0 && Pic.PIC_IRQCheck!=0) return DECODE_END(");
+                        method
+                            .append(" if (CPU_Regs.GETFLAG(CPU_Regs.IF)!=0 && Pic.PIC_IRQCheck!=0) return DECODE_END(");
                         method.append(o.eip_count);
                         method.append(");");
                     }
@@ -4305,7 +4399,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.RCLB_reg) {
                     Grp2.RCLB_reg o = (Grp2.RCLB_reg) op;
                     if (Instructions.valid_RCLB(o.val)) {
-                        method.append(nameSet8(o.earb, "Instructions.do_RCLB(" + o.val + ", " + nameGet8(o.earb) + ")"));
+                        method
+                            .append(nameSet8(o.earb, "Instructions.do_RCLB(" + o.val + ", " + nameGet8(o.earb) + ")"));
                         method.append(";");
                     }
                     return true;
@@ -4313,7 +4408,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.RCRB_reg) {
                     Grp2.RCRB_reg o = (Grp2.RCRB_reg) op;
                     if (Instructions.valid_RCRB(o.val)) {
-                        method.append(nameSet8(o.earb, "Instructions.do_RCRB(" + o.val + ", " + nameGet8(o.earb) + ")"));
+                        method
+                            .append(nameSet8(o.earb, "Instructions.do_RCRB(" + o.val + ", " + nameGet8(o.earb) + ")"));
                         method.append(";");
                     }
                     return true;
@@ -4321,7 +4417,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.SHLB_reg) {
                     Grp2.SHLB_reg o = (Grp2.SHLB_reg) op;
                     if (Instructions.valid_SHLB(o.val)) {
-                        method.append(nameSet8(o.earb, "Instructions.do_SHLB(" + o.val + ", " + nameGet8(o.earb) + ")"));
+                        method
+                            .append(nameSet8(o.earb, "Instructions.do_SHLB(" + o.val + ", " + nameGet8(o.earb) + ")"));
                         method.append(";");
                     }
                     return true;
@@ -4329,7 +4426,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.SHRB_reg) {
                     Grp2.SHRB_reg o = (Grp2.SHRB_reg) op;
                     if (Instructions.valid_SHRB(o.val)) {
-                        method.append(nameSet8(o.earb, "Instructions.do_SHRB(" + o.val + ", " + nameGet8(o.earb) + ")"));
+                        method
+                            .append(nameSet8(o.earb, "Instructions.do_SHRB(" + o.val + ", " + nameGet8(o.earb) + ")"));
                         method.append(";");
                     }
                     return true;
@@ -4337,7 +4435,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.SARB_reg) {
                     Grp2.SARB_reg o = (Grp2.SARB_reg) op;
                     if (Instructions.valid_SARB(o.val)) {
-                        method.append(nameSet8(o.earb, "Instructions.do_SARB(" + o.val + ", " + nameGet8(o.earb) + ")"));
+                        method
+                            .append(nameSet8(o.earb, "Instructions.do_SARB(" + o.val + ", " + nameGet8(o.earb) + ")"));
                         method.append(";");
                     }
                     return true;
@@ -4441,7 +4540,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.RCLW_reg) {
                     Grp2.RCLW_reg o = (Grp2.RCLW_reg) op;
                     if (Instructions.valid_RCLW(o.val)) {
-                        nameSet16(o.earw, "Instructions.do_RCLW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")", method);
+                        nameSet16(o.earw, "Instructions.do_RCLW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")",
+                            method);
                         method.append(";");
                     }
                     return true;
@@ -4449,7 +4549,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.RCRW_reg) {
                     Grp2.RCRW_reg o = (Grp2.RCRW_reg) op;
                     if (Instructions.valid_RCRW(o.val)) {
-                        nameSet16(o.earw, "Instructions.do_RCRW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")", method);
+                        nameSet16(o.earw, "Instructions.do_RCRW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")",
+                            method);
                         method.append(";");
                     }
                     return true;
@@ -4457,7 +4558,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.SHLW_reg) {
                     Grp2.SHLW_reg o = (Grp2.SHLW_reg) op;
                     if (Instructions.valid_SHLW(o.val)) {
-                        nameSet16(o.earw, "Instructions.do_SHLW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")", method);
+                        nameSet16(o.earw, "Instructions.do_SHLW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")",
+                            method);
                         method.append(";");
                     }
                     return true;
@@ -4465,7 +4567,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.SHRW_reg) {
                     Grp2.SHRW_reg o = (Grp2.SHRW_reg) op;
                     if (Instructions.valid_SHRW(o.val)) {
-                        nameSet16(o.earw, "Instructions.do_SHRW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")", method);
+                        nameSet16(o.earw, "Instructions.do_SHRW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")",
+                            method);
                         method.append(";");
                     }
                     return true;
@@ -4473,7 +4576,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.SARW_reg) {
                     Grp2.SARW_reg o = (Grp2.SARW_reg) op;
                     if (Instructions.valid_SARW(o.val)) {
-                        nameSet16(o.earw, "Instructions.do_SARW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")", method);
+                        nameSet16(o.earw, "Instructions.do_SARW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")",
+                            method);
                         method.append(";");
                     }
                     return true;
@@ -4571,7 +4675,9 @@ public class Compiler extends Helper {
                     memory_start(o.get_eaa, seg, method);
                     // make sure all reads are done before writing something in case of a PF
                     declareVal(method);
-                    method.append("val=Memory.mem_readw(eaa);if (CPU.CPU_SetSegGeneralES(Memory.mem_readw(eaa+2))) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("val=Memory.mem_readw(eaa);if (CPU.CPU_SetSegGeneralES(Memory.mem_readw(eaa+2))) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     nameSet16(o.rw, "val", method);
                     method.append(";");
                     return true;
@@ -4583,7 +4689,9 @@ public class Compiler extends Helper {
                     memory_start(o.get_eaa, seg, method);
                     // make sure all reads are done before writing something in case of a PF
                     declareVal(method);
-                    method.append("val=Memory.mem_readw(eaa);if (CPU.CPU_SetSegGeneralDS(Memory.mem_readw(eaa+2))) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("val=Memory.mem_readw(eaa);if (CPU.CPU_SetSegGeneralDS(Memory.mem_readw(eaa+2))) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     nameSet16(o.rw, "val", method);
                     method.append(";");
                     return true;
@@ -4715,7 +4823,8 @@ public class Compiler extends Helper {
                     method.append(o.eip_count);
                     method.append(");");
                     if (CPU_TRAP_CHECK) {
-                        method.append("if (CPU_Regs.GETFLAG(CPU_Regs.TF)!=0) {CPU.cpudecoder= Core_dynamic.CPU_Core_Dynrec_Trap_Run;return CB_NONE();}");
+                        method.append(
+                            "if (CPU_Regs.GETFLAG(CPU_Regs.TF)!=0) {CPU.cpudecoder= Core_dynamic.CPU_Core_Dynrec_Trap_Run;return CB_NONE();}");
                     }
                     if (CPU_PIC_CHECK) {
                         method.append("if (CPU_Regs.GETFLAG(CPU_Regs.IF)!=0 && Pic.PIC_IRQCheck!=0) return CB_NONE();");
@@ -4753,7 +4862,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.RCLB_reg) {
                     Grp2.RCLB_reg o = (Grp2.RCLB_reg) op;
                     if (Instructions.valid_RCLB(o.val)) {
-                        method.append(nameSet8(o.earb, "Instructions.do_RCLB(" + o.val + ", " + nameGet8(o.earb) + ")"));
+                        method
+                            .append(nameSet8(o.earb, "Instructions.do_RCLB(" + o.val + ", " + nameGet8(o.earb) + ")"));
                         method.append(";");
                     }
                     return true;
@@ -4761,7 +4871,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.RCRB_reg) {
                     Grp2.RCRB_reg o = (Grp2.RCRB_reg) op;
                     if (Instructions.valid_RCRB(o.val)) {
-                        method.append(nameSet8(o.earb, "Instructions.do_RCRB(" + o.val + ", " + nameGet8(o.earb) + ")"));
+                        method
+                            .append(nameSet8(o.earb, "Instructions.do_RCRB(" + o.val + ", " + nameGet8(o.earb) + ")"));
                         method.append(";");
                     }
                     return true;
@@ -4769,7 +4880,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.SHLB_reg) {
                     Grp2.SHLB_reg o = (Grp2.SHLB_reg) op;
                     if (Instructions.valid_SHLB(o.val)) {
-                        method.append(nameSet8(o.earb, "Instructions.do_SHLB(" + o.val + ", " + nameGet8(o.earb) + ")"));
+                        method
+                            .append(nameSet8(o.earb, "Instructions.do_SHLB(" + o.val + ", " + nameGet8(o.earb) + ")"));
                         method.append(";");
                     }
                     return true;
@@ -4777,7 +4889,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.SHRB_reg) {
                     Grp2.SHRB_reg o = (Grp2.SHRB_reg) op;
                     if (Instructions.valid_SHRB(o.val)) {
-                        method.append(nameSet8(o.earb, "Instructions.do_SHRB(" + o.val + ", " + nameGet8(o.earb) + ")"));
+                        method
+                            .append(nameSet8(o.earb, "Instructions.do_SHRB(" + o.val + ", " + nameGet8(o.earb) + ")"));
                         method.append(";");
                     }
                     return true;
@@ -4785,7 +4898,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.SARB_reg) {
                     Grp2.SARB_reg o = (Grp2.SARB_reg) op;
                     if (Instructions.valid_SARB(o.val)) {
-                        method.append(nameSet8(o.earb, "Instructions.do_SARB(" + o.val + ", " + nameGet8(o.earb) + ")"));
+                        method
+                            .append(nameSet8(o.earb, "Instructions.do_SARB(" + o.val + ", " + nameGet8(o.earb) + ")"));
                         method.append(";");
                     }
                     return true;
@@ -4889,7 +5003,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.RCLW_reg) {
                     Grp2.RCLW_reg o = (Grp2.RCLW_reg) op;
                     if (Instructions.valid_RCLW(o.val)) {
-                        nameSet16(o.earw, "Instructions.do_RCLW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")", method);
+                        nameSet16(o.earw, "Instructions.do_RCLW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")",
+                            method);
                         method.append(";");
                     }
                     return true;
@@ -4897,7 +5012,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.RCRW_reg) {
                     Grp2.RCRW_reg o = (Grp2.RCRW_reg) op;
                     if (Instructions.valid_RCRW(o.val)) {
-                        nameSet16(o.earw, "Instructions.do_RCRW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")", method);
+                        nameSet16(o.earw, "Instructions.do_RCRW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")",
+                            method);
                         method.append(";");
                     }
                     return true;
@@ -4905,7 +5021,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.SHLW_reg) {
                     Grp2.SHLW_reg o = (Grp2.SHLW_reg) op;
                     if (Instructions.valid_SHLW(o.val)) {
-                        nameSet16(o.earw, "Instructions.do_SHLW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")", method);
+                        nameSet16(o.earw, "Instructions.do_SHLW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")",
+                            method);
                         method.append(";");
                     }
                     return true;
@@ -4913,7 +5030,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.SHRW_reg) {
                     Grp2.SHRW_reg o = (Grp2.SHRW_reg) op;
                     if (Instructions.valid_SHRW(o.val)) {
-                        nameSet16(o.earw, "Instructions.do_SHRW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")", method);
+                        nameSet16(o.earw, "Instructions.do_SHRW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")",
+                            method);
                         method.append(";");
                     }
                     return true;
@@ -4921,7 +5039,8 @@ public class Compiler extends Helper {
                 if (op instanceof Grp2.SARW_reg) {
                     Grp2.SARW_reg o = (Grp2.SARW_reg) op;
                     if (Instructions.valid_SARW(o.val)) {
-                        nameSet16(o.earw, "Instructions.do_SARW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")", method);
+                        nameSet16(o.earw, "Instructions.do_SARW(", String.valueOf(o.val), ", ", nameGet16(o.earw), ")",
+                            method);
                         method.append(";");
                     }
                     return true;
@@ -5067,14 +5186,16 @@ public class Compiler extends Helper {
                     Grp2.ROLB_mem_cl o = (Grp2.ROLB_mem_cl) op;
                     memory_start(o.get_eaa, seg, method);
                     declareVal(method);
-                    method.append("val = CPU_Regs.reg_ecx.low() & 0x1f;if (Instructions.valid_ROLB(eaa, val)) Memory.mem_writeb(eaa, Instructions.do_ROLB(val, Memory.mem_readb(eaa)));");
+                    method.append(
+                        "val = CPU_Regs.reg_ecx.low() & 0x1f;if (Instructions.valid_ROLB(eaa, val)) Memory.mem_writeb(eaa, Instructions.do_ROLB(val, Memory.mem_readb(eaa)));");
                     return true;
                 }
                 if (op instanceof Grp2.RORB_mem_cl) {
                     Grp2.RORB_mem_cl o = (Grp2.RORB_mem_cl) op;
                     memory_start(o.get_eaa, seg, method);
                     declareVal(method);
-                    method.append("val = CPU_Regs.reg_ecx.low() & 0x1f;if (Instructions.valid_RORB(eaa, val)) Memory.mem_writeb(eaa, Instructions.do_RORB(val, Memory.mem_readb(eaa)));");
+                    method.append(
+                        "val = CPU_Regs.reg_ecx.low() & 0x1f;if (Instructions.valid_RORB(eaa, val)) Memory.mem_writeb(eaa, Instructions.do_RORB(val, Memory.mem_readb(eaa)));");
                     return true;
                 }
                 if (op instanceof Grp2.RCLB_mem_cl) {
@@ -5187,14 +5308,16 @@ public class Compiler extends Helper {
                     Grp2.ROLW_mem_cl o = (Grp2.ROLW_mem_cl) op;
                     memory_start(o.get_eaa, seg, method);
                     declareVal(method);
-                    method.append("val = CPU_Regs.reg_ecx.low() & 0x1f;if (Instructions.valid_ROLW(eaa, val)) Memory.mem_writew(eaa, Instructions.do_ROLW(val, Memory.mem_readw(eaa)));");
+                    method.append(
+                        "val = CPU_Regs.reg_ecx.low() & 0x1f;if (Instructions.valid_ROLW(eaa, val)) Memory.mem_writew(eaa, Instructions.do_ROLW(val, Memory.mem_readw(eaa)));");
                     return true;
                 }
                 if (op instanceof Grp2.RORW_mem_cl) {
                     Grp2.RORW_mem_cl o = (Grp2.RORW_mem_cl) op;
                     memory_start(o.get_eaa, seg, method);
                     declareVal(method);
-                    method.append("val = CPU_Regs.reg_ecx.low() & 0x1f;if (Instructions.valid_RORW(eaa, val)) Memory.mem_writew(eaa, Instructions.do_RORW(val, Memory.mem_readw(eaa)));");
+                    method.append(
+                        "val = CPU_Regs.reg_ecx.low() & 0x1f;if (Instructions.valid_RORW(eaa, val)) Memory.mem_writew(eaa, Instructions.do_RORW(val, Memory.mem_readw(eaa)));");
                     return true;
                 }
                 if (op instanceof Grp2.RCLW_mem_cl) {
@@ -6340,7 +6463,9 @@ public class Compiler extends Helper {
                     Inst1.InAlIb o = (Inst1.InAlIb) op;
                     method.append("if (CPU.CPU_IO_Exception(");
                     method.append(o.port);
-                    method.append(",1)) {").append(preException).append("return RUNEXCEPTION();}CPU_Regs.reg_eax.low(IO.IO_ReadB(");
+                    method.append(",1)) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}CPU_Regs.reg_eax.low(IO.IO_ReadB(");
                     method.append(o.port);
                     method.append("));");
                     return true;
@@ -6351,7 +6476,9 @@ public class Compiler extends Helper {
                     Inst1.InAxIb o = (Inst1.InAxIb) op;
                     method.append("if (CPU.CPU_IO_Exception(");
                     method.append(o.port);
-                    method.append(",2)) {").append(preException).append("return RUNEXCEPTION();}CPU_Regs.reg_eax.word(IO.IO_ReadW(");
+                    method.append(",2)) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}CPU_Regs.reg_eax.word(IO.IO_ReadW(");
                     method.append(o.port);
                     method.append("));");
                     return true;
@@ -6411,7 +6538,8 @@ public class Compiler extends Helper {
                     method.append(o.eip_count);
                     method.append(");");
                     if (CPU_TRAP_CHECK) {
-                        method.append("if (CPU_Regs.GETFLAG(CPU_Regs.TF)!=0) {CPU.cpudecoder= Core_dynamic.CPU_Core_Dynrec_Trap_Run;return CB_NONE();}");
+                        method.append(
+                            "if (CPU_Regs.GETFLAG(CPU_Regs.TF)!=0) {CPU.cpudecoder= Core_dynamic.CPU_Core_Dynrec_Trap_Run;return CB_NONE();}");
                     }
                     method.append("return Constants.BR_Jump;");
                     return false;
@@ -6430,14 +6558,18 @@ public class Compiler extends Helper {
             case 0x2ec:
                 if (op instanceof Inst1.InAlDx) {
                     Inst1.InAlDx o = (Inst1.InAlDx) op;
-                    method.append("if (CPU.CPU_IO_Exception(CPU_Regs.reg_edx.word(),1)) {").append(preException).append("return RUNEXCEPTION();}CPU_Regs.reg_eax.low(IO.IO_ReadB(CPU_Regs.reg_edx.word()));");
+                    method.append("if (CPU.CPU_IO_Exception(CPU_Regs.reg_edx.word(),1)) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}CPU_Regs.reg_eax.low(IO.IO_ReadB(CPU_Regs.reg_edx.word()));");
                     return true;
                 }
                 break;
             case 0xed: // IN AX,DX
                 if (op instanceof Inst1.InAxDx) {
                     Inst1.InAxDx o = (Inst1.InAxDx) op;
-                    method.append("if (CPU.CPU_IO_Exception(CPU_Regs.reg_edx.word(),2)) {").append(preException).append("return RUNEXCEPTION();}CPU_Regs.reg_eax.word(IO.IO_ReadW(CPU_Regs.reg_edx.word()));");
+                    method.append("if (CPU.CPU_IO_Exception(CPU_Regs.reg_edx.word(),2)) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}CPU_Regs.reg_eax.word(IO.IO_ReadW(CPU_Regs.reg_edx.word()));");
                     return true;
                 }
                 break;
@@ -6445,14 +6577,19 @@ public class Compiler extends Helper {
             case 0x2ee:
                 if (op instanceof Inst1.OutAlDx) {
                     Inst1.OutAlDx o = (Inst1.OutAlDx) op;
-                    method.append("if (CPU.CPU_IO_Exception(CPU_Regs.reg_edx.word(),1)) {").append(preException).append("return RUNEXCEPTION();}IO.IO_WriteB(CPU_Regs.reg_edx.word(),CPU_Regs.reg_eax.low());");
+                    method.append("if (CPU.CPU_IO_Exception(CPU_Regs.reg_edx.word(),1)) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}IO.IO_WriteB(CPU_Regs.reg_edx.word(),CPU_Regs.reg_eax.low());");
                     return true;
                 }
                 break;
             case 0xef: // OUT DX,AX
                 if (op instanceof Inst1.OutAxDx) {
                     Inst1.OutAxDx o = (Inst1.OutAxDx) op;
-                    method.append("if (CPU.CPU_IO_Exception(CPU_Regs.reg_edx.word(),2)) {").append(preException).append("return RUNEXCEPTION();}IO.IO_WriteW(CPU_Regs.reg_edx.word(),CPU_Regs.reg_eax.word());");
+                    method.append("if (CPU.CPU_IO_Exception(CPU_Regs.reg_edx.word(),2)) {")
+                        .append(preException)
+                        .append(
+                            "return RUNEXCEPTION();}IO.IO_WriteW(CPU_Regs.reg_edx.word(),CPU_Regs.reg_eax.word());");
                     return true;
                 }
                 break;
@@ -6482,7 +6619,9 @@ public class Compiler extends Helper {
             case 0x2f4:
                 if (op instanceof Inst1.Hlt) {
                     Inst1.Hlt o = (Inst1.Hlt) op;
-                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {").append(preException).append("return EXCEPTION(CPU.EXCEPTION_GP);}Flags.FillFlags();CPU.CPU_HLT(CPU_Regs.reg_eip+");
+                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {")
+                        .append(preException)
+                        .append("return EXCEPTION(CPU.EXCEPTION_GP);}Flags.FillFlags();CPU.CPU_HLT(CPU_Regs.reg_eip+");
                     method.append(o.eip_count);
                     method.append(");return CB_NONE();");
                     return false;
@@ -6492,7 +6631,8 @@ public class Compiler extends Helper {
             case 0x2f5:
                 if (op instanceof Inst1.Cmc) {
                     Inst1.Cmc o = (Inst1.Cmc) op;
-                    method.append("Flags.FillFlags();CPU_Regs.SETFLAGBIT(CPU_Regs.CF,(CPU_Regs.flags & CPU_Regs.CF)==0);");
+                    method.append(
+                        "Flags.FillFlags();CPU_Regs.SETFLAGBIT(CPU_Regs.CF,(CPU_Regs.flags & CPU_Regs.CF)==0);");
                     return true;
                 }
                 break;
@@ -6576,7 +6716,9 @@ public class Compiler extends Helper {
                 if (op instanceof Grp3.DivAlEb_mem) {
                     Grp3.DivAlEb_mem o = (Grp3.DivAlEb_mem) op;
                     memory_start(o.get_eaa, seg, method);
-                    method.append("if (!Instructions.DIVB(Memory.mem_readb(eaa))) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("if (!Instructions.DIVB(Memory.mem_readb(eaa))) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     return true;
                 }
                 if (op instanceof Grp3.IDivAlEb_reg) {
@@ -6589,7 +6731,9 @@ public class Compiler extends Helper {
                 if (op instanceof Grp3.IDivAlEb_mem) {
                     Grp3.IDivAlEb_mem o = (Grp3.IDivAlEb_mem) op;
                     memory_start(o.get_eaa, seg, method);
-                    method.append("if (!Instructions.IDIVB(Memory.mem_readb(eaa))) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("if (!Instructions.IDIVB(Memory.mem_readb(eaa))) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     return true;
                 }
                 break;
@@ -6672,7 +6816,9 @@ public class Compiler extends Helper {
                 if (op instanceof Grp3.DivAxEw_mem) {
                     Grp3.DivAxEw_mem o = (Grp3.DivAxEw_mem) op;
                     memory_start(o.get_eaa, seg, method);
-                    method.append("if (!Instructions.DIVW(Memory.mem_readw(eaa))) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("if (!Instructions.DIVW(Memory.mem_readw(eaa))) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     return true;
                 }
                 if (op instanceof Grp3.IDivAxEw_reg) {
@@ -6685,7 +6831,9 @@ public class Compiler extends Helper {
                 if (op instanceof Grp3.IDivAxEw_mem) {
                     Grp3.IDivAxEw_mem o = (Grp3.IDivAxEw_mem) op;
                     memory_start(o.get_eaa, seg, method);
-                    method.append("if (!Instructions.IDIVW(Memory.mem_readw(eaa))) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("if (!Instructions.IDIVW(Memory.mem_readw(eaa))) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     return true;
                 }
                 break;
@@ -6719,7 +6867,8 @@ public class Compiler extends Helper {
                     Inst1.Sti o = (Inst1.Sti) op;
                     method.append("if (CPU.CPU_STI()) {").append(preException).append("return RUNEXCEPTION();}");
                     if (CPU_PIC_CHECK) {
-                        method.append("if (CPU_Regs.GETFLAG(CPU_Regs.IF)!=0 && Pic.PIC_IRQCheck!=0) return DECODE_END(");
+                        method
+                            .append("if (CPU_Regs.GETFLAG(CPU_Regs.IF)!=0 && Pic.PIC_IRQCheck!=0) return DECODE_END(");
                         method.append(o.eip_count);
                         method.append(");");
                     }
@@ -6824,11 +6973,13 @@ public class Compiler extends Helper {
                     declareVal(method);
                     method.append("val=Memory.mem_readw(eaa);");
                     declareVal2(method);
-                    method.append("val2=Memory.mem_readw(eaa+2);Flags.FillFlags();CPU.CPU_CALL(false,val2,val,(CPU_Regs.reg_eip+");
+                    method.append(
+                        "val2=Memory.mem_readw(eaa+2);Flags.FillFlags();CPU.CPU_CALL(false,val2,val,(CPU_Regs.reg_eip+");
                     method.append(o.eip_count);
                     method.append(") & 0xFFFF);");
                     if (CPU_TRAP_CHECK) {
-                        method.append("if (CPU_Regs.GETFLAG(CPU_Regs.TF)!=0) {CPU.cpudecoder= Core_dynamic.CPU_Core_Dynrec_Trap_Run;return CB_NONE();}");
+                        method.append(
+                            "if (CPU_Regs.GETFLAG(CPU_Regs.TF)!=0) {CPU.cpudecoder= Core_dynamic.CPU_Core_Dynrec_Trap_Run;return CB_NONE();}");
                     }
                     method.append("return Constants.BR_Jump;");
                     return false;
@@ -6852,11 +7003,13 @@ public class Compiler extends Helper {
                     declareVal(method);
                     method.append("val=Memory.mem_readw(eaa);");
                     declareVal2(method);
-                    method.append("val2=Memory.mem_readw(eaa+2);Flags.FillFlags();CPU.CPU_JMP(false,val2,val,(CPU_Regs.reg_eip+");
+                    method.append(
+                        "val2=Memory.mem_readw(eaa+2);Flags.FillFlags();CPU.CPU_JMP(false,val2,val,(CPU_Regs.reg_eip+");
                     method.append(o.eip_count);
                     method.append(") & 0xFFFF);");
                     if (CPU_TRAP_CHECK) {
-                        method.append("if (CPU_Regs.GETFLAG(CPU_Regs.TF)!=0) {CPU.cpudecoder= Core_dynamic.CPU_Core_Dynrec_Trap_Run;return CB_NONE();}");
+                        method.append(
+                            "if (CPU_Regs.GETFLAG(CPU_Regs.TF)!=0) {CPU.cpudecoder= Core_dynamic.CPU_Core_Dynrec_Trap_Run;return CB_NONE();}");
                     }
                     method.append("return Constants.BR_Jump;");
                     return false;
@@ -6880,84 +7033,108 @@ public class Compiler extends Helper {
             case 0x300:
                 if (op instanceof Inst2.Sldt_reg) {
                     Inst2.Sldt_reg o = (Inst2.Sldt_reg) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
                     nameSet16(o.earw, "CPU.CPU_SLDT()", method);
                     method.append(";");
                     return true;
                 }
                 if (op instanceof Inst2.Sldt_mem) {
                     Inst2.Sldt_mem o = (Inst2.Sldt_mem) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
                     memory_start(o.get_eaa, seg, method);
                     method.append("Memory.mem_writew(eaa, CPU.CPU_SLDT());");
                     return true;
                 }
                 if (op instanceof Inst2.Str_reg) {
                     Inst2.Str_reg o = (Inst2.Str_reg) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
                     nameSet16(o.earw, "CPU.CPU_STR()", method);
                     method.append(";");
                     return true;
                 }
                 if (op instanceof Inst2.Str_mem) {
                     Inst2.Str_mem o = (Inst2.Str_mem) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
                     memory_start(o.get_eaa, seg, method);
                     method.append("Memory.mem_writew(eaa, CPU.CPU_STR());");
                     return true;
                 }
                 if (op instanceof Inst2.Lldt_reg) {
                     Inst2.Lldt_reg o = (Inst2.Lldt_reg) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;if (CPU.cpu.cpl!=0) {").append(preException).append("return EXCEPTION(CPU.EXCEPTION_GP);}if (CPU.CPU_LLDT(");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;if (CPU.cpu.cpl!=0) {")
+                        .append(preException)
+                        .append("return EXCEPTION(CPU.EXCEPTION_GP);}if (CPU.CPU_LLDT(");
                     method.append(nameGet16(o.earw));
                     method.append(")) {").append(preException).append("return RUNEXCEPTION();}");
                     return true;
                 }
                 if (op instanceof Inst2.Lldt_mem) {
                     Inst2.Lldt_mem o = (Inst2.Lldt_mem) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;if (CPU.cpu.cpl!=0) {").append(preException).append("return EXCEPTION(CPU.EXCEPTION_GP);}");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;if (CPU.cpu.cpl!=0) {")
+                        .append(preException)
+                        .append("return EXCEPTION(CPU.EXCEPTION_GP);}");
                     memory_start(o.get_eaa, seg, method);
-                    method.append("if (CPU.CPU_LLDT(Memory.mem_readw(eaa))) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("if (CPU.CPU_LLDT(Memory.mem_readw(eaa))) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     return true;
                 }
                 if (op instanceof Inst2.Ltr_reg) {
                     Inst2.Ltr_reg o = (Inst2.Ltr_reg) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;if (CPU.cpu.cpl!=0) {").append(preException).append("return EXCEPTION(CPU.EXCEPTION_GP);}if (CPU.CPU_LTR(");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;if (CPU.cpu.cpl!=0) {")
+                        .append(preException)
+                        .append("return EXCEPTION(CPU.EXCEPTION_GP);}if (CPU.CPU_LTR(");
                     method.append(nameGet16(o.earw));
                     method.append(")) {").append(preException).append("return RUNEXCEPTION();}");
                     return true;
                 }
                 if (op instanceof Inst2.Ltr_mem) {
                     Inst2.Ltr_mem o = (Inst2.Ltr_mem) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;if (CPU.cpu.cpl!=0) {").append(preException).append("return EXCEPTION(CPU.EXCEPTION_GP);}");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;if (CPU.cpu.cpl!=0) {")
+                        .append(preException)
+                        .append("return EXCEPTION(CPU.EXCEPTION_GP);}");
                     memory_start(o.get_eaa, seg, method);
-                    method.append("if (CPU.CPU_LTR(Memory.mem_readw(eaa))) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("if (CPU.CPU_LTR(Memory.mem_readw(eaa))) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     return true;
                 }
                 if (op instanceof Inst2.Verr_reg) {
                     Inst2.Verr_reg o = (Inst2.Verr_reg) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;CPU.CPU_VERR(");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;CPU.CPU_VERR(");
                     method.append(nameGet16(o.earw));
                     method.append(");");
                     return true;
                 }
                 if (op instanceof Inst2.Verr_mem) {
                     Inst2.Verr_mem o = (Inst2.Verr_mem) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
                     memory_start(o.get_eaa, seg, method);
                     method.append("CPU.CPU_VERR(Memory.mem_readw(eaa));");
                     return true;
                 }
                 if (op instanceof Inst2.Verw_reg) {
                     Inst2.Verw_reg o = (Inst2.Verw_reg) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;CPU.CPU_VERW(");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;CPU.CPU_VERW(");
                     method.append(nameGet16(o.earw));
                     method.append(");");
                     return true;
                 }
                 if (op instanceof Inst2.Verw_mem) {
                     Inst2.Verw_mem o = (Inst2.Verw_mem) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
                     memory_start(o.get_eaa, seg, method);
                     method.append("CPU.CPU_VERW(Memory.mem_readw(eaa));");
                     return true;
@@ -6967,25 +7144,33 @@ public class Compiler extends Helper {
                 if (op instanceof Inst2.Sgdt_mem) {
                     Inst2.Sgdt_mem o = (Inst2.Sgdt_mem) op;
                     memory_start(o.get_eaa, seg, method);
-                    method.append("Memory.mem_writew(eaa,CPU.CPU_SGDT_limit());Memory.mem_writed(eaa+2,CPU.CPU_SGDT_base());");
+                    method.append(
+                        "Memory.mem_writew(eaa,CPU.CPU_SGDT_limit());Memory.mem_writed(eaa+2,CPU.CPU_SGDT_base());");
                     return true;
                 }
                 if (op instanceof Inst2.Sidt_mem) {
                     Inst2.Sidt_mem o = (Inst2.Sidt_mem) op;
                     memory_start(o.get_eaa, seg, method);
-                    method.append("Memory.mem_writew(eaa,CPU.CPU_SIDT_limit());Memory.mem_writed(eaa+2,CPU.CPU_SIDT_base());");
+                    method.append(
+                        "Memory.mem_writew(eaa,CPU.CPU_SIDT_limit());Memory.mem_writed(eaa+2,CPU.CPU_SIDT_base());");
                     return true;
                 }
                 if (op instanceof Inst2.Lgdt_mem) {
                     Inst2.Lgdt_mem o = (Inst2.Lgdt_mem) op;
                     memory_start(o.get_eaa, seg, method);
-                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {").append(preException).append("return EXCEPTION(CPU.EXCEPTION_GP);}CPU.CPU_LGDT(Memory.mem_readw(eaa),Memory.mem_readd(eaa + 2) & 0xFFFFFF);");
+                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {")
+                        .append(preException)
+                        .append(
+                            "return EXCEPTION(CPU.EXCEPTION_GP);}CPU.CPU_LGDT(Memory.mem_readw(eaa),Memory.mem_readd(eaa + 2) & 0xFFFFFF);");
                     return true;
                 }
                 if (op instanceof Inst2.Lidt_mem) {
                     Inst2.Lidt_mem o = (Inst2.Lidt_mem) op;
                     memory_start(o.get_eaa, seg, method);
-                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {").append(preException).append("return EXCEPTION(CPU.EXCEPTION_GP);}CPU.CPU_LIDT(Memory.mem_readw(eaa),Memory.mem_readd(eaa + 2) & 0xFFFFFF);");
+                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {")
+                        .append(preException)
+                        .append(
+                            "return EXCEPTION(CPU.EXCEPTION_GP);}CPU.CPU_LIDT(Memory.mem_readw(eaa),Memory.mem_readd(eaa + 2) & 0xFFFFFF);");
                     return true;
                 }
                 if (op instanceof Inst2.Smsw_mem) {
@@ -6997,22 +7182,30 @@ public class Compiler extends Helper {
                 if (op instanceof Inst2.Lmsw_mem) {
                     Inst2.Lmsw_mem o = (Inst2.Lmsw_mem) op;
                     memory_start(o.get_eaa, seg, method);
-                    method.append("if (CPU.CPU_LMSW(Memory.mem_readw(eaa))) {").append(preException).append("return RUNEXCEPTION();}");
+                    method.append("if (CPU.CPU_LMSW(Memory.mem_readw(eaa))) {")
+                        .append(preException)
+                        .append("return RUNEXCEPTION();}");
                     return true;
                 }
                 if (op instanceof Inst2.Invlpg) {
                     Inst2.Invlpg o = (Inst2.Invlpg) op;
-                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {").append(preException).append("return EXCEPTION(CPU.EXCEPTION_GP);}Paging.PAGING_ClearTLB();");
+                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {")
+                        .append(preException)
+                        .append("return EXCEPTION(CPU.EXCEPTION_GP);}Paging.PAGING_ClearTLB();");
                     return true;
                 }
                 if (op instanceof Inst2.Lgdt_reg) {
                     Inst2.Lgdt_reg o = (Inst2.Lgdt_reg) op;
-                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {").append(preException).append("return EXCEPTION(CPU.EXCEPTION_GP);}return Constants.BR_Illegal;");
+                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {")
+                        .append(preException)
+                        .append("return EXCEPTION(CPU.EXCEPTION_GP);}return Constants.BR_Illegal;");
                     return false;
                 }
                 if (op instanceof Inst2.Lidt_reg) {
                     Inst2.Lidt_reg o = (Inst2.Lidt_reg) op;
-                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {").append(preException).append("return EXCEPTION(CPU.EXCEPTION_GP);}return Constants.BR_Illegal;");
+                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {")
+                        .append(preException)
+                        .append("return EXCEPTION(CPU.EXCEPTION_GP);}return Constants.BR_Illegal;");
                     return false;
                 }
                 if (op instanceof Inst2.Smsw_reg) {
@@ -7032,7 +7225,8 @@ public class Compiler extends Helper {
             case 0x102: // LAR Gw,Ew
                 if (op instanceof Inst2.LarGwEw_reg) {
                     Inst2.LarGwEw_reg o = (Inst2.LarGwEw_reg) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
                     nameSet16(o.rw, "CPU.CPU_LAR(", nameGet16(o.earw), ",", nameGet16(o.rw), ")", method);
                     method.append(";");
                     return true;
@@ -7040,7 +7234,8 @@ public class Compiler extends Helper {
                 if (op instanceof Inst2.LarGwEw_mem) {
                     Inst2.LarGwEw_mem o = (Inst2.LarGwEw_mem) op;
                     memory_start(o.get_eaa, seg, method);
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
                     nameSet16(o.rw, "CPU.CPU_LAR(Memory.mem_readw(eaa),", nameGet16(o.rw), ")", method);
                     method.append(";");
                     return true;
@@ -7049,14 +7244,16 @@ public class Compiler extends Helper {
             case 0x103: // LSL Gw,Ew
                 if (op instanceof Inst2.LslGwEw_reg) {
                     Inst2.LslGwEw_reg o = (Inst2.LslGwEw_reg) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
                     nameSet16(o.rw, "CPU.CPU_LSL(", nameGet16(o.earw), ",", nameGet16(o.rw), ")", method);
                     method.append(";");
                     return true;
                 }
                 if (op instanceof Inst2.LslGwEw_mem) {
                     Inst2.LslGwEw_mem o = (Inst2.LslGwEw_mem) op;
-                    method.append("if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
+                    method.append(
+                        "if ((CPU_Regs.flags & CPU_Regs.VM)!=0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;");
                     memory_start(o.get_eaa, seg, method);
                     nameSet16(o.rw, "CPU.CPU_LSL(Memory.mem_readw(eaa),", nameGet16(o.rw), ")", method);
                     method.append(";");
@@ -7068,7 +7265,10 @@ public class Compiler extends Helper {
                 if (op instanceof Inst2.Clts) {
                     Inst2.Clts o = (Inst2.Clts) op;
                     // :TODO: this is a bug in the compiler, ~ and a constant int does not work so I added the (int) cast which fixes it
-                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {").append(preException).append("return EXCEPTION(CPU.EXCEPTION_GP);}CPU.cpu.cr0=CPU.cpu.cr0 & (~(int)CPU.CR0_TASKSWITCH);");
+                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {")
+                        .append(preException)
+                        .append(
+                            "return EXCEPTION(CPU.EXCEPTION_GP);}CPU.cpu.cr0=CPU.cpu.cr0 & (~(int)CPU.CR0_TASKSWITCH);");
                     return true;
                 }
 
@@ -7077,7 +7277,9 @@ public class Compiler extends Helper {
             case 0x308:
                 if (op instanceof Inst2.Invd) {
                     Inst2.Invd o = (Inst2.Invd) op;
-                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {").append(preException).append("return EXCEPTION(CPU.EXCEPTION_GP);}");
+                    method.append("if (CPU.cpu.pmode && CPU.cpu.cpl!=0) {")
+                        .append(preException)
+                        .append("return EXCEPTION(CPU.EXCEPTION_GP);}");
                     return true;
                 }
                 break;
@@ -7160,9 +7362,11 @@ public class Compiler extends Helper {
             case 0x331:
                 if (op instanceof Inst2.Rdtsc) {
                     Inst2.Rdtsc o = (Inst2.Rdtsc) op;
-                    method.append("if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM) return Constants.BR_Illegal;");
+                    method
+                        .append("if (CPU.CPU_ArchitectureType<CPU.CPU_ARCHTYPE_PENTIUM) return Constants.BR_Illegal;");
                     declareLongVal(method);
-                    method.append("lval=(long)(Pic.PIC_FullIndex()*(double) (CPU.CPU_CycleAutoAdjust?70000:CPU.CPU_CycleMax));CPU_Regs.reg_edx.dword=(int)(lval>>>32);CPU_Regs.reg_eax.dword=(int)lval;");
+                    method.append(
+                        "lval=(long)(Pic.PIC_FullIndex()*(double) (CPU.CPU_CycleAutoAdjust?70000:CPU.CPU_CycleMax));CPU_Regs.reg_edx.dword=(int)(lval>>>32);CPU_Regs.reg_eax.dword=(int)lval;");
                     return true;
                 }
                 break;
@@ -7540,10 +7744,10 @@ public class Compiler extends Helper {
         return true;
     }
 
-    static private Op compileMethod(Op op, StringBuilder method, boolean jump) {
+    private static Op compileMethod(Op op, StringBuilder method, boolean jump) {
         //System.out.println(method.toString());
         try {
-            String className = "CacheBlock" + (count++);
+            String className = "CacheBlock" + count++;
             // :TODO: research using a new pool for each block since the classes don't need to see each other
             CtClass codeBlock = pool.makeClass(className);
             codeBlock.setSuperclass(pool.getCtClass("jdos.cpu.core_dynamic.Op"));
@@ -7552,7 +7756,6 @@ public class Compiler extends Helper {
             method.append("}");
             CtMethod m = CtNewMethod.make("public int call() {" + method.toString(), codeBlock);
             codeBlock.addMethod(m);
-
 
             Op o = op;
             int cycle = 0;
@@ -7576,8 +7779,10 @@ public class Compiler extends Helper {
             if (saveClasses) {
                 if (op instanceof DecodeBlock) {
                     DecodeBlock block = (DecodeBlock) op;
-                    String header = "package jdos.cpu.core_dynamic;\n\nimport jdos.cpu.core_dynamic.*;\nimport jdos.cpu.*;\nimport jdos.fpu.*;\nimport jdos.hardware.*;\nimport jdos.util.*;\nimport jdos.cpu.core_normal.*;\nimport jdos.cpu.core_share.*;\n\npublic final class " + className + " extends Op {\npublic int call() {";
-                    Loader.add(codeBlock.getName(), codeBlock.toBytecode(), block.codeStart, getOpCode(block.codeStart, block.codeLen), header + method.toString() + "\n}");
+                    String header = "package jdos.cpu.core_dynamic;\n\nimport jdos.cpu.core_dynamic.*;\nimport jdos.cpu.*;\nimport jdos.fpu.*;\nimport jdos.hardware.*;\nimport jdos.util.*;\nimport jdos.cpu.core_normal.*;\nimport jdos.cpu.core_share.*;\n\npublic final class "
+                        + className + " extends Op {\npublic int call() {";
+                    Loader.add(codeBlock.getName(), codeBlock.toBytecode(), block.codeStart,
+                        getOpCode(block.codeStart, block.codeLen), header + method.toString() + "\n}");
                 } else {
                     Log.exit("Tried to save an incomplete code block");
                 }
@@ -7592,7 +7797,7 @@ public class Compiler extends Helper {
         return null;
     }
 
-    static public class Seg {
+    public static class Seg {
         public String val;
         public boolean wasSet;
         private final StringBuilder method;

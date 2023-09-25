@@ -31,19 +31,19 @@ public class WinObject extends WinAPI {
         }
     }
 
-    static public WinObject createWinObject() {
+    public static WinObject createWinObject() {
         return new WinObject(nextObjectId());
     }
 
-    static protected int nextObjectId() {
+    protected static int nextObjectId() {
         return StaticData.nextObjectId++;
     }
 
-    static public WinObject getObject(int handle) {
-        return StaticData.objects.get(new Integer(handle));
+    public static WinObject getObject(int handle) {
+        return StaticData.objects.get(Integer.valueOf(handle));
     }
 
-    static public WinObject getNamedObject(String name) {
+    public static WinObject getNamedObject(String name) {
         return StaticData.namedObjects.get(name);
     }
 

@@ -5,7 +5,7 @@ import jdos.win.builtin.WinAPI;
 import jdos.win.builtin.directx.dsound.DSMixer;
 
 public class WAVEFORMATEX extends WinAPI {
-    public final static int SIZE = 18;
+    public static final int SIZE = 18;
     public int wFormatTag;
     public int nChannels;
     public int nSamplesPerSec;
@@ -13,6 +13,7 @@ public class WAVEFORMATEX extends WinAPI {
     public int nBlockAlign;
     public int wBitsPerSample;
     public int cbSize;
+
     public WAVEFORMATEX() {
         wFormatTag = WAVE_FORMAT_ADPCM;
         nChannels = DSMixer.DEVICE_CHANNELS;
@@ -22,6 +23,7 @@ public class WAVEFORMATEX extends WinAPI {
         cbSize = SIZE;
         nAvgBytesPerSec = nSamplesPerSec * wBitsPerSample / 8 * nChannels;
     }
+
     public WAVEFORMATEX(int address) {
         wFormatTag = Memory.mem_readw(address);
         address += 2;

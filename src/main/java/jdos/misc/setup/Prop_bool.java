@@ -7,6 +7,7 @@ public class Prop_bool extends Property {
         value.set(_value);
     }
 
+    @Override
     public void SetValue(String str) {
         SetVal(new Value(str, Value.Etype.V_BOOL), false, true);
     }

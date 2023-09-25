@@ -9,7 +9,7 @@ import jdos.types.LogTypes;
 import jdos.util.IntRef;
 
 public class Int10_misc {
-    static public void INT10_GetFuncStateInformation(/*PhysPt*/int save) {
+    public static void INT10_GetFuncStateInformation(/*PhysPt*/int save) {
         /* set static state pointer */
         Memory.mem_writed(save, Int10.int10.rom.static_state);
         /* Copy BIOS Segment areas */
@@ -26,7 +26,8 @@ public class Int10_misc {
             Memory.mem_writeb(save + 0x22 + i, Memory.real_readb(Int10.BIOSMEM_SEG, Int10.BIOSMEM_NB_ROWS + i));
         }
         /* Zero out rest of block */
-        for (i = 0x25; i < 0x40; i++) Memory.mem_writeb(save + i, 0);
+        for (i = 0x25; i < 0x40; i++)
+            Memory.mem_writeb(save + i, 0);
         /* DCC */
         //	Memory.mem_writeb(save+0x25,Memory.real_readb(Int10.BIOSMEM_SEG,Int10.BIOSMEM_DCC_INDEX));
         /*Bit8u*/
@@ -46,8 +47,10 @@ public class Int10_misc {
             if (idx < entries) {
                 /*Bit16u*/
                 int dccentry = Memory.real_readw(Memory.RealSeg(dcctable), Memory.RealOff(dcctable) + 0x04 + idx * 2);
-                if ((dccentry & 0xff) == 0) dccode = (short) ((dccentry >> 8) & 0xff);
-                else dccode = (short) (dccentry & 0xff);
+                if ((dccentry & 0xff) == 0)
+                    dccode = (short) (dccentry >> 8 & 0xff);
+                else
+                    dccode = (short) (dccentry & 0xff);
             }
         }
         Memory.mem_writeb(save + 0x25, dccode);
@@ -56,8 +59,10 @@ public class Int10_misc {
         int col_count = 0;
         switch (Int10_modes.CurMode.type) {
             case VGA.M_TEXT:
-                if (Int10_modes.CurMode.mode == 0x7) col_count = 1;
-                else col_count = 16;
+                if (Int10_modes.CurMode.mode == 0x7)
+                    col_count = 1;
+                else
+                    col_count = 16;
                 break;
             case VGA.M_CGA2:
                 col_count = 2;
@@ -76,7 +81,8 @@ public class Int10_misc {
                 break;
             default:
                 if (Log.level <= LogSeverities.LOG_ERROR)
-                    Log.log(LogTypes.LOG_INT10, LogSeverities.LOG_ERROR, "Get Func State illegal mode type " + Int10_modes.CurMode.type);
+                    Log.log(LogTypes.LOG_INT10, LogSeverities.LOG_ERROR,
+                        "Get Func State illegal mode type " + Int10_modes.CurMode.type);
         }
         /* Colour count */
         Memory.mem_writew(save + 0x27, col_count);
@@ -98,19 +104,21 @@ public class Int10_misc {
                 break;
         }
         /* misc flags */
-        if (Int10_modes.CurMode.type == VGA.M_TEXT) Memory.mem_writeb(save + 0x2d, 0x21);
-        else Memory.mem_writeb(save + 0x2d, 0x01);
+        if (Int10_modes.CurMode.type == VGA.M_TEXT)
+            Memory.mem_writeb(save + 0x2d, 0x21);
+        else
+            Memory.mem_writeb(save + 0x2d, 0x01);
         /* Video Memory available */
         Memory.mem_writeb(save + 0x31, 3);
     }
 
-    static public /*RealPt*/int INT10_EGA_RIL_GetVersionPt() {
+    public static /*RealPt*/int INT10_EGA_RIL_GetVersionPt() {
         /* points to a graphics ROM location at the moment
            as checks test for bx!=0 only */
         return Memory.RealMake(0xc000, 0x30);
     }
 
-    static private void EGA_RIL(/*Bit16u*/int dx, /*Bitu*/IntRef port, /*Bitu*/IntRef regs) {
+    private static void EGA_RIL(/*Bit16u*/int dx, /*Bitu*/IntRef port, /*Bitu*/IntRef regs) {
         port.value = 0;
         regs.value = 0; //if nul is returned it's a single register port
         switch (dx) {
@@ -144,19 +152,21 @@ public class Int10_misc {
                 break;
             default:
                 if (Log.level <= LogSeverities.LOG_ERROR)
-                    Log.log(LogTypes.LOG_INT10, LogSeverities.LOG_ERROR, "unknown RIL port selection " + Integer.toString(dx, 16));
+                    Log.log(LogTypes.LOG_INT10, LogSeverities.LOG_ERROR,
+                        "unknown RIL port selection " + Integer.toString(dx, 16));
                 break;
         }
     }
 
-    static public short INT10_EGA_RIL_ReadRegister(/*Bit8u*/short bl, /*Bit16u*/int dx) {
+    public static short INT10_EGA_RIL_ReadRegister(/*Bit8u*/short bl, /*Bit16u*/int dx) {
         /*Bitu*/
         IntRef port = new IntRef(0);
         /*Bitu*/
         IntRef regs = new IntRef(0);
         EGA_RIL(dx, port, regs);
         if (regs.value == 0) {
-            if (port.value != 0) bl = IoHandler.IO_Read(port.value);
+            if (port.value != 0)
+                bl = IoHandler.IO_Read(port.value);
         } else {
             if (port.value == 0x3c0)
                 IoHandler.IO_Read(Memory.real_readw(Int10.BIOSMEM_SEG, Int10.BIOSMEM_CRTC_ADDRESS) + 6);
@@ -169,14 +179,15 @@ public class Int10_misc {
         return bl;
     }
 
-    static public short INT10_EGA_RIL_WriteRegister(/*Bit8u*/short bl, /*Bit8u*/short bh, /*Bit16u*/int dx) {
+    public static short INT10_EGA_RIL_WriteRegister(/*Bit8u*/short bl, /*Bit8u*/short bh, /*Bit16u*/int dx) {
         /*Bitu*/
         IntRef port = new IntRef(0);
         /*Bitu*/
         IntRef regs = new IntRef(0);
         EGA_RIL(dx, port, regs);
         if (regs.value == 0) {
-            if (port.value != 0) IoHandler.IO_Write(port.value, bl);
+            if (port.value != 0)
+                IoHandler.IO_Write(port.value, bl);
         } else {
             if (port.value == 0x3c0) {
                 IoHandler.IO_Read(Memory.real_readw(Int10.BIOSMEM_SEG, Int10.BIOSMEM_CRTC_ADDRESS) + 6);
@@ -192,7 +203,8 @@ public class Int10_misc {
         return bl;
     }
 
-    static public void INT10_EGA_RIL_ReadRegisterRange(/*Bit8u*/short ch, /*Bit8u*/short cl, /*Bit16u*/int dx, /*PhysPt*/int dst) {
+    public static void INT10_EGA_RIL_ReadRegisterRange(/*Bit8u*/short ch, /*Bit8u*/short cl, /*Bit16u*/int dx,
+        /*PhysPt*/int dst) {
         /*Bitu*/
         IntRef port = new IntRef(0);
         /*Bitu*/
@@ -200,26 +212,30 @@ public class Int10_misc {
         EGA_RIL(dx, port, regs);
         if (regs.value == 0) {
             if (Log.level <= LogSeverities.LOG_ERROR)
-                Log.log(LogTypes.LOG_INT10, LogSeverities.LOG_ERROR, "EGA RIL range read with port " + Integer.toString(port.value, 16) + " called");
+                Log.log(LogTypes.LOG_INT10, LogSeverities.LOG_ERROR,
+                    "EGA RIL range read with port " + Integer.toString(port.value, 16) + " called");
         } else {
             if (ch < regs.value) {
-                if (ch + cl > regs.value) cl = (short) (regs.value - ch);
+                if (ch + cl > regs.value)
+                    cl = (short) (regs.value - ch);
                 for (/*Bitu*/int i = 0; i < cl; i++) {
                     if (port.value == 0x3c0)
                         IoHandler.IO_Read(Memory.real_readw(Int10.BIOSMEM_SEG, Int10.BIOSMEM_CRTC_ADDRESS) + 6);
-                    IoHandler.IO_Write(port.value, (ch + i));
+                    IoHandler.IO_Write(port.value, ch + i);
                     Memory.mem_writeb(dst++, IoHandler.IO_Read(port.value + 1));
                 }
                 if (port.value == 0x3c0)
                     IoHandler.IO_Read(Memory.real_readw(Int10.BIOSMEM_SEG, Int10.BIOSMEM_CRTC_ADDRESS) + 6);
             } else {
                 if (Log.level <= LogSeverities.LOG_ERROR)
-                    Log.log(LogTypes.LOG_INT10, LogSeverities.LOG_ERROR, "EGA RIL range read from " + Integer.toString(port.value, 16) + " for invalid register " + Integer.toString(ch, 16));
+                    Log.log(LogTypes.LOG_INT10, LogSeverities.LOG_ERROR, "EGA RIL range read from "
+                        + Integer.toString(port.value, 16) + " for invalid register " + Integer.toString(ch, 16));
             }
         }
     }
 
-    public static void INT10_EGA_RIL_WriteRegisterRange(/*Bit8u*/short ch, /*Bit8u*/short cl, /*Bit16u*/int dx, /*PhysPt*/int src) {
+    public static void INT10_EGA_RIL_WriteRegisterRange(/*Bit8u*/short ch, /*Bit8u*/short cl, /*Bit16u*/int dx,
+        /*PhysPt*/int src) {
         /*Bitu*/
         IntRef port = new IntRef(0);
         /*Bitu*/
@@ -227,25 +243,28 @@ public class Int10_misc {
         EGA_RIL(dx, port, regs);
         if (regs.value == 0) {
             if (Log.level <= LogSeverities.LOG_ERROR)
-                Log.log(LogTypes.LOG_INT10, LogSeverities.LOG_ERROR, "EGA RIL range write called with port " + Integer.toString(port.value, 16));
+                Log.log(LogTypes.LOG_INT10, LogSeverities.LOG_ERROR,
+                    "EGA RIL range write called with port " + Integer.toString(port.value, 16));
         } else {
             if (ch < regs.value) {
-                if (ch + cl > regs.value) cl = (short) (regs.value - ch);
+                if (ch + cl > regs.value)
+                    cl = (short) (regs.value - ch);
                 if (port.value == 0x3c0) {
                     IoHandler.IO_Read(Memory.real_readw(Int10.BIOSMEM_SEG, Int10.BIOSMEM_CRTC_ADDRESS) + 6);
                     for (/*Bitu*/int i = 0; i < cl; i++) {
-                        IoHandler.IO_Write(port.value, (ch + i));
+                        IoHandler.IO_Write(port.value, ch + i);
                         IoHandler.IO_Write(port.value, Memory.mem_readb(src++));
                     }
                 } else {
                     for (/*Bitu*/int i = 0; i < cl; i++) {
-                        IoHandler.IO_Write(port.value, (ch + i));
+                        IoHandler.IO_Write(port.value, ch + i);
                         IoHandler.IO_Write(port.value + 1, Memory.mem_readb(src++));
                     }
                 }
             } else {
                 if (Log.level <= LogSeverities.LOG_ERROR)
-                    Log.log(LogTypes.LOG_INT10, LogSeverities.LOG_ERROR, "EGA RIL range write to " + Integer.toString(port.value, 16) + " with invalid register " + Integer.toString(ch, 16));
+                    Log.log(LogTypes.LOG_INT10, LogSeverities.LOG_ERROR, "EGA RIL range write to "
+                        + Integer.toString(port.value, 16) + " with invalid register " + Integer.toString(ch, 16));
             }
         }
     }
@@ -255,7 +274,7 @@ public class Int10_misc {
        offset 2 (byte): register number (0 for single registers, ignored)
        offset 3 (byte): register value (return value when reading)
     */
-    static public void INT10_EGA_RIL_ReadRegisterSet(/*Bit16u*/int cx, /*PhysPt*/int tbl) {
+    public static void INT10_EGA_RIL_ReadRegisterSet(/*Bit16u*/int cx, /*PhysPt*/int tbl) {
         /* read cx register sets */
         for (/*Bitu*/int i = 0; i < cx; i++) {
             /*Bit8u*/
@@ -266,7 +285,7 @@ public class Int10_misc {
         }
     }
 
-    static public void INT10_EGA_RIL_WriteRegisterSet(/*Bit16u*/int cx, /*PhysPt*/int tbl) {
+    public static void INT10_EGA_RIL_WriteRegisterSet(/*Bit16u*/int cx, /*PhysPt*/int tbl) {
         /* write cx register sets */
         /*Bitu*/
         IntRef port = new IntRef(0);
@@ -277,7 +296,8 @@ public class Int10_misc {
             /*Bit8u*/
             int vl = Memory.mem_readb(tbl + 3);
             if (regs.value == 0) {
-                if (port.value != 0) IoHandler.IO_Write(port.value, vl);
+                if (port.value != 0)
+                    IoHandler.IO_Write(port.value, vl);
             } else {
                 /*Bit8u*/
                 int idx = Memory.mem_readb(tbl + 2);

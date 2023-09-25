@@ -8,17 +8,17 @@ import jdos.hardware.RAM;
 import jdos.util.Ptr;
 
 final public class CodePageHandlerDynRec extends Paging.PageHandler {
-    static public int activeCount = 0;
-    static public int usedCount = 0;
+    public static int activeCount = 0;
+    public static int usedCount = 0;
     // the write map, there are write_map[i] cache blocks that cover the byte at address i
     public /*Bit8u*/ Ptr write_map = new Ptr(4096);
     public /*Bit8u*/ Ptr invalidation_map;
-    CodePageHandlerDynRec next, prev;    // page linking
+    CodePageHandlerDynRec next, prev; // page linking
     private Paging.PageHandler old_pagehandler;
     // hash map to quickly find the cache blocks in this page
     private final CacheBlockDynRec[] hash_map = new CacheBlockDynRec[1 + Core_dynamic.DYN_PAGE_HASH];
-    private /*Bitu*/ int active_blocks;        // the number of cache blocks in this page
-    private /*Bitu*/ int active_count;        // delaying parameter to not immediately release a page
+    private /*Bitu*/ int active_blocks; // the number of cache blocks in this page
+    private /*Bitu*/ int active_count; // delaying parameter to not immediately release a page
     private /*HostPt*/ int hostmem;
     private /*Bitu*/ int phys_page;
 
@@ -57,18 +57,19 @@ final public class CodePageHandlerDynRec extends Paging.PageHandler {
     }
 
     // clear out blocks that contain code which has been modified
-    void InvalidateRange(/*Bitu*/int start,/*Bitu*/int end) {
+    void InvalidateRange(/*Bitu*/int start, /*Bitu*/int end) {
         /*Bits*/
         int index = 1 + (end >> Core_dynamic.DYN_HASH_SHIFT);
-        boolean is_current_block = false;    // if the current block is modified, it has to be exited as soon as possible
+        boolean is_current_block = false; // if the current block is modified, it has to be exited as soon as possible
 
         /*Bit32u*/
-        int ip_point = (CPU_Regs.reg_csPhys.dword + CPU_Regs.reg_eip) & 0xFFF;
+        int ip_point = CPU_Regs.reg_csPhys.dword + CPU_Regs.reg_eip & 0xFFF;
         while (index >= 0) {
             /*Bitu*/
             int map = 0;
             // see if there is still some code in the range
-            for (/*Bitu*/int count = start; count <= end; count++) map += write_map.p[count];
+            for (/*Bitu*/int count = start; count <= end; count++)
+                map += write_map.p[count];
             if (map == 0) { // no more code, finished
                 if (is_current_block) {
                     DecodeBlock.smc = true;
@@ -84,7 +85,7 @@ final public class CodePageHandlerDynRec extends Paging.PageHandler {
                 if (start <= block.page.end && end >= block.page.start) {
                     if (block == Core_dynamic.currentBlock)
                         is_current_block = true;
-                    block.Clear();        // clear the block, decrements the write_map accordingly
+                    block.Clear(); // clear the block, decrements the write_map accordingly
                 }
                 block = nextblock;
             }
@@ -97,15 +98,19 @@ final public class CodePageHandlerDynRec extends Paging.PageHandler {
     }
 
     // the following functions will clean all cache blocks that are invalid now due to the write
-    public void writeb(/*PhysPt*/int address,/*Bitu*/int val) {
-        int addr = (address & 4095);
-        if (RAM.readb(hostmem + addr) == (val & 0xFF)) return;
+    @Override
+    public void writeb(/*PhysPt*/int address, /*Bitu*/int val) {
+        int addr = address & 4095;
+        if (RAM.readb(hostmem + addr) == (val & 0xFF))
+            return;
         RAM.writeb(hostmem + addr, val);
         // see if there's code where we are writing to
         if (write_map.readb(addr) == 0) {
-            if (active_blocks != 0) return;        // still some blocks in this page
+            if (active_blocks != 0)
+                return; // still some blocks in this page
             active_count--;
-            if (active_count == 0) Release();    // delay page releasing until active_count is zero
+            if (active_count == 0)
+                Release(); // delay page releasing until active_count is zero
             return;
         } else if (invalidation_map == null) {
             invalidation_map = new Ptr(4096);
@@ -114,15 +119,19 @@ final public class CodePageHandlerDynRec extends Paging.PageHandler {
         InvalidateRange(addr, addr);
     }
 
-    public void writew(/*PhysPt*/int address,/*Bitu*/int val) {
-        int addr = (address & 4095);
-        if (RAM.readw(hostmem + addr) == (val & 0xFFFF)) return;
+    @Override
+    public void writew(/*PhysPt*/int address, /*Bitu*/int val) {
+        int addr = address & 4095;
+        if (RAM.readw(hostmem + addr) == (val & 0xFFFF))
+            return;
         RAM.writew(hostmem + addr, val);
         // see if there's code where we are writing to
         if (write_map.readw(addr) == 0) {
-            if (active_blocks != 0) return;        // still some blocks in this page
+            if (active_blocks != 0)
+                return; // still some blocks in this page
             active_count--;
-            if (active_count == 0) Release();    // delay page releasing until active_count is zero
+            if (active_count == 0)
+                Release(); // delay page releasing until active_count is zero
             return;
         } else if (invalidation_map == null) {
             invalidation_map = new Ptr(4096);
@@ -131,15 +140,19 @@ final public class CodePageHandlerDynRec extends Paging.PageHandler {
         InvalidateRange(addr, addr + 1);
     }
 
-    public void writed(/*PhysPt*/int address,/*Bitu*/int val) {
-        int addr = (address & 4095);
-        if (RAM.readd(hostmem + addr) == (val & 0xFFFFFFFF)) return;
+    @Override
+    public void writed(/*PhysPt*/int address, /*Bitu*/int val) {
+        int addr = address & 4095;
+        if (RAM.readd(hostmem + addr) == (val & 0xFFFFFFFF))
+            return;
         RAM.writed(hostmem + addr, val);
         // see if there's code where we are writing to
         if (write_map.readd(addr) == 0) {
-            if (active_blocks != 0) return;        // still some blocks in this page
+            if (active_blocks != 0)
+                return; // still some blocks in this page
             active_count--;
-            if (active_count == 0) Release();    // delay page releasing until active_count is zero
+            if (active_count == 0)
+                Release(); // delay page releasing until active_count is zero
             return;
         } else if (invalidation_map == null) {
             invalidation_map = new Ptr(4096);
@@ -152,14 +165,14 @@ final public class CodePageHandlerDynRec extends Paging.PageHandler {
     public void AddCacheBlock(CacheBlockDynRec block) {
         /*Bitu*/
         int index = 1 + (block.page.start >> Core_dynamic.DYN_HASH_SHIFT);
-        block.hash.next = hash_map[index];    // link to old block at index from the new block
+        block.hash.next = hash_map[index]; // link to old block at index from the new block
         block.hash.index = index;
-        hash_map[index] = block;                // put new block at hash position
+        hash_map[index] = block; // put new block at hash position
         block.page.handler = this;
         active_blocks++;
         activeCount++;
         usedCount++;
-        if ((usedCount % 1000) == 0) {
+        if (usedCount % 1000 == 0) {
             System.out.println("Dynamic code cache: " + activeCount + "/" + usedCount);
         }
     }
@@ -200,7 +213,8 @@ final public class CodePageHandlerDynRec extends Paging.PageHandler {
         if (block.cache.wmapmask != null) {
             // first part is not influenced by the mask
             for (/*Bitu*/int i = block.page.start; i < block.cache.maskstart; i++) {
-                if (write_map.p[i] != 0) write_map.p[i]--;
+                if (write_map.p[i] != 0)
+                    write_map.p[i]--;
             }
             /*Bitu*/
             int maskct = 0;
@@ -208,26 +222,32 @@ final public class CodePageHandlerDynRec extends Paging.PageHandler {
             for (/*Bitu*/int i = block.cache.maskstart; i <= block.page.end; i++, maskct++) {
                 if (write_map.p[i] != 0) {
                     // only adjust writemap if it isn't masked
-                    if ((maskct >= block.cache.masklen) || (block.cache.wmapmask[maskct] == 0)) write_map.p[i]--;
+                    if (maskct >= block.cache.masklen || block.cache.wmapmask[maskct] == 0)
+                        write_map.p[i]--;
                 }
             }
             block.cache.wmapmask = null;
         } else {
             for (/*Bitu*/int i = block.page.start; i <= block.page.end; i++) {
-                if (write_map.p[i] != 0) write_map.p[i]--;
+                if (write_map.p[i] != 0)
+                    write_map.p[i]--;
             }
         }
     }
 
     public void Release() {
-        Memory.MEM_SetPageHandler(phys_page, 1, old_pagehandler);    // revert to old handler
+        Memory.MEM_SetPageHandler(phys_page, 1, old_pagehandler); // revert to old handler
         Paging.PAGING_ClearTLB();
 
         // remove page from the lists
-        if (prev != null) prev.next = next;
-        else Cache.cache.used_pages = next;
-        if (next != null) next.prev = prev;
-        else Cache.cache.last_page = prev;
+        if (prev != null)
+            prev.next = next;
+        else
+            Cache.cache.used_pages = next;
+        if (next != null)
+            next.prev = prev;
+        else
+            Cache.cache.last_page = prev;
         next = Cache.cache.free_pages;
         Cache.cache.free_pages = this;
         prev = null;
@@ -235,7 +255,7 @@ final public class CodePageHandlerDynRec extends Paging.PageHandler {
 
     public void ClearRelease() {
         // clear out all cache blocks in this page
-        for (/*Bitu*/int index = 0; index < (1 + Core_dynamic.DYN_PAGE_HASH); index++) {
+        for (/*Bitu*/int index = 0; index < 1 + Core_dynamic.DYN_PAGE_HASH; index++) {
             CacheBlockDynRec block = hash_map[index];
             while (block != null) {
                 CacheBlockDynRec nextblock = block.hash.next;
@@ -243,24 +263,27 @@ final public class CodePageHandlerDynRec extends Paging.PageHandler {
                 block = nextblock;
             }
         }
-        Release();    // now can release this page
+        Release(); // now can release this page
     }
 
     public CacheBlockDynRec FindCacheBlock(/*Bitu*/int start) {
         CacheBlockDynRec block = hash_map[1 + (start >> Core_dynamic.DYN_HASH_SHIFT)];
         // see if there's a cache block present at the start address
         while (block != null) {
-            if (block.page.start == start) return block;    // found
+            if (block.page.start == start)
+                return block; // found
             block = block.hash.next;
         }
-        return null;    // none found
+        return null; // none found
     }
 
+    @Override
     public /*HostPt*/int GetHostReadPt(/*Bitu*/int phys_page) {
         hostmem = old_pagehandler.GetHostReadPt(phys_page);
         return hostmem;
     }
 
+    @Override
     public /*HostPt*/int GetHostWritePt(/*Bitu*/int phys_page) {
         return GetHostReadPt(phys_page);
     }

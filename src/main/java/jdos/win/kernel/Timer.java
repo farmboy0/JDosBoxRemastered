@@ -10,11 +10,13 @@ public class Timer {
     Callback.Handler handler = new Callback.Handler() {
         int tickCount;
 
+        @Override
         public int call() {
             Scheduler.tick();
             return 0;
         }
 
+        @Override
         public String getName() {
             return "Timer";
         }
@@ -23,6 +25,7 @@ public class Timer {
     public Timer(int frequency) {
         //init_timer(frequency);
         Thread thread = new Thread() {
+            @Override
             public void run() {
                 while (true) {
                     HandlerBase.tick = true;
@@ -49,8 +52,8 @@ public class Timer {
         IO.IO_WriteB(0x43, 0x36);
 
         // Divisor has to be sent byte-wise, so split here into upper/lower bytes.
-        int l = (divisor & 0xFF);
-        int h = ((divisor >> 8) & 0xFF);
+        int l = divisor & 0xFF;
+        int h = divisor >> 8 & 0xFF;
 
         // Send the frequency divisor.
         IO.IO_WriteB(0x40, l);

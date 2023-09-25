@@ -14,11 +14,11 @@ public class WinFindFile extends WinObject {
         this.results = results;
     }
 
-    static public WinFindFile create(FilePath[] results) {
+    public static WinFindFile create(FilePath[] results) {
         return new WinFindFile(nextObjectId(), results);
     }
 
-    static public WinFindFile get(int handle) {
+    public static WinFindFile get(int handle) {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinFindFile))
             return null;

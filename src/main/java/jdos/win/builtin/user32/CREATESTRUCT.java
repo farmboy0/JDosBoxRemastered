@@ -3,7 +3,7 @@ package jdos.win.builtin.user32;
 import jdos.win.builtin.WinAPI;
 
 public class CREATESTRUCT extends WinAPI {
-    static public final int SIZE = 48;
+    public static final int SIZE = 48;
     public int lpCreateParams;
     public int hInstance;
     public int hMenu;
@@ -16,6 +16,7 @@ public class CREATESTRUCT extends WinAPI {
     public int lpszName;
     public int lpszClass;
     public int dwExStyle;
+
     public CREATESTRUCT(int address) {
         lpCreateParams = readd(address);
         address += 4;
@@ -43,7 +44,8 @@ public class CREATESTRUCT extends WinAPI {
         address += 4;
     }
 
-    static public void write(int address, int lpCreateParams, int hInstance, int hMenu, int hwndParent, int cy, int cx, int y, int x, int style, int lpszName, int lpszClass, int dwExStyle) {
+    public static void write(int address, int lpCreateParams, int hInstance, int hMenu, int hwndParent, int cy, int cx,
+        int y, int x, int style, int lpszName, int lpszClass, int dwExStyle) {
         writed(address, lpCreateParams);
         address += 4;
         writed(address, hInstance);

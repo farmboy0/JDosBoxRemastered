@@ -12,10 +12,12 @@ import jdos.win.loader.Loader;
 public class DSound extends BuiltinModule {
     // HRESULT DirectSoundCreate(LPCGUID lpGUID,LPDIRECTSOUND *ppDS,LPUNKNOWN pUnkOuter);
     private final Callback.Handler DirectSoundCreate = new HandlerBase() {
+        @Override
         public String getName() {
             return "DSound.DirectSoundCreate";
         }
 
+        @Override
         public void onCall() {
             int lpGUID = CPU.CPU_Pop32();
             int ppDS = CPU.CPU_Pop32();

@@ -1,20 +1,26 @@
 package jdos.cpu.core_dynamic;
 
-import jdos.cpu.*;
+import jdos.cpu.CPU;
+import jdos.cpu.CPU_Regs;
+import jdos.cpu.Core;
+import jdos.cpu.Flags;
+import jdos.cpu.Instructions;
 import jdos.cpu.core_share.Constants;
 import jdos.hardware.Memory;
 
 public class Inst4 extends Helper {
-    final static public class Lgdt_mem extends Op {
+    public static final class Lgdt_mem extends Op {
         EaaBase get_eaa;
 
         public Lgdt_mem(int rm) {
             get_eaa = Mod.getEaa(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
-            if (CPU.cpu.pmode && CPU.cpu.cpl != 0) return EXCEPTION(CPU.EXCEPTION_GP);
+            if (CPU.cpu.pmode && CPU.cpu.cpl != 0)
+                return EXCEPTION(CPU.EXCEPTION_GP);
             int v1 = Memory.mem_readd(eaa + 2);
             int v0 = Memory.mem_readw(eaa);
             CPU.CPU_LGDT(v0, v1);
@@ -22,45 +28,54 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return true;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public String description() {
             return "LGDT " + get_eaa.description32();
         }
     }
 
-    final static public class Lidt_mem extends Op {
+    public static final class Lidt_mem extends Op {
         EaaBase get_eaa;
 
         public Lidt_mem(int rm) {
             get_eaa = Mod.getEaa(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
-            if (CPU.cpu.pmode && CPU.cpu.cpl != 0) return EXCEPTION(CPU.EXCEPTION_GP);
+            if (CPU.cpu.pmode && CPU.cpu.cpl != 0)
+                return EXCEPTION(CPU.EXCEPTION_GP);
             int v1 = Memory.mem_readd(eaa + 2);
             int v0 = Memory.mem_readw(eaa);
             CPU.CPU_LIDT(v0, v1);
@@ -68,120 +83,144 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return true;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public String description() {
             return "LIDT " + get_eaa.description32();
         }
     }
 
-    final static public class Smsw_reg extends Op {
+    public static final class Smsw_reg extends Op {
         Reg eard;
 
         public Smsw_reg(int rm) {
             eard = Mod.ed(rm);
         }
 
+        @Override
         public int call() {
             eard.dword = CPU.CPU_SMSW();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public String description() {
             return "SMSW " + eard.getName();
         }
     }
 
-    final static public class Lmsw_reg extends Op {
+    public static final class Lmsw_reg extends Op {
         Reg eard;
 
         public Lmsw_reg(int rm) {
             eard = Mod.ed(rm);
         }
 
+        @Override
         public int call() {
-            if (CPU.CPU_LMSW(eard.dword)) return RUNEXCEPTION();
+            if (CPU.CPU_LMSW(eard.dword))
+                return RUNEXCEPTION();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return true;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public String description() {
             return "LMSW " + eard.getName();
         }
     }
 
-    final static public class LarGdEd_reg extends Op {
+    public static final class LarGdEd_reg extends Op {
         Reg earw;
         Reg rd;
 
@@ -190,47 +229,57 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
-            if ((CPU_Regs.flags & CPU_Regs.VM) != 0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;
+            if ((CPU_Regs.flags & CPU_Regs.VM) != 0 || !CPU.cpu.pmode)
+                return Constants.BR_Illegal;
             rd.dword = CPU.CPU_LAR(earw.word(), rd.dword);
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.ZF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean returnsIllegal() {
             return true;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public String description() {
             return "LAR " + rd.getName() + ", " + earw.getName16();
         }
     }
 
-    final static public class LarGdEd_mem extends Op {
+    public static final class LarGdEd_mem extends Op {
         EaaBase get_eaa;
         Reg rd;
 
@@ -239,48 +288,58 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
-            if ((CPU_Regs.flags & CPU_Regs.VM) != 0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;
+            if ((CPU_Regs.flags & CPU_Regs.VM) != 0 || !CPU.cpu.pmode)
+                return Constants.BR_Illegal;
             rd.dword = CPU.CPU_LAR(Memory.mem_readw(eaa), rd.dword);
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.ZF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean returnsIllegal() {
             return true;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public String description() {
             return "LAR " + rd.getName() + ", " + get_eaa.description16();
         }
     }
 
-    final static public class LslGdEd_reg extends Op {
+    public static final class LslGdEd_reg extends Op {
         Reg earw;
         Reg rd;
 
@@ -289,47 +348,57 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
-            if ((CPU_Regs.flags & CPU_Regs.VM) != 0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;
+            if ((CPU_Regs.flags & CPU_Regs.VM) != 0 || !CPU.cpu.pmode)
+                return Constants.BR_Illegal;
             rd.dword = CPU.CPU_LSL(earw.word(), rd.dword);
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.ZF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean returnsIllegal() {
             return true;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public String description() {
             return "LSL " + rd.getName() + ", " + earw.getName16();
         }
     }
 
-    final static public class LslGdEd_mem extends Op {
+    public static final class LslGdEd_mem extends Op {
         EaaBase get_eaa;
         Reg rd;
 
@@ -338,48 +407,58 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
-            if ((CPU_Regs.flags & CPU_Regs.VM) != 0 || (!CPU.cpu.pmode)) return Constants.BR_Illegal;
+            if ((CPU_Regs.flags & CPU_Regs.VM) != 0 || !CPU.cpu.pmode)
+                return Constants.BR_Illegal;
             rd.dword = CPU.CPU_LSL(Memory.mem_readw(eaa), rd.dword);
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.ZF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean returnsIllegal() {
             return true;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public String description() {
             return "LAR " + rd.getName() + ", " + get_eaa.description16();
         }
     }
 
-    static abstract public class JumpCond32_d extends Op {
+    static public abstract class JumpCond32_d extends Op {
         int offset;
 
         public JumpCond32_d() {
@@ -395,392 +474,479 @@ public class Inst4 extends Helper {
             return Constants.BR_Link2;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return true;
         }
 
+        @Override
         public boolean setsEip() {
             return true;
         }
 
+        @Override
         public String description() {
             return " off=" + offset;
         }
     }
 
-    final static public class JumpCond32_d_o extends JumpCond32_d {
+    public static final class JumpCond32_d_o extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_O());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.OF;
         }
 
+        @Override
         public String description() {
             return "JO " + super.description();
         }
     }
 
-    final static public class JumpCond32_d_no extends JumpCond32_d {
+    public static final class JumpCond32_d_no extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_NO());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.OF;
         }
 
+        @Override
         public String description() {
             return "JNO " + super.description();
         }
     }
 
-    final static public class JumpCond32_d_b extends JumpCond32_d {
+    public static final class JumpCond32_d_b extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_B());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public String description() {
             return "JB " + super.description();
         }
     }
 
-    final static public class JumpCond32_d_nb extends JumpCond32_d {
+    public static final class JumpCond32_d_nb extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_NB());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public String description() {
             return "JNB " + super.description();
         }
     }
 
-    final static public class JumpCond32_d_z extends JumpCond32_d {
+    public static final class JumpCond32_d_z extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_Z());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "JZ " + super.description();
         }
     }
 
-    final static public class JumpCond32_d_nz extends JumpCond32_d {
+    public static final class JumpCond32_d_nz extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_NZ());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "JNZ " + super.description();
         }
     }
 
-    final static public class JumpCond32_d_be extends JumpCond32_d {
+    public static final class JumpCond32_d_be extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_BE());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.CF | CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "JBE " + super.description();
         }
     }
 
-    final static public class JumpCond32_d_nbe extends JumpCond32_d {
+    public static final class JumpCond32_d_nbe extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_NBE());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.CF | CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "JNBE " + super.description();
         }
     }
 
-    final static public class JumpCond32_d_s extends JumpCond32_d {
+    public static final class JumpCond32_d_s extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_S());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF;
         }
 
+        @Override
         public String description() {
             return "JS " + super.description();
         }
     }
 
-    final static public class JumpCond32_d_ns extends JumpCond32_d {
+    public static final class JumpCond32_d_ns extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_NS());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF;
         }
 
+        @Override
         public String description() {
             return "JNS " + super.description();
         }
     }
 
-    final static public class JumpCond32_d_p extends JumpCond32_d {
+    public static final class JumpCond32_d_p extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_P());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.PF;
         }
 
+        @Override
         public String description() {
             return "JP " + super.description();
         }
     }
 
-    final static public class JumpCond32_d_np extends JumpCond32_d {
+    public static final class JumpCond32_d_np extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_NP());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.PF;
         }
 
+        @Override
         public String description() {
             return "JNP " + super.description();
         }
     }
 
-    final static public class JumpCond32_d_l extends JumpCond32_d {
+    public static final class JumpCond32_d_l extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_L());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF | CPU_Regs.OF;
         }
 
+        @Override
         public String description() {
             return "JL " + super.description();
         }
     }
 
-    final static public class JumpCond32_d_nl extends JumpCond32_d {
+    public static final class JumpCond32_d_nl extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_NL());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF | CPU_Regs.OF;
         }
 
+        @Override
         public String description() {
             return "JNL " + super.description();
         }
     }
 
-    final static public class JumpCond32_d_le extends JumpCond32_d {
+    public static final class JumpCond32_d_le extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_LE());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "JLE " + super.description();
         }
     }
 
-    final static public class JumpCond32_d_nle extends JumpCond32_d {
+    public static final class JumpCond32_d_nle extends JumpCond32_d {
+        @Override
         public int call() {
             return jump(Flags.TFLG_NLE());
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "JNLE " + super.description();
         }
     }
 
-    final static public class PushFS extends Op {
+    public static final class PushFS extends Op {
+        @Override
         public int call() {
             CPU.CPU_Push32(CPU_Regs.reg_fsVal.dword);
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public String description() {
             return "PUSH FS";
         }
     }
 
-    final static public class PopFS extends Op {
+    public static final class PopFS extends Op {
+        @Override
         public int call() {
-            if (CPU.CPU_PopSegFS(true)) return RUNEXCEPTION();
+            if (CPU.CPU_PopSegFS(true))
+                return RUNEXCEPTION();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return true;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int setsSeg() {
             return FS | FROM_STACK;
         }
 
+        @Override
         public String description() {
             return "POP FS";
         }
     }
 
-    final static public class BtEdGd_reg extends Op {
+    public static final class BtEdGd_reg extends Op {
         int mask;
         Reg rd;
         Reg eard;
@@ -790,6 +956,7 @@ public class Inst4 extends Helper {
             eard = Mod.ed(rm);
         }
 
+        @Override
         public int call() {
             Flags.FillFlags();
             mask = 1 << (rd.dword & 31);
@@ -798,32 +965,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BtEdGd_mem extends Op {
+    public static final class BtEdGd_mem extends Op {
         int mask;
         Reg rd;
         EaaBase get_eaa;
@@ -833,6 +1006,7 @@ public class Inst4 extends Helper {
             get_eaa = Mod.getEaa(rm);
         }
 
+        @Override
         public int call() {
             Flags.FillFlags();
             mask = 1 << (rd.dword & 31);
@@ -844,32 +1018,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class ShldEdGdIb_reg extends Op {
+    public static final class ShldEdGdIb_reg extends Op {
         int op3;
         Reg rd;
         Reg eard;
@@ -880,6 +1060,7 @@ public class Inst4 extends Helper {
             op3 = decode_fetchb() & 0x1F;
         }
 
+        @Override
         public int call() {
             eard.dword = Instructions.DSHLD(rd.dword, op3, eard.dword);
             CPU_Regs.reg_eip += eip_count;
@@ -887,36 +1068,43 @@ public class Inst4 extends Helper {
         }
 
         // AF is always 0
+        @Override
         public int sets() {
             return CPU_Regs.CF | CPU_Regs.AF | CPU_Regs.ZF | CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.PF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int getFlagType() {
             return FLAG_TYPE_DSHLD;
         }
     }
 
-    final static public class ShldEdGdIb_mem extends Op {
+    public static final class ShldEdGdIb_mem extends Op {
         Reg rd;
         EaaBase get_eaa;
         int op3;
@@ -927,6 +1115,7 @@ public class Inst4 extends Helper {
             op3 = decode_fetchb() & 0x1F;
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
             Memory.mem_writed(eaa, Instructions.DSHLD(rd.dword, op3, Memory.mem_readd(eaa)));
@@ -935,36 +1124,43 @@ public class Inst4 extends Helper {
         }
 
         // AF is always 0
+        @Override
         public int sets() {
             return CPU_Regs.CF | CPU_Regs.AF | CPU_Regs.ZF | CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.PF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int getFlagType() {
             return FLAG_TYPE_DSHLD;
         }
     }
 
-    final static public class ShldEdGdCl_reg extends Op {
+    public static final class ShldEdGdCl_reg extends Op {
         Reg rd;
         Reg eard;
 
@@ -973,6 +1169,7 @@ public class Inst4 extends Helper {
             eard = Mod.ed(rm);
         }
 
+        @Override
         public int call() {
             int op3 = CPU_Regs.reg_ecx.low() & 0x1F;
             if (op3 != 0)
@@ -982,36 +1179,43 @@ public class Inst4 extends Helper {
         }
 
         // AF is always 0
+        @Override
         public int sets() {
             return CPU_Regs.CF | CPU_Regs.AF | CPU_Regs.ZF | CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.PF | CPU_Regs.MAYBE;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int getFlagType() {
             return FLAG_TYPE_DSHLD;
         }
     }
 
-    final static public class ShldEdGdCl_mem extends Op {
+    public static final class ShldEdGdCl_mem extends Op {
         Reg rd;
         EaaBase get_eaa;
 
@@ -1020,6 +1224,7 @@ public class Inst4 extends Helper {
             get_eaa = Mod.getEaa(rm);
         }
 
+        @Override
         public int call() {
             int op3 = CPU_Regs.reg_ecx.low() & 0x1F;
             if (op3 != 0) {
@@ -1031,104 +1236,127 @@ public class Inst4 extends Helper {
         }
 
         // AF is always 0
+        @Override
         public int sets() {
             return CPU_Regs.CF | CPU_Regs.AF | CPU_Regs.ZF | CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.PF | CPU_Regs.MAYBE;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int getFlagType() {
             return FLAG_TYPE_DSHLD;
         }
     }
 
-    final static public class PushGS extends Op {
+    public static final class PushGS extends Op {
+        @Override
         public int call() {
             CPU.CPU_Push32(CPU_Regs.reg_gsVal.dword);
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class PopGS extends Op {
+    public static final class PopGS extends Op {
+        @Override
         public int call() {
-            if (CPU.CPU_PopSegGS(true)) return RUNEXCEPTION();
+            if (CPU.CPU_PopSegGS(true))
+                return RUNEXCEPTION();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return true;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int setsSeg() {
             return GS | FROM_STACK;
         }
     }
 
-    final static public class BtsEdGd_reg extends Op {
+    public static final class BtsEdGd_reg extends Op {
         int mask;
         Reg rd;
         Reg eard;
@@ -1138,6 +1366,7 @@ public class Inst4 extends Helper {
             eard = Mod.ed(rm);
         }
 
+        @Override
         public int call() {
             Flags.FillFlags();
             mask = 1 << (rd.dword & 31);
@@ -1147,32 +1376,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BtsEdGd_mem extends Op {
+    public static final class BtsEdGd_mem extends Op {
         int mask;
         Reg rd;
         EaaBase get_eaa;
@@ -1182,6 +1417,7 @@ public class Inst4 extends Helper {
             get_eaa = Mod.getEaa(rm);
         }
 
+        @Override
         public int call() {
             Flags.FillFlags();
             mask = 1 << (rd.dword & 31);
@@ -1194,32 +1430,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class ShrdEdGdIb_reg extends Op {
+    public static final class ShrdEdGdIb_reg extends Op {
         int op3;
         Reg rd;
         Reg eard;
@@ -1230,6 +1472,7 @@ public class Inst4 extends Helper {
             op3 = decode_fetchb() & 0x1F;
         }
 
+        @Override
         public int call() {
             eard.dword = Instructions.DSHRD(rd.dword, op3, eard.dword);
             CPU_Regs.reg_eip += eip_count;
@@ -1237,36 +1480,43 @@ public class Inst4 extends Helper {
         }
 
         // AF is always 0
+        @Override
         public int sets() {
             return CPU_Regs.CF | CPU_Regs.AF | CPU_Regs.ZF | CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.PF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int getFlagType() {
             return FLAG_TYPE_DSHRD;
         }
     }
 
-    final static public class ShrdEdGdIb_mem extends Op {
+    public static final class ShrdEdGdIb_mem extends Op {
         Reg rd;
         EaaBase get_eaa;
         int op3;
@@ -1277,6 +1527,7 @@ public class Inst4 extends Helper {
             op3 = decode_fetchb() & 0x1F;
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
             Memory.mem_writed(eaa, Instructions.DSHRD(rd.dword, op3, Memory.mem_readd(eaa)));
@@ -1285,36 +1536,43 @@ public class Inst4 extends Helper {
         }
 
         // AF is always 0
+        @Override
         public int sets() {
             return CPU_Regs.CF | CPU_Regs.AF | CPU_Regs.ZF | CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.PF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int getFlagType() {
             return FLAG_TYPE_DSHRD;
         }
     }
 
-    final static public class ShrdEdGdCl_reg extends Op {
+    public static final class ShrdEdGdCl_reg extends Op {
         Reg rd;
         Reg eard;
 
@@ -1323,6 +1581,7 @@ public class Inst4 extends Helper {
             eard = Mod.ed(rm);
         }
 
+        @Override
         public int call() {
             int op3 = CPU_Regs.reg_ecx.low() & 0x1F;
             if (op3 != 0)
@@ -1332,36 +1591,43 @@ public class Inst4 extends Helper {
         }
 
         // AF is always 0
+        @Override
         public int sets() {
             return CPU_Regs.CF | CPU_Regs.AF | CPU_Regs.ZF | CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.PF | CPU_Regs.MAYBE;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int getFlagType() {
             return FLAG_TYPE_DSHRD;
         }
     }
 
-    final static public class ShrdEdGdCl_mem extends Op {
+    public static final class ShrdEdGdCl_mem extends Op {
         Reg rd;
         EaaBase get_eaa;
 
@@ -1370,6 +1636,7 @@ public class Inst4 extends Helper {
             get_eaa = Mod.getEaa(rm);
         }
 
+        @Override
         public int call() {
             int op3 = CPU_Regs.reg_ecx.low() & 0x1F;
             if (op3 != 0) {
@@ -1381,36 +1648,43 @@ public class Inst4 extends Helper {
         }
 
         // AF is always 0
+        @Override
         public int sets() {
             return CPU_Regs.CF | CPU_Regs.AF | CPU_Regs.ZF | CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.PF | CPU_Regs.MAYBE;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int getFlagType() {
             return FLAG_TYPE_DSHRD;
         }
     }
 
-    final static public class ImulGdEd_reg extends Op {
+    public static final class ImulGdEd_reg extends Op {
         Reg rd;
         Reg eard;
 
@@ -1419,38 +1693,45 @@ public class Inst4 extends Helper {
             eard = Mod.ed(rm);
         }
 
+        @Override
         public int call() {
             rd.dword = Instructions.DIMULD(eard.dword, rd.dword);
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF | CPU_Regs.OF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class ImulGdEd_mem extends Op {
+    public static final class ImulGdEd_mem extends Op {
         Reg rd;
         EaaBase get_eaa;
 
@@ -1459,6 +1740,7 @@ public class Inst4 extends Helper {
             get_eaa = Mod.getEaa(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
             rd.dword = Instructions.DIMULD(Memory.mem_readd(eaa), rd.dword);
@@ -1466,32 +1748,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF | CPU_Regs.OF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class CmpxchgEdGd_reg extends Op {
+    public static final class CmpxchgEdGd_reg extends Op {
         Reg rd;
         Reg eard;
 
@@ -1500,6 +1788,7 @@ public class Inst4 extends Helper {
             eard = Mod.ed(rm);
         }
 
+        @Override
         public int call() {
             Instructions.CMPD(eard.dword, reg_eax.dword);
             Flags.FillFlags();
@@ -1514,32 +1803,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF | CPU_Regs.AF | CPU_Regs.ZF | CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.PF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class CmpxchgEdGd_mem extends Op {
+    public static final class CmpxchgEdGd_mem extends Op {
         Reg rd;
         EaaBase get_eaa;
 
@@ -1548,6 +1843,7 @@ public class Inst4 extends Helper {
             get_eaa = Mod.getEaa(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
             int val = Memory.mem_readd(eaa);
@@ -1557,7 +1853,7 @@ public class Inst4 extends Helper {
                 Memory.mem_writed(eaa, rd.dword);
                 SETFLAGBIT(ZF, true);
             } else {
-                Memory.mem_writed(eaa, val);    // cmpxchg always issues a write
+                Memory.mem_writed(eaa, val); // cmpxchg always issues a write
                 reg_eax.dword = val;
                 SETFLAGBIT(ZF, false);
             }
@@ -1565,32 +1861,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF | CPU_Regs.AF | CPU_Regs.ZF | CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.PF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class LssEd extends Op {
+    public static final class LssEd extends Op {
         Reg rd;
         EaaBase get_eaa;
 
@@ -1599,9 +1901,11 @@ public class Inst4 extends Helper {
             get_eaa = Mod.getEaa(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
-            if (CPU.CPU_SetSegGeneralSS(Memory.mem_readw(eaa + 4))) return RUNEXCEPTION();
+            if (CPU.CPU_SetSegGeneralSS(Memory.mem_readw(eaa + 4)))
+                return RUNEXCEPTION();
             rd.dword = Memory.mem_readd(eaa);
             Core.base_ds = CPU_Regs.reg_dsPhys.dword;
             Core.base_ss = CPU_Regs.reg_ssPhys.dword;
@@ -1610,36 +1914,43 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return true;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int setsSeg() {
             return SS | FROM_MEMORY;
         }
     }
 
-    final static public class BtrEdGd_reg extends Op {
+    public static final class BtrEdGd_reg extends Op {
         Reg rd;
         Reg eard;
 
@@ -1648,6 +1959,7 @@ public class Inst4 extends Helper {
             eard = Mod.ed(rm);
         }
 
+        @Override
         public int call() {
             Flags.FillFlags();
             int mask = 1 << (rd.dword & 31);
@@ -1657,32 +1969,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BtrEdGd_mem extends Op {
+    public static final class BtrEdGd_mem extends Op {
         Reg rd;
         EaaBase get_eaa;
 
@@ -1691,6 +2009,7 @@ public class Inst4 extends Helper {
             get_eaa = Mod.getEaa(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
             Flags.FillFlags();
@@ -1703,32 +2022,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class LfsEd extends Op {
+    public static final class LfsEd extends Op {
         Reg rd;
         EaaBase get_eaa;
 
@@ -1737,44 +2062,53 @@ public class Inst4 extends Helper {
             get_eaa = Mod.getEaa(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
-            if (CPU.CPU_SetSegGeneralFS(Memory.mem_readw(eaa + 4))) return RUNEXCEPTION();
+            if (CPU.CPU_SetSegGeneralFS(Memory.mem_readw(eaa + 4)))
+                return RUNEXCEPTION();
             rd.dword = Memory.mem_readd(eaa);
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return true;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int setsSeg() {
             return FS | FROM_MEMORY;
         }
     }
 
-    final static public class LgsEd extends Op {
+    public static final class LgsEd extends Op {
         Reg rd;
         EaaBase get_eaa;
 
@@ -1783,44 +2117,53 @@ public class Inst4 extends Helper {
             get_eaa = Mod.getEaa(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
-            if (CPU.CPU_SetSegGeneralGS(Memory.mem_readw(eaa + 4))) return RUNEXCEPTION();
+            if (CPU.CPU_SetSegGeneralGS(Memory.mem_readw(eaa + 4)))
+                return RUNEXCEPTION();
             rd.dword = Memory.mem_readd(eaa);
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return true;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int setsSeg() {
             return GS | FROM_MEMORY;
         }
     }
 
-    final static public class MovzxGdEb_reg extends Op {
+    public static final class MovzxGdEb_reg extends Op {
         Reg rd;
         Reg earb;
 
@@ -1829,38 +2172,45 @@ public class Inst4 extends Helper {
             earb = Mod.eb(rm);
         }
 
+        @Override
         public int call() {
             rd.dword = earb.get8();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class MovzxGdEb_mem extends Op {
+    public static final class MovzxGdEb_mem extends Op {
         Reg rd;
         EaaBase get_eaa;
 
@@ -1869,6 +2219,7 @@ public class Inst4 extends Helper {
             get_eaa = Mod.getEaa(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
             rd.dword = Memory.mem_readb(eaa);
@@ -1876,32 +2227,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class MovzxGdEw_reg extends Op {
+    public static final class MovzxGdEw_reg extends Op {
         Reg rd;
         Reg earw;
 
@@ -1910,38 +2267,45 @@ public class Inst4 extends Helper {
             earw = Mod.ew(rm);
         }
 
+        @Override
         public int call() {
             rd.dword = earw.word();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class MovzxGdEw_mem extends Op {
+    public static final class MovzxGdEw_mem extends Op {
         Reg rd;
         EaaBase get_eaa;
 
@@ -1950,6 +2314,7 @@ public class Inst4 extends Helper {
             get_eaa = Mod.getEaa(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
             rd.dword = Memory.mem_readw(eaa);
@@ -1957,32 +2322,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BtEdIb_reg extends Op {
+    public static final class BtEdIb_reg extends Op {
         Reg eard;
         int mask;
 
@@ -1991,6 +2362,7 @@ public class Inst4 extends Helper {
             mask = 1 << (decode_fetchb() & 31);
         }
 
+        @Override
         public int call() {
             Flags.FillFlags();
             SETFLAGBIT(CF, (eard.dword & mask) != 0);
@@ -1998,32 +2370,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BtsEdIb_reg extends Op {
+    public static final class BtsEdIb_reg extends Op {
         Reg eard;
         int mask;
 
@@ -2032,6 +2410,7 @@ public class Inst4 extends Helper {
             mask = 1 << (decode_fetchb() & 31);
         }
 
+        @Override
         public int call() {
             Flags.FillFlags();
             SETFLAGBIT(CF, (eard.dword & mask) != 0);
@@ -2040,32 +2419,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BtrEdIb_reg extends Op {
+    public static final class BtrEdIb_reg extends Op {
         Reg eard;
         int mask;
 
@@ -2074,6 +2459,7 @@ public class Inst4 extends Helper {
             mask = 1 << (decode_fetchb() & 31);
         }
 
+        @Override
         public int call() {
             Flags.FillFlags();
             SETFLAGBIT(CF, (eard.dword & mask) != 0);
@@ -2082,32 +2468,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BtcEdIb_reg extends Op {
+    public static final class BtcEdIb_reg extends Op {
         Reg eard;
         int mask;
 
@@ -2116,41 +2508,50 @@ public class Inst4 extends Helper {
             mask = 1 << (decode_fetchb() & 31);
         }
 
+        @Override
         public int call() {
             Flags.FillFlags();
             SETFLAGBIT(CF, (eard.dword & mask) != 0);
-            if (GETFLAG(CF) != 0) eard.dword &= ~mask;
-            else eard.dword |= mask;
+            if (GETFLAG(CF) != 0)
+                eard.dword &= ~mask;
+            else
+                eard.dword |= mask;
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BtEdIb_mem extends Op {
+    public static final class BtEdIb_mem extends Op {
         EaaBase get_eaa;
         int mask;
 
@@ -2159,6 +2560,7 @@ public class Inst4 extends Helper {
             mask = 1 << (decode_fetchb() & 31);
         }
 
+        @Override
         public int call() {
             Flags.FillFlags();
             int eaa = get_eaa.call();
@@ -2168,32 +2570,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BtsEdIb_mem extends Op {
+    public static final class BtsEdIb_mem extends Op {
         EaaBase get_eaa;
         int mask;
 
@@ -2202,6 +2610,7 @@ public class Inst4 extends Helper {
             mask = 1 << (decode_fetchb() & 31);
         }
 
+        @Override
         public int call() {
             Flags.FillFlags();
             int eaa = get_eaa.call();
@@ -2212,32 +2621,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BtrEdIb_mem extends Op {
+    public static final class BtrEdIb_mem extends Op {
         EaaBase get_eaa;
         int mask;
 
@@ -2246,6 +2661,7 @@ public class Inst4 extends Helper {
             mask = 1 << (decode_fetchb() & 31);
         }
 
+        @Override
         public int call() {
             Flags.FillFlags();
             int eaa = get_eaa.call();
@@ -2256,32 +2672,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BtcEdIb_mem extends Op {
+    public static final class BtcEdIb_mem extends Op {
         EaaBase get_eaa;
         int mask;
 
@@ -2290,44 +2712,53 @@ public class Inst4 extends Helper {
             mask = 1 << (decode_fetchb() & 31);
         }
 
+        @Override
         public int call() {
             Flags.FillFlags();
             int eaa = get_eaa.call();
             int old = Memory.mem_readd(eaa);
             SETFLAGBIT(CF, (old & mask) != 0);
-            if (GETFLAG(CF) != 0) old &= ~mask;
-            else old |= mask;
+            if (GETFLAG(CF) != 0)
+                old &= ~mask;
+            else
+                old |= mask;
             Memory.mem_writed(eaa, old);
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BtcEdGd_reg extends Op {
+    public static final class BtcEdGd_reg extends Op {
         Reg eard;
         Reg rd;
 
@@ -2336,6 +2767,7 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
             Flags.FillFlags();
             int mask = 1 << (rd.dword & 31);
@@ -2345,32 +2777,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BtcEdGd_mem extends Op {
+    public static final class BtcEdGd_mem extends Op {
         EaaBase get_eaa;
         Reg rd;
 
@@ -2379,6 +2817,7 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
             Flags.FillFlags();
             int mask = 1 << (rd.dword & 31);
@@ -2391,32 +2830,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BsfGdEd_reg extends Op {
+    public static final class BsfGdEd_reg extends Op {
         Reg eard;
         Reg rd;
 
@@ -2425,6 +2870,7 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
             int value = eard.dword;
             if (value == 0) {
@@ -2443,32 +2889,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.ZF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BsfGdEd_mem extends Op {
+    public static final class BsfGdEd_mem extends Op {
         EaaBase get_eaa;
         Reg rd;
 
@@ -2477,6 +2929,7 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
             int value = Memory.mem_readd(eaa);
@@ -2496,32 +2949,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.ZF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BsrGdEd_reg extends Op {
+    public static final class BsrGdEd_reg extends Op {
         Reg eard;
         Reg rd;
 
@@ -2530,12 +2989,13 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
             int value = eard.dword;
             if (value == 0) {
                 SETFLAGBIT(ZF, true);
             } else {
-                int result = 31;    // Operandsize-1
+                int result = 31; // Operandsize-1
                 while ((value & 0x80000000) == 0) {
                     result--;
                     value <<= 1;
@@ -2548,32 +3008,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.ZF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class BsrGdEd_mem extends Op {
+    public static final class BsrGdEd_mem extends Op {
         EaaBase get_eaa;
         Reg rd;
 
@@ -2582,13 +3048,14 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
             int value = Memory.mem_readd(eaa);
             if (value == 0) {
                 SETFLAGBIT(ZF, true);
             } else {
-                int result = 31;    // Operandsize-1
+                int result = 31; // Operandsize-1
                 while ((value & 0x80000000) == 0) {
                     result--;
                     value <<= 1;
@@ -2601,32 +3068,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.ZF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class MovsxGdEb_reg extends Op {
+    public static final class MovsxGdEb_reg extends Op {
         Reg earb;
         Reg rd;
 
@@ -2635,38 +3108,45 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
             rd.dword = (byte) earb.get8();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class MovsxGdEb_mem extends Op {
+    public static final class MovsxGdEb_mem extends Op {
         EaaBase get_eaa;
         Reg rd;
 
@@ -2675,6 +3155,7 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
             rd.dword = (byte) Memory.mem_readb(eaa);
@@ -2682,32 +3163,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class MovsxGdEw_reg extends Op {
+    public static final class MovsxGdEw_reg extends Op {
         Reg earw;
         Reg rd;
 
@@ -2716,38 +3203,45 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
             rd.dword = (short) earw.word();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class MovsxGdEw_mem extends Op {
+    public static final class MovsxGdEw_mem extends Op {
         EaaBase get_eaa;
         Reg rd;
 
@@ -2756,6 +3250,7 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
             int eaa = get_eaa.call();
             rd.dword = (short) Memory.mem_readw(eaa);
@@ -2763,32 +3258,38 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class XaddGdEd_reg extends Op {
+    public static final class XaddGdEd_reg extends Op {
         Reg eard;
         Reg rd;
 
@@ -2797,6 +3298,7 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
             // :DOSBOX: this is different from dosbox
             int result = Instructions.ADDD(rd.dword, eard.dword);
@@ -2806,36 +3308,43 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF | CPU_Regs.AF | CPU_Regs.ZF | CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.PF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int getFlagType() {
             return FLAG_TYPE_ADDD;
         }
     }
 
-    final static public class XaddGdEd_mem extends Op {
+    public static final class XaddGdEd_mem extends Op {
         EaaBase get_eaa;
         Reg rd;
 
@@ -2844,6 +3353,7 @@ public class Inst4 extends Helper {
             rd = Mod.gd(rm);
         }
 
+        @Override
         public int call() {
             // :DOSBOX: this is different from dosbox
             int eaa = get_eaa.call();
@@ -2855,74 +3365,88 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.CF | CPU_Regs.AF | CPU_Regs.ZF | CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.PF;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int getFlagType() {
             return FLAG_TYPE_ADDD;
         }
     }
 
-    final static public class Bswapd extends Op {
+    public static final class Bswapd extends Op {
         Reg reg;
 
         public Bswapd(Reg reg) {
             this.reg = reg;
         }
 
+        @Override
         public int call() {
             reg.dword = Instructions.BSWAPD(reg.dword);
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    static abstract public class ConditionalMov_reg extends Op {
+    static public abstract class ConditionalMov_reg extends Op {
         Reg ed;
         Reg gd;
 
@@ -2931,32 +3455,38 @@ public class Inst4 extends Helper {
             gd = Mod.gd(rm);
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class ConditionalMov_o_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_o_reg extends ConditionalMov_reg {
         public ConditionalMov_o_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_O())
                 gd.dword = ed.dword;
@@ -2964,20 +3494,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.OF;
         }
 
+        @Override
         public String description() {
             return "CMOV_O " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    final static public class ConditionalMov_no_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_no_reg extends ConditionalMov_reg {
         public ConditionalMov_no_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_NO())
                 gd.dword = ed.dword;
@@ -2985,20 +3518,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.OF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NO " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    final static public class ConditionalMov_b_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_b_reg extends ConditionalMov_reg {
         public ConditionalMov_b_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_B())
                 gd.dword = ed.dword;
@@ -3006,20 +3542,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public String description() {
             return "CMOV_B " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    final static public class ConditionalMov_nb_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_nb_reg extends ConditionalMov_reg {
         public ConditionalMov_nb_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_NB())
                 gd.dword = ed.dword;
@@ -3027,20 +3566,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NB " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    final static public class ConditionalMov_z_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_z_reg extends ConditionalMov_reg {
         public ConditionalMov_z_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_Z())
                 gd.dword = ed.dword;
@@ -3048,20 +3590,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "CMOV_Z " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    final static public class ConditionalMov_nz_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_nz_reg extends ConditionalMov_reg {
         public ConditionalMov_nz_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_NZ())
                 gd.dword = ed.dword;
@@ -3069,20 +3614,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NZ " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    final static public class ConditionalMov_be_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_be_reg extends ConditionalMov_reg {
         public ConditionalMov_be_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_BE())
                 gd.dword = ed.dword;
@@ -3090,20 +3638,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.CF | CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "CMOV_BE " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    final static public class ConditionalMov_nbe_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_nbe_reg extends ConditionalMov_reg {
         public ConditionalMov_nbe_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_NBE())
                 gd.dword = ed.dword;
@@ -3111,20 +3662,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.CF | CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NBE " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    final static public class ConditionalMov_s_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_s_reg extends ConditionalMov_reg {
         public ConditionalMov_s_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_S())
                 gd.dword = ed.dword;
@@ -3132,20 +3686,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF;
         }
 
+        @Override
         public String description() {
             return "CMOV_S " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    final static public class ConditionalMov_ns_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_ns_reg extends ConditionalMov_reg {
         public ConditionalMov_ns_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_NS())
                 gd.dword = ed.dword;
@@ -3153,20 +3710,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NS " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    final static public class ConditionalMov_p_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_p_reg extends ConditionalMov_reg {
         public ConditionalMov_p_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_P())
                 gd.dword = ed.dword;
@@ -3174,20 +3734,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.PF;
         }
 
+        @Override
         public String description() {
             return "CMOV_P " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    final static public class ConditionalMov_np_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_np_reg extends ConditionalMov_reg {
         public ConditionalMov_np_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_NP())
                 gd.dword = ed.dword;
@@ -3195,20 +3758,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NP " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    final static public class ConditionalMov_l_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_l_reg extends ConditionalMov_reg {
         public ConditionalMov_l_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_L())
                 gd.dword = ed.dword;
@@ -3216,20 +3782,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF | CPU_Regs.OF;
         }
 
+        @Override
         public String description() {
             return "CMOV_L " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    final static public class ConditionalMov_nl_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_nl_reg extends ConditionalMov_reg {
         public ConditionalMov_nl_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_NL())
                 gd.dword = ed.dword;
@@ -3237,20 +3806,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF | CPU_Regs.OF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NL " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    final static public class ConditionalMov_le_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_le_reg extends ConditionalMov_reg {
         public ConditionalMov_le_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_LE())
                 gd.dword = ed.dword;
@@ -3258,20 +3830,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "CMOV_LE " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    final static public class ConditionalMov_nle_reg extends ConditionalMov_reg {
+    public static final class ConditionalMov_nle_reg extends ConditionalMov_reg {
         public ConditionalMov_nle_reg(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             if (Flags.TFLG_NLE())
                 gd.dword = ed.dword;
@@ -3279,16 +3854,18 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NLE " + gd.getName() + ", " + ed.getName();
         }
     }
 
-    static abstract public class ConditionalMov_mem extends Op {
+    static public abstract class ConditionalMov_mem extends Op {
         EaaBase get_eaa;
         Reg gd;
 
@@ -3297,32 +3874,38 @@ public class Inst4 extends Helper {
             gd = Mod.gd(rm);
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class ConditionalMov_o_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_o_mem extends ConditionalMov_mem {
         public ConditionalMov_o_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_O())
@@ -3331,20 +3914,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.OF;
         }
 
+        @Override
         public String description() {
             return "CMOV_O " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class ConditionalMov_no_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_no_mem extends ConditionalMov_mem {
         public ConditionalMov_no_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_NO())
@@ -3353,20 +3939,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.OF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NO " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class ConditionalMov_b_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_b_mem extends ConditionalMov_mem {
         public ConditionalMov_b_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_B())
@@ -3375,20 +3964,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public String description() {
             return "CMOV_B " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class ConditionalMov_nb_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_nb_mem extends ConditionalMov_mem {
         public ConditionalMov_nb_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_NB())
@@ -3397,20 +3989,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.CF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NB " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class ConditionalMov_z_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_z_mem extends ConditionalMov_mem {
         public ConditionalMov_z_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_Z())
@@ -3419,20 +4014,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "CMOV_Z " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class ConditionalMov_nz_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_nz_mem extends ConditionalMov_mem {
         public ConditionalMov_nz_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_NZ())
@@ -3441,20 +4039,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NZ " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class ConditionalMov_be_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_be_mem extends ConditionalMov_mem {
         public ConditionalMov_be_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_BE())
@@ -3463,20 +4064,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.CF | CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "CMOV_BE " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class ConditionalMov_nbe_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_nbe_mem extends ConditionalMov_mem {
         public ConditionalMov_nbe_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_NBE())
@@ -3485,20 +4089,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.CF | CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NBE " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class ConditionalMov_s_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_s_mem extends ConditionalMov_mem {
         public ConditionalMov_s_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_S())
@@ -3507,20 +4114,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF;
         }
 
+        @Override
         public String description() {
             return "CMOV_S " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class ConditionalMov_ns_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_ns_mem extends ConditionalMov_mem {
         public ConditionalMov_ns_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_NS())
@@ -3529,20 +4139,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NS " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class ConditionalMov_p_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_p_mem extends ConditionalMov_mem {
         public ConditionalMov_p_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_P())
@@ -3551,20 +4164,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.PF;
         }
 
+        @Override
         public String description() {
             return "CMOV_P " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class ConditionalMov_np_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_np_mem extends ConditionalMov_mem {
         public ConditionalMov_np_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_NP())
@@ -3573,20 +4189,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NP " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class ConditionalMov_l_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_l_mem extends ConditionalMov_mem {
         public ConditionalMov_l_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_L())
@@ -3595,20 +4214,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF | CPU_Regs.OF;
         }
 
+        @Override
         public String description() {
             return "CMOV_L " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class ConditionalMov_nl_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_nl_mem extends ConditionalMov_mem {
         public ConditionalMov_nl_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_NL())
@@ -3617,20 +4239,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF | CPU_Regs.OF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NL " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class ConditionalMov_le_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_le_mem extends ConditionalMov_mem {
         public ConditionalMov_le_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_LE())
@@ -3639,20 +4264,23 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "CMOV_LE " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class ConditionalMov_nle_mem extends ConditionalMov_mem {
+    public static final class ConditionalMov_nle_mem extends ConditionalMov_mem {
         public ConditionalMov_nle_mem(int rm) {
             super(rm);
         }
 
+        @Override
         public int call() {
             int temp = Memory.mem_readd(get_eaa.call()); // must read before comparison so that it can throw errors
             if (Flags.TFLG_NLE())
@@ -3661,26 +4289,29 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return CPU_Regs.SF | CPU_Regs.OF | CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "CMOV_NLE " + gd.getName() + ", " + get_eaa.description32();
         }
     }
 
-    final static public class CompareExchange8B extends Op {
+    public static final class CompareExchange8B extends Op {
         EaaBase get_eaa;
 
         public CompareExchange8B(int rm) {
             get_eaa = Mod.getEaa(rm);
         }
 
+        @Override
         public int call() {
-            long value1 = ((CPU_Regs.reg_edx.dword & 0xffffffffL) << 32) | (CPU_Regs.reg_eax.dword & 0xffffffffL);
+            long value1 = (CPU_Regs.reg_edx.dword & 0xffffffffL) << 32 | CPU_Regs.reg_eax.dword & 0xffffffffL;
             int eaa = get_eaa.call();
-            long value2 = (Memory.mem_readd(eaa) & 0xffffffffl) | ((Memory.mem_readd(eaa + 4) & 0xffffffffl) << 32);
+            long value2 = Memory.mem_readd(eaa) & 0xffffffffL | (Memory.mem_readd(eaa + 4) & 0xffffffffL) << 32;
             Flags.FillFlags();
             if (value1 == value2) {
                 CPU_Regs.SETFLAGBIT(CPU_Regs.ZF, true);
@@ -3695,38 +4326,47 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public int gets() {
             return 0;
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int sets() {
             return CPU_Regs.ZF;
         }
 
+        @Override
         public String description() {
             return "CMPXCHG8B " + get_eaa.description32();
         }
     }
 
-    final static public class ReadMSR extends Op {
+    public static final class ReadMSR extends Op {
+        @Override
         public int call() {
-            if (CPU.cpu.cpl != 0) return EXCEPTION(CPU.EXCEPTION_GP);
+            if (CPU.cpu.cpl != 0)
+                return EXCEPTION(CPU.EXCEPTION_GP);
             long result = CPU.readMSR(CPU_Regs.reg_ecx.dword);
             CPU_Regs.reg_eax.dword = (int) result;
             CPU_Regs.reg_edx.dword = (int) (result >>> 32);
@@ -3734,59 +4374,74 @@ public class Inst4 extends Helper {
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return true;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }
     }
 
-    final static public class WriteMSR extends Op {
+    public static final class WriteMSR extends Op {
+        @Override
         public int call() {
-            if (CPU.cpu.cpl != 0) return EXCEPTION(CPU.EXCEPTION_GP);
-            CPU.writeMSR(CPU_Regs.reg_ecx.dword, ((CPU_Regs.reg_edx.dword & 0xFFFFFFFFl) << 32) | (CPU_Regs.reg_eax.dword & 0xFFFFFFFFl));
+            if (CPU.cpu.cpl != 0)
+                return EXCEPTION(CPU.EXCEPTION_GP);
+            CPU.writeMSR(CPU_Regs.reg_ecx.dword,
+                (CPU_Regs.reg_edx.dword & 0xFFFFFFFFL) << 32 | CPU_Regs.reg_eax.dword & 0xFFFFFFFFL);
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return true;
         }
 
+        @Override
         public boolean accessesMemory() {
             return false;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
 
+        @Override
         public int sets() {
             return 0;
         }
 
+        @Override
         public int gets() {
             return 0;
         }

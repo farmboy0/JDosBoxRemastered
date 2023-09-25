@@ -1,20 +1,25 @@
 package jdos.dos;
 
 import jdos.hardware.Memory;
-import jdos.util.*;
+import jdos.util.IntRef;
+import jdos.util.LongRef;
+import jdos.util.ShortRef;
+import jdos.util.StringHelper;
+import jdos.util.StringRef;
 
 public class Dos_DTA extends MemStruct {
     public Dos_DTA(/*RealPt*/int addr) {
         SetRealPt(addr);
     }
 
-    public void SetupSearch(/*Bit8u*/int _sdrive,/*Bit8u*/int _sattr, String _pattern) {
+    public void SetupSearch(/*Bit8u*/int _sdrive, /*Bit8u*/int _sattr, String _pattern) {
         SaveIt(1, 0, _sdrive);//sSave(sDTA,sdrive,_sdrive);
         SaveIt(1, 12, _sattr);//sSave(sDTA,sattr,_sattr);
         /* Fill with spaces */
         /*Bitu*/
         int i;
-        for (i = 0; i < 11; i++) Memory.mem_writeb(pt + 1 + i, (short) ' ');
+        for (i = 0; i < 11; i++)
+            Memory.mem_writeb(pt + 1 + i, (short) ' ');
         int pos = _pattern.indexOf('.');
         if (pos >= 0) {
             Memory.MEM_BlockWrite(pt + 1, _pattern.substring(0, pos), 8);
@@ -24,7 +29,8 @@ public class Dos_DTA extends MemStruct {
         }
     }
 
-    public void SetResult(String name,/*Bit32u*/long size,/*Bit16u*/int date,/*Bit16u*/int time,/*Bit8u*/short attr) {
+    public void SetResult(String name, /*Bit32u*/long size, /*Bit16u*/int date, /*Bit16u*/int time,
+        /*Bit8u*/short attr) {
         //MEM_BlockWrite(pt+offsetof(sDTA,name),(void *)_name,DOS_NAMELENGTH_ASCII);
         Memory.MEM_BlockWrite(pt + 30, name, 13);
         SaveIt(4, 26, (int) size);//sSave(sDTA,size,_size);
@@ -46,7 +52,8 @@ public class Dos_DTA extends MemStruct {
         pattern.value += StringHelper.toString(temp, 8, 3);
     }
 
-    public void GetResult(StringRef _name,/*Bit32u*/LongRef _size,/*Bit16u*/IntRef _date,/*Bit16u*/IntRef _time,/*Bit8u*/ShortRef _attr) {
+    public void GetResult(StringRef _name, /*Bit32u*/LongRef _size, /*Bit16u*/IntRef _date, /*Bit16u*/IntRef _time,
+        /*Bit8u*/ShortRef _attr) {
         byte[] name = new byte[13];
         Memory.MEM_BlockRead(pt + 30, name, name.length);
         _name.value = StringHelper.toString(name);
@@ -74,7 +81,6 @@ public class Dos_DTA extends MemStruct {
     public /*Bit16u*/int GetDirIDCluster() {
         return GetIt(2, 15);
     }//{ return (Bit16u)sGet(sDTA,dirCluster); };
-
 
 //	struct sDTA {
 //0		Bit8u sdrive;						/* The Drive the search is taking place */

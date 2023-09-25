@@ -1,24 +1,33 @@
 package jdos.util;
 
-import jdos.Dosbox;
-import jdos.gui.Main;
-
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class FileIOFactory {
-    static public final int MODE_READ = 0x01;
-    static public final int MODE_WRITE = 0x02;
-    static public final int MODE_TRUNCATE = 0x04;
+import jdos.Dosbox;
+import jdos.gui.MainBase;
 
-    static public boolean isRemote(String path) {
-        return (path.toLowerCase().startsWith("http://") || path.toLowerCase().startsWith("jar://") || path.toLowerCase().startsWith("jar_tmp://"));
+public class FileIOFactory {
+    public static final int MODE_READ = 0x01;
+    public static final int MODE_WRITE = 0x02;
+    public static final int MODE_TRUNCATE = 0x04;
+
+    public static boolean isRemote(String path) {
+        return path.toLowerCase().startsWith("http://") || path.toLowerCase().startsWith("jar://")
+            || path.toLowerCase().startsWith("jar_tmp://");
     }
 
-    static public boolean canOpen(String path, int mode) {
+    public static boolean canOpen(String path, int mode) {
         try {
             FileIO f = open(path, mode);
             f.close();
@@ -28,7 +37,7 @@ public class FileIOFactory {
         }
     }
 
-    static public String getFullPath(String path) throws FileNotFoundException {
+    public static String getFullPath(String path) throws FileNotFoundException {
         if (path.toLowerCase().startsWith("http://")) {
             return path.substring(0, path.lastIndexOf('/'));
         } else if (path.toLowerCase().startsWith("jar://")) {
@@ -38,7 +47,7 @@ public class FileIOFactory {
         }
     }
 
-    static public InputStream openStream(String path) throws FileNotFoundException {
+    public static InputStream openStream(String path) throws FileNotFoundException {
         if (path.toLowerCase().startsWith("http://")) {
             try {
                 URL url = new URL(path);
@@ -71,7 +80,7 @@ public class FileIOFactory {
         }
     }
 
-    static public FileIO open(String path, int mode) throws FileNotFoundException {
+    public static FileIO open(String path, int mode) throws FileNotFoundException {
         if (path.toLowerCase().startsWith("http://")) {
             try {
                 URL url = new URL(path);
@@ -96,7 +105,7 @@ public class FileIOFactory {
                 int read;
                 byte[] buffer = new byte[8096];
                 String msg = "Downloading " + path.substring(path.lastIndexOf('/') + 1);
-                Main.showProgress(msg, 0);
+                MainBase.showProgress(msg, 0);
                 long completed = 0;
                 while (true) {
                     read = is.read(buffer);
@@ -104,18 +113,16 @@ public class FileIOFactory {
                         break;
                     os.write(buffer, 0, read);
                     completed += read;
-                    Main.showProgress(msg, (int) (completed * 100 / size));
+                    MainBase.showProgress(msg, (int) (completed * 100 / size));
                 }
                 is.close();
                 if (b == null)
                     b = os.toByteArray();
                 return new RamIO(b, mode);
-            } catch (OutOfMemoryError e) {
-                e.printStackTrace();
-            } catch (Exception e) {
+            } catch (OutOfMemoryError | Exception e) {
                 e.printStackTrace();
             } finally {
-                Main.showProgress(null, 0);
+                MainBase.showProgress(null, 0);
             }
             throw new FileNotFoundException(path);
         } else if (path.toLowerCase().startsWith("jar://")) {
@@ -188,7 +195,7 @@ public class FileIOFactory {
         }
     }
 
-    static private class RandomIO extends RandomAccessFile implements FileIO {
+    private static class RandomIO extends RandomAccessFile implements FileIO {
         File file;
 
         public RandomIO(File file, String mode) throws FileNotFoundException {
@@ -196,12 +203,13 @@ public class FileIOFactory {
             this.file = file;
         }
 
+        @Override
         public long lastModified() {
             return file.lastModified();
         }
     }
 
-    static private class RamIO implements FileIO {
+    private static class RamIO implements FileIO {
         private final byte[] data;
         private int pos = 0;
         private final int mode;
@@ -211,12 +219,14 @@ public class FileIOFactory {
             this.mode = mode;
         }
 
+        @Override
         public int read() throws IOException {
             if (pos >= data.length)
                 return -1;
             return data[pos++];
         }
 
+        @Override
         public int read(byte[] b, int off, int len) throws IOException {
             if (b == null)
                 throw new NullPointerException();
@@ -232,10 +242,12 @@ public class FileIOFactory {
             return len;
         }
 
+        @Override
         public int read(byte[] b) throws IOException {
             return read(b, 0, b.length);
         }
 
+        @Override
         public int skipBytes(int n) throws IOException {
             if (pos >= data.length)
                 return 0;
@@ -245,6 +257,7 @@ public class FileIOFactory {
             return n;
         }
 
+        @Override
         public void write(int b) throws IOException {
             if ((mode & MODE_WRITE) == 0)
                 throw new IOException("Read Only");
@@ -253,10 +266,12 @@ public class FileIOFactory {
             data[pos++] = (byte) (b & 0xFF);
         }
 
+        @Override
         public void write(byte[] b) throws IOException {
             write(b, 0, b.length);
         }
 
+        @Override
         public void write(byte[] b, int off, int len) throws IOException {
             if ((mode & MODE_WRITE) == 0)
                 throw new IOException("Read Only");
@@ -266,6 +281,7 @@ public class FileIOFactory {
             pos += len;
         }
 
+        @Override
         public void seek(long p) throws IOException {
             if (p > data.length)
                 throw new IOException("EOF");
@@ -274,27 +290,32 @@ public class FileIOFactory {
             pos = (int) p;
         }
 
+        @Override
         public long length() throws IOException {
             return data.length;
         }
 
+        @Override
         public void setLength(long newLength) throws IOException {
             throw new IOException("Not Supported");
         }
 
+        @Override
         public void close() throws IOException {
         }
 
+        @Override
         public long getFilePointer() throws IOException {
             return pos;
         }
 
+        @Override
         public long lastModified() {
             return 0;
         }
     }
 
-    static private class JarIO implements FileIO {
+    private static class JarIO implements FileIO {
         final private int cacheShift = 13;
         final private int cacheMask = 0x1FFF;
         final private int cachePageSize = 1 << cacheShift; // 8192
@@ -359,7 +380,7 @@ public class FileIOFactory {
             if (writeData != null && writeData[offset >> cacheShift] != null) {
                 return writeData[offset >> cacheShift];
             }
-            Integer i = new Integer(offset);
+            Integer i = offset;
             byte[] b = (byte[]) cache.get(i);
             if (b == null) {
                 b = fill(offset);
@@ -368,6 +389,7 @@ public class FileIOFactory {
             return b;
         }
 
+        @Override
         public int read() throws IOException {
             if (pos >= len)
                 return -1;
@@ -375,9 +397,10 @@ public class FileIOFactory {
             int index = pos & cacheMask;
             byte[] b = get(offset);
             pos++;
-            return (b[index] & 0xFF);
+            return b[index] & 0xFF;
         }
 
+        @Override
         public int read(byte[] b, int off, int len) throws IOException {
             if (b == null)
                 throw new NullPointerException();
@@ -405,10 +428,12 @@ public class FileIOFactory {
             return result;
         }
 
+        @Override
         public int read(byte[] b) throws IOException {
             return read(b, 0, b.length);
         }
 
+        @Override
         public int skipBytes(int n) throws IOException {
             if (pos >= len)
                 return 0;
@@ -418,6 +443,7 @@ public class FileIOFactory {
             return n;
         }
 
+        @Override
         public void write(int b) throws IOException {
             if ((mode & MODE_WRITE) == 0)
                 throw new IOException("Read Only");
@@ -436,10 +462,12 @@ public class FileIOFactory {
             data[index] = (byte) b;
         }
 
+        @Override
         public void write(byte[] b) throws IOException {
             write(b, 0, b.length);
         }
 
+        @Override
         public void write(byte[] b, int off, int len) throws IOException {
             if ((mode & MODE_WRITE) == 0)
                 throw new IOException("Read Only");
@@ -475,6 +503,7 @@ public class FileIOFactory {
             }
         }
 
+        @Override
         public void seek(long p) throws IOException {
             if (p == pos) {
                 return;
@@ -486,28 +515,33 @@ public class FileIOFactory {
             pos = (int) p;
         }
 
+        @Override
         public long length() throws IOException {
             return len;
         }
 
+        @Override
         public void setLength(long newLength) throws IOException {
             throw new IOException("Not Supported");
         }
 
+        @Override
         public void close() throws IOException {
             is.close();
         }
 
+        @Override
         public long getFilePointer() throws IOException {
             return pos;
         }
 
+        @Override
         public long lastModified() {
             return 0;
         }
     }
 
-    static private class MyByteArrayOutputStream extends ByteArrayOutputStream {
+    private static class MyByteArrayOutputStream extends ByteArrayOutputStream {
         public MyByteArrayOutputStream(int size) {
             super(size);
         }

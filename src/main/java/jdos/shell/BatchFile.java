@@ -18,6 +18,7 @@ public class BatchFile {
     Dos_shell shell;
     BatchFile prev;
     CommandLine cmd;
+
     BatchFile(Dos_shell host, String resolved_name, String entered_name, String cmd_line) {
         location.value = 0;
         prev = host.bf;
@@ -54,9 +55,9 @@ public class BatchFile {
         /*Bit8u*/
         byte[] c = new byte[1];
         IntRef n = new IntRef(1);
-        StringBuffer l;
+        StringBuilder l;
         do {
-            l = new StringBuffer();
+            l = new StringBuilder();
             do {
                 n.value = 1;
                 Dos_files.DOS_ReadFile(file_handle.value, c, n);
@@ -77,18 +78,19 @@ public class BatchFile {
             }
         } while (l.length() == 0 || l.charAt(0) == ':');
         String in = l.toString();
-        StringBuffer out = new StringBuffer();
+        StringBuilder out = new StringBuilder();
         /* Now parse the line read from the bat file for % stuff */
         while (in.length() > 0) {
             if (in.charAt(0) == '%') {
                 in = in.substring(1);
-                if (in.length() == 0) break;
+                if (in.length() == 0)
+                    break;
                 if (in.charAt(0) == '%') {
                     in = in.substring(1);
                     out.append('%');
                     continue;
                 }
-                if (in.charAt(0) == '0') {  /* Handle %0 */
+                if (in.charAt(0) == '0') { /* Handle %0 */
                     in = in.substring(1);
                     out.append(cmd.GetFileName());
                     continue;
@@ -98,9 +100,11 @@ public class BatchFile {
                     /* Handle %1 %2 .. %9 */
                     in = in.substring(1); //Progress reader
                     next -= '0';
-                    if (cmd.GetCount() < next) continue;
+                    if (cmd.GetCount() < next)
+                        continue;
                     String word;
-                    if ((word = cmd.FindCommand(next)) == null) continue;
+                    if ((word = cmd.FindCommand(next)) == null)
+                        continue;
                     out.append(word);
                     continue;
                 } else {
@@ -114,7 +118,8 @@ public class BatchFile {
                     StringRef env = new StringRef();
                     if (shell.GetEnvStr(in.substring(0, pos), env)) {
                         int pos2 = env.value.indexOf('=');
-                        if (pos2 < 0) continue;
+                        if (pos2 < 0)
+                            continue;
                         out.append(env.value.substring(pos2 + 1));
                     }
                     in = in.substring(pos + 1);
@@ -146,7 +151,7 @@ public class BatchFile {
         IntRef n = new IntRef(1);
         //again:
         while (true) {
-            StringBuffer l = new StringBuffer();
+            StringBuilder l = new StringBuilder();
             do {
                 n.value = 1;
                 Dos_files.DOS_ReadFile(file_handle.value, c, n);

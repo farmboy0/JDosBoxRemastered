@@ -10,7 +10,7 @@ import jdos.hardware.Memory;
 import jdos.hardware.RAM;
 
 final public class DecodeBlock extends Op {
-    static public int compileThreshold = 0;
+    public static int compileThreshold = 0;
     public static boolean smc = false;
     public Op op;
     public boolean active = true;
@@ -37,7 +37,7 @@ final public class DecodeBlock extends Op {
         }
     }
 
-    static private byte[] getOpCode(int start, int len) {
+    private static byte[] getOpCode(int start, int len) {
         byte[] opCode = new byte[len];
         int src = Paging.getDirectIndexRO(start);
         if (src >= 0)
@@ -47,23 +47,28 @@ final public class DecodeBlock extends Op {
         return opCode;
     }
 
+    @Override
     public boolean throwsException() {
         return false;
     }
 
+    @Override
     public boolean accessesMemory() {
         return false;
     }
 
+    @Override
     public boolean usesEip() {
         return false;
     }
 
+    @Override
     public boolean setsEip() {
         return false;
     }
 
-    final public int call() {
+    @Override
+    public int call() {
         if (Compiler.ENABLED) {
             runCount++;
             if (runCount == compileThreshold && !compiled && Dosbox.allPrivileges) {

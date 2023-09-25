@@ -9,6 +9,7 @@ public abstract class Section {
     private final Vector initfunctions = new Vector();
     private final Vector destroyfunction = new Vector();
     private final String sectionname;
+
     public Section(String _sectionname) {
         sectionname = _sectionname;
     }
@@ -37,7 +38,8 @@ public abstract class Section {
     public void ExecuteInit(boolean initall) {
         for (int i = 0; i < initfunctions.size(); i++) {
             Function_wrapper f = (Function_wrapper) initfunctions.elementAt(i);
-            if (initall || f.canchange) f.function.call(this);
+            if (initall || f.canchange)
+                f.function.call(this);
         }
     }
 
@@ -48,7 +50,8 @@ public abstract class Section {
     public void ExecuteDestroy(boolean destroyall) {
         for (int i = 0; i < destroyfunction.size(); i++) {
             Function_wrapper f = (Function_wrapper) destroyfunction.elementAt(i);
-            if (destroyall || f.canchange) f.function.call(this);
+            if (destroyall || f.canchange)
+                f.function.call(this);
         }
     }
 

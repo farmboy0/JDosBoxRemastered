@@ -5,7 +5,7 @@ import jdos.gui.Render;
 import jdos.hardware.RAM;
 
 public class VGACommonState {
-    static public final int DISPLAY_ADDRESS = 0x60000000;
+    public static final int DISPLAY_ADDRESS = 0x60000000;
     //MemoryRegion *legacy_address_space;
     Paging.PageHandler vga_mem;
     int vram_ptr;
@@ -89,7 +89,7 @@ public class VGACommonState {
     public int readb(int offset) {
         if (offset >= DISPLAY_ADDRESS) {
             offset -= DISPLAY_ADDRESS;
-            return (short) ((Render.render.src.outWrite32[(offset >>> 2)] >>> ((offset & 0x3) << 3)) & 0xFF);
+            return (short) (Render.render.src.outWrite32[offset >>> 2] >>> ((offset & 0x3) << 3) & 0xFF);
         }
         return RAM.readb(vram_ptr + offset);
     }
@@ -99,7 +99,7 @@ public class VGACommonState {
             offset -= DISPLAY_ADDRESS;
             int rem = offset & 0x3;
             int[] local = Render.render.src.outWrite32;
-            int index = (offset >>> 2);
+            int index = offset >>> 2;
             int val = local[index] >>> (rem << 3);
             if (rem == 3) {
                 val |= local[index + 1] << 8;
@@ -112,14 +112,14 @@ public class VGACommonState {
     public int readd(int offset) {
         if (offset >= DISPLAY_ADDRESS) {
             offset -= DISPLAY_ADDRESS;
-            int rem = (offset & 0x3);
+            int rem = offset & 0x3;
             if (rem == 0) {
                 return Render.render.src.outWrite32[offset >>> 2];
             }
             int off = rem << 3;
             int[] local = Render.render.src.outWrite32;
-            int index = (offset >>> 2);
-            return local[index] >>> off | local[index + 1] << (32 - off);
+            int index = offset >>> 2;
+            return local[index] >>> off | local[index + 1] << 32 - off;
         }
         return RAM.readd(vram_ptr + offset);
     }
@@ -130,7 +130,7 @@ public class VGACommonState {
             int off = (offset & 0x3) << 3;
             int[] local = Render.render.src.outWrite32;
             int mask = ~(0xFF << off);
-            int index = (offset >>> 2);
+            int index = offset >>> 2;
             int val = local[index] & mask | (value & 0xFF) << off;
             local[index] = val;
         } else {
@@ -141,18 +141,18 @@ public class VGACommonState {
     public void writew(int offset, int value) {
         if (offset >= DISPLAY_ADDRESS) {
             offset -= DISPLAY_ADDRESS;
-            int rem = (offset & 0x3);
+            int rem = offset & 0x3;
             int[] local = Render.render.src.outWrite32;
-            int index = (offset >>> 2);
+            int index = offset >>> 2;
             value &= 0xFFFF;
             if (rem == 3) {
-                local[index] = (local[index] & 0xFFFFFF | value << 24);
+                local[index] = local[index] & 0xFFFFFF | value << 24;
                 index++;
-                local[index] = (local[index] & 0xFFFFFF00 | value >>> 8);
+                local[index] = local[index] & 0xFFFFFF00 | value >>> 8;
             } else {
                 int off = rem << 3;
                 int mask = ~(0xFFFF << off);
-                local[index] = (local[index] & mask | value << off);
+                local[index] = local[index] & mask | value << off;
             }
         } else {
             RAM.writew(vram_ptr + offset, value);
@@ -162,7 +162,7 @@ public class VGACommonState {
     public void writed(int offset, int value) {
         if (offset >= DISPLAY_ADDRESS) {
             offset -= DISPLAY_ADDRESS;
-            int rem = (offset & 0x3);
+            int rem = offset & 0x3;
             if (rem == 0) {
                 try {
                     Render.render.src.outWrite32[offset >>> 2] = value;
@@ -170,13 +170,13 @@ public class VGACommonState {
                     e.printStackTrace();
                 }
             } else {
-                int index = (offset >>> 2);
+                int index = offset >>> 2;
                 int[] local = Render.render.src.outWrite32;
                 int off = rem << 3;
                 int mask = -1 << off;
-                local[index] = (local[index] & ~mask) | (value << off);
+                local[index] = local[index] & ~mask | value << off;
                 index++;
-                local[index] = (local[index] & mask) | (value >>> (32 - off));
+                local[index] = local[index] & mask | value >>> 32 - off;
             }
         } else {
             RAM.writed(vram_ptr + offset, value);
@@ -194,18 +194,23 @@ public class VGACommonState {
             writeb(dst++, value);
         }
     }
+
     public interface Retrace {
         int call(VGACommonState s);
     }
+
     public interface vga_update_retrace_info_fn {
         void call(VGACommonState s);
     }
+
     public interface rgb_to_pixel_dup_func {
         int call(int r, int g, int b);
     }
+
     public interface get_func {
         int call(VGACommonState s);
     }
+
     public interface cursor_draw_line_func {
         void call(VGACommonState s, int d, int y);
     }

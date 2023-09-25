@@ -1,5 +1,13 @@
 package jdos.win.builtin.winmm;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.util.Vector;
+
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+
 import jdos.hardware.Memory;
 import jdos.win.Win;
 import jdos.win.builtin.WinAPI;
@@ -8,20 +16,13 @@ import jdos.win.system.WinSystem;
 import jdos.win.utils.FilePath;
 import jdos.win.utils.StringUtil;
 
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.util.Vector;
-
 public class PlaySound extends WinAPI {
     // BOOL PlaySound(LPCTSTR pszSound, HMODULE hmod, DWORD fdwSound)
-    static public int PlaySoundA(int pszSound, int hmod, int fdwSound) {
+    public static int PlaySoundA(int pszSound, int hmod, int fdwSound) {
         return MULTIMEDIA_PlaySound(pszSound, hmod, fdwSound, false);
     }
 
-    static private int MULTIMEDIA_PlaySound(int pszSound, int hmod, int fdwSound, boolean bUnicode) {
+    private static int MULTIMEDIA_PlaySound(int pszSound, int hmod, int fdwSound, boolean bUnicode) {
         ActivePlaySound ps = null;
 
         Vector playSound = WinSystem.getCurrentProcess().playSound;
@@ -35,8 +36,8 @@ public class PlaySound extends WinAPI {
             ps = new ActivePlaySound(pszSound, hmod, fdwSound, bUnicode);
         }
 
-        for (int i = 0; i < playSound.size(); i++) {
-            ((ActivePlaySound) playSound.get(i)).stop();
+        for (Object element : playSound) {
+            ((ActivePlaySound) element).stop();
         }
 
         if (ps == null)
@@ -44,7 +45,7 @@ public class PlaySound extends WinAPI {
         return ps.start();
     }
 
-    static private class ActivePlaySound implements Runnable {
+    private static class ActivePlaySound implements Runnable {
         public int pszSound;
         public int hmod;
         public int flags;
@@ -56,6 +57,7 @@ public class PlaySound extends WinAPI {
         boolean bExit = false;
         Vector playSound;
         private Thread thread = null;
+
         public ActivePlaySound(int pszSound, int hmod, int flags, boolean unicode) {
             this.pszSound = pszSound;
             this.hmod = hmod;
@@ -95,6 +97,7 @@ public class PlaySound extends WinAPI {
             }
         }
 
+        @Override
         public void run() {
             try {
                 clip = AudioSystem.getClip();
@@ -125,7 +128,8 @@ public class PlaySound extends WinAPI {
             if ((flags & SND_RESOURCE) == SND_RESOURCE) {
                 int hRes;
                 int hGlob;
-                if ((hRes = KResource.FindResourceA(hmod, pszSound, StringUtil.allocateA("WAVE"))) == 0 || (hGlob = KResource.LoadResource(hmod, hRes)) == 0)
+                if ((hRes = KResource.FindResourceA(hmod, pszSound, StringUtil.allocateA("WAVE"))) == 0
+                    || (hGlob = KResource.LoadResource(hmod, hRes)) == 0)
                     return FALSE;
                 if ((pData = KResource.LockResource(hGlob)) == NULL) {
                     KResource.FreeResource(hGlob);

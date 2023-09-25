@@ -10,10 +10,10 @@ public class DefDlg extends WinAPI {
     //static public final int DWLP_MSGRESULT = 0;
     //static public final int DWLP_DLGPROC = 4;
 
-    static public final int DM_GETDEFID = WM_USER;
-    static public final int DM_SETDEFID = WM_USER + 1;
+    public static final int DM_GETDEFID = WM_USER;
+    public static final int DM_SETDEFID = WM_USER + 1;
 
-    static public final int DC_HASDEFID = 0x534B;
+    public static final int DC_HASDEFID = 0x534B;
 
     //LRESULT WINAPI DefDlgProc(HWinWindow hDlg, UINT Msg, WPARAM wParam, LPARAM lParam)
     public static int DefDlgProcA(int hDlg, int msg, int wParam, int lParam) {
@@ -58,21 +58,20 @@ public class DefDlg extends WinAPI {
                     return DefWnd.DefWindowProcA(hDlg, msg, wParam, lParam);
             }
         }
-        if ((msg >= WM_CTLCOLORMSGBOX && msg <= WM_CTLCOLORSTATIC) ||
-                msg == WM_CTLCOLOR || msg == WM_COMPAREITEM ||
-                msg == WM_VKEYTOITEM || msg == WM_CHARTOITEM ||
-                msg == WM_QUERYDRAGICON || msg == WM_INITDIALOG) {
+        if (msg >= WM_CTLCOLORMSGBOX && msg <= WM_CTLCOLORSTATIC || msg == WM_CTLCOLOR || msg == WM_COMPAREITEM
+            || msg == WM_VKEYTOITEM || msg == WM_CHARTOITEM || msg == WM_QUERYDRAGICON || msg == WM_INITDIALOG) {
             return result;
         }
         return WinWindow.GetWindowLongA(hDlg, DWLP_MSGRESULT);
     }
 
-    static private int DEFDLG_Proc(int hwnd, int msg, int wParam, int lParam) {
+    private static int DEFDLG_Proc(int hwnd, int msg, int wParam, int lParam) {
         WinWindow window = WinWindow.get(hwnd);
         switch (msg) {
             case WM_ERASEBKGND: {
                 int brush = Message.SendMessageA(hwnd, WM_CTLCOLORDLG, wParam, hwnd);
-                if (brush == 0) brush = DefWnd.DefWindowProcA(hwnd, WM_CTLCOLORDLG, wParam, hwnd);
+                if (brush == 0)
+                    brush = DefWnd.DefWindowProcA(hwnd, WM_CTLCOLORDLG, wParam, hwnd);
                 if (brush != 0) {
                     int rect = getTempBuffer(WinRect.SIZE);
                     WinRect.write(rect, 0, 0, window.rectClient.width(), window.rectClient.height());
@@ -86,11 +85,14 @@ public class DefDlg extends WinAPI {
                     window.dlgInfo.close();
                 return DefWnd.DefWindowProcA(hwnd, msg, wParam, lParam);
             case WM_SHOWWINDOW:
-                if (wParam == 0) DEFDLG_SaveFocus(hwnd);
+                if (wParam == 0)
+                    DEFDLG_SaveFocus(hwnd);
                 return DefWnd.DefWindowProcA(hwnd, msg, wParam, lParam);
             case WM_ACTIVATE:
-                if (wParam != 0) DEFDLG_RestoreFocus(hwnd);
-                else DEFDLG_SaveFocus(hwnd);
+                if (wParam != 0)
+                    DEFDLG_RestoreFocus(hwnd);
+                else
+                    DEFDLG_SaveFocus(hwnd);
                 return 0;
             case WM_SETFOCUS:
                 DEFDLG_RestoreFocus(hwnd);
@@ -116,7 +118,8 @@ public class DefDlg extends WinAPI {
                     int hwndDest = wParam;
                     if (lParam == 0)
                         hwndDest = WinDialog.GetNextDlgTabItem(hwnd, Focus.GetFocus(), wParam);
-                    if (hwndDest != 0) DEFDLG_SetFocus(hwnd, hwndDest);
+                    if (hwndDest != 0)
+                        DEFDLG_SetFocus(hwnd, hwndDest);
                     DEFDLG_SetDefButton(hwnd, hwndDest);
                 }
                 return 0;
@@ -131,38 +134,43 @@ public class DefDlg extends WinAPI {
                         Message.SendMessageA(WinWindow.GetParent(hwndFocus), CB_SHOWDROPDOWN, FALSE, 0);
                 }
             }
-            return DefWnd.DefWindowProcA(hwnd, msg, wParam, lParam);
+                return DefWnd.DefWindowProcA(hwnd, msg, wParam, lParam);
 
             case WM_GETFONT:
                 return window.dlgInfo != null ? window.dlgInfo.hUserFont : 0;
 
             case WM_CLOSE:
-                Message.PostMessageA(hwnd, WM_COMMAND, WinAPI.MAKEWPARAM(IDCANCEL, BN_CLICKED), WinDialog.GetDlgItem(hwnd, IDCANCEL));
+                Message.PostMessageA(hwnd, WM_COMMAND, WinAPI.MAKEWPARAM(IDCANCEL, BN_CLICKED),
+                    WinDialog.GetDlgItem(hwnd, IDCANCEL));
                 return 0;
         }
         return 0;
     }
 
-    static private void DEFDLG_SaveFocus(int hWnd) {
+    private static void DEFDLG_SaveFocus(int hWnd) {
         int hwndFocus = Focus.GetFocus();
 
-        if (hwndFocus == 0 || WinWindow.IsChild(hWnd, hwndFocus) == 0) return;
+        if (hwndFocus == 0 || WinWindow.IsChild(hWnd, hwndFocus) == 0)
+            return;
         WinWindow window = WinWindow.get(hWnd);
-        if (window.dlgInfo == null) return;
+        if (window.dlgInfo == null)
+            return;
         window.dlgInfo.hwndFocus = hwndFocus;
     }
 
-    static private void DEFDLG_RestoreFocus(int hWnd) {
-        if (WinPos.IsIconic(hWnd) != 0) return;
+    private static void DEFDLG_RestoreFocus(int hWnd) {
+        if (WinPos.IsIconic(hWnd) != 0)
+            return;
         WinWindow window = WinWindow.get(hWnd);
-        if (window.dlgInfo == null) return;
         /* Don't set the focus back to controls if EndDialog is already called.*/
-        if (window.dlgInfo.endDialogCalled) return;
+        if ((window.dlgInfo == null) || window.dlgInfo.endDialogCalled)
+            return;
         if (window.dlgInfo.hwndFocus == 0 || window.dlgInfo.hwndFocus == hWnd) {
             /* If no saved focus control exists, set focus to the first visible,
                non-disabled, WS_TABSTOP control in the dialog */
             window.dlgInfo.hwndFocus = WinDialog.GetNextDlgTabItem(hWnd, 0, 0);
-            if (window.dlgInfo.hwndFocus == 0) return;
+            if (window.dlgInfo.hwndFocus == 0)
+                return;
         }
         DEFDLG_SetFocus(hWnd, window.dlgInfo.hwndFocus);
 
@@ -171,7 +179,7 @@ public class DefDlg extends WinAPI {
     }
 
     private static void DEFDLG_SetFocus(int hwndDlg, int hwndCtrl) {
-        if ((Message.SendMessageA(hwndCtrl, WM_GETDLGCODE, 0, 0) & WinDialog.DLGC_HASSETSEL) != 0)
+        if ((Message.SendMessageA(hwndCtrl, WM_GETDLGCODE, 0, 0) & WinAPI.DLGC_HASSETSEL) != 0)
             Message.SendMessageA(hwndCtrl, EM_SETSEL, 0, -1);
         Focus.SetFocus(hwndCtrl);
     }
@@ -184,8 +192,9 @@ public class DefDlg extends WinAPI {
         int old_id = window.dlgInfo.idResult;
 
         window.dlgInfo.idResult = wParam;
-        if (hwndNew != 0 && ((dlgcode = Message.SendMessageA(hwndNew, WM_GETDLGCODE, 0, 0)) & (DLGC_UNDEFPUSHBUTTON | DLGC_BUTTON)) == 0)
-            return false;  /* Destination is not a push button */
+        if (hwndNew != 0 && ((dlgcode = Message.SendMessageA(hwndNew, WM_GETDLGCODE, 0, 0))
+            & (DLGC_UNDEFPUSHBUTTON | DLGC_BUTTON)) == 0)
+            return false; /* Destination is not a push button */
 
         /* Make sure the old default control is a valid push button ID */
         hwndOld = WinDialog.GetDlgItem(hwndDlg, old_id);
@@ -201,7 +210,7 @@ public class DefDlg extends WinAPI {
         return true;
     }
 
-    static public int DEFDLG_FindDefButton(int hwndDlg) {
+    public static int DEFDLG_FindDefButton(int hwndDlg) {
         int hwndChild;
         int hwndTmp;
 
@@ -213,7 +222,8 @@ public class DefDlg extends WinAPI {
             /* Recurse into WS_EX_CONTROLPARENT controls */
             if ((WinWindow.GetWindowLongA(hwndChild, GWL_EXSTYLE) & WS_EX_CONTROLPARENT) != 0) {
                 int dsStyle = WinWindow.GetWindowLongA(hwndChild, GWL_STYLE);
-                if ((dsStyle & WS_VISIBLE) != 0 && (dsStyle & WS_DISABLED) == 0 && (hwndTmp = DEFDLG_FindDefButton(hwndChild)) != 0)
+                if ((dsStyle & WS_VISIBLE) != 0 && (dsStyle & WS_DISABLED) == 0
+                    && (hwndTmp = DEFDLG_FindDefButton(hwndChild)) != 0)
                     return hwndTmp;
             }
             hwndChild = WinWindow.GetWindow(hwndChild, GW_HWNDNEXT);
@@ -226,11 +236,12 @@ public class DefDlg extends WinAPI {
         WinWindow window = WinWindow.get(hwndDlg);
         int hwndOld = WinDialog.GetDlgItem(hwndDlg, window.dlgInfo.idResult);
 
-        if (hwndNew != 0 && ((dlgcode = Message.SendMessageA(hwndNew, WM_GETDLGCODE, 0, 0)) & (DLGC_UNDEFPUSHBUTTON | DLGC_DEFPUSHBUTTON)) == 0) {
+        if (hwndNew != 0 && ((dlgcode = Message.SendMessageA(hwndNew, WM_GETDLGCODE, 0, 0))
+            & (DLGC_UNDEFPUSHBUTTON | DLGC_DEFPUSHBUTTON)) == 0) {
             /**
-             * Need to draw only default push button rectangle.
-             * Since the next control is not a push button, need to draw the push
-             * button rectangle for the default control.
+             * Need to draw only default push button rectangle. Since the next control is
+             * not a push button, need to draw the push button rectangle for the default
+             * control.
              */
             hwndNew = hwndOld;
             dlgcode = Message.SendMessageA(hwndNew, WM_GETDLGCODE, 0, 0);

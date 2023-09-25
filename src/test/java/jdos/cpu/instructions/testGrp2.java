@@ -1,6 +1,7 @@
 package jdos.cpu.instructions;
 
 import jdos.cpu.CPU_Regs;
+import jdos.cpu.Flags;
 import jdos.cpu.core_dynamic.Compiler;
 import jdos.hardware.Memory;
 
@@ -111,7 +112,7 @@ public class testGrp2 extends InstructionsTestCase {
                 CPU_Regs.reg_ebx.dword(0x80);
             decoder.call();
             assertTrue(CPU_Regs.reg_ebx.dword == 2);
-            assertTrue(!CPU_Regs.get_CF());
+            assertTrue(!Flags.get_CF());
         }
     }
 
@@ -164,7 +165,7 @@ public class testGrp2 extends InstructionsTestCase {
         CPU_Regs.reg_ebx.dword(2);
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == 1);
-        assertTrue(!CPU_Regs.get_CF());
+        assertTrue(!Flags.get_CF());
 
         newInstruction(op);
         pushIb((byte) (0xc3 + (1 << 3)));
@@ -177,7 +178,7 @@ public class testGrp2 extends InstructionsTestCase {
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == 1);
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(!CPU_Regs.get_CF()); // make sure carry flag is ignored
+            assertTrue(!Flags.get_CF()); // make sure carry flag is ignored
 
         newInstruction(op);
         pushIb((byte) (0xc3 + (1 << 3)));
@@ -194,7 +195,7 @@ public class testGrp2 extends InstructionsTestCase {
         else
             assertTrue(CPU_Regs.reg_ebx.dword == 0x80);
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(CPU_Regs.get_CF());
+            assertTrue(Flags.get_CF());
 
         newInstruction(op);
         pushIb((byte) (1 << 3));
@@ -254,7 +255,7 @@ public class testGrp2 extends InstructionsTestCase {
             else
                 assertTrue(CPU_Regs.reg_ebx.dword == 0x40);
             if (!Compiler.alwayUseFastVersion)
-                assertTrue(!CPU_Regs.get_CF());
+                assertTrue(!Flags.get_CF());
         }
     }
 
@@ -307,7 +308,7 @@ public class testGrp2 extends InstructionsTestCase {
         CPU_Regs.reg_ebx.dword(1);
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == 2);
-        assertTrue(!CPU_Regs.get_CF());
+        assertTrue(!Flags.get_CF());
 
         newInstruction(op);
         pushIb((byte) (0xc3 + (2 << 3)));
@@ -323,7 +324,7 @@ public class testGrp2 extends InstructionsTestCase {
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == result);// make sure carry flag is used
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(!CPU_Regs.get_CF());
+            assertTrue(!Flags.get_CF());
 
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, false);
         newInstruction(op);
@@ -341,7 +342,7 @@ public class testGrp2 extends InstructionsTestCase {
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == 0);
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(CPU_Regs.get_CF());
+            assertTrue(Flags.get_CF());
 
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, false);
         newInstruction(op);
@@ -385,7 +386,7 @@ public class testGrp2 extends InstructionsTestCase {
             Memory.mem_writeb(MEM_BASE_DS + 1, 0);
         }
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(CPU_Regs.get_CF());
+            assertTrue(Flags.get_CF());
 
         if (op != 0xd0 && op != 0xd1 && op != 0x2d1) {
             CPU_Regs.SETFLAGBIT(CPU_Regs.CF, false);
@@ -430,7 +431,7 @@ public class testGrp2 extends InstructionsTestCase {
                 Memory.mem_writeb(MEM_BASE_DS + 1, 0);
             }
             if (!Compiler.alwayUseFastVersion)
-                assertTrue(CPU_Regs.get_CF());
+                assertTrue(Flags.get_CF());
         }
 
         if (op == 0xc0 || op == 0xc1 || op == 0xd2 || op == 0xd3 || op == 0x2c1 || op == 0x2d3) {
@@ -450,7 +451,7 @@ public class testGrp2 extends InstructionsTestCase {
             decoder.call();
             assertTrue(CPU_Regs.reg_ebx.dword == 1);
             if (!Compiler.alwayUseFastVersion)
-                assertTrue(!CPU_Regs.get_CF());
+                assertTrue(!Flags.get_CF());
         }
     }
 
@@ -518,7 +519,7 @@ public class testGrp2 extends InstructionsTestCase {
         CPU_Regs.reg_ebx.dword(4);
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == result);
-        assertTrue(!CPU_Regs.get_CF());
+        assertTrue(!Flags.get_CF());
 
         newInstruction(op);
         pushIb((byte) (0xc3 + (3 << 3)));
@@ -536,7 +537,7 @@ public class testGrp2 extends InstructionsTestCase {
         else
             assertTrue(CPU_Regs.reg_ebx.dword == 0x81);// make sure carry flag is used
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(!CPU_Regs.get_CF());
+            assertTrue(!Flags.get_CF());
 
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, false);
         newInstruction(op);
@@ -549,7 +550,7 @@ public class testGrp2 extends InstructionsTestCase {
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == 0);
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(CPU_Regs.get_CF());
+            assertTrue(Flags.get_CF());
 
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, false);
         newInstruction(op);
@@ -593,7 +594,7 @@ public class testGrp2 extends InstructionsTestCase {
             Memory.mem_writeb(MEM_BASE_DS + 1, 0);
         }
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(CPU_Regs.get_CF());
+            assertTrue(Flags.get_CF());
 
         if (op != 0xd0 && op != 0xd1 && op != 0x2d1) {
             CPU_Regs.SETFLAGBIT(CPU_Regs.CF, false);
@@ -638,7 +639,7 @@ public class testGrp2 extends InstructionsTestCase {
                 Memory.mem_writeb(MEM_BASE_DS + 1, 0);
             }
             if (!Compiler.alwayUseFastVersion)
-                assertTrue(CPU_Regs.get_CF());
+                assertTrue(Flags.get_CF());
         }
         if (op == 0xc0 || op == 0xc1 || op == 0xd2 || op == 0xd3 || op == 0x2c1 || op == 0x2d3) {
             CPU_Regs.SETFLAGBIT(CPU_Regs.CF, false);
@@ -657,7 +658,7 @@ public class testGrp2 extends InstructionsTestCase {
             else
                 assertTrue(CPU_Regs.reg_ebx.dword == 0x80);
             if (!Compiler.alwayUseFastVersion)
-                assertTrue(!CPU_Regs.get_CF());
+                assertTrue(!Flags.get_CF());
         }
     }
 
@@ -710,7 +711,7 @@ public class testGrp2 extends InstructionsTestCase {
         CPU_Regs.reg_ebx.dword(1);
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == 2);
-        assertTrue(!CPU_Regs.get_CF());
+        assertTrue(!Flags.get_CF());
 
         newInstruction(op);
         pushIb((byte) (0xc3 + (6 << 3)));
@@ -723,7 +724,7 @@ public class testGrp2 extends InstructionsTestCase {
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == 2);// make sure carry flag is ignored
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(!CPU_Regs.get_CF());
+            assertTrue(!Flags.get_CF());
 
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);
         newInstruction(op);
@@ -741,9 +742,9 @@ public class testGrp2 extends InstructionsTestCase {
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == 0);
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(CPU_Regs.get_CF());
+            assertTrue(Flags.get_CF());
 
-        CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);  // just make sure this isn't used
+        CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true); // just make sure this isn't used
         newInstruction(op);
         pushIb((byte) (6 << 3));
         if (op == 0xc0 || op == 0xc1 || op == 0x2c1)
@@ -785,7 +786,7 @@ public class testGrp2 extends InstructionsTestCase {
             Memory.mem_writeb(MEM_BASE_DS + 1, 0);
         }
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(CPU_Regs.get_CF());
+            assertTrue(Flags.get_CF());
 
         if (op == 0xc0 || op == 0xc1 || op == 0xd2 || op == 0xd3 || op == 0x2c1 || op == 0x2d3) {
             CPU_Regs.SETFLAGBIT(CPU_Regs.CF, false);
@@ -804,7 +805,7 @@ public class testGrp2 extends InstructionsTestCase {
             decoder.call();
             assertTrue(CPU_Regs.reg_ebx.dword == 0);
             if (!Compiler.alwayUseFastVersion)
-                assertTrue(!CPU_Regs.get_CF());
+                assertTrue(!Flags.get_CF());
         }
     }
 
@@ -857,7 +858,7 @@ public class testGrp2 extends InstructionsTestCase {
         CPU_Regs.reg_ebx.dword(2);
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == 1);
-        assertTrue(!CPU_Regs.get_CF());
+        assertTrue(!Flags.get_CF());
 
         newInstruction(op);
         pushIb((byte) (0xc3 + (5 << 3)));
@@ -870,7 +871,7 @@ public class testGrp2 extends InstructionsTestCase {
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == 1);// make sure carry flag is ignored
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(!CPU_Regs.get_CF());
+            assertTrue(!Flags.get_CF());
 
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, false);
         newInstruction(op);
@@ -883,9 +884,9 @@ public class testGrp2 extends InstructionsTestCase {
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == 0);
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(CPU_Regs.get_CF());
+            assertTrue(Flags.get_CF());
 
-        CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true);  // just make sure this isn't used
+        CPU_Regs.SETFLAGBIT(CPU_Regs.CF, true); // just make sure this isn't used
         newInstruction(op);
         pushIb((byte) (5 << 3));
         if (op == 0xc0 || op == 0xc1 || op == 0x2c1)
@@ -927,7 +928,7 @@ public class testGrp2 extends InstructionsTestCase {
             Memory.mem_writeb(MEM_BASE_DS + 1, 0);
         }
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(CPU_Regs.get_CF());
+            assertTrue(Flags.get_CF());
 
         if (op == 0xc0 || op == 0xc1 || op == 0xd2 || op == 0xd3 || op == 0x2c1 || op == 0x2d3) {
             CPU_Regs.SETFLAGBIT(CPU_Regs.CF, false);
@@ -939,9 +940,9 @@ public class testGrp2 extends InstructionsTestCase {
                 CPU_Regs.reg_ecx.low(2);
             CPU_Regs.reg_ebx.dword(1);
             decoder.call();
-            assertTrue(CPU_Regs.reg_ebx.dword == 0);  // no wrap
+            assertTrue(CPU_Regs.reg_ebx.dword == 0); // no wrap
             if (!Compiler.alwayUseFastVersion)
-                assertTrue(!CPU_Regs.get_CF());
+                assertTrue(!Flags.get_CF());
         }
 
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, false);
@@ -959,13 +960,13 @@ public class testGrp2 extends InstructionsTestCase {
             CPU_Regs.reg_ebx.dword(0x80);
         decoder.call();
         if (op == 0x2c1 || op == 0x2d1 || op == 0x2d3)
-            assertTrue(CPU_Regs.reg_ebx.dword == 0x40000000);  // no sign extension
+            assertTrue(CPU_Regs.reg_ebx.dword == 0x40000000); // no sign extension
         else if (op == 0xc1 || op == 0xd1 || op == 0xd3)
-            assertTrue(CPU_Regs.reg_ebx.dword == 0x4000);  // no sign extension
+            assertTrue(CPU_Regs.reg_ebx.dword == 0x4000); // no sign extension
         else
-            assertTrue(CPU_Regs.reg_ebx.dword == 0x40);  // no sign extension
+            assertTrue(CPU_Regs.reg_ebx.dword == 0x40); // no sign extension
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(!CPU_Regs.get_CF());
+            assertTrue(!Flags.get_CF());
     }
 
     public void testEbIb_shr() {
@@ -1017,7 +1018,7 @@ public class testGrp2 extends InstructionsTestCase {
         CPU_Regs.reg_ebx.dword(2);
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == 1);
-        assertTrue(!CPU_Regs.get_CF());
+        assertTrue(!Flags.get_CF());
 
         newInstruction(op);
         pushIb((byte) (0xc3 + (7 << 3)));
@@ -1030,7 +1031,7 @@ public class testGrp2 extends InstructionsTestCase {
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == 1);// make sure carry flag is ignored
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(!CPU_Regs.get_CF());
+            assertTrue(!Flags.get_CF());
 
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, false);
         newInstruction(op);
@@ -1043,7 +1044,7 @@ public class testGrp2 extends InstructionsTestCase {
         decoder.call();
         assertTrue(CPU_Regs.reg_ebx.dword == 0);
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(CPU_Regs.get_CF());
+            assertTrue(Flags.get_CF());
 
         if (op == 0xc0 || op == 0xc1 || op == 0xd2 || op == 0xd3 || op == 0x2c1 || op == 0x2d3) {
             CPU_Regs.SETFLAGBIT(CPU_Regs.CF, false);
@@ -1055,9 +1056,9 @@ public class testGrp2 extends InstructionsTestCase {
                 CPU_Regs.reg_ecx.low(2);
             CPU_Regs.reg_ebx.dword(1);
             decoder.call();
-            assertTrue(CPU_Regs.reg_ebx.dword == 0);  // no wrap
+            assertTrue(CPU_Regs.reg_ebx.dword == 0); // no wrap
             if (!Compiler.alwayUseFastVersion)
-                assertTrue(!CPU_Regs.get_CF());
+                assertTrue(!Flags.get_CF());
         }
 
         CPU_Regs.SETFLAGBIT(CPU_Regs.CF, false);
@@ -1075,13 +1076,13 @@ public class testGrp2 extends InstructionsTestCase {
             CPU_Regs.reg_ebx.dword(0x80);
         decoder.call();
         if (op == 0x2c1 || op == 0x2d1 || op == 0x2d3)
-            assertTrue(CPU_Regs.reg_ebx.dword == 0xC0000000);  // sign extension
+            assertTrue(CPU_Regs.reg_ebx.dword == 0xC0000000); // sign extension
         else if (op == 0xc1 || op == 0xd1 || op == 0xd3)
-            assertTrue(CPU_Regs.reg_ebx.dword == 0xC000);  // sign extension
+            assertTrue(CPU_Regs.reg_ebx.dword == 0xC000); // sign extension
         else
-            assertTrue(CPU_Regs.reg_ebx.dword == 0xC0);  // sign extension
+            assertTrue(CPU_Regs.reg_ebx.dword == 0xC0); // sign extension
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(!CPU_Regs.get_CF());
+            assertTrue(!Flags.get_CF());
 
         newInstruction(op);
         pushIb((byte) (7 << 3));
@@ -1124,7 +1125,7 @@ public class testGrp2 extends InstructionsTestCase {
             Memory.mem_writeb(MEM_BASE_DS + 1, 0);
         }
         if (!Compiler.alwayUseFastVersion)
-            assertTrue(!CPU_Regs.get_CF());
+            assertTrue(!Flags.get_CF());
     }
 
     /* GRP2 Eb,Ib */

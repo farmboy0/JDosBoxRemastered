@@ -12,28 +12,28 @@ public class testGrp3 extends InstructionsTestCase {
     //GRP3 Ew(,Iw)
     public void testEbIb() {
         newInstruction(0xf6);
-        pushIb((byte) (0xc3));
+        pushIb((byte) 0xc3);
         pushIb((byte) 2);
         CPU_Regs.reg_ebx.dword(2);
         decoder.call();
         assertTrue(!Flags.get_ZF());
 
         newInstruction(0xf6);
-        pushIb((byte) (0xc3));
+        pushIb((byte) 0xc3);
         pushIb((byte) 1);
         CPU_Regs.reg_ebx.dword(2);
         decoder.call();
         assertTrue(Flags.get_ZF());
 
         newInstruction(0xf6);
-        pushIb((byte) (0xc3));
+        pushIb((byte) 0xc3);
         pushIw((short) 0xFF01);
         CPU_Regs.reg_ebx.dword(0xFF02);
         decoder.call();
         assertTrue(Flags.get_ZF());
 
         newInstruction(0xf6);
-        pushIb((byte) (0x0));
+        pushIb((byte) 0x0);
         pushIb((byte) 1);
         Memory.mem_writeb(MEM_BASE_DS, 0x02);
         Memory.mem_writeb(MEM_BASE_DS - 1, 0xFE);
@@ -42,7 +42,7 @@ public class testGrp3 extends InstructionsTestCase {
         assertTrue(Flags.get_ZF());
 
         newInstruction(0xf6);
-        pushIb((byte) (0x0));
+        pushIb((byte) 0x0);
         pushIb((byte) 1);
         Memory.mem_writeb(MEM_BASE_DS, 0x01);
         Memory.mem_writeb(MEM_BASE_DS - 1, 0xFE);
@@ -186,21 +186,21 @@ public class testGrp3 extends InstructionsTestCase {
 
     public void testEwIw() {
         newInstruction(0xf7);
-        pushIb((byte) (0xc3));
+        pushIb((byte) 0xc3);
         pushIw((short) 0x200);
         CPU_Regs.reg_ebx.dword(0x200);
         decoder.call();
         assertTrue(!Flags.get_ZF());
 
         newInstruction(0xf7);
-        pushIb((byte) (0xc3));
+        pushIb((byte) 0xc3);
         pushIw((short) 0x100);
         CPU_Regs.reg_ebx.dword(0x200);
         decoder.call();
         assertTrue(Flags.get_ZF());
 
         newInstruction(0xf7);
-        pushIb((byte) (0x0));
+        pushIb((byte) 0x0);
         pushIw((short) 0x0100);
         Memory.mem_writew(MEM_BASE_DS, 0x0200);
         Memory.mem_writew(MEM_BASE_DS - 2, 0xFEFE);
@@ -209,7 +209,7 @@ public class testGrp3 extends InstructionsTestCase {
         assertTrue(Flags.get_ZF());
 
         newInstruction(0xf7);
-        pushIb((byte) (0x0));
+        pushIb((byte) 0x0);
         pushIw((short) 0x0100);
         Memory.mem_writew(MEM_BASE_DS, 0x0100);
         Memory.mem_writew(MEM_BASE_DS - 2, 0xFEFE);
@@ -322,7 +322,7 @@ public class testGrp3 extends InstructionsTestCase {
 
         newInstruction(0xf7);
         pushIb((byte) (6 << 3));
-        CPU_Regs.reg_eax.dword(0x8000);  // 2129920 / 239
+        CPU_Regs.reg_eax.dword(0x8000); // 2129920 / 239
         CPU_Regs.reg_edx.dword(0x0020);
         Memory.mem_writew(MEM_BASE_DS, 0xEF);
         Memory.mem_writew(MEM_BASE_DS - 2, 0xCD);
@@ -361,21 +361,21 @@ public class testGrp3 extends InstructionsTestCase {
 
     public void testEdId() {
         newInstruction(0x2f7);
-        pushIb((byte) (0xc3));
+        pushIb((byte) 0xc3);
         pushId(0x20000);
         CPU_Regs.reg_ebx.dword(0x20000);
         decoder.call();
         assertTrue(!Flags.get_ZF());
 
         newInstruction(0x2f7);
-        pushIb((byte) (0xc3));
+        pushIb((byte) 0xc3);
         pushId(0x10000);
         CPU_Regs.reg_ebx.dword(0x20000);
         decoder.call();
         assertTrue(Flags.get_ZF());
 
         newInstruction(0x2f7);
-        pushIb((byte) (0x0));
+        pushIb((byte) 0x0);
         pushId(0x0100);
         Memory.mem_writed(MEM_BASE_DS, 0x02000000);
         Memory.mem_writed(MEM_BASE_DS - 4, 0xFEFEFEFE);
@@ -384,7 +384,7 @@ public class testGrp3 extends InstructionsTestCase {
         assertTrue(Flags.get_ZF());
 
         newInstruction(0x2f7);
-        pushIb((byte) (0x0));
+        pushIb((byte) 0x0);
         pushId(0x01000000);
         Memory.mem_writed(MEM_BASE_DS, 0x01000000);
         Memory.mem_writed(MEM_BASE_DS - 4, 0xFEFEFEFE);

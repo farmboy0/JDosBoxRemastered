@@ -8,9 +8,9 @@ public abstract class Dos_Drive {
     protected String curdir = "";
     protected String info = "";
 
-    public abstract DOS_File FileOpen(String name,/*Bit32u*/int flags);
+    public abstract DOS_File FileOpen(String name, /*Bit32u*/int flags);
 
-    public abstract DOS_File FileCreate(String name,/*Bit16u*/int attributes);
+    public abstract DOS_File FileCreate(String name, /*Bit16u*/int attributes);
 
     public abstract boolean FileUnlink(String _name);
 
@@ -24,11 +24,12 @@ public abstract class Dos_Drive {
 
     public abstract boolean FindNext(Dos_DTA dta);
 
-    public abstract boolean GetFileAttr(String name,/*Bit16u*/IntRef attr);
+    public abstract boolean GetFileAttr(String name, /*Bit16u*/IntRef attr);
 
     public abstract boolean Rename(String oldname, String newname);
 
-    public abstract boolean AllocationInfo(/*Bit16u*/IntRef _bytes_sector,/*Bit8u*/ShortRef _sectors_cluster,/*Bit16u*/IntRef _total_clusters,/*Bit16u*/IntRef _free_clusters);
+    public abstract boolean AllocationInfo(/*Bit16u*/IntRef _bytes_sector, /*Bit8u*/ShortRef _sectors_cluster,
+        /*Bit16u*/IntRef _total_clusters, /*Bit16u*/IntRef _free_clusters);
 
     public abstract boolean FileExists(String name);
 

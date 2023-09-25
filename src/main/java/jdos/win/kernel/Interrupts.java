@@ -9,22 +9,22 @@ import jdos.win.Win;
 
 public class Interrupts {
 
-    static final public int IRQ0 = 32;
-    static final public int IRQ1 = 33;
-    static final public int IRQ2 = 34;
-    static final public int IRQ3 = 35;
-    static final public int IRQ4 = 36;
-    static final public int IRQ5 = 37;
-    static final public int IRQ6 = 38;
-    static final public int IRQ7 = 39;
-    static final public int IRQ8 = 40;
-    static final public int IRQ9 = 41;
-    static final public int IRQ10 = 42;
-    static final public int IRQ11 = 43;
-    static final public int IRQ12 = 44;
-    static final public int IRQ13 = 45;
-    static final public int IRQ14 = 46;
-    static final public int IRQ15 = 47;
+    public static final int IRQ0 = 32;
+    public static final int IRQ1 = 33;
+    public static final int IRQ2 = 34;
+    public static final int IRQ3 = 35;
+    public static final int IRQ4 = 36;
+    public static final int IRQ5 = 37;
+    public static final int IRQ6 = 38;
+    public static final int IRQ7 = 39;
+    public static final int IRQ8 = 40;
+    public static final int IRQ9 = 41;
+    public static final int IRQ10 = 42;
+    public static final int IRQ11 = 43;
+    public static final int IRQ12 = 44;
+    public static final int IRQ13 = 45;
+    public static final int IRQ14 = 46;
+    public static final int IRQ15 = 47;
 
     public Callback.Handler[] interrupt_handlers;
 
@@ -80,6 +80,7 @@ public class Interrupts {
     public int irq15;
 
     Callback.Handler isrHandler = new Callback.Handler() {
+        @Override
         public int call() {
             int index = CPU.CPU_Peek32(0);
             if (index >= IRQ0 && index < IRQ15) {
@@ -99,6 +100,7 @@ public class Interrupts {
             return 0;
         }
 
+        @Override
         public String getName() {
             return "isr";
         }
@@ -177,13 +179,13 @@ public class Interrupts {
         Memory.mem_writeb(physAddress++, 0x6a); // push ib
         Memory.mem_writeb(physAddress++, index);
 
-        Memory.mem_writeb(physAddress++, 0xFE);        //GRP 4
-        Memory.mem_writeb(physAddress++, 0x38);        //Extra Callback instruction
+        Memory.mem_writeb(physAddress++, 0xFE); //GRP 4
+        Memory.mem_writeb(physAddress++, 0x38); //Extra Callback instruction
         Memory.mem_writew(physAddress, callback);
         physAddress += 2;
 
-        Memory.mem_writeb(physAddress, 0x81);  // Grpl Ed,Id
-        Memory.mem_writeb(physAddress + 0x01, 0xC4);  // ADD ESP
+        Memory.mem_writeb(physAddress, 0x81); // Grpl Ed,Id
+        Memory.mem_writeb(physAddress + 0x01, 0xC4); // ADD ESP
         Memory.mem_writed(physAddress + 0x02, 0x00000008); // 8 (pop 2 32-bit words off)
         physAddress += 6;
 

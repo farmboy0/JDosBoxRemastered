@@ -15,8 +15,9 @@ public class Hex {
         _hex = in._hex;
     }
 
+    @Override
     public boolean equals(Object obj) {
-        return (obj instanceof Hex && ((Hex) obj)._hex == _hex);
+        return obj instanceof Hex && ((Hex) obj)._hex == _hex;
     }
 
     public int toInt() {

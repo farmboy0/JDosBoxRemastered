@@ -1,5 +1,8 @@
 package jdos.win.builtin.directx.ddraw;
 
+import java.lang.reflect.Method;
+import java.util.Hashtable;
+
 import jdos.cpu.CPU;
 import jdos.cpu.CPU_Regs;
 import jdos.cpu.Callback;
@@ -12,22 +15,21 @@ import jdos.win.loader.BuiltinModule;
 import jdos.win.system.WinSystem;
 import jdos.win.utils.Error;
 
-import java.lang.reflect.Method;
-import java.util.Hashtable;
-
 public class IUnknown extends WinAPI {
-    static public final int OFFSET_DATA_START = 12;
+    public static final int OFFSET_DATA_START = 12;
     // static private final int OFFSET_VTABLE = 0;
-    static private final int OFFSET_REF = 4;
-    static private final int OFFSET_CLEANUP = 8;
-    static private final Hashtable vtables = new Hashtable();
-    static private final Hashtable names = new Hashtable();
+    private static final int OFFSET_REF = 4;
+    private static final int OFFSET_CLEANUP = 8;
+    private static final Hashtable vtables = new Hashtable();
+    private static final Hashtable names = new Hashtable();
     // HRESULT QueryInterface(this, REFIID riid, void** ppvObject)
-    static private final Callback.Handler QueryInterface = new HandlerBase() {
+    private static final Callback.Handler QueryInterface = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IUnknown.QueryInterface";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int riid = CPU.CPU_Pop32();
@@ -39,40 +41,44 @@ public class IUnknown extends WinAPI {
         }
     };
     // ULONG AddRef(this)
-    static private final Callback.Handler AddRef = new HandlerBase() {
+    private static final Callback.Handler AddRef = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IUnknown.AddRef";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             CPU_Regs.reg_eax.dword = AddRef(This);
         }
     };
     // ULONG Release(this)
-    static private final Callback.Handler Release = new HandlerBase() {
+    private static final Callback.Handler Release = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IUnknown.Release";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             CPU_Regs.reg_eax.dword = Release(This);
         }
     };
 
-    static protected int getVTable(String name) {
+    protected static int getVTable(String name) {
         Integer result = (Integer) vtables.get(name);
         if (result == null)
             return 0;
         return result.intValue();
     }
 
-    static protected int getData(int This, int offset) {
+    protected static int getData(int This, int offset) {
         return Memory.mem_readd(This + OFFSET_DATA_START + offset);
     }
 
-    static protected void setData(int This, int offset, int data) {
+    protected static void setData(int This, int offset, int data) {
         Memory.mem_writed(This + OFFSET_DATA_START + offset, data);
     }
 
@@ -88,13 +94,13 @@ public class IUnknown extends WinAPI {
         return Memory.mem_readd(address);
     }
 
-    static protected int add(int address, Callback.Handler handler) {
+    protected static int add(int address, Callback.Handler handler) {
         int cb = WinCallback.addCallback(handler);
         Memory.mem_writed(address, WinSystem.getCurrentProcess().loader.registerFunction(cb));
         return address + 4;
     }
 
-    static protected int add(int address, Class c, String methodName, String[] params) {
+    protected static int add(int address, Class c, String methodName, String[] params) {
         Method[] methods = c.getMethods();
         for (Method method : methods) {
             if (method.getName().equals(methodName)) {
@@ -109,14 +115,14 @@ public class IUnknown extends WinAPI {
         return 0;
     }
 
-    static protected int allocateVTable(String name, int functions) {
+    protected static int allocateVTable(String name, int functions) {
         int result = WinSystem.getCurrentProcess().heap.alloc((functions + 3) * 4, false);
-        vtables.put(name, new Integer(result));
-        names.put(new Integer(result), name);
+        vtables.put(name, Integer.valueOf(result));
+        names.put(Integer.valueOf(result), name);
         return result;
     }
 
-    static protected int allocate(int vtable, int extra, int cleanup) {
+    protected static int allocate(int vtable, int extra, int cleanup) {
         int result = WinSystem.getCurrentProcess().heap.alloc(OFFSET_DATA_START + extra, false);
         Memory.mem_zero(result, OFFSET_DATA_START + extra);
         Memory.mem_writed(result, vtable);
@@ -125,27 +131,26 @@ public class IUnknown extends WinAPI {
         return result;
     }
 
-    static protected int addIUnknown(int address) {
+    protected static int addIUnknown(int address) {
         return addIUnknown(address, null);
     }
 
-    static protected int addIUnknown(int address, Callback.Handler query) {
-        address = add(address, (query == null ? QueryInterface : query));
+    protected static int addIUnknown(int address, Callback.Handler query) {
+        address = add(address, query == null ? QueryInterface : query);
         address = add(address, AddRef);
-        address = add(address, Release);
-        return address;
+        return add(address, Release);
     }
 
-    static public int AddRef(int This) {
+    public static int AddRef(int This) {
         int refCount = getRefCount(This);
         refCount++;
         setRefCount(This, refCount);
         return refCount;
     }
 
-    static public int Release(int This) {
+    public static int Release(int This) {
         if (WinAPI.LOG)
-            System.out.println(names.get(new Integer(getVTable(This))) + ".Release");
+            System.out.println(names.get(Integer.valueOf(getVTable(This))) + ".Release");
         int refCount = getRefCount(This);
         refCount--;
         setRefCount(This, refCount);

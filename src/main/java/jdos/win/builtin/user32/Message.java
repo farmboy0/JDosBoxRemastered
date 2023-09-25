@@ -14,13 +14,13 @@ import jdos.win.utils.StringUtil;
 
 public class Message extends WinAPI {
     // LRESULT WINAPI DispatchMessage(const MSG *lpmsg)
-    static public int DispatchMessageA(int lpmsg) {
+    public static int DispatchMessageA(int lpmsg) {
         int hWnd = readd(lpmsg);
         int msg = readd(lpmsg + 4);
         int wParam = readd(lpmsg + 8);
         int lParam = readd(lpmsg + 12);
         int result = call_window_proc(hWnd, msg, wParam, lParam, false);
-        if (msg == WinWindow.WM_PAINT) {
+        if (msg == WinAPI.WM_PAINT) {
             if (Scheduler.monitor != 0) {
                 Main.drawImage(IDirectDrawSurface.getImage(Scheduler.monitor, true).getImage());
             }
@@ -29,32 +29,32 @@ public class Message extends WinAPI {
     }
 
     // BOOL WINAPI GetMessage(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax)
-    static public int GetMessageA(int lpMsg, int hWnd, int wMsgFilterMin, int wMsgFilterMax) {
+    public static int GetMessageA(int lpMsg, int hWnd, int wMsgFilterMin, int wMsgFilterMax) {
         return Scheduler.getCurrentThread().getNextMessage(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax);
     }
 
     // DWORD WINAPI GetMessagePos(void);
-    static public int GetMessagePos() {
+    public static int GetMessagePos() {
         return Scheduler.getCurrentThread().currentGetMessagePos;
     }
 
     // LONG WINAPI GetMessageTime(void)
-    static public int GetMessageTime() {
+    public static int GetMessageTime() {
         return Scheduler.getCurrentThread().currentGetMessageTime;
     }
 
     // BOOL WINAPI MessageBeep(UINT uType)
-    static public int MessageBeep(int uType) {
+    public static int MessageBeep(int uType) {
         return TRUE;
     }
 
     // BOOL WINAPI PeekMessage(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax, UINT wRemoveMsg)
-    static public int PeekMessageA(int lpMsg, int hWnd, int wMsgFilterMin, int wMsgFilterMax, int wRemoveMsg) {
+    public static int PeekMessageA(int lpMsg, int hWnd, int wMsgFilterMin, int wMsgFilterMax, int wRemoveMsg) {
         return Scheduler.getCurrentThread().peekMessage(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax, wRemoveMsg);
     }
 
     // BOOL WINAPI PostMessage(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
-    static public int PostMessageA(int hWnd, int Msg, int wParam, int lParam) {
+    public static int PostMessageA(int hWnd, int Msg, int wParam, int lParam) {
         if (WinWindow.get(hWnd) == null)
             return FALSE;
         if (hWnd == 0xFFFF)
@@ -65,7 +65,7 @@ public class Message extends WinAPI {
 
     // If the message is successfully registered, the return value is a message identifier in the range 0xC000 through 0xFFFF
     // UINT WINAPI RegisterWindowMessage(LPCTSTR lpString)
-    static public int RegisterWindowMessageA(int lpString) {
+    public static int RegisterWindowMessageA(int lpString) {
         String name = StringUtil.getString(lpString);
         Integer result = StaticData.registeredMessages.get(name);
         if (result != null)
@@ -76,13 +76,13 @@ public class Message extends WinAPI {
     }
 
     // LRESULT WINAPI SendMessageA( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam )
-    static public int SendMessageA(int hWnd, int msg, int wParam, int lParam) {
+    public static int SendMessageA(int hWnd, int msg, int wParam, int lParam) {
         // :TODO: broadcast message
         return call_window_proc(hWnd, msg, wParam, lParam, true);
     }
 
     // UINT_PTR WINAPI SetTimer(HWND hWnd, UINT_PTR nIDEvent, UINT uElapse, TIMERPROC lpTimerFunc)
-    static public int SetTimer(int hWnd, int nIDEvent, int uElapse, int lpTimerFunc) {
+    public static int SetTimer(int hWnd, int nIDEvent, int uElapse, int lpTimerFunc) {
         WinWindow window = WinWindow.get(hWnd);
         if (window == null)
             return 0;
@@ -90,10 +90,10 @@ public class Message extends WinAPI {
     }
 
     // BOOL WINAPI TranslateMessage(const MSG *lpMsg)
-    static public int TranslateMessage(int lpMsg) {
+    public static int TranslateMessage(int lpMsg) {
         int message = Memory.mem_readd(lpMsg + 4);
-        if (message == WinWindow.WM_KEYDOWN || message == WinWindow.WM_KEYUP) {
-            if (message == WinWindow.WM_KEYDOWN) {
+        if (message == WinAPI.WM_KEYDOWN || message == WinAPI.WM_KEYUP) {
+            if (message == WinAPI.WM_KEYDOWN) {
                 int key = readd(lpMsg + 8);
                 if (key >= 32 && key <= 126) {
                     if (!Scheduler.getCurrentThread().getKeyState().get(VK_SHIFT))
@@ -102,7 +102,7 @@ public class Message extends WinAPI {
                 }
             }
             return TRUE;
-        } else if (message == WinWindow.WM_SYSKEYDOWN || message == WinWindow.WM_SYSKEYUP) {
+        } else if (message == WinAPI.WM_SYSKEYDOWN || message == WinAPI.WM_SYSKEYUP) {
             return TRUE;
         } else {
             return FALSE;
@@ -110,7 +110,7 @@ public class Message extends WinAPI {
     }
 
     // DWORD WINAPI WaitForInputIdle(HANDLE hProcess, DWORD dwMilliseconds)
-    static public int WaitForInputIdle(int hProcess, int dwMilliseconds) {
+    public static int WaitForInputIdle(int hProcess, int dwMilliseconds) {
         WinProcess process = WinProcess.get(hProcess);
         if (process == null)
             return WAIT_FAILED;
@@ -118,7 +118,7 @@ public class Message extends WinAPI {
     }
 
     // BOOL WINAPI WaitMessage(void)
-    static public int WaitMessage() {
+    public static int WaitMessage() {
         return Scheduler.getCurrentThread().waitMessage();
     }
 
@@ -138,7 +138,7 @@ public class Message extends WinAPI {
 //      DWORD         message;
 //      HWND        hwnd;
 //    } CWPRETSTRUCT
-    static private int call_window_proc(int hwnd, int msg, int wparam, int lparam, boolean same_thread) {
+    private static int call_window_proc(int hwnd, int msg, int wparam, int lparam, boolean same_thread) {
         /* first the WH_CALLWNDPROC hook */
         int cwp = getTempBuffer(16);
         writed(cwp, lparam);

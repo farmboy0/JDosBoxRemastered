@@ -1,5 +1,7 @@
 package jdos.win;
 
+import java.util.Vector;
+
 import jdos.Dosbox;
 import jdos.cpu.CPU;
 import jdos.cpu.CPU_Regs;
@@ -26,10 +28,8 @@ import jdos.win.system.WinSystem;
 import jdos.win.utils.FilePath;
 import jdos.win.utils.Path;
 
-import java.util.Vector;
-
 public class Win extends WinAPI {
-    static private void disable_umb_ems_xms() {
+    private static void disable_umb_ems_xms() {
         Section dos_sec = Dosbox.control.GetSection("dos");
         dos_sec.ExecuteDestroy(false);
         dos_sec.HandleInputline("umb=false");
@@ -55,7 +55,7 @@ public class Win extends WinAPI {
         throw new Dos_programs.RebootException();
     }
 
-    static public boolean run(Drive_fat drive, Drive_fat.fatFile fil, String path) {
+    public static boolean run(Drive_fat drive, Drive_fat.fatFile fil, String path) {
         FilePath.disks.clear();
         FilePath.disks.put("C", drive);
         WinFile file = WinFile.createNoHandle(new FilePath(path), false, 0, 0);
@@ -77,7 +77,7 @@ public class Win extends WinAPI {
         return internalRun(path, winPath, name);
     }
 
-    static public boolean run(String path) {
+    public static boolean run(String path) {
         /*Bit8u*/
         char drive = (char) (Dos_files.DOS_GetDefaultDrive() + 'A');
         StringRef dir = new StringRef();
@@ -116,7 +116,7 @@ public class Win extends WinAPI {
         return internalRun(path, winPath, name);
     }
 
-    static private boolean internalRun(String path, String winPath, String name) {
+    private static boolean internalRun(String path, String winPath, String name) {
         Vector paths = new Vector();
         paths.add(new Path(path, winPath));
 
@@ -139,10 +139,12 @@ public class Win extends WinAPI {
             panic("Video memory needs to be at least 2MB");
         }
         Paging.PageHandler handler = new Paging.PageHandler() {
+            @Override
             public /*HostPt*/int GetHostReadPt(/*Bitu*/int phys_page) {
                 return phys_page << 12;
             }
 
+            @Override
             public /*HostPt*/int GetHostWritePt(/*Bitu*/int phys_page) {
                 return phys_page << 12;
             }
@@ -176,6 +178,5 @@ public class Win extends WinAPI {
         }
         return true;
     }
-
 
 }

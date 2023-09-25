@@ -1,22 +1,43 @@
 package jdos.win.utils;
 
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.DataBuffer;
+import java.awt.image.DataBufferByte;
+import java.awt.image.DataBufferInt;
+import java.awt.image.DataBufferUShort;
+import java.awt.image.DirectColorModel;
+import java.awt.image.FilteredImageSource;
+import java.awt.image.ImageFilter;
+import java.awt.image.ImageProducer;
+import java.awt.image.IndexColorModel;
+import java.awt.image.RGBImageFilter;
+import java.awt.image.Raster;
+import java.awt.image.SampleModel;
+import java.awt.image.SinglePixelPackedSampleModel;
+import java.awt.image.WritableRaster;
+
 import jdos.hardware.Memory;
 import jdos.win.Win;
 
-import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.image.*;
-
 public class Pixel {
-    static public int getPitch(int width, int bpp) {
+    public static int getPitch(int width, int bpp) {
         if (bpp >= 8)
-            return ((width * ((bpp + 7) / 8) + 3) / 4) * 4;
-        return (((width * bpp / 8) + 3) / 4) * 4;
+            return (width * ((bpp + 7) / 8) + 3) / 4 * 4;
+        return (width * bpp / 8 + 3) / 4 * 4;
     }
 
     private static BufferedImage imageToBufferedImage(Image image) {
 
-        BufferedImage bufferedImage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+        BufferedImage bufferedImage = new BufferedImage(image.getWidth(null), image.getHeight(null),
+            BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2 = bufferedImage.createGraphics();
         g2.drawImage(image, 0, 0, null);
         g2.dispose();
@@ -31,6 +52,7 @@ public class Pixel {
             // the color we are looking for... Alpha bits are set to opaque
             public final int markerRGB = color.getRGB() | 0xFF000000;
 
+            @Override
             public final int filterRGB(int x, int y, int rgb) {
                 if ((rgb | 0xFF000000) == markerRGB) {
                     // Mark the alpha bits as zero - transparent
@@ -46,14 +68,15 @@ public class Pixel {
         return imageToBufferedImage(Toolkit.getDefaultToolkit().createImage(ip));
     }
 
-    static public BufferedImage flipVertically(BufferedImage image) {
+    public static BufferedImage flipVertically(BufferedImage image) {
         AffineTransform tx = AffineTransform.getScaleInstance(1, -1);
         tx.translate(0, -image.getHeight());
         AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
         return op.filter(image, null);
     }
 
-    static public BufferedImage createImage(byte[] bits, int bpp, boolean alpha, int[] srcPalette, int width, int height, boolean flip) {
+    public static BufferedImage createImage(byte[] bits, int bpp, boolean alpha, int[] srcPalette, int width,
+        int height, boolean flip) {
         IndexColorModel cm = null;
         byte[] pixels = new byte[width * height];
         int pitch = getPitch(width, bpp);
@@ -79,7 +102,7 @@ public class Pixel {
                 Win.panic("createImage unaligned image width not test");
             }
             DataBuffer dataBuffer = new DataBufferByte(bits, bits.length);
-            WritableRaster raster = WritableRaster.createPackedRaster(dataBuffer, width, height, bpp, null);
+            WritableRaster raster = Raster.createPackedRaster(dataBuffer, width, height, bpp, null);
             image = new BufferedImage(cm, raster, false, null);
         } else {
             Win.panic("createImage with byte buffer has not been implemented for " + bpp + "bpp");
@@ -90,7 +113,8 @@ public class Pixel {
         return image;
     }
 
-    static public BufferedImage createImage(int src, int srcBpp, int[] srcPalette, int width, int height, boolean flip) {
+    public static BufferedImage createImage(int src, int srcBpp, int[] srcPalette, int width, int height,
+        boolean flip) {
         if (srcPalette != null && srcBpp <= 8) {
             byte[] r = new byte[srcPalette.length];
             byte[] g = new byte[srcPalette.length];
@@ -117,15 +141,17 @@ public class Pixel {
                 DataBuffer dataBuffer = new DataBufferByte(pixels, width * height);
                 SampleModel sampleModel = null;
                 if (srcBpp == 8)
-                    sampleModel = new SinglePixelPackedSampleModel(DataBuffer.TYPE_BYTE, width, height, new int[]{0xFF});
+                    sampleModel = new SinglePixelPackedSampleModel(DataBuffer.TYPE_BYTE, width, height,
+                        new int[] { 0xFF });
                 else if (srcBpp == 4)
-                    sampleModel = new SinglePixelPackedSampleModel(DataBuffer.TYPE_BYTE, width, height, new int[]{0xF});
+                    sampleModel = new SinglePixelPackedSampleModel(DataBuffer.TYPE_BYTE, width, height,
+                        new int[] { 0xF });
                 else
                     Win.panic("Currently only 24-bit, 16-bit, 8-bit and 4-bit bitmaps are supported");
                 WritableRaster raster = Raster.createWritableRaster(sampleModel, dataBuffer, null);
-                BufferedImage bi = new BufferedImage(sp, raster, false, null);
+
                 // Main.drawImage(bi);try {Thread.sleep(1000*5);} catch (Exception e) {}
-                return bi;
+                return new BufferedImage(sp, raster, false, null);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -142,11 +168,12 @@ public class Pixel {
 
                 try {
                     DataBuffer dataBuffer = new DataBufferUShort(pixels, width * height);
-                    WritableRaster raster = Raster.createPackedRaster(dataBuffer, width, height, width, new int[]{0xF800, 0x07E0, 0x001F}, null);
+                    WritableRaster raster = Raster.createPackedRaster(dataBuffer, width, height, width,
+                        new int[] { 0xF800, 0x07E0, 0x001F }, null);
                     ColorModel colorModel = new DirectColorModel(16, 0xF800, 0x07E0, 0x001F);
-                    BufferedImage bi = new BufferedImage(colorModel, raster, false, null);
+
                     //Main.drawImage(bi);try {Thread.sleep(1000*60);} catch (Exception e) {}
-                    return bi;
+                    return new BufferedImage(colorModel, raster, false, null);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -157,7 +184,9 @@ public class Pixel {
                     for (int y = 0; y < height; y++) {
                         int address = src + pitch * y;
                         for (int x = 0; x < width; x++) {
-                            bi.setRGB(x, y, Memory.mem_readb(address + x * 3) | (Memory.mem_readb(address + x * 3 + 1) << 8) | (Memory.mem_readb(address + x * 3 + 2) << 16));
+                            bi.setRGB(x, y,
+                                Memory.mem_readb(address + x * 3) | Memory.mem_readb(address + x * 3 + 1) << 8
+                                    | Memory.mem_readb(address + x * 3 + 2) << 16);
                         }
                     }
 
@@ -190,7 +219,7 @@ public class Pixel {
         return null;
     }
 
-    static public void writeImage(int dst, BufferedImage biDest, int dstBpp, int width, int height) {
+    public static void writeImage(int dst, BufferedImage biDest, int dstBpp, int width, int height) {
         DataBuffer buffer = biDest.getData().getDataBuffer();
         int pitch = getPitch(width, dstBpp);
 
@@ -244,7 +273,8 @@ public class Pixel {
         // Main.drawImage(biDest);try {Thread.sleep(1000*60);} catch (Exception e) {}
     }
 
-    static public void copy(int src, int srcBpp, int[] srcPalette, int dst, int dstBpp, int[] dstPalette, int width, int height, boolean flip) {
+    public static void copy(int src, int srcBpp, int[] srcPalette, int dst, int dstBpp, int[] dstPalette, int width,
+        int height, boolean flip) {
         BufferedImage biSrc = createImage(src, srcBpp, srcPalette, width, height, flip);
         BufferedImage biDest;
         switch (dstBpp) {
@@ -274,19 +304,19 @@ public class Pixel {
         graphics.dispose();
     }
 
-    static public int BGRtoRGB(int color) {
-        return (color & 0xFF000000) | (color >>> 16 & 0xFF) | ((color << 16) & 0xFF0000) | (color & 0x0000FF00);
+    public static int BGRtoRGB(int color) {
+        return color & 0xFF000000 | color >>> 16 & 0xFF | color << 16 & 0xFF0000 | color & 0x0000FF00;
     }
 
     private static int findNearestColor(int color, int[] palette) {
         int minDistanceSquared = 255 * 255 + 255 * 255 + 255 * 255 + 1;
         int bestIndex = 0;
-        int r = (color >> 16) & 0xFF;
-        int g = (color >> 8) & 0xFF;
+        int r = color >> 16 & 0xFF;
+        int g = color >> 8 & 0xFF;
         int b = color & 0xFF;
         for (int i = 0; i < palette.length; i++) {
-            int Rdiff = r - ((palette[i] >> 16) & 0xff);
-            int Gdiff = g - ((palette[i] >> 8) & 0xff);
+            int Rdiff = r - (palette[i] >> 16 & 0xff);
+            int Gdiff = g - (palette[i] >> 8 & 0xff);
             int Bdiff = b - (palette[i] & 0xff);
             int distanceSquared = Rdiff * Rdiff + Gdiff * Gdiff + Bdiff * Bdiff;
             if (distanceSquared < minDistanceSquared) {
@@ -297,22 +327,25 @@ public class Pixel {
         return bestIndex;
     }
 
-    static public void blt8(int dst, int dstX, int dstY, int dstPitch, int src, int srcX, int srcY, int srcPitch, int width, int height) {
+    public static void blt8(int dst, int dstX, int dstY, int dstPitch, int src, int srcX, int srcY, int srcPitch,
+        int width, int height) {
         for (int y = 0; y < height; y++) {
             Memory.mem_memcpy(dst + dstPitch * (dstY + y) + dstX, src + srcPitch * (srcY + y) + srcX, width);
         }
     }
 
-    static public void fill(int bpp, int dst, int dstX, int dstY, int dstPitch, int width, int height, int color) {
+    public static void fill(int bpp, int dst, int dstX, int dstY, int dstPitch, int width, int height, int color) {
 
     }
 
-    static public void copy2(int src, int srcBpp, int[] srcPalette, int dst, int dstBpp, int[] dstPalette, int width, int height) {
+    public static void copy2(int src, int srcBpp, int[] srcPalette, int dst, int dstBpp, int[] dstPalette, int width,
+        int height) {
         for (int i = 0; i < srcPalette.length; i++) {
             System.out.println(Integer.toHexString(srcPalette[i]) + " " + Integer.toHexString(dstPalette[i]));
         }
         for (int i = 0; i < srcPalette.length; i++) {
-            System.out.println(Integer.toHexString(srcPalette[i]) + " " + Integer.toHexString(dstPalette[srcPalette.length - i - 1]));
+            System.out.println(
+                Integer.toHexString(srcPalette[i]) + " " + Integer.toHexString(dstPalette[srcPalette.length - i - 1]));
         }
         // This will prevent dithering
         if (dstBpp == 8 && (srcBpp == 8 || srcBpp == 32)) {

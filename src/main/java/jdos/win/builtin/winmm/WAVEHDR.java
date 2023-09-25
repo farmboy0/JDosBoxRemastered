@@ -3,13 +3,13 @@ package jdos.win.builtin.winmm;
 import jdos.hardware.Memory;
 
 public class WAVEHDR {
-    static final public int SIZE = 32;
+    public static final int SIZE = 32;
 
-    static final public int WHDR_DONE = 0x00000001;
-    static final public int WHDR_PREPARED = 0x00000002;
-    static final public int WHDR_BEGINLOOP = 0x00000004;
-    static final public int WHDR_ENDLOOP = 0x00000008;
-    static final public int WHDR_INQUEUE = 0x00000010;
+    public static final int WHDR_DONE = 0x00000001;
+    public static final int WHDR_PREPARED = 0x00000002;
+    public static final int WHDR_BEGINLOOP = 0x00000004;
+    public static final int WHDR_ENDLOOP = 0x00000008;
+    public static final int WHDR_INQUEUE = 0x00000010;
     public int lpData;
     public int dwBufferLength;
     public int dwBytesRecorded;
@@ -19,6 +19,7 @@ public class WAVEHDR {
     public int lpNext;
     public int reserved;
     public byte[] data;
+
     public WAVEHDR(int address) {
         lpData = Memory.mem_readd(address);
         address += 4;

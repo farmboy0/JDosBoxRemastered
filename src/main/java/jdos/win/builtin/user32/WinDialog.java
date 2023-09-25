@@ -1,22 +1,27 @@
 package jdos.win.builtin.user32;
 
+import java.util.Iterator;
+
 import jdos.win.Win;
 import jdos.win.builtin.WinAPI;
 import jdos.win.builtin.gdi32.GdiObj;
 import jdos.win.builtin.gdi32.WinDC;
 import jdos.win.builtin.gdi32.WinFont;
 import jdos.win.builtin.kernel32.WinProcess;
-import jdos.win.system.*;
+import jdos.win.system.StaticData;
+import jdos.win.system.WinPoint;
+import jdos.win.system.WinRect;
+import jdos.win.system.WinSize;
+import jdos.win.system.WinSystem;
 import jdos.win.utils.StringUtil;
-
-import java.util.Iterator;
 
 public class WinDialog extends WinAPI {
     static final int DIALOG_CLASS_ATOM = 32770;
     private static int units = 0;
 
     // HWND WINAPI CreateDialogIndirectParam(HINSTANCE hInstance, LPCDLGTEMPLATE lpTemplate, HWND hWndParent, DLGPROC lpDialogFunc, LPARAM lParamInit)
-    public static int CreateDialogIndirectParamA(int hInstance, int lpTemplate, int hWndParent, int lpDialogFunc, int lParamInit) {
+    public static int CreateDialogIndirectParamA(int hInstance, int lpTemplate, int hWndParent, int lpDialogFunc,
+        int lParamInit) {
         return DIALOG_CreateIndirect(hInstance, lpTemplate, hWndParent, lpDialogFunc, lParamInit, false, false);
     }
 
@@ -30,7 +35,7 @@ public class WinDialog extends WinAPI {
         DialogInfo dlgInfo = dlg.dlgInfo;
         dlgInfo.idResult = nResult;
         dlgInfo.flags |= DF_END;
-        int wasEnabled = (dlgInfo.flags & DF_OWNERENABLED);
+        int wasEnabled = dlgInfo.flags & DF_OWNERENABLED;
 
         int owner = WinWindow.GetWindow(hDlg, GW_OWNER);
         if (wasEnabled != 0 && owner != 0)
@@ -44,7 +49,8 @@ public class WinDialog extends WinAPI {
         /* Don't have to send a ShowWindow(SW_HIDE), just do
            SetWindowPos with SWP_HIDEWINDOW as done in Windows */
 
-        WinPos.SetWindowPos(hDlg, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_HIDEWINDOW);
+        WinPos.SetWindowPos(hDlg, NULL, 0, 0, 0, 0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_HIDEWINDOW);
 
         if (hDlg == Focus.GetActiveWindow()) {
             /* If this dialog was given an owner then set the focus to that owner
@@ -72,9 +78,9 @@ public class WinDialog extends WinAPI {
      * <p/>
      * Corrections to MSDN documentation
      * <p/>
-     * (Under Windows 2000 at least, where hwndDlg is not actually a dialog)
-     * 1. hwndCtrl can be hwndDlg in which case it behaves as for NULL
-     * 2. Prev of NULL or hwndDlg fails
+     * (Under Windows 2000 at least, where hwndDlg is not actually a dialog) 1.
+     * hwndCtrl can be hwndDlg in which case it behaves as for NULL 2. Prev of NULL
+     * or hwndDlg fails
      */
     // HWND WINAPI GetNextDlgGroupItem(HWND hDlg, HWND hCtl, BOOL bPrevious)
     public static int GetNextDlgGroupItem(int hDlg, int hCtl, int fPrevious) {
@@ -120,7 +126,8 @@ public class WinDialog extends WinAPI {
                     /* Wrap around to the beginning of the list, within the same
                      * group. (Once only)
                      */
-                    if (fLooped) return hCtl;
+                    if (fLooped)
+                        return hCtl;
                     fLooped = true;
                     hwndNext = WinWindow.GetWindow(hDlg, GW_CHILD);
                 } else {
@@ -131,7 +138,9 @@ public class WinDialog extends WinAPI {
             hwnd = hwndNext;
 
             /* Wander down the leading edge of controlparents */
-            while ((WinWindow.GetWindowLongA(hwnd, GWL_EXSTYLE) & WS_EX_CONTROLPARENT) != 0 && ((WinWindow.GetWindowLongA(hwnd, GWL_STYLE) & (WS_VISIBLE | WS_DISABLED)) == WS_VISIBLE) && (hwndNext = WinWindow.GetWindow(hwnd, GW_CHILD)) != 0) {
+            while ((WinWindow.GetWindowLongA(hwnd, GWL_EXSTYLE) & WS_EX_CONTROLPARENT) != 0
+                && (WinWindow.GetWindowLongA(hwnd, GWL_STYLE) & (WS_VISIBLE | WS_DISABLED)) == WS_VISIBLE
+                && (hwndNext = WinWindow.GetWindow(hwnd, GW_CHILD)) != 0) {
                 hwnd = hwndNext;
             }
             /* Question.  If the control is a control parent but either has no
@@ -149,8 +158,8 @@ public class WinDialog extends WinAPI {
             }
 
             if (hwnd == hCtl) {
-                if (!fSkipping) break;
-                if (hwndLastGroup == hwnd) break;
+                if (!fSkipping || (hwndLastGroup == hwnd))
+                    break;
                 hwnd = hwndLastGroup;
                 fSkipping = false;
                 fLooped = false;
@@ -186,22 +195,26 @@ public class WinDialog extends WinAPI {
     // HWND WINAPI GetNextDlgTabItem( HWND hDlg, HWND hCtl, BOOL bPrevious)
     public static int GetNextDlgTabItem(int hwndDlg, int hwndCtrl, int fPrevious) {
         /* Undocumented but tested under Win2000 and WinME */
-        if (hwndDlg == hwndCtrl) hwndCtrl = 0;
+        if (hwndDlg == hwndCtrl)
+            hwndCtrl = 0;
 
         /* Contrary to MSDN documentation, tested under Win2000 and WinME
          * NB GetLastError returns whatever was set before the function was
          * called.
          */
-        if (hwndCtrl == 0 && fPrevious != 0) return 0;
+        if (hwndCtrl == 0 && fPrevious != 0)
+            return 0;
 
         return DIALOG_GetNextTabItem(hwndDlg, hwndDlg, hwndCtrl, fPrevious);
     }
 
     // LRESULT WINAPI SendDlgItemMessage(HWND hDlg, int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam)
-    static public int SendDlgItemMessageA(int hwnd, int id, int msg, int wParam, int lParam) {
+    public static int SendDlgItemMessageA(int hwnd, int id, int msg, int wParam, int lParam) {
         int hwndCtrl = GetDlgItem(hwnd, id);
-        if (hwndCtrl != 0) return Message.SendMessageA(hwndCtrl, msg, wParam, lParam);
-        else return 0;
+        if (hwndCtrl != 0)
+            return Message.SendMessageA(hwndCtrl, msg, wParam, lParam);
+        else
+            return 0;
     }
 
     // BOOL WINAPI SetDlgItemText(HWND hDlg, int nIDDlgItem, LPCTSTR lpString)
@@ -209,7 +222,7 @@ public class WinDialog extends WinAPI {
         return SendDlgItemMessageA(hDlg, nIDDlgItem, WM_SETTEXT, 0, lpString);
     }
 
-    static public void registerClass(User32 dll, WinProcess process) {
+    public static void registerClass(User32 dll, WinProcess process) {
         WinClass winClass = WinClass.create(DIALOG_CLASS_ATOM);
         winClass.className = "DIALOG_CLASS";
         winClass.cbWndExtra = 30;
@@ -220,7 +233,7 @@ public class WinDialog extends WinAPI {
         //process.classNames.put(winClass.className.toLowerCase(), winClass);
     }
 
-    static private int DIALOG_GetNextTabItem(int hwndMain, int hwndDlg, int hwndCtrl, int fPrevious) {
+    private static int DIALOG_GetNextTabItem(int hwndMain, int hwndDlg, int hwndCtrl, int fPrevious) {
         int dsStyle;
         int exStyle;
         int wndSearch = fPrevious != 0 ? GW_HWNDPREV : GW_HWNDNEXT;
@@ -229,7 +242,8 @@ public class WinDialog extends WinAPI {
 
         if (hwndCtrl == 0) {
             hChildFirst = WinWindow.GetWindow(hwndDlg, GW_CHILD);
-            if (fPrevious != 0) hChildFirst = WinWindow.GetWindow(hChildFirst, GW_HWNDLAST);
+            if (fPrevious != 0)
+                hChildFirst = WinWindow.GetWindow(hChildFirst, GW_HWNDLAST);
         } else if (WinWindow.IsChild(hwndMain, hwndCtrl) != 0) {
             hChildFirst = WinWindow.GetWindow(hwndCtrl, wndSearch);
             if (hChildFirst == 0) {
@@ -246,7 +260,8 @@ public class WinDialog extends WinAPI {
             exStyle = WinWindow.GetWindowLongA(hChildFirst, GWL_EXSTYLE);
             if ((exStyle & WS_EX_CONTROLPARENT) != 0 && (dsStyle & WS_VISIBLE) != 0 && (dsStyle & WS_DISABLED) == 0) {
                 int result = DIALOG_GetNextTabItem(hwndMain, hChildFirst, 0, fPrevious);
-                if (result != 0) return result;
+                if (result != 0)
+                    return result;
             } else if ((dsStyle & WS_TABSTOP) != 0 && (dsStyle & WS_VISIBLE) != 0 && (dsStyle & WS_DISABLED) == 0) {
                 return hChildFirst;
             }
@@ -256,9 +271,11 @@ public class WinDialog extends WinAPI {
         if (hwndCtrl != 0) {
             int hParent = WinWindow.GetParent(hwndCtrl);
             while (hParent != 0) {
-                if (hParent == hwndMain) break;
+                if (hParent == hwndMain)
+                    break;
                 retWnd = DIALOG_GetNextTabItem(hwndMain, WinWindow.GetParent(hParent), hParent, fPrevious);
-                if (retWnd != 0) break;
+                if (retWnd != 0)
+                    break;
                 hParent = WinWindow.GetParent(hParent);
             }
             if (retWnd == 0)
@@ -285,10 +302,10 @@ public class WinDialog extends WinAPI {
      * ********************************************************************
      * DIALOG_ParseTemplate32
      * <p/>
-     * Fill a DLG_TEMPLATE structure from the dialog template, and return
-     * a pointer to the first control.
+     * Fill a DLG_TEMPLATE structure from the dialog template, and return a pointer
+     * to the first control.
      */
-    static public int DIALOG_ParseTemplate32(int template, DLG_TEMPLATE result) {
+    public static int DIALOG_ParseTemplate32(int template, DLG_TEMPLATE result) {
         int p = template;
         int signature;
         int dlgver;
@@ -397,21 +414,22 @@ public class WinDialog extends WinAPI {
         }
 
         /* First control is on dword boundary */
-        return (p + 3) & ~3;
+        return p + 3 & ~3;
     }
 
     /**
      * ********************************************************************
      * DIALOG_DisableOwner
      * <p/>
-     * Helper function for modal dialogs to disable the
-     * owner of the dialog box. Returns TRUE if owner was enabled.
+     * Helper function for modal dialogs to disable the owner of the dialog box.
+     * Returns TRUE if owner was enabled.
      */
-    static private boolean DIALOG_DisableOwner(int hOwner) {
+    private static boolean DIALOG_DisableOwner(int hOwner) {
         /* Owner must be a top-level window */
         if (hOwner != 0)
             hOwner = WinWindow.GetAncestor(hOwner, GA_ROOT);
-        if (hOwner == 0) return false;
+        if (hOwner == 0)
+            return false;
         if (WinWindow.IsWindowEnabled(hOwner) != 0) {
             WinWindow.EnableWindow(hOwner, FALSE);
             return true;
@@ -419,7 +437,7 @@ public class WinDialog extends WinAPI {
             return false;
     }
 
-    static private int DIALOG_GetControl32(int p, DialogControlInfo info, boolean dialogEx) {
+    private static int DIALOG_GetControl32(int p, DialogControlInfo info, boolean dialogEx) {
         if (dialogEx) {
             info.helpId = readd(p);
             p += 4;
@@ -455,7 +473,8 @@ public class WinDialog extends WinAPI {
         if (readw(p) == 0xffff) {
             int id = readw(p + 2);
             /* Windows treats dialog control class ids 0-5 same way as 0x80-0x85 */
-            if ((id >= 0x80) && (id <= 0x85)) id -= 0x80;
+            if (id >= 0x80 && id <= 0x85)
+                id -= 0x80;
             if (id <= 5) {
                 String name = null;
                 switch (id) {
@@ -507,7 +526,7 @@ public class WinDialog extends WinAPI {
         }
 
         /* Next control is on dword boundary */
-        return (p + 3) & ~3;
+        return p + 3 & ~3;
     }
 
     /**
@@ -516,7 +535,8 @@ public class WinDialog extends WinAPI {
      * <p/>
      * Create the control windows for a dialog.
      */
-    static private boolean DIALOG_CreateControls32(int hwnd, int template, DLG_TEMPLATE dlgTemplate, int hInst, boolean unicode) {
+    private static boolean DIALOG_CreateControls32(int hwnd, int template, DLG_TEMPLATE dlgTemplate, int hInst,
+        boolean unicode) {
         DialogInfo dlgInfo = WinWindow.get(hwnd).dlgInfo;
         DialogControlInfo info = new DialogControlInfo();
         int hwndCtrl = 0, hwndDefButton = 0;
@@ -544,12 +564,14 @@ public class WinDialog extends WinAPI {
                 if (!IS_INTRESOURCE(caption)) {
                     caption = StringUtil.allocateTempA(StringUtil.getStringW(caption));
                 }
-                hwndCtrl = WinWindow.CreateWindowExA(info.exStyle | WS_EX_NOPARENTNOTIFY, pClass, caption, info.style | WS_CHILD,
-                        info.x * dlgInfo.xBaseUnit / 4, info.y * dlgInfo.yBaseUnit / 8, info.cx * dlgInfo.xBaseUnit / 4, info.cy * dlgInfo.yBaseUnit / 8, hwnd, info.id, hInst, info.data);
+                hwndCtrl = WinWindow.CreateWindowExA(info.exStyle | WS_EX_NOPARENTNOTIFY, pClass, caption,
+                    info.style | WS_CHILD, info.x * dlgInfo.xBaseUnit / 4, info.y * dlgInfo.yBaseUnit / 8,
+                    info.cx * dlgInfo.xBaseUnit / 4, info.cy * dlgInfo.yBaseUnit / 8, hwnd, info.id, hInst, info.data);
             }
             if (hwndCtrl == 0) {
                 log("DIALOG_CreateControls32 control creation failed");
-                if ((dlgTemplate.style & DS_NOFAILCREATE) != 0) continue;
+                if ((dlgTemplate.style & DS_NOFAILCREATE) != 0)
+                    continue;
                 return false;
             }
 
@@ -572,18 +594,20 @@ public class WinDialog extends WinAPI {
      * ********************************************************************
      * DIALOG_EnableOwner
      * <p/>
-     * Helper function for modal dialogs to enable again the
-     * owner of the dialog box.
+     * Helper function for modal dialogs to enable again the owner of the dialog
+     * box.
      */
-    static private void DIALOG_EnableOwner(int hOwner) {
+    private static void DIALOG_EnableOwner(int hOwner) {
         /* Owner must be a top-level window */
         if (hOwner != 0)
             hOwner = WinWindow.GetAncestor(hOwner, GA_ROOT);
-        if (hOwner == 0) return;
+        if (hOwner == 0)
+            return;
         WinWindow.EnableWindow(hOwner, TRUE);
     }
 
-    static private int DIALOG_CreateIndirect(int hInst, int dlgTemplate, int owner, int dlgProc, int param, boolean modal, boolean unicode) {
+    private static int DIALOG_CreateIndirect(int hInst, int dlgTemplate, int owner, int dlgProc, int param,
+        boolean modal, boolean unicode) {
         DLG_TEMPLATE template = new DLG_TEMPLATE();
         int units = GetDialogBaseUnits();
         int hMenu = 0;
@@ -593,12 +617,14 @@ public class WinDialog extends WinAPI {
 
         /* Parse dialog template */
 
-        if (dlgTemplate == 0) return 0;
+        if (dlgTemplate == 0)
+            return 0;
         dlgTemplate = DIALOG_ParseTemplate32(dlgTemplate, template);
 
         /* Load menu */
 
-        if (template.menuName != 0) hMenu = WinMenu.LoadMenuW(hInst, template.menuName);
+        if (template.menuName != 0)
+            hMenu = WinMenu.LoadMenuW(hInst, template.menuName);
 
         /* Create custom font if needed */
 
@@ -618,7 +644,8 @@ public class WinDialog extends WinAPI {
                 /* We convert the size to pixels and then make it -ve.  This works
                  * for both +ve and -ve template.pointSize */
                 int pixels = template.pointSize * WinDC.GetDeviceCaps(dc, LOGPIXELSY) / 72;
-                hUserFont = WinFont.CreateFontW(-pixels, 0, 0, 0, template.weight, BOOL(template.italic), FALSE, FALSE, DEFAULT_CHARSET, 0, 0, PROOF_QUALITY, FF_DONTCARE, template.faceName);
+                hUserFont = WinFont.CreateFontW(-pixels, 0, 0, 0, template.weight, BOOL(template.italic), FALSE, FALSE,
+                    DEFAULT_CHARSET, 0, 0, PROOF_QUALITY, FF_DONTCARE, template.faceName);
             }
 
             if (hUserFont != 0) {
@@ -646,7 +673,7 @@ public class WinDialog extends WinAPI {
         if ((template.style & DS_CONTROL) != 0)
             template.exStyle |= WS_EX_CONTROLPARENT;
         int lprc = rect.allocTemp();
-        NonClient.AdjustWindowRectEx(lprc, template.style, (hMenu != 0) ? TRUE : FALSE, template.exStyle);
+        NonClient.AdjustWindowRectEx(lprc, template.style, hMenu != 0 ? TRUE : FALSE, template.exStyle);
         WinPoint pos = new WinPoint(rect.left, rect.top);
         WinSize size = new WinSize(rect.width(), rect.height());
         if (template.x == 0x8000 /*CW_USEDEFAULT16*/) {
@@ -671,12 +698,16 @@ public class WinDialog extends WinAPI {
                 int dX, dY;
 
                 /* try to fit it into the desktop */
-                if ((dX = pos.x + size.cx + SysParams.GetSystemMetrics(SM_CXDLGFRAME) - StaticData.screen.getWidth()) > 0)
+                if ((dX = pos.x + size.cx + SysParams.GetSystemMetrics(SM_CXDLGFRAME)
+                    - StaticData.screen.getWidth()) > 0)
                     pos.x -= dX;
-                if ((dY = pos.y + size.cy + SysParams.GetSystemMetrics(SM_CYDLGFRAME) - StaticData.screen.getHeight()) > 0)
+                if ((dY = pos.y + size.cy + SysParams.GetSystemMetrics(SM_CYDLGFRAME)
+                    - StaticData.screen.getHeight()) > 0)
                     pos.y -= dY;
-                if (pos.x < 0) pos.x = 0;
-                if (pos.y < 0) pos.y = 0;
+                if (pos.x < 0)
+                    pos.x = 0;
+                if (pos.y < 0)
+                    pos.y = 0;
             }
         }
 
@@ -685,7 +716,8 @@ public class WinDialog extends WinAPI {
 
         if (modal) {
             ownerEnabled = DIALOG_DisableOwner(owner);
-            if (ownerEnabled) flags |= DF_OWNERENABLED;
+            if (ownerEnabled)
+                flags |= DF_OWNERENABLED;
         }
 
         int hwnd = 0;
@@ -702,14 +734,18 @@ public class WinDialog extends WinAPI {
             if (!IS_INTRESOURCE(caption)) {
                 caption = StringUtil.allocateTempA(StringUtil.getStringW(caption));
             }
-            hwnd = WinWindow.CreateWindowExA(template.exStyle, pClass, caption, template.style & ~WS_VISIBLE, pos.x, pos.y, size.cx, size.cy, owner, hMenu, hInst, NULL);
+            hwnd = WinWindow.CreateWindowExA(template.exStyle, pClass, caption, template.style & ~WS_VISIBLE, pos.x,
+                pos.y, size.cx, size.cy, owner, hMenu, hInst, NULL);
         }
 
         WinWindow window = WinWindow.get(hwnd);
         if (hwnd == 0 || window == null) {
-            if (hUserFont != 0) GdiObj.DeleteObject(hUserFont);
-            if (hMenu != 0) WinMenu.DestroyMenu(hMenu);
-            if (modal && (flags & DF_OWNERENABLED) != 0) DIALOG_EnableOwner(owner);
+            if (hUserFont != 0)
+                GdiObj.DeleteObject(hUserFont);
+            if (hMenu != 0)
+                WinMenu.DestroyMenu(hMenu);
+            if (modal && (flags & DF_OWNERENABLED) != 0)
+                DIALOG_EnableOwner(owner);
             return 0;
         }
 
@@ -726,7 +762,8 @@ public class WinDialog extends WinAPI {
         dlgInfo.yBaseUnit = yBaseUnit;
         dlgInfo.flags = flags;
 
-        if (template.helpId != 0) window.helpContext = template.helpId;
+        if (template.helpId != 0)
+            window.helpContext = template.helpId;
 
         if (unicode) {
             // WinWindow.SetWindowLongW( hwnd, DWLP_DLGPROC, dlgProc );
@@ -745,7 +782,8 @@ public class WinDialog extends WinAPI {
 
             if (dlgProc != 0) {
                 int focus = GetNextDlgTabItem(hwnd, 0, FALSE);
-                if (Message.SendMessageA(hwnd, WM_INITDIALOG, focus, param) != 0 && WinWindow.IsWindow(hwnd) != 0 && ((~template.style & DS_CONTROL) != 0 || (template.style & WS_VISIBLE) != 0)) {
+                if (Message.SendMessageA(hwnd, WM_INITDIALOG, focus, param) != 0 && WinWindow.IsWindow(hwnd) != 0
+                    && ((~template.style & DS_CONTROL) != 0 || (template.style & WS_VISIBLE) != 0)) {
                     /* By returning TRUE, app has requested a default focus assignment.
                      * WM_INITDIALOG may have changed the tab order, so find the first
                      * tabstop control again. */
@@ -756,16 +794,18 @@ public class WinDialog extends WinAPI {
             }
 
             if ((template.style & WS_VISIBLE) != 0 && (WinWindow.GetWindowLongA(hwnd, GWL_STYLE) & WS_VISIBLE) == 0) {
-                WinPos.ShowWindow(hwnd, SW_SHOWNORMAL);   /* SW_SHOW doesn't always work */
+                WinPos.ShowWindow(hwnd, SW_SHOWNORMAL); /* SW_SHOW doesn't always work */
             }
             return hwnd;
         }
-        if (modal && ownerEnabled) DIALOG_EnableOwner(owner);
-        if (WinWindow.IsWindow(hwnd) != 0) WinWindow.DestroyWindow(hwnd);
+        if (modal && ownerEnabled)
+            DIALOG_EnableOwner(owner);
+        if (WinWindow.IsWindow(hwnd) != 0)
+            WinWindow.DestroyWindow(hwnd);
         return 0;
     }
 
-    static private class DLG_TEMPLATE {
+    private static class DLG_TEMPLATE {
         int style;
         int exStyle;
         int helpId;
@@ -784,7 +824,7 @@ public class WinDialog extends WinAPI {
         boolean dialogEx;
     }
 
-    static private class DialogControlInfo {
+    private static class DialogControlInfo {
         int style;
         int exStyle;
         int helpId;

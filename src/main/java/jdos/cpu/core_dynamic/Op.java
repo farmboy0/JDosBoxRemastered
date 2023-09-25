@@ -7,18 +7,18 @@ import jdos.cpu.Flags;
 import jdos.cpu.core_share.Constants;
 import jdos.cpu.core_share.Data;
 
-abstract public class Op {
-    static final public int EAX = 1;
+public abstract class Op {
+    public static final int EAX = 1;
 
-    static final public int ES = 0x01;
-    static final public int CS = 0x02;
-    static final public int DS = 0x03;
-    static final public int FS = 0x04;
-    static final public int GS = 0x05;
-    static final public int SS = 0x06;
-    static final public int FROM_REG = 0x10;
-    static final public int FROM_STACK = 0x20;
-    static final public int FROM_MEMORY = 0x30;
+    public static final int ES = 0x01;
+    public static final int CS = 0x02;
+    public static final int DS = 0x03;
+    public static final int FS = 0x04;
+    public static final int GS = 0x05;
+    public static final int SS = 0x06;
+    public static final int FROM_REG = 0x10;
+    public static final int FROM_STACK = 0x20;
+    public static final int FROM_MEMORY = 0x30;
     public static final int FLAG_TYPE_NONE = 0;
     public static final int FLAG_TYPE_INCB = 1;
     public static final int FLAG_TYPE_INCW = 2;
@@ -74,7 +74,7 @@ abstract public class Op {
     public Op next;
     public int cycle = 0;
 
-    abstract public int call();
+    public abstract int call();
 
     public int RUNEXCEPTION() {
         CPU.CPU_Exception(CPU.cpu.exception.which, CPU.cpu.exception.error);

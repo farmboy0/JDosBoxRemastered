@@ -1,17 +1,32 @@
 package jdos.dos.drives;
 
-import jdos.dos.*;
-import jdos.util.*;
-
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import jdos.dos.DOS_File;
+import jdos.dos.Dos;
+import jdos.dos.Dos_DTA;
+import jdos.dos.Dos_Drive;
+import jdos.dos.Dos_files;
+import jdos.dos.Dos_system;
+import jdos.dos.FileStat_Block;
+import jdos.util.IntRef;
+import jdos.util.LRUCache;
+import jdos.util.LongRef;
+import jdos.util.ShortRef;
+import jdos.util.StringRef;
+
 /**
- * The ZIP image file system for jDosBox.
- * Usage: imgmount d game.zip -t zip
+ * The ZIP image file system for jDosBox. Usage: imgmount d game.zip -t zip
  *
  * @author Petr Sladek alias slady
  */
@@ -19,11 +34,11 @@ public class Drive_zip extends Dos_Drive {
 
     private static final int SIZE_SECTOR = 512;
     private static final int SIZE_CLUSTER = 32;
-    private final Map<String, ZipFileEntry> upperCaseNameFiles = new HashMap<String, ZipFileEntry>();
-    private final Map<String, List<ZipFileEntry>> directoryStructureMap = new HashMap<String, List<ZipFileEntry>>();
+    private final Map<String, ZipFileEntry> upperCaseNameFiles = new HashMap<>();
+    private final Map<String, List<ZipFileEntry>> directoryStructureMap = new HashMap<>();
     private ZipFile zipFile;
     private int totalSize;
-    private final Map<Short, FileSearch> dirSearchEntries = new HashMap<Short, FileSearch>();
+    private final Map<Short, FileSearch> dirSearchEntries = new HashMap<>();
 
     public Drive_zip(final String sysFilename) {
         System.out.println("Drive_zip: " + sysFilename);
@@ -38,7 +53,7 @@ public class Drive_zip extends Dos_Drive {
                 final String dirName = zipFileEntry.getDirName().toUpperCase();
 
                 if (!directoryStructureMap.containsKey(dirName)) {
-                    directoryStructureMap.put(dirName, new ArrayList<ZipFileEntry>());
+                    directoryStructureMap.put(dirName, new ArrayList<>());
                 }
 
                 directoryStructureMap.get(dirName).add(zipFileEntry);
@@ -48,7 +63,9 @@ public class Drive_zip extends Dos_Drive {
         }
     }
 
-    public boolean AllocationInfo(/*Bit16u*/IntRef _bytes_sector,/*Bit8u*/ShortRef _sectors_cluster,/*Bit16u*/IntRef _total_clusters,/*Bit16u*/IntRef _free_clusters) {
+    @Override
+    public boolean AllocationInfo(/*Bit16u*/IntRef _bytes_sector, /*Bit8u*/ShortRef _sectors_cluster,
+        /*Bit16u*/IntRef _total_clusters, /*Bit16u*/IntRef _free_clusters) {
         _bytes_sector.value = SIZE_SECTOR;
         _sectors_cluster.value = SIZE_CLUSTER;
         _total_clusters.value = totalSize / SIZE_SECTOR / SIZE_CLUSTER + 1;
@@ -56,14 +73,17 @@ public class Drive_zip extends Dos_Drive {
         return true;
     }
 
+    @Override
     public boolean isRemote() {
         return false;
     }
 
+    @Override
     public boolean isRemovable() {
         return false;
     }
 
+    @Override
     public /*Bits*/int UnMount() {
         if (zipFile != null) {
             try {
@@ -75,22 +95,26 @@ public class Drive_zip extends Dos_Drive {
         return 0;
     }
 
+    @Override
     public /*Bit8u*/short GetMediaByte() {
         return 0;
     }
 
-    public DOS_File FileCreate(String name,/*Bit16u*/int attributes) {
+    @Override
+    public DOS_File FileCreate(String name, /*Bit16u*/int attributes) {
         Dos.DOS_SetError(Dos.DOSERR_ACCESS_DENIED);
         return null;
     }
 
+    @Override
     public boolean FileExists(String name) {
         final ZipFileEntry zipFileEntry = upperCaseNameFiles.get(name);
 
         return zipFileEntry != null;
     }
 
-    public DOS_File FileOpen(final String name,/*Bit32u*/int flags) {
+    @Override
+    public DOS_File FileOpen(final String name, /*Bit32u*/int flags) {
         final ZipFileEntry zipFileEntry = upperCaseNameFiles.get(name);
 
         if (zipFileEntry == null) {
@@ -100,15 +124,18 @@ public class Drive_zip extends Dos_Drive {
         return new Zip_File(name, zipFileEntry.getZipEntry());
     }
 
+    @Override
     public boolean FileStat(String name, FileStat_Block stat_block) {
         /* TODO: Stub */
         return false;
     }
 
+    @Override
     public boolean FileUnlink(String name) {
         return false;
     }
 
+    @Override
     public boolean FindFirst(String dirName, Dos_DTA dta, boolean fcb_findfirst/*=false*/) {
         final List<ZipFileEntry> fileList = directoryStructureMap.get(dirName);
         final Iterator<ZipFileEntry> fileListIterator = fileList.iterator();
@@ -120,6 +147,7 @@ public class Drive_zip extends Dos_Drive {
         return findFile(dta);
     }
 
+    @Override
     public boolean FindNext(Dos_DTA dta) {
         return findFile(dta);
     }
@@ -152,12 +180,13 @@ public class Drive_zip extends Dos_Drive {
             attr = 0;
         }
 
-        dta.SetResult(zipFileEntry.getFileName(), zipFileEntry.getSize(),
-                zipFileEntry.getDosDate(), zipFileEntry.getDosTime(), attr);
+        dta.SetResult(zipFileEntry.getFileName(), zipFileEntry.getSize(), zipFileEntry.getDosDate(),
+            zipFileEntry.getDosTime(), attr);
         return true;
     }
 
-    public boolean GetFileAttr(final String name,/*Bit16u*/IntRef attr) {
+    @Override
+    public boolean GetFileAttr(final String name, /*Bit16u*/IntRef attr) {
         final ZipFileEntry zipFileEntry = upperCaseNameFiles.get(name);
 
         if (zipFileEntry == null) {
@@ -171,18 +200,22 @@ public class Drive_zip extends Dos_Drive {
         return true;
     }
 
+    @Override
     public boolean MakeDir(String dir) {
         return false;
     }
 
+    @Override
     public boolean RemoveDir(String dir) {
         return false;
     }
 
+    @Override
     public boolean Rename(String oldname, String newname) {
         return false;
     }
 
+    @Override
     public boolean TestDir(final String dir) {
         if (dir.isEmpty()) {
             // root directory
@@ -198,7 +231,7 @@ public class Drive_zip extends Dos_Drive {
         return zipFileEntry.isDirectory();
     }
 
-    static public class FileSearch {
+    public static class FileSearch {
         private final Iterator<ZipFileEntry> fileListIterator;
         private final String nameRegexp;
 
@@ -221,7 +254,7 @@ public class Drive_zip extends Dos_Drive {
         }
     }
 
-    static public class ZipFileEntry {
+    public static class ZipFileEntry {
         private final ZipEntry zipEntry;
         private final String fullName;
         private final String fileName;
@@ -266,7 +299,7 @@ public class Drive_zip extends Dos_Drive {
             final int minute = calendar.get(Calendar.MINUTE);
 
             dosTime = ((minute & 0x003f) << 5) + (hour << 11);
-            dosDate = (day & 0x001f) + ((month & 0x000f) << 5) + ((year - 1980) << 9);
+            dosDate = (day & 0x001f) + ((month & 0x000f) << 5) + (year - 1980 << 9);
         }
 
         public String getFullName() {
@@ -357,7 +390,7 @@ public class Drive_zip extends Dos_Drive {
         }
 
         private byte[] get(int offset) throws IOException {
-            Integer i = new Integer(offset);
+            Integer i = offset;
             byte[] b = (byte[]) cache.get(i);
             if (b == null) {
                 b = fill(offset);
@@ -366,7 +399,8 @@ public class Drive_zip extends Dos_Drive {
             return b;
         }
 
-        public boolean Read(byte[] b,/*Bit16u*/IntRef size) {
+        @Override
+        public boolean Read(byte[] b, /*Bit16u*/IntRef size) {
             if (is == null)
                 return false;
             if (seek + size.value > length) {
@@ -394,12 +428,14 @@ public class Drive_zip extends Dos_Drive {
             return true;
         }
 
-        public boolean Write(byte[] data,/*Bit16u*/IntRef size) {
+        @Override
+        public boolean Write(byte[] data, /*Bit16u*/IntRef size) {
             Dos.DOS_SetError(Dos.DOSERR_ACCESS_DENIED);
             return false;
         }
 
-        public boolean Seek(/*Bit32u*/LongRef pos,/*Bit32u*/int type) {
+        @Override
+        public boolean Seek(/*Bit32u*/LongRef pos, /*Bit32u*/int type) {
             /*Bit32s*/
             int seekto = 0;
 
@@ -419,13 +455,16 @@ public class Drive_zip extends Dos_Drive {
             }
 
             /*Bit32s*/
-            if ((/*Bit32u*/long) seekto > length) seekto = length;
-            if (seekto < 0) seekto = 0;
+            if ((/*Bit32u*/long) seekto > length)
+                seekto = length;
+            if (seekto < 0)
+                seekto = 0;
             seek = seekto;
             pos.value = seek;
             return true;
         }
 
+        @Override
         public boolean Close() {
             length = 0;
             if (is != null) {
@@ -439,6 +478,7 @@ public class Drive_zip extends Dos_Drive {
             return false;
         }
 
+        @Override
         public /*Bit16u*/int GetInformation() {
             return 0;
         }

@@ -8,6 +8,7 @@ public class DIObjectDataFormat {
     public int dwOfs;
     public int dwType;
     public int dwFlags;
+
     public DIObjectDataFormat(int address) {
         pGuid = Memory.mem_readd(address);
         address += 4;

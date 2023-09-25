@@ -122,11 +122,11 @@ public class WinRect extends WinAPI {
     }
 
     public boolean contains(int x, int y) {
-        return (x >= left && x <= right && y >= top && y <= bottom);
+        return x >= left && x <= right && y >= top && y <= bottom;
     }
 
     public boolean contains(WinPoint p) {
-        return (p.x >= left && p.x <= right && p.y >= top && p.y <= bottom);
+        return p.x >= left && p.x <= right && p.y >= top && p.y <= bottom;
     }
 
     public int width() {
@@ -137,6 +137,7 @@ public class WinRect extends WinAPI {
         return bottom - top;
     }
 
+    @Override
     public String toString() {
         return "(" + left + "," + top + ") - (" + right + "," + bottom + ")";
     }

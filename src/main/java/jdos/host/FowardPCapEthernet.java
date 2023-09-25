@@ -1,17 +1,18 @@
 package jdos.host;
 
-import jdos.misc.Log;
-import jdos.misc.setup.Section_prop;
-import jdos.util.Ptr;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+
 import org.jnetpcap.Pcap;
 import org.jnetpcap.PcapHeader;
 import org.jnetpcap.nio.JBuffer;
 import org.jnetpcap.nio.JMemory;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
+import jdos.misc.Log;
+import jdos.misc.setup.Section_prop;
+import jdos.util.Ptr;
 
 public class FowardPCapEthernet implements Ethernet {
     static byte[] buffer = new byte[4096];
@@ -19,7 +20,7 @@ public class FowardPCapEthernet implements Ethernet {
     DataOutputStream dos;
     DataInputStream dis;
 
-    static public void startServer(String nic, int port) {
+    public static void startServer(String nic, int port) {
         // Just make sure we are good to go
         Pcap pcaptmp = PCapEthernet.open(nic, false);
         if (pcaptmp == null) {
@@ -30,16 +31,14 @@ public class FowardPCapEthernet implements Ethernet {
             ServerSocket serverSocket = new ServerSocket(port);
             Log.log_msg("Listening on port " + port + " for pcap forwarding.  Hit q [ENTER] to quit");
             while (true) {
-                Thread exitThread = new Thread(new Runnable() {
-                    public void run() {
-                        while (true) {
-                            try {
-                                char c = (char) System.in.read();
-                                if (c == 'q') {
-                                    System.exit(0);
-                                }
-                            } catch (Exception e) {
+                Thread exitThread = new Thread(() -> {
+                    while (true) {
+                        try {
+                            char c = (char) System.in.read();
+                            if (c == 'q') {
+                                System.exit(0);
                             }
+                        } catch (Exception e) {
                         }
                     }
                 });
@@ -48,57 +47,53 @@ public class FowardPCapEthernet implements Ethernet {
                 final String address = socket.getInetAddress().toString();
                 Log.log_msg("  Accepted connection from " + address);
                 final Pcap pcap = PCapEthernet.open(nic, true);
-                Thread serviceIn = new Thread(new Runnable() {
-                    public void run() {
+                Thread serviceIn = new Thread(() -> {
+                    try {
+                        DataInputStream dis = new DataInputStream(socket.getInputStream());
+                        byte[] buffer = new byte[4096];
+                        while (true) {
+                            int len = dis.readInt();
+                            if (len < 0) {
+                                return;
+                            }
+                            if (len > buffer.length) {
+                                buffer = new byte[len];
+                            }
+                            dis.readFully(buffer, 0, len);
+                            synchronized (pcap) {
+                                pcap.sendPacket(buffer, 0, len);
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.log_msg("  Dropped connection from " + address);
+                    } finally {
                         try {
-                            DataInputStream dis = new DataInputStream(socket.getInputStream());
-                            byte[] buffer = new byte[4096];
-                            while (true) {
-                                int len = dis.readInt();
-                                if (len < 0) {
-                                    return;
-                                }
-                                if (len > buffer.length) {
-                                    buffer = new byte[len];
-                                }
-                                dis.readFully(buffer, 0, len);
-                                synchronized (pcap) {
-                                    pcap.sendPacket(buffer, 0, len);
-                                }
-                            }
-                        } catch (Exception e) {
-                            Log.log_msg("  Dropped connection from " + address);
-                        } finally {
-                            try {
-                                pcap.close();
-                            } catch (Exception e1) {
-                            }
+                            pcap.close();
+                        } catch (Exception e1) {
                         }
                     }
                 });
                 serviceIn.start();
-                Thread serviceOut = new Thread(new Runnable() {
-                    public void run() {
-                        try {
-                            DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-                            while (true) {
-                                PcapHeader header = new PcapHeader(JMemory.POINTER);
-                                JBuffer buffer = new JBuffer(JMemory.POINTER);
-                                synchronized (pcap) {
-                                    while (pcap.nextEx(header, buffer) == Pcap.NEXT_EX_OK) {
-                                        byte[] data = buffer.getByteArray(0, header.hdr_len());
-                                        dos.writeInt(data.length);
-                                        dos.write(data);
-                                    }
+                Thread serviceOut = new Thread(() -> {
+                    try {
+                        DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+                        while (true) {
+                            PcapHeader header = new PcapHeader(JMemory.POINTER);
+                            JBuffer buffer = new JBuffer(JMemory.POINTER);
+                            synchronized (pcap) {
+                                while (pcap.nextEx(header, buffer) == Pcap.NEXT_EX_OK) {
+                                    byte[] data = buffer.getByteArray(0, header.hdr_len());
+                                    dos.writeInt(data.length);
+                                    dos.write(data);
                                 }
-                                Thread.sleep(10);
                             }
-                        } catch (Exception e) {
-                        } finally {
-                            try {
-                                pcap.close();
-                            } catch (Exception e1) {
-                            }
+                            Thread.sleep(10);
+                        }
+                    } catch (Exception e) {
+                    } finally {
+                        try {
+                            pcap.close();
+                        } catch (Exception e1) {
                         }
                     }
                 });
@@ -109,6 +104,7 @@ public class FowardPCapEthernet implements Ethernet {
         }
     }
 
+    @Override
     public void send(byte[] buffer, int offset, int len) {
         try {
             dos.writeInt(len);
@@ -117,6 +113,7 @@ public class FowardPCapEthernet implements Ethernet {
         }
     }
 
+    @Override
     public void receive(RxFrame frame) {
         try {
             int len;
@@ -136,6 +133,7 @@ public class FowardPCapEthernet implements Ethernet {
         }
     }
 
+    @Override
     public boolean open(Section_prop section, byte[] mac) {
         try {
             socket = new Socket(section.Get_string("pcaphost"), section.Get_int("pcapport"));
@@ -148,6 +146,7 @@ public class FowardPCapEthernet implements Ethernet {
         return false;
     }
 
+    @Override
     public void close() {
         try {
             dos.close();

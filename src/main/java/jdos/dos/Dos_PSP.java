@@ -45,7 +45,8 @@ public class Dos_PSP extends MemStruct {
         /* Clear it first */
         /*Bitu*/
         int i;
-        for (i = 0; i < 256; i++) Memory.mem_writeb(pt + i, 0);
+        for (i = 0; i < 256; i++)
+            Memory.mem_writeb(pt + i, 0);
         // Set size
         SaveIt(2, 2, seg + mem_size); //sSave(sPSP,next_seg,seg+mem_size);
 
@@ -72,12 +73,14 @@ public class Dos_PSP extends MemStruct {
         /* Init file pointer and max_files */
         SaveIt(4, 52, Memory.RealMake(seg, 24)); //sSave(sPSP,file_table,RealMake(seg,offsetof(sPSP,files)));
         SaveIt(2, 50, 20); //sSave(sPSP,max_files,20);
-        for (/*Bit16u*/int ct = 0; ct < 20; ct++) SetFileHandle(ct, 0xff);
+        for (/*Bit16u*/int ct = 0; ct < 20; ct++)
+            SetFileHandle(ct, 0xff);
 
         /* User Stack pointer */
         //	if (prevpsp.GetSegment()!=0) sSave(sPSP,stack,prevpsp.GetStack());
 
-        if (rootpsp == 0) rootpsp = seg;
+        if (rootpsp == 0)
+            rootpsp = seg;
     }
 
     public void CopyFileTable(Dos_PSP srcpsp, boolean createchildpsp) {
@@ -85,15 +88,16 @@ public class Dos_PSP extends MemStruct {
         for (/*Bit16u*/int i = 0; i < 20; i++) {
             /*Bit8u*/
             int handle = srcpsp.GetFileHandle(i);
-            if (createchildpsp) {    //copy obeying not inherit flag.(but dont duplicate them)
+            if (createchildpsp) { //copy obeying not inherit flag.(but dont duplicate them)
                 boolean allowCopy = true;//(handle==0) || ((handle>0) && (FindEntryByHandle(handle)==0xff));
-                if ((handle < Dos_files.DOS_FILES) && Dos_files.Files[handle] != null && (Dos_files.Files[handle].flags & Dos_files.DOS_NOT_INHERIT) == 0 && allowCopy) {
+                if (handle < Dos_files.DOS_FILES && Dos_files.Files[handle] != null
+                    && (Dos_files.Files[handle].flags & Dos_files.DOS_NOT_INHERIT) == 0 && allowCopy) {
                     Dos_files.Files[handle].AddRef();
                     SetFileHandle(i, handle);
                 } else {
                     SetFileHandle(i, 0xff);
                 }
-            } else {    //normal copy so don't mind the inheritance
+            } else { //normal copy so don't mind the inheritance
                 SetFileHandle(i, handle);
             }
         }
@@ -103,7 +107,8 @@ public class Dos_PSP extends MemStruct {
         /*PhysPt*/
         int files = Memory.Real2Phys(GetIt(4, 52) /*sGet(sPSP,file_table)*/);
         for (/*Bit16u*/int i = 0; i < GetIt(2, 50) /*sGet(sPSP,max_files)*/; i++) {
-            if (Memory.mem_readb(files + i) == 0xff) return i;
+            if (Memory.mem_readb(files + i) == 0xff)
+                return i;
         }
         return 0xff;
     }
@@ -157,7 +162,8 @@ public class Dos_PSP extends MemStruct {
     }
 
     public /*Bit8u*/int GetFileHandle(/*Bit16u*/int index) {
-        if (index >= GetIt(2, 50)/*sGet(sPSP,max_files)*/) return 0xff;
+        if (index >= GetIt(2, 50)/*sGet(sPSP,max_files)*/)
+            return 0xff;
         /*PhysPt*/
         int files = Memory.Real2Phys(GetIt(4, 52)/*sGet(sPSP,file_table)*/);
         return Memory.mem_readb(files + index);
@@ -189,17 +195,19 @@ public class Dos_PSP extends MemStruct {
     }
 
     public void SetFCB1(/*RealPt*/int src) {
-        if (src != 0) Memory.MEM_BlockCopy(Memory.PhysMake(seg, 92/*offsetof(sPSP,fcb1)*/), Memory.Real2Phys(src), 16);
+        if (src != 0)
+            Memory.MEM_BlockCopy(Memory.PhysMake(seg, 92/*offsetof(sPSP,fcb1)*/), Memory.Real2Phys(src), 16);
     }
 
     public void SetFCB2(/*RealPt*/int src) {
-        if (src != 0) Memory.MEM_BlockCopy(Memory.PhysMake(seg, 108/*offsetof(sPSP,fcb2)*/), Memory.Real2Phys(src), 16);
+        if (src != 0)
+            Memory.MEM_BlockCopy(Memory.PhysMake(seg, 108/*offsetof(sPSP,fcb2)*/), Memory.Real2Phys(src), 16);
     }
 
     public void SetCommandTail(/*RealPt*/int src) {
-        if (src != 0) {    // valid source
+        if (src != 0) { // valid source
             Memory.MEM_BlockCopy(pt + 128/*offsetof(sPSP,cmdtail)*/, Memory.Real2Phys(src), 128);
-        } else {    // empty
+        } else { // empty
             SaveIt(1, 128, 0); //sSave(sPSP,cmdtail.count,0x00);
             Memory.mem_writeb(pt + 129/*offsetof(sPSP,cmdtail.buffer)*/, 0x0d);
         }
@@ -212,21 +220,24 @@ public class Dos_PSP extends MemStruct {
 
     public boolean SetNumFiles(/*Bit16u*/int fileNum) {
         //20 minimum. clipper program.
-        if (fileNum < 20) fileNum = 20;
+        if (fileNum < 20)
+            fileNum = 20;
 
         if (fileNum > 20) {
             // Allocate needed paragraphs
-            fileNum += 2;    // Add a few more files for safety
+            fileNum += 2; // Add a few more files for safety
             /*Bit16u*/
-            int para = (fileNum / 16) + ((fileNum % 16) > 0 ? 1 : 0);
+            int para = fileNum / 16 + (fileNum % 16 > 0 ? 1 : 0);
             /*RealPt*/
             int data = Memory.RealMake(Dos_tables.DOS_GetMemory(para), 0);
             SaveIt(4, 52, data); //sSave(sPSP,file_table,data);
             SaveIt(2, 50, fileNum); //sSave(sPSP,max_files,fileNum);
             /*Bit16u*/
             int i;
-            for (i = 0; i < 20; i++) SetFileHandle(i, GetIt(1, 24 + i)/*(Bit8u)sGet(sPSP,files[i])*/);
-            for (i = 20; i < fileNum; i++) SetFileHandle(i, 0xFF);
+            for (i = 0; i < 20; i++)
+                SetFileHandle(i, GetIt(1, 24 + i)/*(Bit8u)sGet(sPSP,files[i])*/);
+            for (i = 20; i < fileNum; i++)
+                SetFileHandle(i, 0xFF);
         } else {
             SaveIt(2, 50, fileNum);//sSave(sPSP,max_files,fileNum);
         }
@@ -237,7 +248,8 @@ public class Dos_PSP extends MemStruct {
         /*PhysPt*/
         int files = Memory.Real2Phys(GetIt(4, 50)/*sGet(sPSP,file_table)*/);
         for (/*Bit16u*/int i = 0; i < GetIt(2, 50)/*sGet(sPSP,max_files)*/; i++) {
-            if (Memory.mem_readb(files + i) == handle) return i;
+            if (Memory.mem_readb(files + i) == handle)
+                return i;
         }
         return 0xFF;
     }

@@ -9,6 +9,7 @@ public class MemoryRegion {
     int size;
     int offset;
     String name;
+
     public MemoryRegion(int address, int offset, int size, String name, Paging.PageHandler handler) {
         this.address = address;
         this.offset = offset;

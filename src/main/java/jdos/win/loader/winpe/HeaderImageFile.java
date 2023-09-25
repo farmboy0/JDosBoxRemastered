@@ -1,14 +1,14 @@
 package jdos.win.loader.winpe;
 
-import jdos.win.system.WinFile;
-import jdos.win.utils.LittleEndian;
-
 import java.io.IOException;
 import java.io.OutputStream;
 
+import jdos.win.system.WinFile;
+import jdos.win.utils.LittleEndian;
+
 // From Wine project
 public class HeaderImageFile {
-    final static public int SIZE = 20;
+    public static final int SIZE = 20;
 
     public int Machine;
     public int NumberOfSections;

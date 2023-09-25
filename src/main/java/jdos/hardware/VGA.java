@@ -32,25 +32,24 @@ public class VGA {
     public static final int M_TANDY_TEXT = 16;
     public static final int M_ERROR = 17;
 
-
     public static final int CLK_25 = 25175;
     public static final int CLK_28 = 28322;
 
     public static final int MIN_VCO = 180000;
     public static final int MAX_VCO = 360000;
 
-    public static final int S3_CLOCK_REF = 14318;    /* KHz */
-    public static final int S3_MAX_CLOCK = 150000;    /* KHz */
+    public static final int S3_CLOCK_REF = 14318; /* KHz */
+    public static final int S3_MAX_CLOCK = 150000; /* KHz */
     public static final int S3_XGA_1024 = 0x00;
     public static final int S3_XGA_1152 = 0x01;
     public static final int S3_XGA_640 = 0x40;
     public static final int S3_XGA_800 = 0x80;
     public static final int S3_XGA_1280 = 0xc0;
-    public static final int S3_XGA_WMASK = (S3_XGA_640 | S3_XGA_800 | S3_XGA_1024 | S3_XGA_1152 | S3_XGA_1280);
+    public static final int S3_XGA_WMASK = S3_XGA_640 | S3_XGA_800 | S3_XGA_1024 | S3_XGA_1152 | S3_XGA_1280;
     public static final int S3_XGA_8BPP = 0x00;
     public static final int S3_XGA_16BPP = 0x10;
     public static final int S3_XGA_32BPP = 0x30;
-    public static final int S3_XGA_CMASK = (S3_XGA_8BPP | S3_XGA_16BPP | S3_XGA_32BPP);
+    public static final int S3_XGA_CMASK = S3_XGA_8BPP | S3_XGA_16BPP | S3_XGA_32BPP;
     public static VGA_Type vga;
     public static SVGA_Driver svga;
     public static /*Bit32u*/ int[] CGA_2_Table = new int[16];
@@ -62,75 +61,66 @@ public class VGA {
     public static /*Bit32u*/ int[] ExpandTable = new int[256];
     public static /*Bit32u*/ int[][] Expand16Table = new int[4][16];
     public static /*Bit32u*/ int[] FillTable = new int[16];
-    public static Section.SectionFunction VGA_Init = new Section.SectionFunction() {
-        public void call(Section sec) {
-            if (Dosbox.svgaCard >= SVGACards.SVGA_QEMU)
-                return;
-            Section_prop section = (Section_prop) sec;
-            vga.draw.resizing = false;
-            vga.mode = M_ERROR;            //For first init
-            vga.vmemsize = section.Get_int("vmemsize") * 1024 * 1024;
-            SVGA_Setup_Driver();
-            VGA_memory.VGA_SetupMemory.call(section);
-            VGA_misc.VGA_SetupMisc();
-            VGA_dac.VGA_SetupDAC();
-            VGA_gfx.VGA_SetupGFX();
-            VGA_seq.VGA_SetupSEQ();
-            VGA_attr.VGA_SetupAttr();
-            VGA_other.VGA_SetupOther();
-            VGA_xga.VGA_SetupXGA();
-            VGA_SetClock(0, CLK_25);
-            VGA_SetClock(1, CLK_28);
-            /* Generate tables */
-            VGA_SetCGA2Table(0, 1);
-            VGA_SetCGA4Table(0, 1, 2, 3);
-            /*Bitu*/
-            int i, j;
-            for (i = 0; i < 256; i++) {
-                ExpandTable[i] = i | (i << 8) | (i << 16) | (i << 24);
-            }
-            for (i = 0; i < 16; i++) {
-                TXT_FG_Table[i] = i | (i << 8) | (i << 16) | (i << 24);
-                TXT_BG_Table[i] = i | (i << 8) | (i << 16) | (i << 24);
-                FillTable[i] =
-                        ((i & 1) != 0 ? 0x000000ff : 0) |
-                                ((i & 2) != 0 ? 0x0000ff00 : 0) |
-                                ((i & 4) != 0 ? 0x00ff0000 : 0) |
-                                ((i & 8) != 0 ? 0xff000000 : 0);
-                TXT_Font_Table[i] =
-                        ((i & 1) != 0 ? 0xff000000 : 0) |
-                                ((i & 2) != 0 ? 0x00ff0000 : 0) |
-                                ((i & 4) != 0 ? 0x0000ff00 : 0) |
-                                ((i & 8) != 0 ? 0x000000ff : 0);
-            }
-            for (j = 0; j < 4; j++) {
-                for (i = 0; i < 16; i++) {
-                    Expand16Table[j][i] =
-                            ((i & 1) != 0 ? 1 << (24 + j) : 0) |
-                                    ((i & 2) != 0 ? 1 << (16 + j) : 0) |
-                                    ((i & 4) != 0 ? 1 << (8 + j) : 0) |
-                                    ((i & 8) != 0 ? 1 << j : 0);
-                }
-            }
-
+    public static Section.SectionFunction VGA_Init = sec -> {
+        if (Dosbox.svgaCard >= SVGACards.SVGA_QEMU)
+            return;
+        Section_prop section = (Section_prop) sec;
+        vga.draw.resizing = false;
+        vga.mode = M_ERROR; //For first init
+        vga.vmemsize = section.Get_int("vmemsize") * 1024 * 1024;
+        SVGA_Setup_Driver();
+        VGA_memory.VGA_SetupMemory.call(section);
+        VGA_misc.VGA_SetupMisc();
+        VGA_dac.VGA_SetupDAC();
+        VGA_gfx.VGA_SetupGFX();
+        VGA_seq.VGA_SetupSEQ();
+        VGA_attr.VGA_SetupAttr();
+        VGA_other.VGA_SetupOther();
+        VGA_xga.VGA_SetupXGA();
+        VGA_SetClock(0, CLK_25);
+        VGA_SetClock(1, CLK_28);
+        /* Generate tables */
+        VGA_SetCGA2Table(0, 1);
+        VGA_SetCGA4Table(0, 1, 2, 3);
+        /*Bitu*/
+        int i, j;
+        for (i = 0; i < 256; i++) {
+            ExpandTable[i] = i | i << 8 | i << 16 | i << 24;
         }
+        for (i = 0; i < 16; i++) {
+            TXT_FG_Table[i] = i | i << 8 | i << 16 | i << 24;
+            TXT_BG_Table[i] = i | i << 8 | i << 16 | i << 24;
+            FillTable[i] = ((i & 1) != 0 ? 0x000000ff : 0) | ((i & 2) != 0 ? 0x0000ff00 : 0)
+                | ((i & 4) != 0 ? 0x00ff0000 : 0) | ((i & 8) != 0 ? 0xff000000 : 0);
+            TXT_Font_Table[i] = ((i & 1) != 0 ? 0xff000000 : 0) | ((i & 2) != 0 ? 0x00ff0000 : 0)
+                | ((i & 4) != 0 ? 0x0000ff00 : 0) | ((i & 8) != 0 ? 0x000000ff : 0);
+        }
+        for (j = 0; j < 4; j++) {
+            for (i = 0; i < 16; i++) {
+                Expand16Table[j][i] = ((i & 1) != 0 ? 1 << 24 + j : 0) | ((i & 2) != 0 ? 1 << 16 + j : 0)
+                    | ((i & 4) != 0 ? 1 << 8 + j : 0) | ((i & 8) != 0 ? 1 << j : 0);
+            }
+        }
+
     };
     private static final /*Bit32u*/ int[] CGA_16_Table = new int[256];
     private static final /*Bit32u*/ int[] ColorTable = new int[16];
 
     public static int S3_CLOCK(int _M, int _N, int _R) {
-        return ((S3_CLOCK_REF * ((_M) + 2)) / (((_N) + 2) * (1 << (_R))));
+        return S3_CLOCK_REF * (_M + 2) / ((_N + 2) * (1 << _R));
     }
 
     public static void VGA_SetModeNow(int mode) {
-        if (vga.mode == mode) return;
+        if (vga.mode == mode)
+            return;
         vga.mode = mode;
         VGA_memory.VGA_SetupHandlers();
         VGA_StartResize(0);
     }
 
     public static void VGA_SetMode(int mode) {
-        if (vga.mode == mode) return;
+        if (vga.mode == mode)
+            return;
         vga.mode = mode;
         VGA_memory.VGA_SetupHandlers();
         VGA_StartResize();
@@ -147,14 +137,20 @@ public class VGA {
                 if ((vga.attr.mode_control & 1) != 0) { // graphics mode
                     if (Dosbox.IS_VGA_ARCH() && (vga.gfx.mode & 0x40) != 0) {
                         // access above 256k?
-                        if ((vga.s3.reg_31 & 0x8) != 0) VGA_SetMode(M_LIN8);
-                        else VGA_SetMode(M_VGA);
-                    } else if ((vga.gfx.mode & 0x20) != 0) VGA_SetMode(M_CGA4);
-                    else if ((vga.gfx.miscellaneous & 0x0c) == 0x0c) VGA_SetMode(M_CGA2);
+                        if ((vga.s3.reg_31 & 0x8) != 0)
+                            VGA_SetMode(M_LIN8);
+                        else
+                            VGA_SetMode(M_VGA);
+                    } else if ((vga.gfx.mode & 0x20) != 0)
+                        VGA_SetMode(M_CGA4);
+                    else if ((vga.gfx.miscellaneous & 0x0c) == 0x0c)
+                        VGA_SetMode(M_CGA2);
                     else {
                         // access above 256k?
-                        if ((vga.s3.reg_31 & 0x8) != 0) VGA_SetMode(M_LIN4);
-                        else VGA_SetMode(M_EGA);
+                        if ((vga.s3.reg_31 & 0x8) != 0)
+                            VGA_SetMode(M_LIN4);
+                        else
+                            VGA_SetMode(M_EGA);
                     }
                 } else {
                     VGA_SetMode(M_TEXT);
@@ -175,21 +171,24 @@ public class VGA {
         }
     }
 
-    static public void VGA_StartResize() {
+    public static void VGA_StartResize() {
         VGA_StartResize(50);
     }
 
-    static public void VGA_StartResize(/*Bitu*/int delay /*=50*/) {
+    public static void VGA_StartResize(/*Bitu*/int delay /*=50*/) {
         if (!vga.draw.resizing) {
             vga.draw.resizing = true;
-            if (vga.mode == M_ERROR) delay = 5;
+            if (vga.mode == M_ERROR)
+                delay = 5;
             /* Start a resize after delay (default 50 ms) */
-            if (delay == 0) VGA_draw.VGA_SetupDrawing.call(0);
-            else Pic.PIC_AddEvent(VGA_draw.VGA_SetupDrawing, (float) delay);
+            if (delay == 0)
+                VGA_draw.VGA_SetupDrawing.call(0);
+            else
+                Pic.PIC_AddEvent(VGA_draw.VGA_SetupDrawing, delay);
         }
     }
 
-    public static void VGA_SetClock(/*Bitu*/int which,/*Bitu*/int target) {
+    public static void VGA_SetClock(/*Bitu*/int which, /*Bitu*/int target) {
         if (svga.set_clock != null) {
             svga.set_clock.call(which, target);
             return;
@@ -209,16 +208,18 @@ public class VGA {
         for (r = 0; r <= 3; r++) {
             /*Bitu*/
             int f_vco = target * (1 << r);
-            if (MIN_VCO <= f_vco && f_vco < MAX_VCO) break;
+            if (MIN_VCO <= f_vco && f_vco < MAX_VCO)
+                break;
         }
         for (n = 1; n <= 31; n++) {
-            m = (target * (n + 2) * (1 << r) + (S3_CLOCK_REF / 2)) / S3_CLOCK_REF - 2;
+            m = (target * (n + 2) * (1 << r) + S3_CLOCK_REF / 2) / S3_CLOCK_REF - 2;
             if (0 <= m && m <= 127) {
                 /*Bitu*/
                 int temp_target = S3_CLOCK(m, n, r);
                 /*Bits*/
                 int err = target - temp_target;
-                if (err < 0) err = -err;
+                if (err < 0)
+                    err = -err;
                 if (err < best_err) {
                     best_err = err;
                     best_m = m;
@@ -233,26 +234,23 @@ public class VGA {
         VGA_StartResize();
     }
 
-    public static void VGA_SetCGA2Table(/*Bit8u*/int val0,/*Bit8u*/int val1) {
+    public static void VGA_SetCGA2Table(/*Bit8u*/int val0, /*Bit8u*/int val1) {
         /*Bit8u*/
-        byte[] total = {(byte) val0, (byte) val1};
+        byte[] total = { (byte) val0, (byte) val1 };
         for (/*Bitu*/int i = 0; i < 16; i++) {
-            CGA_2_Table[i] =
-                    (total[(i >> 3) & 1] << 0) | (total[(i >> 2) & 1] << 8) |
-                            (total[(i >> 1) & 1] << 16) | (total[(i >> 0) & 1] << 24);
+            CGA_2_Table[i] = total[i >> 3 & 1] << 0 | total[i >> 2 & 1] << 8 | total[i >> 1 & 1] << 16
+                | total[i >> 0 & 1] << 24;
         }
     }
 
-    public static void VGA_SetCGA4Table(/*Bit8u*/int val0,/*Bit8u*/int val1,/*Bit8u*/int val2,/*Bit8u*/int val3) {
+    public static void VGA_SetCGA4Table(/*Bit8u*/int val0, /*Bit8u*/int val1, /*Bit8u*/int val2, /*Bit8u*/int val3) {
         /*Bit8u*/
-        byte[] total = {(byte) val0, (byte) val1, (byte) val2, (byte) val3};
+        byte[] total = { (byte) val0, (byte) val1, (byte) val2, (byte) val3 };
         for (/*Bitu*/int i = 0; i < 256; i++) {
-            CGA_4_Table[i] =
-                    (total[(i >> 6) & 3] << 0) | (total[(i >> 4) & 3] << 8) |
-                            (total[(i >> 2) & 3] << 16) | (total[(i >> 0) & 3] << 24);
-            CGA_4_HiRes_Table[i] =
-                    (total[((i >> 3) & 1) | ((i >> 6) & 2)] << 0) | (total[((i >> 2) & 1) | ((i >> 5) & 2)] << 8) |
-                            (total[((i >> 1) & 1) | ((i >> 4) & 2)] << 16) | (total[((i >> 0) & 1) | ((i >> 3) & 2)] << 24);
+            CGA_4_Table[i] = total[i >> 6 & 3] << 0 | total[i >> 4 & 3] << 8 | total[i >> 2 & 3] << 16
+                | total[i >> 0 & 3] << 24;
+            CGA_4_HiRes_Table[i] = total[i >> 3 & 1 | i >> 6 & 2] << 0 | total[i >> 2 & 1 | i >> 5 & 2] << 8
+                | total[i >> 1 & 1 | i >> 4 & 2] << 16 | total[i >> 0 & 1 | i >> 3 & 2] << 24;
         }
     }
 
@@ -278,17 +276,17 @@ public class VGA {
         }
     }
 
-    static public void VGA_Init() {
+    public static void VGA_Init() {
         vga = new VGA_Type();
     }
 
     // Vector function prototypes
     public interface tWritePort {
-        void call(/*Bitu*/int reg,/*Bitu*/int val,/*Bitu*/int iolen);
+        void call(/*Bitu*/int reg, /*Bitu*/int val, /*Bitu*/int iolen);
     }
 
     public interface tReadPort {
-        /*Bitu*/int call(/*Bitu*/int reg,/*Bitu*/int iolen);
+        /*Bitu*/int call(/*Bitu*/int reg, /*Bitu*/int iolen);
     }
 
     public interface tFinishSetMode {
@@ -300,7 +298,7 @@ public class VGA {
     }
 
     public interface tSetClock {
-        void call(/*Bitu*/int which,/*Bitu*/int target);
+        void call(/*Bitu*/int which, /*Bitu*/int target);
     }
 
     public interface tGetClock {
@@ -326,17 +324,17 @@ public class VGA {
         /* Video drawing */
         public /*Bitu*/ int display_start;
         public /*Bitu*/ int real_start;
-        public boolean retrace;                    /* A retrace is active */
+        public boolean retrace; /* A retrace is active */
         public /*Bitu*/ int scan_len;
         public /*Bitu*/ int cursor_start;
 
         /* Some other screen related variables */
         public /*Bitu*/ int line_compare;
-        public boolean chained;                    /* Enable or Disabled Chain 4 Mode */
+        public boolean chained; /* Enable or Disabled Chain 4 Mode */
         public boolean compatible_chain4;
 
         /* Pixel Scrolling */
-        public /*Bit8u*/ short pel_panning;                /* Amount of pixels to skip when starting horizontal line */
+        public /*Bit8u*/ short pel_panning; /* Amount of pixels to skip when starting horizontal line */
         public /*Bit8u*/ short hlines_skip;
         public /*Bit8u*/ short bytes_skip;
         public /*Bit8u*/ short addr_shift;
@@ -361,9 +359,9 @@ public class VGA {
     }
 
     static final class Drawmode {
-        static final public int PART = 0;
-        static final public int LINE = 1;
-        static final public int EGALINE = 2;
+        public static final int PART = 0;
+        public static final int LINE = 1;
+        public static final int EGALINE = 2;
     }
 
     public static class VGA_Draw {
@@ -406,10 +404,10 @@ public class VGA {
 
         public static class Delay {
             double framestart;
-            double vrstart, vrend;        // V-retrace
-            double hrstart, hrend;        // H-retrace
-            double hblkstart, hblkend;    // H-blanking
-            double vblkstart, vblkend;    // V-Blanking
+            double vrstart, vrend; // V-retrace
+            double hrstart, hrend; // H-retrace
+            double hblkstart, hblkend; // H-blanking
+            double vblkstart, vblkend; // V-Blanking
             double vdend, vtotal;
             double hdend, htotal;
             double parts;
@@ -596,7 +594,7 @@ public class VGA {
     }
 
     public static class VGA_Dac {
-        public /*Bit8u*/ short bits;                        /* DAC bits, usually 6 or 8 */
+        public /*Bit8u*/ short bits; /* DAC bits, usually 6 or 8 */
         public /*Bit8u*/ short pel_mask;
         public /*Bit8u*/ short pel_index;
         public /*Bit8u*/ short state;
@@ -606,6 +604,7 @@ public class VGA {
         public /*Bit8u*/ short[] combine = new short[16];
         public RGBEntry[] rgb = new RGBEntry[0x100];
         public /*Bit16u*/ int[] xlat16 = new int[256];
+
         public VGA_Dac() {
             for (int i = 0; i < rgb.length; i++)
                 rgb[i] = new RGBEntry();
@@ -630,11 +629,11 @@ public class VGA {
                 case 0:
                     return (short) (d & 0xFF);
                 case 1:
-                    return (short) ((d >> 8) & 0xFF);
+                    return (short) (d >> 8 & 0xFF);
                 case 2:
-                    return (short) ((d >> 16) & 0xFF);
+                    return (short) (d >> 16 & 0xFF);
                 case 3:
-                    return (short) ((d >> 24) & 0xFF);
+                    return (short) (d >> 24 & 0xFF);
             }
             return 0;
         }
@@ -655,15 +654,15 @@ public class VGA {
         public /*Bit32u*/ int lastAddress;
     }
 
-    static public class VGA_LFB {
+    public static class VGA_LFB {
         public /*Bit32u*/ int page;
         public /*Bit32u*/ int addr;
         public /*Bit32u*/ int mask;
         public Paging.PageHandler handler;
     }
 
-    static public class VGA_Type {
-        public int mode;                                /* The mode the vga system is in */
+    public static class VGA_Type {
+        public int mode; /* The mode the vga system is in */
         public VGA_Draw draw = new VGA_Draw();
         public VGA_Config config = new VGA_Config();
         public VGA_Internal internal = new VGA_Internal();
@@ -681,7 +680,7 @@ public class VGA {
         public VGA_OTHER other = new VGA_OTHER();
         public VGA_Memory mem = new VGA_Memory();
         public /*Bit32u*/ int vmemwrap; /* this is assumed to be power of 2 */
-        public /*Bit8u*/ int fastmem;  /* memory for fast (usually 16-color) rendering, always twice as big as vmemsize */
+        public /*Bit8u*/ int fastmem; /* memory for fast (usually 16-color) rendering, always twice as big as vmemsize */
         public /*Bit8u*/ int fastmem_orgptr;
         public /*Bit32u*/ int vmemsize;
         public VGA_Changes changes;

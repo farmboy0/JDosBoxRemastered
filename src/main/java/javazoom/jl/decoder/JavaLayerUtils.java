@@ -20,17 +20,23 @@
 
 package javazoom.jl.decoder;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InvalidClassException;
+import java.io.InvalidObjectException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Array;
 
 /**
- * The JavaLayerUtils class is not strictly part of the JavaLayer API.
- * It serves to provide useful methods and system-wide hooks.
+ * The JavaLayerUtils class is not strictly part of the JavaLayer API. It serves
+ * to provide useful methods and system-wide hooks.
  *
  * @author MDM
  */
 public class JavaLayerUtils {
-    static private JavaLayerHook hook = null;
+    private static JavaLayerHook hook = null;
 
     /**
      * Deserializes the object contained in the given input stream.
@@ -38,8 +44,7 @@ public class JavaLayerUtils {
      * @param in  The input stream to deserialize an object from.
      * @param cls The expected class of the deserialized object.
      */
-    static public Object deserialize(InputStream in, Class cls)
-            throws IOException {
+    public static Object deserialize(InputStream in, Class cls) throws IOException {
         if (cls == null)
             throw new NullPointerException("cls");
 
@@ -52,20 +57,21 @@ public class JavaLayerUtils {
     }
 
     /**
-     * Deserializes an object from the given <code>InputStream</code>.
-     * The deserialization is delegated to an <code>
+     * Deserializes an object from the given <code>InputStream</code>. The
+     * deserialization is delegated to an <code>
      * ObjectInputStream</code> instance.
      *
-     * @param in The <code>InputStream</code> to deserialize an object
-     *           from.
+     * @param in The <code>InputStream</code> to deserialize an object from.
+     *
      * @return The object deserialized from the stream.
-     * @throws IOException is thrown if there was a problem reading
-     *                     the underlying stream, or an object could not be deserialized
-     *                     from the stream.
+     *
+     * @throws IOException is thrown if there was a problem reading the underlying
+     *                     stream, or an object could not be deserialized from the
+     *                     stream.
+     *
      * @see java.io.ObjectInputStream
      */
-    static public Object deserialize(InputStream in)
-            throws IOException {
+    public static Object deserialize(InputStream in) throws IOException {
         if (in == null)
             throw new NullPointerException("in");
 
@@ -85,15 +91,12 @@ public class JavaLayerUtils {
     /**
      * Deserializes an array from a given <code>InputStream</code>.
      *
-     * @param in       The <code>InputStream</code> to
-     *                 deserialize an object from.
-     * @param elemType The class denoting the type of the array
-     *                 elements.
-     * @param length   The expected length of the array, or -1 if
-     *                 any length is expected.
+     * @param in       The <code>InputStream</code> to deserialize an object from.
+     * @param elemType The class denoting the type of the array elements.
+     * @param length   The expected length of the array, or -1 if any length is
+     *                 expected.
      */
-    static public Object deserializeArray(InputStream in, Class elemType, int length)
-            throws IOException {
+    public static Object deserializeArray(InputStream in, Class elemType, int length) throws IOException {
         if (elemType == null)
             throw new NullPointerException("elemType");
 
@@ -103,7 +106,6 @@ public class JavaLayerUtils {
         Object obj = deserialize(in);
 
         Class cls = obj.getClass();
-
 
         if (!cls.isArray())
             throw new InvalidObjectException("object is not an array");
@@ -121,19 +123,15 @@ public class JavaLayerUtils {
         return obj;
     }
 
-    static public Object deserializeArrayResource(String name, Class elemType, int length)
-            throws IOException {
+    public static Object deserializeArrayResource(String name, Class elemType, int length) throws IOException {
         InputStream str = getResourceAsStream(name);
         if (str == null)
             throw new IOException("unable to load resource '" + name + "'");
 
-        Object obj = deserializeArray(str, elemType, length);
-
-        return obj;
+        return deserializeArray(str, elemType, length);
     }
 
-    static public void serialize(OutputStream out, Object obj)
-            throws IOException {
+    public static void serialize(OutputStream out, Object obj) throws IOException {
         if (out == null)
             throw new NullPointerException("out");
 
@@ -159,12 +157,12 @@ public class JavaLayerUtils {
     /**
      * Retrieves an InputStream for a named resource.
      *
-     * @param name The name of the resource. This must be a simple
-     *             name, and not a qualified package name.
-     * @return The InputStream for the named resource, or null if
-     * the resource has not been found. If a hook has been
-     * provided, its getResourceAsStream() method is called
-     * to retrieve the resource.
+     * @param name The name of the resource. This must be a simple name, and not a
+     *             qualified package name.
+     *
+     * @return The InputStream for the named resource, or null if the resource has
+     *         not been found. If a hook has been provided, its
+     *         getResourceAsStream() method is called to retrieve the resource.
      */
     static synchronized public InputStream getResourceAsStream(String name) {
         InputStream is = null;

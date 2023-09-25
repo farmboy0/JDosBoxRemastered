@@ -1,15 +1,15 @@
 package jdos.win.kernel;
 
-import jdos.hardware.Memory;
-import jdos.win.Win;
-
 import java.util.ArrayList;
 import java.util.Hashtable;
+
+import jdos.hardware.Memory;
+import jdos.win.Win;
 
 // Based heavily on James Molloy's work at http://www.jamesmolloy.co.uk/tutorial_html/7.-The%20Heap.html
 
 public class KernelHeap {
-    static private final int SMALLEST_SIZE_FOR_SPLIT = 4;
+    private static final int SMALLEST_SIZE_FOR_SPLIT = 4;
 
     private final boolean kernel;
     private final boolean readonly;
@@ -23,7 +23,8 @@ public class KernelHeap {
     private final Hashtable usedMemory = new Hashtable();
     private boolean inExpand = false;
 
-    public KernelHeap(KernelMemory memory, int directory, long start, long end, long max, boolean kernel, boolean readonly) {
+    public KernelHeap(KernelMemory memory, int directory, long start, long end, long max, boolean kernel,
+        boolean readonly) {
         this.memory = memory;
         this.directory = directory;
         this.kernel = kernel;
@@ -54,9 +55,12 @@ public class KernelHeap {
         while (lo <= hi) {
             // Key is in a[lo..hi] or not present.
             int mid = lo + (hi - lo) / 2;
-            if (key < ((HeapItem) itemsBySize.get(mid)).size) hi = mid - 1;
-            else if (key > ((HeapItem) itemsBySize.get(mid)).size) lo = mid + 1;
-            else return mid;
+            if (key < ((HeapItem) itemsBySize.get(mid)).size)
+                hi = mid - 1;
+            else if (key > ((HeapItem) itemsBySize.get(mid)).size)
+                lo = mid + 1;
+            else
+                return mid;
         }
         HeapItem item = getLargestItem();
         if (item == null || key > item.size)
@@ -70,9 +74,12 @@ public class KernelHeap {
         while (lo <= hi) {
             // Key is in a[lo..hi] or not present.
             int mid = lo + (hi - lo) / 2;
-            if (key < ((HeapItem) itemsByAddress.get(mid)).address) hi = mid - 1;
-            else if (key > ((HeapItem) itemsByAddress.get(mid)).address) lo = mid + 1;
-            else return mid;
+            if (key < ((HeapItem) itemsByAddress.get(mid)).address)
+                hi = mid - 1;
+            else if (key > ((HeapItem) itemsByAddress.get(mid)).address)
+                lo = mid + 1;
+            else
+                return mid;
         }
         HeapItem item = getLastItem();
         if (item == null || key > item.address)
@@ -121,7 +128,7 @@ public class KernelHeap {
             return false;
         }
         long old_end = end;
-        long address = end & 0xFFFFFFFFl;
+        long address = end & 0xFFFFFFFFL;
         long new_end = address + size;
         int new_size = 0;
         while (address < new_end) {
@@ -136,14 +143,14 @@ public class KernelHeap {
             last.size += new_size;
             insertItem(last);
         } else {
-            insertItem(new HeapItem(old_end & 0xFFFFFFFFl, new_size));
+            insertItem(new HeapItem(old_end & 0xFFFFFFFFL, new_size));
         }
         return true;
     }
 
     private void dump() {
-        for (int i = 0; i < itemsBySize.size(); i++) {
-            HeapItem item = (HeapItem) itemsBySize.get(i);
+        for (Object element : itemsBySize) {
+            HeapItem item = (HeapItem) element;
             System.out.println(item.size + "@" + Long.toString(item.address, 16));
         }
     }
@@ -163,7 +170,7 @@ public class KernelHeap {
     }
 
     public int alloc(int size, boolean pageAlign) {
-        size = (size + 3) & ~3;
+        size = size + 3 & ~3;
         int index = findIndexBySize(size);
         if (index < 0) {
             return expandAndAlloc(size, pageAlign);
@@ -205,15 +212,15 @@ public class KernelHeap {
             insertItem(newItem);
             item.size -= newSize;
         }
-        usedMemory.put(new Long(item.address), item);
+        usedMemory.put(Long.valueOf(item.address), item);
         return (int) item.address;
     }
 
     public void free(int p1) {
-        long p = p1 & 0xFFFFFFFFl;
+        long p = p1 & 0xFFFFFFFFL;
         if (p == 0)
             return;
-        HeapItem item = (HeapItem) usedMemory.remove(new Long(p));
+        HeapItem item = (HeapItem) usedMemory.remove(Long.valueOf(p));
         if (item == null) {
             System.out.println("Heap is corrupt, tried to free 0x" + Long.toString(p, 16));
             System.exit(0);
@@ -253,7 +260,7 @@ public class KernelHeap {
     }
 
     public int size(int address) {
-        HeapItem item = (HeapItem) usedMemory.get(new Long(address));
+        HeapItem item = (HeapItem) usedMemory.get(Long.valueOf(address));
         if (item != null)
             return item.size;
         return 0;
@@ -282,6 +289,7 @@ public class KernelHeap {
             this.size = size;
         }
 
+        @Override
         public int compareTo(Object o) {
             return ((HeapItem) o).size - size;
         }

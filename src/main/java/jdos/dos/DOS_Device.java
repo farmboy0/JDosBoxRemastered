@@ -15,31 +15,36 @@ public class DOS_Device extends DOS_File {
     public DOS_Device() {
     }
 
-    public boolean Read(byte[] data,/*Bit16u*/IntRef size) {
+    @Override
+    public boolean Read(byte[] data, /*Bit16u*/IntRef size) {
         return Dos_devices.Devices[devnum].Read(data, size);
     }
 
-    public boolean Write(byte[] data,/*Bit16u*/IntRef size) {
+    @Override
+    public boolean Write(byte[] data, /*Bit16u*/IntRef size) {
         return Dos_devices.Devices[devnum].Write(data, size);
     }
 
-    public boolean Seek(/*Bit32u*/LongRef pos,/*Bit32u*/int type) {
+    @Override
+    public boolean Seek(/*Bit32u*/LongRef pos, /*Bit32u*/int type) {
         return Dos_devices.Devices[devnum].Seek(pos, type);
     }
 
+    @Override
     public boolean Close() {
         return Dos_devices.Devices[devnum].Close();
     }
 
+    @Override
     public /*Bit16u*/int GetInformation() {
         return Dos_devices.Devices[devnum].GetInformation();
     }
 
-    public boolean ReadFromControlChannel(/*PhysPt*/int bufptr,/*Bit16u*/int size,/*Bit16u*/IntRef retcode) {
+    public boolean ReadFromControlChannel(/*PhysPt*/int bufptr, /*Bit16u*/int size, /*Bit16u*/IntRef retcode) {
         return Dos_devices.Devices[devnum].ReadFromControlChannel(bufptr, size, retcode);
     }
 
-    public boolean WriteToControlChannel(/*PhysPt*/int bufptr,/*Bit16u*/int size,/*Bit16u*/IntRef retcode) {
+    public boolean WriteToControlChannel(/*PhysPt*/int bufptr, /*Bit16u*/int size, /*Bit16u*/IntRef retcode) {
         return Dos_devices.Devices[devnum].WriteToControlChannel(bufptr, size, retcode);
     }
 

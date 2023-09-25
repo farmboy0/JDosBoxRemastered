@@ -1,10 +1,9 @@
 package jdos.win.builtin.gdi32;
 
+import java.util.Vector;
 
 import jdos.win.system.WinObject;
 import jdos.win.system.WinRect;
-
-import java.util.Vector;
 
 public class WinRegion extends WinGDI {
     /**
@@ -13,178 +12,168 @@ public class WinRegion extends WinGDI {
      * <p/>
      * Handle an overlapping band for REGION_Intersect.
      * <p/>
-     * Results:
-     * None.
+     * Results: None.
      * <p/>
-     * Side Effects:
-     * Rectangles may be added to the region.
+     * Side Effects: Rectangles may be added to the region.
      */
-    static private final Overlapped intersect0 = new Overlapped() {
-        public boolean call(WinRegion pReg, Vector reg1, int r1, int r1End, Vector reg2, int r2, int r2End, int top, int bottom) {
-            int left, right;
+    private static final Overlapped intersect0 = (pReg, reg1, r1, r1End, reg2, r2, r2End, top, bottom) -> {
+        int left, right;
 
-            while ((r1 != r1End) && (r2 != r2End)) {
-                left = Math.max(left(reg1, r1), left(reg2, r2));
-                right = Math.min(right(reg1, r1), right(reg2, r2));
+        while (r1 != r1End && r2 != r2End) {
+            left = Math.max(left(reg1, r1), left(reg2, r2));
+            right = Math.min(right(reg1, r1), right(reg2, r2));
 
-                /*
-                 * If there's any overlap between the two rectangles, add that
-                 * overlap to the new region.
-                 * There's no need to check for subsumption because the only way
-                 * such a need could arise is if some region has two rectangles
-                 * right next to each other. Since that should never happen...
-                 */
-                if (left < right) {
-                    pReg.rects.add(new WinRect(left, top, right, bottom));
-                }
-
-                /*
-                 * Need to advance the pointers. Shift the one that extends
-                 * to the right the least, since the other still has a chance to
-                 * overlap with that region's next rectangle, if you see what I mean.
-                 */
-                if (right(reg1, r1) < right(reg2, r2)) {
-                    r1++;
-                } else if (right(reg2, r2) < right(reg1, r1)) {
-                    r2++;
-                } else {
-                    r1++;
-                    r2++;
-                }
+            /*
+             * If there's any overlap between the two rectangles, add that
+             * overlap to the new region.
+             * There's no need to check for subsumption because the only way
+             * such a need could arise is if some region has two rectangles
+             * right next to each other. Since that should never happen...
+             */
+            if (left < right) {
+                pReg.rects.add(new WinRect(left, top, right, bottom));
             }
-            return true;
+
+            /*
+             * Need to advance the pointers. Shift the one that extends
+             * to the right the least, since the other still has a chance to
+             * overlap with that region's next rectangle, if you see what I mean.
+             */
+            if (right(reg1, r1) < right(reg2, r2)) {
+                r1++;
+            } else if (right(reg2, r2) < right(reg1, r1)) {
+                r2++;
+            } else {
+                r1++;
+                r2++;
+            }
         }
+        return true;
     };
     /**
      * ********************************************************************
      * REGION_UnionNonO
      * <p/>
-     * Handle a non-overlapping band for the union operation. Just
-     * Adds the rectangles into the region. Doesn't have to check for
-     * subsumption or anything.
+     * Handle a non-overlapping band for the union operation. Just Adds the
+     * rectangles into the region. Doesn't have to check for subsumption or
+     * anything.
      * <p/>
-     * Results:
-     * None.
+     * Results: None.
      * <p/>
-     * Side Effects:
-     * pReg->numRects is incremented and the final rectangles overwritten
-     * with the rectangles we're passed.
+     * Side Effects: pReg->numRects is incremented and the final rectangles
+     * overwritten with the rectangles we're passed.
      */
-    static private final NonOverlapped unionNon0 = new NonOverlapped() {
-        public boolean call(WinRegion pReg, Vector reg, int r, int rEnd, int top, int bottom) {
-            while (r != rEnd) {
-                pReg.rects.add(new WinRect(left(reg, r), top, right(reg, r), bottom));
-                r++;
-            }
-            return true;
+    private static final NonOverlapped unionNon0 = (pReg, reg, r, rEnd, top, bottom) -> {
+        while (r != rEnd) {
+            pReg.rects.add(new WinRect(left(reg, r), top, right(reg, r), bottom));
+            r++;
         }
+        return true;
     };
-    static private final Overlapped union0 = new Overlapped() {
-        public boolean call(WinRegion pReg, Vector reg1, int r1, int r1End, Vector reg2, int r2, int r2End, int top, int bottom) {
-            while ((r1 != r1End) && (r2 != r2End)) {
-                if (left(reg1, r1) < left(reg2, r2)) {
-                    MERGERECT(pReg, reg1, r1++, top, bottom);
-                } else {
-                    MERGERECT(pReg, reg2, r2++, top, bottom);
-                }
-            }
-
-            if (r1 != r1End) {
-                do {
-                    MERGERECT(pReg, reg1, r1++, top, bottom);
-                } while (r1 != r1End);
+    private static final Overlapped union0 = (pReg, reg1, r1, r1End, reg2, r2, r2End, top, bottom) -> {
+        while (r1 != r1End && r2 != r2End) {
+            if (left(reg1, r1) < left(reg2, r2)) {
+                MERGERECT(pReg, reg1, r1++, top, bottom);
             } else {
-                while (r2 != r2End) {
-                    MERGERECT(pReg, reg2, r2++, top, bottom);
-                }
+                MERGERECT(pReg, reg2, r2++, top, bottom);
             }
-            return true;
         }
+
+        if (r1 != r1End) {
+            do {
+                MERGERECT(pReg, reg1, r1++, top, bottom);
+            } while (r1 != r1End);
+        } else {
+            while (r2 != r2End) {
+                MERGERECT(pReg, reg2, r2++, top, bottom);
+            }
+        }
+        return true;
     };
-    static private final NonOverlapped subtract_non_overlapping = new NonOverlapped() {
-        public boolean call(WinRegion rg, Vector reg, int r, int rEnd, int top, int bottom) {
-            while (r != rEnd) {
-                WinRect rect = new WinRect();
-                rg.rects.add(rect);
-                rect.left = left(reg, r);
-                rect.top = top;
-                rect.right = right(reg, r);
-                rect.bottom = bottom;
-                r++;
-            }
-            return true;
+    private static final NonOverlapped subtract_non_overlapping = (rg, reg, r, rEnd, top, bottom) -> {
+        while (r != rEnd) {
+            WinRect rect = new WinRect();
+            rg.rects.add(rect);
+            rect.left = left(reg, r);
+            rect.top = top;
+            rect.right = right(reg, r);
+            rect.bottom = bottom;
+            r++;
         }
+        return true;
     };
     /* handle an overlapping band for subtract_region */
-    static private final Overlapped subtract_overlapping = new Overlapped() {
-        public boolean call(WinRegion rg, Vector reg1, int r1, int r1End, Vector reg2, int r2, int r2End, int top, int bottom) {
-            int left = left(reg1, r1);
+    private static final Overlapped subtract_overlapping = (rg, reg1, r1, r1End, reg2, r2, r2End, top, bottom) -> {
+        int left = left(reg1, r1);
 
-            while ((r1 != r1End) && (r2 != r2End)) {
-                if (right(reg2, r2) <= left) r2++;
-                else if (left(reg2, r2) <= left) {
-                    left = right(reg2, r2);
-                    if (left >= right(reg1, r1)) {
-                        r1++;
-                        if (r1 != r1End)
-                            left = left(reg1, r1);
-                    } else r2++;
-                } else if (left(reg2, r2) < right(reg1, r1)) {
-                    WinRect rect = new WinRect();
-                    rg.rects.add(rect);
-                    rect.left = left;
-                    rect.top = top;
-                    rect.right = left(reg2, r2);
-                    rect.bottom = bottom;
-                    left = right(reg2, r2);
-                    if (left >= right(reg1, r1)) {
-                        r1++;
-                        if (r1 != r1End)
-                            left = left(reg1, r1);
-                    } else r2++;
-                } else {
-                    if (right(reg1, r1) > left) {
-                        WinRect rect = new WinRect();
-                        rg.rects.add(rect);
-                        rect.left = left;
-                        rect.top = top;
-                        rect.right = right(reg1, r1);
-                        rect.bottom = bottom;
-                    }
+        while (r1 != r1End && r2 != r2End) {
+            if (right(reg2, r2) <= left)
+                r2++;
+            else if (left(reg2, r2) <= left) {
+                left = right(reg2, r2);
+                if (left >= right(reg1, r1)) {
                     r1++;
-                    left = left(reg1, r1);
-                }
-            }
-
-            while (r1 != r1End) {
+                    if (r1 != r1End)
+                        left = left(reg1, r1);
+                } else
+                    r2++;
+            } else if (left(reg2, r2) < right(reg1, r1)) {
                 WinRect rect = new WinRect();
                 rg.rects.add(rect);
                 rect.left = left;
                 rect.top = top;
-                rect.right = right(reg1, r1);
+                rect.right = left(reg2, r2);
                 rect.bottom = bottom;
+                left = right(reg2, r2);
+                if (left >= right(reg1, r1)) {
+                    r1++;
+                    if (r1 != r1End)
+                        left = left(reg1, r1);
+                } else
+                    r2++;
+            } else {
+                if (right(reg1, r1) > left) {
+                    WinRect rect = new WinRect();
+                    rg.rects.add(rect);
+                    rect.left = left;
+                    rect.top = top;
+                    rect.right = right(reg1, r1);
+                    rect.bottom = bottom;
+                }
                 r1++;
-                if (r1 != r1End) left = left(reg1, r1);
+                left = left(reg1, r1);
             }
-            return true;
         }
+
+        while (r1 != r1End) {
+            WinRect rect = new WinRect();
+            rg.rects.add(rect);
+            rect.left = left;
+            rect.top = top;
+            rect.right = right(reg1, r1);
+            rect.bottom = bottom;
+            r1++;
+            if (r1 != r1End)
+                left = left(reg1, r1);
+        }
+        return true;
     };
-    public Vector<WinRect> rects = new Vector<WinRect>();
+    public Vector<WinRect> rects = new Vector<>();
     public WinRect extents = new WinRect();
 
     private WinRegion(int id) {
         super(id);
     }
 
-    static public WinRegion create() {
+    public static WinRegion create() {
         return new WinRegion(nextObjectId());
     }
 
-    static public WinRegion createNoHandle() {
+    public static WinRegion createNoHandle() {
         return new WinRegion(0);
     }
 
-    static public WinRegion get(int handle) {
+    public static WinRegion get(int handle) {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinRegion))
             return null;
@@ -192,7 +181,7 @@ public class WinRegion extends WinGDI {
     }
 
     // INT WINAPI GetRgnBox( HRGN hrgn, LPRECT rect )
-    static public int GetRgnBox(int hrgn, int pRect) {
+    public static int GetRgnBox(int hrgn, int pRect) {
         WinRegion obj = WinRegion.get(hrgn);
         if (obj != null) {
             obj.extents.write(pRect);
@@ -202,19 +191,19 @@ public class WinRegion extends WinGDI {
     }
 
     // HRGN WINAPI CreateRectRgn(INT left, INT top, INT right, INT bottom)
-    static public int CreateRectRgn(int left, int top, int right, int bottom) {
+    public static int CreateRectRgn(int left, int top, int right, int bottom) {
         WinRegion rgn = WinRegion.create();
         rgn.rects.add(new WinRect(left, top, right, bottom));
         return rgn.handle;
     }
 
     // HRGN WINAPI CreateRectRgnIndirect( const RECT* rect )
-    static public int CreateRectRgnIndirect(WinRect rect) {
+    public static int CreateRectRgnIndirect(WinRect rect) {
         return CreateRectRgn(rect.left, rect.top, rect.right, rect.bottom);
     }
 
     // INT WINAPI CombineRgn(HRGN hDest, HRGN hSrc1, HRGN hSrc2, INT mode)
-    static public int CombineRgn(int hDest, int hSrc1, int hSrc2, int mode) {
+    public static int CombineRgn(int hDest, int hSrc1, int hSrc2, int mode) {
         WinRegion destObj = WinRegion.get(hDest);
         WinRegion src1Obj = WinRegion.get(hSrc1);
 
@@ -257,11 +246,12 @@ public class WinRegion extends WinGDI {
      * ********************************************************************
      * REGION_IntersectRegion
      */
-    static public boolean intersect(WinRegion newReg, WinRegion reg1, WinRegion reg2) {
+    public static boolean intersect(WinRegion newReg, WinRegion reg1, WinRegion reg2) {
         /* check for trivial reject */
         if (reg1.rects.size() == 0 || reg2.rects.size() == 0 || !EXTENTCHECK(reg1.extents, reg2.extents))
             newReg.rects.clear();
-        else if (!region_op(newReg, reg1, reg2, intersect0, null, null)) return false;
+        else if (!region_op(newReg, reg1, reg2, intersect0, null, null))
+            return false;
 
         /*
          * Can't alter newReg's extents before we call miRegionOp because
@@ -278,7 +268,7 @@ public class WinRegion extends WinGDI {
      * ********************************************************************
      * REGION_UnionRegion
      */
-    static public boolean union(WinRegion newReg, WinRegion reg1, WinRegion reg2) {
+    public static boolean union(WinRegion newReg, WinRegion reg1, WinRegion reg2) {
         /*  checks all the simple cases */
 
         /*
@@ -302,8 +292,8 @@ public class WinRegion extends WinGDI {
         /*
          * Region 1 completely subsumes region 2
          */
-        if (reg1.rects.size() == 1 && reg1.extents.left <= reg2.extents.left && reg1.extents.top <= reg2.extents.top &&
-                reg1.extents.right >= reg2.extents.right && reg1.extents.bottom >= reg2.extents.bottom) {
+        if (reg1.rects.size() == 1 && reg1.extents.left <= reg2.extents.left && reg1.extents.top <= reg2.extents.top
+            && reg1.extents.right >= reg2.extents.right && reg1.extents.bottom >= reg2.extents.bottom) {
             if (newReg != reg1)
                 newReg.copy(reg1);
             return true;
@@ -312,31 +302,33 @@ public class WinRegion extends WinGDI {
         /*
          * Region 2 completely subsumes region 1
          */
-        if (reg2.rects.size() == 1 && reg2.extents.left <= reg1.extents.left && reg2.extents.top <= reg1.extents.top &&
-                reg2.extents.right >= reg1.extents.right && reg2.extents.bottom >= reg1.extents.bottom) {
+        if (reg2.rects.size() == 1 && reg2.extents.left <= reg1.extents.left && reg2.extents.top <= reg1.extents.top
+            && reg2.extents.right >= reg1.extents.right && reg2.extents.bottom >= reg1.extents.bottom) {
             if (newReg != reg2)
                 newReg.copy(reg2);
             return true;
         }
 
-        if (!region_op(newReg, reg1, reg2, union0, unionNon0, unionNon0)) return false;
+        if (!region_op(newReg, reg1, reg2, union0, unionNon0, unionNon0))
+            return false;
         newReg.calculateExtents();
         return true;
     }
 
-    static public boolean xor(WinRegion dr, WinRegion sra, WinRegion srb) {
+    public static boolean xor(WinRegion dr, WinRegion sra, WinRegion srb) {
         WinRegion tra = WinRegion.createNoHandle();
         WinRegion trb = WinRegion.createNoHandle();
 
         return subtract(tra, sra, srb) && subtract(trb, srb, sra) && union(dr, tra, trb);
     }
 
-    static public boolean subtract(WinRegion dst, WinRegion src1, WinRegion src2) {
+    public static boolean subtract(WinRegion dst, WinRegion src1, WinRegion src2) {
         if (src1.rects.size() == 0 || src2.rects.size() == 0 || !EXTENTCHECK(src1.extents, src2.extents)) {
             dst.copy(src1);
             return true;
         }
-        if (!region_op(dst, src1, src2, subtract_overlapping, subtract_non_overlapping, null)) return false;
+        if (!region_op(dst, src1, src2, subtract_overlapping, subtract_non_overlapping, null))
+            return false;
         dst.calculateExtents();
         return true;
     }
@@ -361,19 +353,18 @@ public class WinRegion extends WinGDI {
      * ********************************************************************
      * REGION_UnionO
      * <p/>
-     * Handle an overlapping band for the union operation. Picks the
-     * left-most rectangle each time and merges it into the region.
+     * Handle an overlapping band for the union operation. Picks the left-most
+     * rectangle each time and merges it into the region.
      * <p/>
-     * Results:
-     * None.
+     * Results: None.
      * <p/>
-     * Side Effects:
-     * Rectangles are overwritten in pReg->rects and pReg->numRects will
-     * be changed.
+     * Side Effects: Rectangles are overwritten in pReg->rects and pReg->numRects
+     * will be changed.
      */
-    static private void MERGERECT(WinRegion pReg, Vector reg, int r, int top, int bottom) {
+    private static void MERGERECT(WinRegion pReg, Vector reg, int r, int top, int bottom) {
         int last = pReg.rects.size() - 1;
-        if (pReg.rects.size() != 0 && top(pReg.rects, last) == top && bottom(pReg.rects, last) == bottom && right(pReg.rects, last) >= left(reg, r)) {
+        if (pReg.rects.size() != 0 && top(pReg.rects, last) == top && bottom(pReg.rects, last) == bottom
+            && right(pReg.rects, last) >= left(reg, r)) {
             if (right(pReg.rects, last) < right(reg, r))
                 pReg.rects.elementAt(last).right = right(reg, r);
         } else {
@@ -383,7 +374,8 @@ public class WinRegion extends WinGDI {
 
     /* apply an operation to two regions */
     /* check the GDI version of the code for explanations */
-    static public boolean region_op(WinRegion newReg, WinRegion reg1, WinRegion reg2, Overlapped overlap_func, NonOverlapped non_overlap1_func, NonOverlapped non_overlap2_func) {
+    public static boolean region_op(WinRegion newReg, WinRegion reg1, WinRegion reg2, Overlapped overlap_func,
+        NonOverlapped non_overlap1_func, NonOverlapped non_overlap2_func) {
         int ybot, ytop, top, bot, prevBand, curBand;
         int r1BandEnd;
         int r2BandEnd;
@@ -406,24 +398,28 @@ public class WinRegion extends WinGDI {
             curBand = newReg.rects.size();
 
             r1BandEnd = r1;
-            while ((r1BandEnd != r1End) && (reg1.getTop(r1BandEnd) == reg1.getTop(r1))) r1BandEnd++;
+            while (r1BandEnd != r1End && reg1.getTop(r1BandEnd) == reg1.getTop(r1))
+                r1BandEnd++;
 
             r2BandEnd = r2;
-            while ((r2BandEnd != r2End) && (reg2.getTop(r2BandEnd) == reg2.getTop(r2))) r2BandEnd++;
+            while (r2BandEnd != r2End && reg2.getTop(r2BandEnd) == reg2.getTop(r2))
+                r2BandEnd++;
 
             if (reg1.getTop(r1) < reg2.getTop(r2)) {
                 top = Math.max(reg1.getTop(r1), ybot);
                 bot = Math.min(reg1.getBottom(r1), reg2.getTop(r2));
-                if ((top != bot) && non_overlap1_func != null) {
-                    if (!non_overlap1_func.call(newReg, reg1.rects, r1, r1BandEnd, top, bot)) return false;
+                if (top != bot && non_overlap1_func != null) {
+                    if (!non_overlap1_func.call(newReg, reg1.rects, r1, r1BandEnd, top, bot))
+                        return false;
                 }
                 ytop = reg2.getTop(r2);
             } else if (reg2.getTop(r2) < reg1.getTop(r1)) {
                 top = Math.max(reg2.getTop(r2), ybot);
                 bot = Math.min(reg2.getBottom(r2), reg1.getTop(r1));
 
-                if ((top != bot) && non_overlap2_func != null) {
-                    if (!non_overlap2_func.call(newReg, reg2.rects, r2, r2BandEnd, top, bot)) return false;
+                if (top != bot && non_overlap2_func != null) {
+                    if (!non_overlap2_func.call(newReg, reg2.rects, r2, r2BandEnd, top, bot))
+                        return false;
                 }
 
                 ytop = reg1.getTop(r1);
@@ -444,39 +440,46 @@ public class WinRegion extends WinGDI {
             if (newReg.rects.size() != curBand)
                 prevBand = coalesce_region(newReg, prevBand, curBand);
 
-            if (reg1.getBottom(r1) == ybot) r1 = r1BandEnd;
-            if (reg2.getBottom(r2) == ybot) r2 = r2BandEnd;
-        } while ((r1 != r1End) && (r2 != r2End));
+            if (reg1.getBottom(r1) == ybot)
+                r1 = r1BandEnd;
+            if (reg2.getBottom(r2) == ybot)
+                r2 = r2BandEnd;
+        } while (r1 != r1End && r2 != r2End);
 
         curBand = newReg.rects.size();
         if (r1 != r1End) {
             if (non_overlap1_func != null) {
                 do {
                     r1BandEnd = r1;
-                    while ((r1BandEnd < r1End) && (reg1.getTop(r1BandEnd) == reg1.getTop(r1))) r1BandEnd++;
-                    if (!non_overlap1_func.call(newReg, reg1.rects, r1, r1BandEnd, Math.max(reg1.getTop(r1), ybot), reg1.getBottom(r1)))
+                    while (r1BandEnd < r1End && reg1.getTop(r1BandEnd) == reg1.getTop(r1))
+                        r1BandEnd++;
+                    if (!non_overlap1_func.call(newReg, reg1.rects, r1, r1BandEnd, Math.max(reg1.getTop(r1), ybot),
+                        reg1.getBottom(r1)))
                         return false;
                     r1 = r1BandEnd;
                 } while (r1 != r1End);
             }
-        } else if ((r2 != r2End) && non_overlap2_func != null) {
+        } else if (r2 != r2End && non_overlap2_func != null) {
             do {
                 r2BandEnd = r2;
-                while ((r2BandEnd < r2End) && (reg2.getTop(r2BandEnd) == reg2.getTop(r2))) r2BandEnd++;
-                if (!non_overlap2_func.call(newReg, reg2.rects, r2, r2BandEnd, Math.max(reg2.getTop(r2), ybot), reg2.getBottom(r2)))
+                while (r2BandEnd < r2End && reg2.getTop(r2BandEnd) == reg2.getTop(r2))
+                    r2BandEnd++;
+                if (!non_overlap2_func.call(newReg, reg2.rects, r2, r2BandEnd, Math.max(reg2.getTop(r2), ybot),
+                    reg2.getBottom(r2)))
                     return false;
                 r2 = r2BandEnd;
             } while (r2 != r2End);
         }
 
-        if (newReg.rects.size() != curBand) coalesce_region(newReg, prevBand, curBand);
+        if (newReg.rects.size() != curBand)
+            coalesce_region(newReg, prevBand, curBand);
 
         return true;
     }
 
     /* attempt to merge the rects in the current band with those in the */
     /* previous one. Used only by region_op. */
-    static private int coalesce_region(WinRegion reg, int prevStart, int curStart) {
+    private static int coalesce_region(WinRegion reg, int prevStart, int curStart) {
         int curNumRects;
         int pRegEnd = reg.rects.size();
         int pPrevRect = prevStart;
@@ -484,24 +487,26 @@ public class WinRegion extends WinGDI {
         int prevNumRects = curStart - prevStart;
         int bandtop = reg.getTop(pCurRect);
 
-        for (curNumRects = 0; (pCurRect != pRegEnd) && (reg.getTop(pCurRect) == bandtop); curNumRects++) {
+        for (curNumRects = 0; pCurRect != pRegEnd && reg.getTop(pCurRect) == bandtop; curNumRects++) {
             pCurRect++;
         }
 
         if (pCurRect != pRegEnd) {
             pRegEnd--;
-            while (reg.getTop(pRegEnd - 1) == reg.getTop(pRegEnd)) pRegEnd--;
+            while (reg.getTop(pRegEnd - 1) == reg.getTop(pRegEnd))
+                pRegEnd--;
             curStart = pRegEnd;
             pRegEnd = reg.rects.size();
         }
 
-        if ((curNumRects == prevNumRects) && (curNumRects != 0)) {
+        if (curNumRects == prevNumRects && curNumRects != 0) {
             pCurRect -= curNumRects;
             if (reg.getBottom(pPrevRect) == reg.getTop(pCurRect)) {
                 int size = reg.rects.size();
                 do {
-                    if ((reg.getLeft(pPrevRect) != reg.getLeft(pCurRect)) ||
-                            (reg.getRight(pPrevRect) != reg.getRight(pCurRect))) return curStart;
+                    if (reg.getLeft(pPrevRect) != reg.getLeft(pCurRect)
+                        || reg.getRight(pPrevRect) != reg.getRight(pCurRect))
+                        return curStart;
                     pPrevRect++;
                     pCurRect++;
                     prevNumRects -= 1;
@@ -518,10 +523,12 @@ public class WinRegion extends WinGDI {
                     curNumRects -= 1;
                 } while (curNumRects != 0);
 
-                if (pCurRect == pRegEnd) curStart = prevStart;
-                else do {
-                    reg.rects.get(pPrevRect++).copy(reg.rects.get(pCurRect++));
-                } while (pCurRect != pRegEnd);
+                if (pCurRect == pRegEnd)
+                    curStart = prevStart;
+                else
+                    do {
+                        reg.rects.get(pPrevRect++).copy(reg.rects.get(pCurRect++));
+                    } while (pCurRect != pRegEnd);
 
                 while (size < reg.rects.size()) {
                     reg.rects.remove(reg.rects.size() - 1);
@@ -531,7 +538,7 @@ public class WinRegion extends WinGDI {
         return curStart;
     }
 
-    static private boolean EXTENTCHECK(WinRect r1, WinRect r2) {
+    private static boolean EXTENTCHECK(WinRect r1, WinRect r2) {
         return r1.right > r2.left && r1.left < r2.right && r1.bottom > r2.top && r1.top < r2.bottom;
     }
 
@@ -585,10 +592,14 @@ public class WinRegion extends WinGDI {
             extents = rects.elementAt(0).copy();
             for (int i = 1; i < rects.size(); i++) {
                 WinRect rect = rects.elementAt(i);
-                if (rect.left < extents.left) extents.left = rect.left;
-                if (rect.top < extents.top) extents.top = rect.top;
-                if (rect.right > extents.right) extents.right = rect.right;
-                if (rect.bottom < extents.bottom) extents.bottom = rect.bottom;
+                if (rect.left < extents.left)
+                    extents.left = rect.left;
+                if (rect.top < extents.top)
+                    extents.top = rect.top;
+                if (rect.right > extents.right)
+                    extents.right = rect.right;
+                if (rect.bottom < extents.bottom)
+                    extents.bottom = rect.bottom;
             }
         }
     }
@@ -612,12 +623,14 @@ public class WinRegion extends WinGDI {
         return result;
     }
 
+    @Override
     public String toString() {
         return "REGION size=" + rects.size() + (rects.size() > 0 ? " rect(1)=" + rects.elementAt(0).toString() : "");
     }
 
     private interface Overlapped {
-        boolean call(WinRegion rg, Vector reg1, int r1, int r1Stop, Vector reg2, int r2, int r2Stop, int top, int bottom);
+        boolean call(WinRegion rg, Vector reg1, int r1, int r1Stop, Vector reg2, int r2, int r2Stop, int top,
+            int bottom);
     }
 
     private interface NonOverlapped {

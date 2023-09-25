@@ -19,7 +19,8 @@ public class Bootstrap {
     /*Bit32u*/ long hiddensectorcount;
     /*Bit32u*/ long totalsecdword;
     /*Bit8u*/ byte[] bootcode = new byte[474];
-    /*Bit8u*/ byte magic1; /* 0x55 */
+    /*Bit8u*/ byte magic1;
+    /* 0x55 */
     /*Bit8u*/ byte magic2; /* 0xaa */
 
     public void load(byte[] d) {

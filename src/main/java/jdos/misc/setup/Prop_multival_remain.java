@@ -5,10 +5,12 @@ public class Prop_multival_remain extends Prop_multival {
         super(_propname, when, sep);
     }
 
+    @Override
     public void SetValue(String input) {
         SetVal(new Value(input, Value.Etype.V_STRING), false, true);
         //No properties in this section. do nothing
-        if (section.Get_prop(0) == null) return;
+        if (section.Get_prop(0) == null)
+            return;
         int i = 0;
         int number_of_properties = 0;
         while (section.Get_prop(number_of_properties) != null) {

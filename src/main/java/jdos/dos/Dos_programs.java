@@ -1,13 +1,29 @@
 package jdos.dos;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.Vector;
+
 import jdos.Dosbox;
 import jdos.cpu.CPU;
 import jdos.cpu.CPU_Regs;
 import jdos.cpu.Callback;
-import jdos.dos.drives.*;
+import jdos.dos.drives.Drive_fat;
+import jdos.dos.drives.Drive_iso;
+import jdos.dos.drives.Drive_local;
+import jdos.dos.drives.Drive_local_cdrom;
+import jdos.dos.drives.Drive_zip;
 import jdos.gui.Main;
-import jdos.hardware.*;
-import jdos.hardware.qemu.*;
+import jdos.hardware.Cmos;
+import jdos.hardware.IoHandler;
+import jdos.hardware.Memory;
+import jdos.hardware.RAM;
+import jdos.hardware.VBE;
+import jdos.hardware.qemu.Block;
+import jdos.hardware.qemu.Floppy;
+import jdos.hardware.qemu.IDE;
+import jdos.hardware.qemu.IDEBus;
+import jdos.hardware.qemu.Internal;
 import jdos.ints.Bios;
 import jdos.ints.Bios_disk;
 import jdos.misc.Cross;
@@ -21,53 +37,29 @@ import jdos.types.LogSeverities;
 import jdos.types.LogTypes;
 import jdos.types.MachineType;
 import jdos.types.SVGACards;
-import jdos.util.*;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.Vector;
+import jdos.util.BooleanRef;
+import jdos.util.FileHelper;
+import jdos.util.FileIO;
+import jdos.util.FileIOFactory;
+import jdos.util.IntPtr;
+import jdos.util.IntRef;
+import jdos.util.LongRef;
+import jdos.util.Ptr;
+import jdos.util.ShortRef;
+import jdos.util.StringHelper;
+import jdos.util.StringRef;
 
 public class Dos_programs {
-    static private final Program.PROGRAMS_Main MOUNT_ProgramStart = new Program.PROGRAMS_Main() {
-        public Program call() {
-            return new MOUNT();
-        }
+    private static final Program.PROGRAMS_Main MOUNT_ProgramStart = () -> new MOUNT();
+    private static final Program.PROGRAMS_Main REBOOT_ProgramStart = () -> {
+        throw new RebootException();
     };
-    static private final Program.PROGRAMS_Main REBOOT_ProgramStart = new Program.PROGRAMS_Main() {
-        public Program call() {
-            throw new RebootException();
-        }
-    };
-    static private final Program.PROGRAMS_Main MEM_ProgramStart = new Program.PROGRAMS_Main() {
-        public Program call() {
-            return new MEM();
-        }
-    };
-    static private final Program.PROGRAMS_Main BOOT_ProgramStart = new Program.PROGRAMS_Main() {
-        public Program call() {
-            return new BOOT();
-        }
-    };
-    static private final Program.PROGRAMS_Main LOADFIX_ProgramStart = new Program.PROGRAMS_Main() {
-        public Program call() {
-            return new LOADFIX();
-        }
-    };
-    static private final Program.PROGRAMS_Main RESCAN_ProgramStart = new Program.PROGRAMS_Main() {
-        public Program call() {
-            return new RESCAN();
-        }
-    };
-    static private final Program.PROGRAMS_Main INTRO_ProgramStart = new Program.PROGRAMS_Main() {
-        public Program call() {
-            return new INTRO();
-        }
-    };
-    static private final Program.PROGRAMS_Main IMGMOUNT_ProgramStart = new Program.PROGRAMS_Main() {
-        public Program call() {
-            return new IMGMOUNT();
-        }
-    };
+    private static final Program.PROGRAMS_Main MEM_ProgramStart = () -> new MEM();
+    private static final Program.PROGRAMS_Main BOOT_ProgramStart = () -> new BOOT();
+    private static final Program.PROGRAMS_Main LOADFIX_ProgramStart = () -> new LOADFIX();
+    private static final Program.PROGRAMS_Main RESCAN_ProgramStart = () -> new RESCAN();
+    private static final Program.PROGRAMS_Main INTRO_ProgramStart = () -> new INTRO();
+    private static final Program.PROGRAMS_Main IMGMOUNT_ProgramStart = () -> new IMGMOUNT();
 
 //
 //    #if C_DEBUG
@@ -125,13 +117,8 @@ public class Dos_programs {
 //    }
 //    #endif
 
-
 // LOADFIX
-    static private final Program.PROGRAMS_Main KEYB_ProgramStart = new Program.PROGRAMS_Main() {
-        public Program call() {
-            return new KEYB();
-        }
-    };
+    private static final Program.PROGRAMS_Main KEYB_ProgramStart = () -> new KEYB();
 
     public static void DOS_SetupPrograms() {
         /*Add Messages */
@@ -145,15 +132,15 @@ public class Dos_programs {
         Msg.add("PROGRAM_MOUNT_ILL_TYPE", "Illegal type %s\n");
         Msg.add("PROGRAM_MOUNT_ALREADY_MOUNTED", "Drive %c already mounted with %s\n");
         Msg.add("PROGRAM_MOUNT_USAGE",
-                "Usage \033[34;1mMOUNT Drive-Letter Local-Directory\033[0m\n" +
-                        "For example: MOUNT c %s\n" +
-                        "This makes the directory %s act as the C: drive inside DOSBox.\n" +
-                        "The directory has to exist.\n");
+            "Usage \033[34;1mMOUNT Drive-Letter Local-Directory\033[0m\n" + "For example: MOUNT c %s\n"
+                + "This makes the directory %s act as the C: drive inside DOSBox.\n" + "The directory has to exist.\n");
         Msg.add("PROGRAM_MOUNT_UMOUNT_NOT_MOUNTED", "Drive %c isn't mounted.\n");
         Msg.add("PROGRAM_MOUNT_UMOUNT_SUCCESS", "Drive %c has successfully been removed.\n");
         Msg.add("PROGRAM_MOUNT_UMOUNT_NO_VIRTUAL", "Virtual Drives can not be unMOUNTed.\n");
-        Msg.add("PROGRAM_MOUNT_WARNING_WIN", "\033[31;1mMounting c:\\ is NOT recommended. Please mount a (sub)directory next time.\033[0m\n");
-        Msg.add("PROGRAM_MOUNT_WARNING_OTHER", "\033[31;1mMounting / is NOT recommended. Please mount a (sub)directory next time.\033[0m\n");
+        Msg.add("PROGRAM_MOUNT_WARNING_WIN",
+            "\033[31;1mMounting c:\\ is NOT recommended. Please mount a (sub)directory next time.\033[0m\n");
+        Msg.add("PROGRAM_MOUNT_WARNING_OTHER",
+            "\033[31;1mMounting / is NOT recommended. Please mount a (sub)directory next time.\033[0m\n");
 
         Msg.add("PROGRAM_MEM_CONVEN", "%10d Kb free conventional memory\n");
         Msg.add("PROGRAM_MEM_EXTEND", "%10d Kb free extended memory\n");
@@ -166,10 +153,12 @@ public class Dos_programs {
         Msg.add("PROGRAM_LOADFIX_ERROR", "Memory allocation error.\n");
 
         Msg.add("MSCDEX_SUCCESS", "MSCDEX installed.\n");
-        Msg.add("MSCDEX_ERROR_MULTIPLE_CDROMS", "MSCDEX: Failure: Drive-letters of multiple CDRom-drives have to be continuous.\n");
+        Msg.add("MSCDEX_ERROR_MULTIPLE_CDROMS",
+            "MSCDEX: Failure: Drive-letters of multiple CDRom-drives have to be continuous.\n");
         Msg.add("MSCDEX_ERROR_NOT_SUPPORTED", "MSCDEX: Failure: Not yet supported.\n");
         Msg.add("MSCDEX_ERROR_OPEN", "MSCDEX: Failure: Invalid file or unable to open.\n");
-        Msg.add("MSCDEX_TOO_MANY_DRIVES", "MSCDEX: Failure: Too many CDRom-drives (max: 5). MSCDEX Installation failed.\n");
+        Msg.add("MSCDEX_TOO_MANY_DRIVES",
+            "MSCDEX: Failure: Too many CDRom-drives (max: 5). MSCDEX Installation failed.\n");
         Msg.add("MSCDEX_LIMITED_SUPPORT", "MSCDEX: Mounted subdirectory: limited support.\n");
         Msg.add("MSCDEX_INVALID_FILEFORMAT", "MSCDEX: Failure: File is either no iso/cue image or contains errors.\n");
         Msg.add("MSCDEX_UNKNOWN_ERROR", "MSCDEX: Failure: Unknown error.\n");
@@ -177,113 +166,90 @@ public class Dos_programs {
         Msg.add("PROGRAM_RESCAN_SUCCESS", "Drive cache cleared.\n");
 
         Msg.add("PROGRAM_INTRO",
-                "\033[2J\033[32;1mWelcome to DOSBox\033[0m, an x86 emulator with sound and graphics.\n" +
-                        "DOSBox creates a shell for you which looks like old plain DOS.\n" +
-                        "\n" +
-                        "For information about basic mount type \033[34;1mintro mount\033[0m\n" +
-                        "For information about CD-ROM support type \033[34;1mintro cdrom\033[0m\n" +
-                        "For information about special keys type \033[34;1mintro special\033[0m\n" +
-                        "For more information about DOSBox, go to \033[34;1mhttp://www.dosbox.com/wiki\033[0m\n" +
-                        "\n" +
-                        "\033[31;1mDOSBox will stop/exit without a warning if an error occured!\033[0m\n" +
-                        "\n" +
-                        "\n"
-        );
+            "\033[2J\033[32;1mWelcome to DOSBox\033[0m, an x86 emulator with sound and graphics.\n"
+                + "DOSBox creates a shell for you which looks like old plain DOS.\n" + "\n"
+                + "For information about basic mount type \033[34;1mintro mount\033[0m\n"
+                + "For information about CD-ROM support type \033[34;1mintro cdrom\033[0m\n"
+                + "For information about special keys type \033[34;1mintro special\033[0m\n"
+                + "For more information about DOSBox, go to \033[34;1mhttp://www.dosbox.com/wiki\033[0m\n" + "\n"
+                + "\033[31;1mDOSBox will stop/exit without a warning if an error occured!\033[0m\n" + "\n" + "\n");
         Msg.add("PROGRAM_INTRO_MOUNT_START",
-                "\033[32;1mHere are some commands to get you started:\033[0m\n" +
-                        "Before you can use the files located on your own filesystem,\n" +
-                        "You have to mount the directory containing the files.\n" +
-                        "\n"
-        );
+            "\033[32;1mHere are some commands to get you started:\033[0m\n"
+                + "Before you can use the files located on your own filesystem,\n"
+                + "You have to mount the directory containing the files.\n" + "\n");
         Msg.add("PROGRAM_INTRO_MOUNT_WINDOWS",
-                "\033[44;1m\u00C9\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD" +
-                        "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD" +
-                        "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00BB\n" +
-                        "\u00BA \033[32mmount c c:\\dosprogs\\\033[37m will create a C drive with c:\\dosprogs as contents.\u00BA\n" +
-                        "\u00BA                                                                         \u00BA\n" +
-                        "\u00BA \033[32mc:\\dosprogs\\\033[37m is an example. Replace it with your own games directory.  \033[37m \u00BA\n" +
-                        "\u00C8\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD" +
-                        "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD" +
-                        "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00BC\033[0m\n"
-        );
+            "\033[44;1m\u00C9\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD"
+                + "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD"
+                + "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00BB\n"
+                + "\u00BA \033[32mmount c c:\\dosprogs\\\033[37m will create a C drive with c:\\dosprogs as contents.\u00BA\n"
+                + "\u00BA                                                                         \u00BA\n"
+                + "\u00BA \033[32mc:\\dosprogs\\\033[37m is an example. Replace it with your own games directory.  \033[37m \u00BA\n"
+                + "\u00C8\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD"
+                + "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD"
+                + "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00BC\033[0m\n");
         Msg.add("PROGRAM_INTRO_MOUNT_OTHER",
-                "\033[44;1m\u00C9\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD" +
-                        "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD" +
-                        "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00BB\n" +
-                        "\u00BA \033[32mmount c ~/dosprogs\033[37m will create a C drive with ~/dosprogs as contents.\u00BA\n" +
-                        "\u00BA                                                                      \u00BA\n" +
-                        "\u00BA \033[32m~/dosprogs\033[37m is an example. Replace it with your own games directory.\033[37m  \u00BA\n" +
-                        "\u00C8\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD" +
-                        "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD" +
-                        "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00BC\033[0m\n"
-        );
+            "\033[44;1m\u00C9\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD"
+                + "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD"
+                + "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00BB\n"
+                + "\u00BA \033[32mmount c ~/dosprogs\033[37m will create a C drive with ~/dosprogs as contents.\u00BA\n"
+                + "\u00BA                                                                      \u00BA\n"
+                + "\u00BA \033[32m~/dosprogs\033[37m is an example. Replace it with your own games directory.\033[37m  \u00BA\n"
+                + "\u00C8\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD"
+                + "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD"
+                + "\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00CD\u00BC\033[0m\n");
         Msg.add("PROGRAM_INTRO_MOUNT_END",
-                "When the mount has successfully completed you can type \033[34;1mc:\033[0m to go to your freshly\n" +
-                        "mounted C-drive. Typing \033[34;1mdir\033[0m there will show its contents." +
-                        " \033[34;1mcd\033[0m will allow you to\n" +
-                        "enter a directory (recognised by the \033[33;1m[]\033[0m in a directory listing).\n" +
-                        "You can run programs/files which end with \033[31m.exe .bat\033[0m and \033[31m.com\033[0m.\n"
-        );
-        Msg.add("PROGRAM_INTRO_CDROM",
-                "\033[2J\033[32;1mHow to mount a Real/Virtual CD-ROM Drive in DOSBox:\033[0m\n" +
-                        "DOSBox provides CD-ROM emulation on several levels.\n" +
-                        "\n" +
-                        "The \033[33mbasic\033[0m level works on all CD-ROM drives and normal directories.\n" +
-                        "It installs MSCDEX and marks the files read-only.\n" +
-                        "Usually this is enough for most games:\n" +
-                        "\033[34;1mmount d \033[0;31mD:\\\033[34;1m -t cdrom\033[0m   or   \033[34;1mmount d C:\\example -t cdrom\033[0m\n" +
-                        "If it doesn't work you might have to tell DOSBox the label of the CD-ROM:\n" +
-                        "\033[34;1mmount d C:\\example -t cdrom -label CDLABEL\033[0m\n" +
-                        "\n" +
-                        "The \033[33mnext\033[0m level adds some low-level support.\n" +
-                        "Therefore only works on CD-ROM drives:\n" +
-                        "\033[34;1mmount d \033[0;31mD:\\\033[34;1m -t cdrom -usecd \033[33m0\033[0m\n" +
-                        "\n" +
-                        "The \033[33mlast\033[0m level of support depends on your Operating System:\n" +
-                        "For \033[1mWindows 2000\033[0m, \033[1mWindows XP\033[0m and \033[1mLinux\033[0m:\n" +
-                        "\033[34;1mmount d \033[0;31mD:\\\033[34;1m -t cdrom -usecd \033[33m0 \033[34m-ioctl\033[0m\n" +
-                        "For \033[1mWindows 9x\033[0m with a ASPI layer installed:\n" +
-                        "\033[34;1mmount d \033[0;31mD:\\\033[34;1m -t cdrom -usecd \033[33m0 \033[34m-aspi\033[0m\n" +
-                        "\n" +
-                        "Replace \033[0;31mD:\\\033[0m with the location of your CD-ROM.\n" +
-                        "Replace the \033[33;1m0\033[0m in \033[34;1m-usecd \033[33m0\033[0m with the number reported for your CD-ROM if you type:\n" +
-                        "\033[34;1mmount -cd\033[0m\n"
-        );
-        Msg.add("PROGRAM_INTRO_SPECIAL",
-                "\033[2J\033[32;1mSpecial keys:\033[0m\n" +
-                        "These are the default keybindings.\n" +
-                        "They can be changed in the \033[33mkeymapper\033[0m.\n" +
-                        "\n" +
-                        "\033[33;1mALT-ENTER\033[0m   : Go full screen and back.\n" +
-                        "\033[33;1mALT-PAUSE\033[0m   : Pause DOSBox.\n" +
-                        "\033[33;1mCTRL-F1\033[0m     : Start the \033[33mkeymapper\033[0m.\n" +
-                        "\033[33;1mCTRL-F4\033[0m     : Update directory cache for all drives! Swap mounted disk-image.\n" +
-                        "\033[33;1mCTRL-ALT-F5\033[0m : Start/Stop creating a movie of the screen.\n" +
-                        "\033[33;1mCTRL-F5\033[0m     : Save a screenshot.\n" +
-                        "\033[33;1mCTRL-F6\033[0m     : Start/Stop recording sound output to a wave file.\n" +
-                        "\033[33;1mCTRL-ALT-F7\033[0m : Start/Stop recording of OPL commands.\n" +
-                        "\033[33;1mCTRL-ALT-F8\033[0m : Start/Stop the recording of raw MIDI commands.\n" +
-                        "\033[33;1mCTRL-F7\033[0m     : Decrease frameskip.\n" +
-                        "\033[33;1mCTRL-F8\033[0m     : Increase frameskip.\n" +
-                        "\033[33;1mCTRL-F9\033[0m     : Kill DOSBox.\n" +
-                        "\033[33;1mCTRL-F10\033[0m    : Capture/Release the mouse.\n" +
-                        "\033[33;1mCTRL-F11\033[0m    : Slow down emulation (Decrease DOSBox Cycles).\n" +
-                        "\033[33;1mCTRL-F12\033[0m    : Speed up emulation (Increase DOSBox Cycles).\n" +
-                        "\033[33;1mALT-F12\033[0m     : Unlock speed (turbo button/fast forward).\n"
-        );
+            "When the mount has successfully completed you can type \033[34;1mc:\033[0m to go to your freshly\n"
+                + "mounted C-drive. Typing \033[34;1mdir\033[0m there will show its contents."
+                + " \033[34;1mcd\033[0m will allow you to\n"
+                + "enter a directory (recognised by the \033[33;1m[]\033[0m in a directory listing).\n"
+                + "You can run programs/files which end with \033[31m.exe .bat\033[0m and \033[31m.com\033[0m.\n");
+        Msg.add("PROGRAM_INTRO_CDROM", "\033[2J\033[32;1mHow to mount a Real/Virtual CD-ROM Drive in DOSBox:\033[0m\n"
+            + "DOSBox provides CD-ROM emulation on several levels.\n" + "\n"
+            + "The \033[33mbasic\033[0m level works on all CD-ROM drives and normal directories.\n"
+            + "It installs MSCDEX and marks the files read-only.\n" + "Usually this is enough for most games:\n"
+            + "\033[34;1mmount d \033[0;31mD:\\\033[34;1m -t cdrom\033[0m   or   \033[34;1mmount d C:\\example -t cdrom\033[0m\n"
+            + "If it doesn't work you might have to tell DOSBox the label of the CD-ROM:\n"
+            + "\033[34;1mmount d C:\\example -t cdrom -label CDLABEL\033[0m\n" + "\n"
+            + "The \033[33mnext\033[0m level adds some low-level support.\n"
+            + "Therefore only works on CD-ROM drives:\n"
+            + "\033[34;1mmount d \033[0;31mD:\\\033[34;1m -t cdrom -usecd \033[33m0\033[0m\n" + "\n"
+            + "The \033[33mlast\033[0m level of support depends on your Operating System:\n"
+            + "For \033[1mWindows 2000\033[0m, \033[1mWindows XP\033[0m and \033[1mLinux\033[0m:\n"
+            + "\033[34;1mmount d \033[0;31mD:\\\033[34;1m -t cdrom -usecd \033[33m0 \033[34m-ioctl\033[0m\n"
+            + "For \033[1mWindows 9x\033[0m with a ASPI layer installed:\n"
+            + "\033[34;1mmount d \033[0;31mD:\\\033[34;1m -t cdrom -usecd \033[33m0 \033[34m-aspi\033[0m\n" + "\n"
+            + "Replace \033[0;31mD:\\\033[0m with the location of your CD-ROM.\n"
+            + "Replace the \033[33;1m0\033[0m in \033[34;1m-usecd \033[33m0\033[0m with the number reported for your CD-ROM if you type:\n"
+            + "\033[34;1mmount -cd\033[0m\n");
+        Msg.add("PROGRAM_INTRO_SPECIAL", "\033[2J\033[32;1mSpecial keys:\033[0m\n"
+            + "These are the default keybindings.\n" + "They can be changed in the \033[33mkeymapper\033[0m.\n" + "\n"
+            + "\033[33;1mALT-ENTER\033[0m   : Go full screen and back.\n"
+            + "\033[33;1mALT-PAUSE\033[0m   : Pause DOSBox.\n"
+            + "\033[33;1mCTRL-F1\033[0m     : Start the \033[33mkeymapper\033[0m.\n"
+            + "\033[33;1mCTRL-F4\033[0m     : Update directory cache for all drives! Swap mounted disk-image.\n"
+            + "\033[33;1mCTRL-ALT-F5\033[0m : Start/Stop creating a movie of the screen.\n"
+            + "\033[33;1mCTRL-F5\033[0m     : Save a screenshot.\n"
+            + "\033[33;1mCTRL-F6\033[0m     : Start/Stop recording sound output to a wave file.\n"
+            + "\033[33;1mCTRL-ALT-F7\033[0m : Start/Stop recording of OPL commands.\n"
+            + "\033[33;1mCTRL-ALT-F8\033[0m : Start/Stop the recording of raw MIDI commands.\n"
+            + "\033[33;1mCTRL-F7\033[0m     : Decrease frameskip.\n"
+            + "\033[33;1mCTRL-F8\033[0m     : Increase frameskip.\n" + "\033[33;1mCTRL-F9\033[0m     : Kill DOSBox.\n"
+            + "\033[33;1mCTRL-F10\033[0m    : Capture/Release the mouse.\n"
+            + "\033[33;1mCTRL-F11\033[0m    : Slow down emulation (Decrease DOSBox Cycles).\n"
+            + "\033[33;1mCTRL-F12\033[0m    : Speed up emulation (Increase DOSBox Cycles).\n"
+            + "\033[33;1mALT-F12\033[0m     : Unlock speed (turbo button/fast forward).\n");
         Msg.add("PROGRAM_BOOT_NOT_EXIST", "Bootdisk file does not exist.  Failing.\n");
         Msg.add("PROGRAM_BOOT_NOT_OPEN", "Cannot open bootdisk file.  Failing.\n");
         Msg.add("PROGRAM_BOOT_WRITE_PROTECTED", "Image file is read-only! Might create problems.\n");
-        Msg.add("PROGRAM_BOOT_PRINT_ERROR", "This command boots DOSBox from either a floppy or hard disk image.\n\n" +
-                "For this command, one can specify a succession of floppy disks swappable\n" +
-                "by pressing Ctrl-F4, and -l specifies the mounted drive to boot from.  If\n" +
-                "no drive letter is specified, this defaults to booting from the A drive.\n" +
-                "The only bootable drive letters are A, C, and D.  For booting from a hard\n" +
-                "drive (C or D), the image should have already been mounted using the\n" +
-                "\033[34;1mIMGMOUNT\033[0m command.\n\n" +
-                "The syntax of this command is:\n\n" +
-                "\033[34;1mBOOT [diskimg1.img diskimg2.img] [-l driveletter]\033[0m\n"
-        );
+        Msg.add("PROGRAM_BOOT_PRINT_ERROR",
+            "This command boots DOSBox from either a floppy or hard disk image.\n\n"
+                + "For this command, one can specify a succession of floppy disks swappable\n"
+                + "by pressing Ctrl-F4, and -l specifies the mounted drive to boot from.  If\n"
+                + "no drive letter is specified, this defaults to booting from the A drive.\n"
+                + "The only bootable drive letters are A, C, and D.  For booting from a hard\n"
+                + "drive (C or D), the image should have already been mounted using the\n"
+                + "\033[34;1mIMGMOUNT\033[0m command.\n\n" + "The syntax of this command is:\n\n"
+                + "\033[34;1mBOOT [diskimg1.img diskimg2.img] [-l driveletter]\033[0m\n");
         Msg.add("PROGRAM_BOOT_UNABLE", "Unable to boot off of drive %c");
         Msg.add("PROGRAM_BOOT_IMAGE_OPEN", "Opening image file: %s\n");
         Msg.add("PROGRAM_BOOT_IMAGE_NOT_OPEN", "Cannot open %s");
@@ -293,38 +259,41 @@ public class Dos_programs {
         Msg.add("PROGRAM_BOOT_CART_NO_CMDS", "No PCjr cartridge commandos found");
 
         Msg.add("PROGRAM_IMGMOUNT_SPECIFY_DRIVE", "Must specify drive letter to mount image at.\n");
-        Msg.add("PROGRAM_IMGMOUNT_SPECIFY2", "Must specify drive number (0 or 3) to mount image at (0,1=fda,fdb;2,3=hda,hdb).\n");
+        Msg.add("PROGRAM_IMGMOUNT_SPECIFY2",
+            "Must specify drive number (0 or 3) to mount image at (0,1=fda,fdb;2,3=hda,hdb).\n");
         Msg.add("PROGRAM_IMGMOUNT_SPECIFY_GEOMETRY",
-                "For \033[33mCD-ROM\033[0m images:   \033[34;1mIMGMOUNT drive-letter location-of-image -t iso\033[0m\n" +
-                        "\n" +
-                        "For \033[33mhardrive\033[0m images: Must specify drive geometry for hard drives:\n" +
-                        "bytes_per_sector, sectors_per_cylinder, heads_per_cylinder, cylinder_count.\n" +
-                        "\033[34;1mIMGMOUNT drive-letter location-of-image -size bps,spc,hpc,cyl\033[0m\n");
-        Msg.add("PROGRAM_IMGMOUNT_INVALID_IMAGE", "Could not load image file.\n" +
-                "Check that the path is correct and the image is accessible.\n");
-        Msg.add("PROGRAM_IMGMOUNT_INVALID_GEOMETRY", "Could not extract drive geometry from image.\n" +
-                "Use parameter -size bps,spc,hpc,cyl to specify the geometry.\n");
+            "For \033[33mCD-ROM\033[0m images:   \033[34;1mIMGMOUNT drive-letter location-of-image -t iso\033[0m\n"
+                + "\n" + "For \033[33mhardrive\033[0m images: Must specify drive geometry for hard drives:\n"
+                + "bytes_per_sector, sectors_per_cylinder, heads_per_cylinder, cylinder_count.\n"
+                + "\033[34;1mIMGMOUNT drive-letter location-of-image -size bps,spc,hpc,cyl\033[0m\n");
+        Msg.add("PROGRAM_IMGMOUNT_INVALID_IMAGE",
+            "Could not load image file.\n" + "Check that the path is correct and the image is accessible.\n");
+        Msg.add("PROGRAM_IMGMOUNT_INVALID_GEOMETRY", "Could not extract drive geometry from image.\n"
+            + "Use parameter -size bps,spc,hpc,cyl to specify the geometry.\n");
         Msg.add("PROGRAM_IMGMOUNT_AUTODET_VALUES", "Image geometry auto detection: -size %d,%d,%d,%d\n");
-        Msg.add("PROGRAM_IMGMOUNT_TYPE_UNSUPPORTED", "Type \"%s\" is unsupported. Specify \"hdd\" or \"floppy\" or\"iso\".\n");
-        Msg.add("PROGRAM_IMGMOUNT_FORMAT_UNSUPPORTED", "Format \"%s\" is unsupported. Specify \"fat\" or \"iso\" or \"none\".\n");
+        Msg.add("PROGRAM_IMGMOUNT_TYPE_UNSUPPORTED",
+            "Type \"%s\" is unsupported. Specify \"hdd\" or \"floppy\" or\"iso\".\n");
+        Msg.add("PROGRAM_IMGMOUNT_FORMAT_UNSUPPORTED",
+            "Format \"%s\" is unsupported. Specify \"fat\" or \"iso\" or \"none\".\n");
         Msg.add("PROGRAM_IMGMOUNT_SPECIFY_FILE", "Must specify file-image to mount.\n");
         Msg.add("PROGRAM_IMGMOUNT_FILE_NOT_FOUND", "Image file not found.\n");
-        Msg.add("PROGRAM_IMGMOUNT_MOUNT", "To mount directories, use the \033[34;1mMOUNT\033[0m command, not the \033[34;1mIMGMOUNT\033[0m command.\n");
+        Msg.add("PROGRAM_IMGMOUNT_MOUNT",
+            "To mount directories, use the \033[34;1mMOUNT\033[0m command, not the \033[34;1mIMGMOUNT\033[0m command.\n");
         Msg.add("PROGRAM_IMGMOUNT_ALREADY_MOUNTED", "Drive already mounted at that letter.\n");
         Msg.add("PROGRAM_IMGMOUNT_CANT_CREATE", "Can't create drive from file.\n");
         Msg.add("PROGRAM_IMGMOUNT_MOUNT_NUMBER", "Drive number %d mounted as %s\n");
         Msg.add("PROGRAM_IMGMOUNT_NON_LOCAL_DRIVE", "The image must be on a host or local drive.\n");
-        Msg.add("PROGRAM_IMGMOUNT_MULTIPLE_NON_CUEISO_FILES", "Using multiple files is only supported for cue/iso images.\n");
+        Msg.add("PROGRAM_IMGMOUNT_MULTIPLE_NON_CUEISO_FILES",
+            "Using multiple files is only supported for cue/iso images.\n");
 
         Msg.add("PROGRAM_KEYB_INFO", "Codepage %i has been loaded\n");
         Msg.add("PROGRAM_KEYB_INFO_LAYOUT", "Codepage %i has been loaded for layout %s\n");
         Msg.add("PROGRAM_KEYB_SHOWHELP",
-                "\033[32;1mKEYB\033[0m [keyboard layout ID[ codepage number[ codepage file]]]\n\n" +
-                        "Some examples:\n" +
-                        "  \033[32;1mKEYB\033[0m: Display currently loaded codepage.\n" +
-                        "  \033[32;1mKEYB\033[0m sp: Load the spanish (SP) layout, use an appropriate codepage.\n" +
-                        "  \033[32;1mKEYB\033[0m sp 850: Load the spanish (SP) layout, use codepage 850.\n" +
-                        "  \033[32;1mKEYB\033[0m sp 850 mycp.cpi: Same as above, but use file mycp.cpi.\n");
+            "\033[32;1mKEYB\033[0m [keyboard layout ID[ codepage number[ codepage file]]]\n\n" + "Some examples:\n"
+                + "  \033[32;1mKEYB\033[0m: Display currently loaded codepage.\n"
+                + "  \033[32;1mKEYB\033[0m sp: Load the spanish (SP) layout, use an appropriate codepage.\n"
+                + "  \033[32;1mKEYB\033[0m sp 850: Load the spanish (SP) layout, use codepage 850.\n"
+                + "  \033[32;1mKEYB\033[0m sp 850 mycp.cpi: Same as above, but use file mycp.cpi.\n");
         Msg.add("PROGRAM_KEYB_NOERROR", "Keyboard layout %s loaded for codepage %i\n");
         Msg.add("PROGRAM_KEYB_FILENOTFOUND", "Keyboard file %s not found\n\n");
         Msg.add("PROGRAM_KEYB_INVALIDFILE", "Keyboard file %s invalid\n");
@@ -349,7 +318,7 @@ public class Dos_programs {
 // RESCAN
 
     private static class MOUNT extends Program {
-        static private short ZDRIVE_NUM = 25;
+        private static short ZDRIVE_NUM = 25;
 
         void ListMounts() {
             StringRef name = new StringRef();/*Bit32u*/
@@ -364,18 +333,21 @@ public class Dos_programs {
             Dos_DTA dta = new Dos_DTA(Dos.dos.dta());
 
             WriteOut(Msg.get("PROGRAM_MOUNT_STATUS_1"));
-            WriteOut(Msg.get("PROGRAM_MOUNT_STATUS_FORMAT"), new Object[]{"Drive", "Type", "Label"});
-            for (int p = 0; p < 8; p++) WriteOut("----------");
+            WriteOut(Msg.get("PROGRAM_MOUNT_STATUS_FORMAT"), new Object[] { "Drive", "Type", "Label" });
+            for (int p = 0; p < 8; p++)
+                WriteOut("----------");
 
             for (int d = 0; d < Dos_files.DOS_DRIVES; d++) {
-                if (Dos_files.Drives[d] == null) continue;
+                if (Dos_files.Drives[d] == null)
+                    continue;
 
                 String root = (char) ('A' + d) + ":\\";
                 boolean ret = Dos_files.DOS_FindFirst(root, Dos_system.DOS_ATTR_VOLUME);
                 if (ret) {
                     dta.GetResult(name, size, date, time, attr);
                     Dos_files.DOS_FindNext(); //Mark entry as invalid
-                } else name.value = "";
+                } else
+                    name.value = "";
 
                 /* Change 8.3 to 11.0 */
                 int dot = name.value.indexOf('.');
@@ -383,11 +355,13 @@ public class Dos_programs {
                     name.value = name.value.substring(0, 8) + name.value.substring(9);
                 }
 
-                WriteOut(Msg.get("PROGRAM_MOUNT_STATUS_FORMAT"), new Object[]{root.substring(0, 1), Dos_files.Drives[d].GetInfo(), name});
+                WriteOut(Msg.get("PROGRAM_MOUNT_STATUS_FORMAT"),
+                    new Object[] { root.substring(0, 1), Dos_files.Drives[d].GetInfo(), name });
             }
             Dos.dos.dta(save_dta);
         }
 
+        @Override
         public void Run() {
             Dos_Drive newdrive = null;
             char drive = 'C';
@@ -420,7 +394,7 @@ public class Dos_programs {
                             Dos_files.Drives[i_drive] = null;
                             if (i_drive == Dos_files.DOS_GetDefaultDrive())
                                 Dos_files.DOS_SetDrive(ZDRIVE_NUM);
-                            WriteOut(Msg.get("PROGRAM_MOUNT_UMOUNT_SUCCESS"), new Object[]{umount});
+                            WriteOut(Msg.get("PROGRAM_MOUNT_UMOUNT_SUCCESS"), new Object[] { umount });
                             break;
                         case 1:
                             WriteOut(Msg.get("PROGRAM_MOUNT_UMOUNT_NO_VIRTUAL"));
@@ -430,7 +404,8 @@ public class Dos_programs {
                             break;
                     }
                 } else {
-                    WriteOut(Msg.get("PROGRAM_MOUNT_UMOUNT_NOT_MOUNTED"), new Object[]{new Character(umount.charAt(0))});
+                    WriteOut(Msg.get("PROGRAM_MOUNT_UMOUNT_NOT_MOUNTED"),
+                        new Object[] { Character.valueOf(umount.charAt(0)) });
                 }
                 return;
             }
@@ -452,7 +427,8 @@ public class Dos_programs {
                     if (fs.GetEnvStr("PATH", line)) {
                         line.value = StringHelper.replace(line.value, "Z:\\", newz + ":\\");
                     }
-                    if (line.value.length() == 0) line.value = newz + ":\\";
+                    if (line.value.length() == 0)
+                        line.value = newz + ":\\";
                     fs.SetEnv("PATH", line.value);
                     fs.SetEnv("COMSPEC", newz + ":\\COMMAND.COM");
 
@@ -462,24 +438,26 @@ public class Dos_programs {
                             fs.bf.filename = newz + fs.bf.filename.substring(1);
                     }
                     /* Change the active drive */
-                    if (Dos_files.DOS_GetDefaultDrive() == 25) Dos_files.DOS_SetDrive((short) i_newz);
+                    if (Dos_files.DOS_GetDefaultDrive() == 25)
+                        Dos_files.DOS_SetDrive((short) i_newz);
                 }
                 return;
             }
             // Show list of cdroms
             if (cmd.FindExist("-cd", false)) {
                 File[] roots = File.listRoots();
-                WriteOut(Msg.get("PROGRAM_MOUNT_CDROMS_FOUND"), new Object[]{new Integer(roots.length)});
+                WriteOut(Msg.get("PROGRAM_MOUNT_CDROMS_FOUND"), new Object[] { Integer.valueOf(roots.length) });
                 for (int i = 0; i < roots.length; i++) {
-                    WriteOut("%2d. %s\n", new Object[]{new Integer(i), roots[i].getAbsolutePath()});
+                    WriteOut("%2d. %s\n", new Object[] { Integer.valueOf(i), roots[i].getAbsolutePath() });
                 }
                 return;
             }
 
             String type;
             type = cmd.FindString("-t", true);
-            if (type == null || type.length() == 0) type = "dir";
-            boolean iscdrom = (type.equals("cdrom")); //Used for mscdex bug cdrom label name emulation
+            if (type == null || type.length() == 0)
+                type = "dir";
+            boolean iscdrom = type.equals("cdrom"); //Used for mscdex bug cdrom label name emulation
             while (true) {
                 if (type.equals("floppy") || type.equals("dir") || type.equals("cdrom")) {
                     /*Bit16u*/
@@ -489,17 +467,17 @@ public class Dos_programs {
                     String str_size = "";
                     if (type.equals("floppy")) {
                         str_size = "512,1,2880,2880";/* All space free */
-                        mediaid = 0xF0;        /* Floppy 1.44 media */
+                        mediaid = 0xF0; /* Floppy 1.44 media */
                     } else if (type.equals("dir")) {
                         // 512*32*32765==~500MB total size
                         // 512*32*16000==~250MB total free size
                         str_size = "512,32,32765,16000";
-                        mediaid = 0xF8;        /* Hard Disk */
+                        mediaid = 0xF8; /* Hard Disk */
                     } else if (type.equals("cdrom")) {
                         str_size = "2048,1,32765,0";
-                        mediaid = 0xF8;        /* Hard Disk */
+                        mediaid = 0xF8; /* Hard Disk */
                     } else {
-                        WriteOut(Msg.get("PROGAM_MOUNT_ILL_TYPE"), new Object[]{type});
+                        WriteOut(Msg.get("PROGAM_MOUNT_ILL_TYPE"), new Object[] { type });
                         return;
                     }
                     /* Parse the free space in mb's (kb's for floppies) */
@@ -518,9 +496,12 @@ public class Dos_programs {
                         } else {
                             long total_size_cyl = 32765;
                             long free_size_cyl = freesize * 1024 * 1024 / (512 * 32);
-                            if (free_size_cyl > 65534) free_size_cyl = 65534;
-                            if (total_size_cyl < free_size_cyl) total_size_cyl = free_size_cyl + 10;
-                            if (total_size_cyl > 65534) total_size_cyl = 65534;
+                            if (free_size_cyl > 65534)
+                                free_size_cyl = 65534;
+                            if (total_size_cyl < free_size_cyl)
+                                total_size_cyl = free_size_cyl + 10;
+                            if (total_size_cyl > 65534)
+                                total_size_cyl = 65534;
                             // freesize in mb
                             str_size = "512,32," + total_size_cyl + ",65535," + free_size_cyl;
                         }
@@ -528,7 +509,8 @@ public class Dos_programs {
 
                     {
                         String s = cmd.FindString("-size", true);
-                        if (s != null && s.length() != 0) str_size = s;
+                        if (s != null && s.length() != 0)
+                            str_size = s;
                     }
 
                     {
@@ -546,23 +528,25 @@ public class Dos_programs {
                     // get the drive letter
 
                     temp_line = cmd.FindCommand(1);
-                    if (temp_line == null || (temp_line.length() > 2) || ((temp_line.length() > 1) && (temp_line.charAt(1) != ':')))
+                    if (temp_line == null || temp_line.length() > 2
+                        || temp_line.length() > 1 && temp_line.charAt(1) != ':')
                         break;
                     drive = temp_line.toUpperCase().charAt(0);
-                    if (drive < 'A' || drive > 'Z') break;
+                    if (drive < 'A' || drive > 'Z')
+                        break;
 
                     temp_line = cmd.FindCommand(2);
-                    if (temp_line == null) break;
-                    if (temp_line.length() == 0) break;
+                    if ((temp_line == null) || (temp_line.length() == 0))
+                        break;
                     temp_line = FileHelper.resolve_path(temp_line);
                     File temp_file = new File(temp_line);
                     if (!temp_file.exists()) {
-                        WriteOut(Msg.get("PROGRAM_MOUNT_ERROR_1"), new Object[]{temp_line});
+                        WriteOut(Msg.get("PROGRAM_MOUNT_ERROR_1"), new Object[] { temp_line });
                         return;
                     }
                     /* Not a switch so a normal directory/file */
                     if (!temp_file.isDirectory()) {
-                        WriteOut(Msg.get("PROGRAM_MOUNT_ERROR_2"), new Object[]{temp_line});
+                        WriteOut(Msg.get("PROGRAM_MOUNT_ERROR_2"), new Object[] { temp_line });
                         return;
                     }
 
@@ -608,7 +592,8 @@ public class Dos_programs {
 //                            MSCDEX_SetCDInterface(CDROM_USE_IOCTL_DIO, num);
 //        #endif
 //                        }
-                        newdrive = new Drive_local_cdrom(drive, temp_line, sizes[0], (short) bit8size, sizes[2], 0, mediaid, error);
+                        newdrive = new Drive_local_cdrom(drive, temp_line, sizes[0], (short) bit8size, sizes[2], 0,
+                            mediaid, error);
                         // Check Mscdex, if it worked out...
                         switch (error.value) {
                             case 0:
@@ -638,31 +623,38 @@ public class Dos_programs {
                         }
                     } else {
                         /* Give a warning when mount c:\ or the / */
-                        if (temp_line.equals("c:\\") || temp_line.equals("C:\\") ||
-                                temp_line.equals("c:/") || temp_line.equals("C:/"))
+                        if (temp_line.equals("c:\\") || temp_line.equals("C:\\") || temp_line.equals("c:/")
+                            || temp_line.equals("C:/"))
                             WriteOut(Msg.get("PROGRAM_MOUNT_WARNING_WIN"));
-                        if (temp_line.equals("/")) WriteOut(Msg.get("PROGRAM_MOUNT_WARNING_OTHER"));
-                        if (!temp_line.endsWith("\\") && !temp_line.endsWith("/")) temp_line += File.separator;
+                        if (temp_line.equals("/"))
+                            WriteOut(Msg.get("PROGRAM_MOUNT_WARNING_OTHER"));
+                        if (!temp_line.endsWith("\\") && !temp_line.endsWith("/"))
+                            temp_line += File.separator;
                         newdrive = new Drive_local(temp_line, sizes[0], (short) bit8size, sizes[2], sizes[3], mediaid);
                     }
                 } else {
-                    WriteOut(Msg.get("PROGRAM_MOUNT_ILL_TYPE"), new Object[]{type});
+                    WriteOut(Msg.get("PROGRAM_MOUNT_ILL_TYPE"), new Object[] { type });
                     return;
                 }
                 if (Dos_files.Drives[drive - 'A'] != null) {
-                    WriteOut(Msg.get("PROGRAM_MOUNT_ALREADY_MOUNTED"), new Object[]{new Character(drive), Dos_files.Drives[drive - 'A'].GetInfo()});
+                    WriteOut(Msg.get("PROGRAM_MOUNT_ALREADY_MOUNTED"),
+                        new Object[] { Character.valueOf(drive), Dos_files.Drives[drive - 'A'].GetInfo() });
                     return;
                 }
-                if (newdrive == null) Log.exit("DOS:Can't create drive");
+                if (newdrive == null)
+                    Log.exit("DOS:Can't create drive");
                 Dos_files.Drives[drive - 'A'] = newdrive;
                 /* Set the correct media byte in the table */
-                Memory.mem_writeb(Memory.Real2Phys(Dos.dos.tables.mediaid) + (drive - 'A') * 2, newdrive.GetMediaByte());
-                WriteOut(Msg.get("PROGRAM_MOUNT_STATUS_2"), new Object[]{new Character(drive), newdrive.GetInfo()});
+                Memory.mem_writeb(Memory.Real2Phys(Dos.dos.tables.mediaid) + (drive - 'A') * 2,
+                    newdrive.GetMediaByte());
+                WriteOut(Msg.get("PROGRAM_MOUNT_STATUS_2"),
+                    new Object[] { Character.valueOf(drive), newdrive.GetInfo() });
                 /* check if volume label is given and don't allow it to updated in the future */
-                if ((label = cmd.FindString("-label", true)) != null) newdrive.dirCache.SetLabel(label, iscdrom, false);
-                    /* For hard drives set the label to DRIVELETTER_Drive.
-                     * For floppy drives set the label to DRIVELETTER_Floppy.
-                     * This way every drive except cdroms should get a label.*/
+                if ((label = cmd.FindString("-label", true)) != null)
+                    newdrive.dirCache.SetLabel(label, iscdrom, false);
+                /* For hard drives set the label to DRIVELETTER_Drive.
+                 * For floppy drives set the label to DRIVELETTER_Floppy.
+                 * This way every drive except cdroms should get a label.*/
                 else if (type.equals("dir")) {
                     label = drive + "_DRIVE";
                     newdrive.dirCache.SetLabel(label, iscdrom, true);
@@ -670,15 +662,17 @@ public class Dos_programs {
                     label = drive + "_FLOPPY";
                     newdrive.dirCache.SetLabel(label, iscdrom, true);
                 }
-                if (type.equals("floppy")) Bios_disk.incrementFDD();
+                if (type.equals("floppy"))
+                    Bios_disk.incrementFDD();
                 return;
             }
-            WriteOut(Msg.get("PROGRAM_MOUNT_USAGE"), new Object[]{"d:\\dosprogs", "d:\\dosprogs"});
-            WriteOut(Msg.get("PROGRAM_MOUNT_USAGE"), new Object[]{"~/dosprogs", "~/dosprogs"});
+            WriteOut(Msg.get("PROGRAM_MOUNT_USAGE"), new Object[] { "d:\\dosprogs", "d:\\dosprogs" });
+            WriteOut(Msg.get("PROGRAM_MOUNT_USAGE"), new Object[] { "~/dosprogs", "~/dosprogs" });
         }
     }
 
     private static class MEM extends Program {
+        @Override
         public void Run() {
             /* Show conventional Memory */
             WriteOut("\n");
@@ -690,39 +684,46 @@ public class Dos_programs {
             /*Bit8u*/
             int old_memstrat = Dos_memory.DOS_GetMemAllocStrategy() & 0xff;
             if (umb_start != 0xffff) {
-                if ((umb_flag & 1) == 1) Dos_memory.DOS_LinkUMBsToMemChain(0);
+                if ((umb_flag & 1) == 1)
+                    Dos_memory.DOS_LinkUMBsToMemChain(0);
                 Dos_memory.DOS_SetMemAllocStrategy(0);
             }
 
             /*Bit16u*/
             IntRef seg = new IntRef(0), blocks = new IntRef(0xffff);
             Dos_memory.DOS_AllocateMemory(seg, blocks);
-            if ((Dosbox.machine == MachineType.MCH_PCJR) && (Memory.real_readb(0x2000, 0) == 0x5a) && (Memory.real_readw(0x2000, 1) == 0) && (Memory.real_readw(0x2000, 3) == 0x7ffe)) {
-                WriteOut(Msg.get("PROGRAM_MEM_CONVEN"), new Object[]{new Integer(0x7ffe * 16 / 1024)});
-            } else WriteOut(Msg.get("PROGRAM_MEM_CONVEN"), new Object[]{new Integer(blocks.value * 16 / 1024)});
+            if (Dosbox.machine == MachineType.MCH_PCJR && Memory.real_readb(0x2000, 0) == 0x5a
+                && Memory.real_readw(0x2000, 1) == 0 && Memory.real_readw(0x2000, 3) == 0x7ffe) {
+                WriteOut(Msg.get("PROGRAM_MEM_CONVEN"), new Object[] { Integer.valueOf(0x7ffe * 16 / 1024) });
+            } else
+                WriteOut(Msg.get("PROGRAM_MEM_CONVEN"), new Object[] { Integer.valueOf(blocks.value * 16 / 1024) });
 
             if (umb_start != 0xffff) {
                 Dos_memory.DOS_LinkUMBsToMemChain(1);
-                Dos_memory.DOS_SetMemAllocStrategy(0x40);    // search in UMBs only
+                Dos_memory.DOS_SetMemAllocStrategy(0x40); // search in UMBs only
 
                 /*Bit16u*/
                 int largest_block = 0, total_blocks = 0, block_count = 0;
-                for (; ; block_count++) {
+                for (;; block_count++) {
                     blocks.value = 0xffff;
                     Dos_memory.DOS_AllocateMemory(seg, blocks);
-                    if (blocks.value == 0) break;
+                    if (blocks.value == 0)
+                        break;
                     total_blocks += blocks.value;
-                    if (blocks.value > largest_block) largest_block = blocks.value;
+                    if (blocks.value > largest_block)
+                        largest_block = blocks.value;
                     Dos_memory.DOS_AllocateMemory(seg, blocks);
                 }
 
                 /*Bit8u*/
                 short current_umb_flag = Dos.dos_infoblock.GetUMBChainState();
-                if ((current_umb_flag & 1) != (umb_flag & 1)) Dos_memory.DOS_LinkUMBsToMemChain(umb_flag);
-                Dos_memory.DOS_SetMemAllocStrategy(old_memstrat);    // restore strategy
+                if ((current_umb_flag & 1) != (umb_flag & 1))
+                    Dos_memory.DOS_LinkUMBsToMemChain(umb_flag);
+                Dos_memory.DOS_SetMemAllocStrategy(old_memstrat); // restore strategy
 
                 if (block_count > 0)
-                    WriteOut(Msg.get("PROGRAM_MEM_UPPER"), new Object[]{new Integer(total_blocks * 16 / 1024), new Integer(block_count), new Integer(largest_block * 16 / 1024)});
+                    WriteOut(Msg.get("PROGRAM_MEM_UPPER"), new Object[] { Integer.valueOf(total_blocks * 16 / 1024),
+                        Integer.valueOf(block_count), Integer.valueOf(largest_block * 16 / 1024) });
             }
 
             /* Test for and show free XMS */
@@ -737,7 +738,7 @@ public class Dos_programs {
                 CPU_Regs.reg_eax.high(8);
                 Callback.CALLBACK_RunRealFar(xms_seg, xms_off);
                 if (CPU_Regs.reg_ebx.low() == 0) {
-                    WriteOut(Msg.get("PROGRAM_MEM_EXTEND"), new Object[]{new Long(CPU_Regs.reg_edx.word())});
+                    WriteOut(Msg.get("PROGRAM_MEM_EXTEND"), new Object[] { Long.valueOf(CPU_Regs.reg_edx.word()) });
                 }
             }
             /* Test for and show free EMS */
@@ -748,12 +749,12 @@ public class Dos_programs {
                 Dos_files.DOS_CloseFile(handle.value);
                 CPU_Regs.reg_eax.high(0x42);
                 Callback.CALLBACK_RunRealInt(0x67);
-                WriteOut(Msg.get("PROGRAM_MEM_EXPAND"), new Object[]{new Long(CPU_Regs.reg_ebx.word() * 16)});
+                WriteOut(Msg.get("PROGRAM_MEM_EXPAND"), new Object[] { Long.valueOf(CPU_Regs.reg_ebx.word() * 16) });
             }
         }
     }
 
-    static public class RebootException extends RuntimeException {
+    public static class RebootException extends RuntimeException {
     }
 
     //    extern Bit32u floppytype;
@@ -761,7 +762,7 @@ public class Dos_programs {
 //
     private static class BOOT extends Program {
         static void cmos_init_hd(int type_ofs, int info_ofs, Internal.IDEState hd) {
-            if (hd == null || hd.drive_kind != IDE.IDE_HD)
+            if (hd == null || hd.drive_kind != Internal.IDE_HD)
                 return;
             int cylinders = hd.cylinders, heads = hd.heads, sectors = hd.sectors;
             Cmos.CMOS_SetRegister(type_ofs, 47);
@@ -770,7 +771,7 @@ public class Dos_programs {
             Cmos.CMOS_SetRegister(info_ofs + 2, heads);
             Cmos.CMOS_SetRegister(info_ofs + 3, 0xff);
             Cmos.CMOS_SetRegister(info_ofs + 4, 0xff);
-            Cmos.CMOS_SetRegister(info_ofs + 5, 0xc0 | (((heads > 8) ? 1 : 0) << 3));
+            Cmos.CMOS_SetRegister(info_ofs + 5, 0xc0 | (heads > 8 ? 1 : 0) << 3);
             Cmos.CMOS_SetRegister(info_ofs + 6, cylinders);
             Cmos.CMOS_SetRegister(info_ofs + 7, cylinders >> 8);
             Cmos.CMOS_SetRegister(info_ofs + 8, sectors);
@@ -785,15 +786,18 @@ public class Dos_programs {
             StringRef fullname = new StringRef();
 
             Drive_local ldp;
-            if (!Dos_files.DOS_MakeName(filename, fullname, drive)) return null;
+            if (!Dos_files.DOS_MakeName(filename, fullname, drive))
+                return null;
 
             try {
-                if (!(Dos_files.Drives[drive.value] instanceof Drive_local)) return null;
+                if (!(Dos_files.Drives[drive.value] instanceof Drive_local))
+                    return null;
                 ldp = (Drive_local) Dos_files.Drives[drive.value];
 
                 tmpfile = ldp.GetSystemFilePtr(fullname.value, "rb");
                 if (tmpfile == null) {
-                    if (!tryload) error.value = true;
+                    if (!tryload)
+                        error.value = true;
                     return null;
                 }
 
@@ -809,7 +813,8 @@ public class Dos_programs {
                     WriteOut(Msg.get("PROGRAM_BOOT_WRITE_PROTECTED"));
                     tmpfile = ldp.GetSystemFilePtr(fullname.value, "rb");
                     if (tmpfile == null) {
-                        if (!tryload) error.value = true;
+                        if (!tryload)
+                            error.value = true;
                         return null;
                     }
                 }
@@ -826,7 +831,8 @@ public class Dos_programs {
         FileIO getFSFile(String filename, LongRef ksize, LongRef bsize, boolean tryload/*=false*/) {
             BooleanRef error = new BooleanRef(tryload);
             FileIO tmpfile = getFSFile_mounted(filename, ksize, bsize, error);
-            if (tmpfile != null) return tmpfile;
+            if (tmpfile != null)
+                return tmpfile;
             //File not found on mounted filesystem. Try regular filesystem
             filename = FileHelper.resolve_path(filename);
             try {
@@ -861,6 +867,7 @@ public class Dos_programs {
             dos_sec.ExecuteInit(false);
         }
 
+        @Override
         public void Run() {
             //Hack To allow long commandlines
             ChangeToLongCmd();
@@ -897,7 +904,7 @@ public class Dos_programs {
                         i++;
                         if ((temp_line = cmd.FindCommand(i + 1)) != null) {
                             drive = temp_line.toUpperCase().charAt(0);
-                            if ((drive != 'A') && (drive != 'C') && (drive != 'D')) {
+                            if (drive != 'A' && drive != 'C' && drive != 'D') {
                                 printError();
                                 return;
                             }
@@ -923,7 +930,7 @@ public class Dos_programs {
                         continue;
                     }
 
-                    WriteOut(Msg.get("PROGRAM_BOOT_IMAGE_OPEN"), new Object[]{temp_line});
+                    WriteOut(Msg.get("PROGRAM_BOOT_IMAGE_OPEN"), new Object[] { temp_line });
                     LongRef rombytesize = new LongRef(0);
                     FileIO usefile = getFSFile(temp_line, floppysize, rombytesize);
                     if (usefile != null) {
@@ -936,7 +943,7 @@ public class Dos_programs {
                             rombytesize_2 = rombytesize;
                         }
                     } else {
-                        WriteOut(Msg.get("PROGRAM_BOOT_IMAGE_NOT_OPEN"), new Object[]{temp_line});
+                        WriteOut(Msg.get("PROGRAM_BOOT_IMAGE_NOT_OPEN"), new Object[] { temp_line });
                         return;
                     }
 
@@ -951,17 +958,16 @@ public class Dos_programs {
                 if (bochs.startsWith("CD")) {
                     Block.BlockDriverState cdrom = IDE.getFirstCdrom();
                     if (cdrom == null) {
-                        WriteOut(Msg.get("PROGRAM_BOOT_UNABLE"), new Object[]{new Character(drive)});
+                        WriteOut(Msg.get("PROGRAM_BOOT_UNABLE"), new Object[] { Character.valueOf(drive) });
                         return;
                     }
                 }
             } else if (Bios_disk.imageDiskList[drive - 65] == null) {
-                WriteOut(Msg.get("PROGRAM_BOOT_UNABLE"), new Object[]{new Character(drive)});
+                WriteOut(Msg.get("PROGRAM_BOOT_UNABLE"), new Object[] { Character.valueOf(drive) });
                 return;
             }
             int eip = 0x7c00;
             bootSector bootarea = new bootSector();
-
 
             // This is a working progress to get CD booting to work with Dosbox's bios
             /*
@@ -994,8 +1000,10 @@ public class Dos_programs {
             if (bochs == null) {
                 Bios_disk.imageDiskList[drive - 65].Read_Sector(0, 0, 1, bootarea.rawdata);
             }
-            if ((bootarea.rawdata[0] == 0x50) && (bootarea.rawdata[1] == 0x43) && (bootarea.rawdata[2] == 0x6a) && (bootarea.rawdata[3] == 0x72)) {
-                if (Dosbox.machine != MachineType.MCH_PCJR) WriteOut(Msg.get("PROGRAM_BOOT_CART_WO_PCJR"));
+            if (bootarea.rawdata[0] == 0x50 && bootarea.rawdata[1] == 0x43 && bootarea.rawdata[2] == 0x6a
+                && bootarea.rawdata[3] == 0x72) {
+                if (Dosbox.machine != MachineType.MCH_PCJR)
+                    WriteOut(Msg.get("PROGRAM_BOOT_CART_WO_PCJR"));
                 else {
                     byte[] rombuf = new byte[65536];
                     int cfound_at = -1;
@@ -1020,7 +1028,7 @@ public class Dos_programs {
                                 clen = rombuf[ct] & 0xFF;
                             }
                             if (ct > 6) {
-                                WriteOut(Msg.get("PROGRAM_BOOT_CART_LIST_CMDS"), new Object[]{cmdlist});
+                                WriteOut(Msg.get("PROGRAM_BOOT_CART_LIST_CMDS"), new Object[] { cmdlist });
                             } else {
                                 WriteOut(Msg.get("PROGRAM_BOOT_CART_NO_CMDS"));
                             }
@@ -1048,7 +1056,7 @@ public class Dos_programs {
                             }
                             if (cfound_at <= 0) {
                                 if (ct > 6) {
-                                    WriteOut(Msg.get("PROGRAM_BOOT_CART_LIST_CMDS"), new Object[]{cmdlist});
+                                    WriteOut(Msg.get("PROGRAM_BOOT_CART_LIST_CMDS"), new Object[] { cmdlist });
                                 } else {
                                     WriteOut(Msg.get("PROGRAM_BOOT_CART_NO_CMDS"));
                                 }
@@ -1067,7 +1075,8 @@ public class Dos_programs {
                     disable_umb_ems_xms();
                     Memory.PreparePCJRCartRom();
 
-                    if (usefile_1 == null) return;
+                    if (usefile_1 == null)
+                        return;
 
                     LongRef sz1 = new LongRef(0);
                     LongRef sz2 = new LongRef(0);
@@ -1082,7 +1091,8 @@ public class Dos_programs {
                             e.printStackTrace();
                         }
                         if (drd == 0xb000) {
-                            for (i = 0; i < 0xb000; i++) Memory.phys_writeb(0xf3000 + i, rombuf[i]);
+                            for (i = 0; i < 0xb000; i++)
+                                Memory.phys_writeb(0xf3000 + i, rombuf[i]);
                         }
                         try {
                             tfile.close();
@@ -1162,7 +1172,7 @@ public class Dos_programs {
             } else {
                 disable_umb_ems_xms();
                 Memory.RemoveEMSPageFrame();
-                WriteOut(Msg.get("PROGRAM_BOOT_BOOT"), new Object[]{new Character(drive)});
+                WriteOut(Msg.get("PROGRAM_BOOT_BOOT"), new Object[] { Character.valueOf(drive) });
 
                 /* revector some dos-allocated interrupts */
                 Memory.real_writed(0, 0x01 * 4, 0xf000ff53);
@@ -1186,7 +1196,8 @@ public class Dos_programs {
                             fileIO.close();
                         }
                         int address = 0x100000 - data.length;
-                        for (i = 0; i < data.length; i++) RAM.writeb(address + i, data[i]);
+                        for (i = 0; i < data.length; i++)
+                            RAM.writeb(address + i, data[i]);
 
                         byte[] videoData = new byte[0x10000];
                         boolean videoBiosFound = false;
@@ -1203,15 +1214,14 @@ public class Dos_programs {
                             fileIO.close();
                         }
                         address = 0xC0000;
-                        for (i = 0; i < videoData.length; i++) RAM.writeb(address + i, videoData[i]);
+                        for (i = 0; i < videoData.length; i++)
+                            RAM.writeb(address + i, videoData[i]);
                         if (Dosbox.svgaCard < SVGACards.SVGA_QEMU) {
-                            IoHandler.IO_WriteHandler vga_write = new IoHandler.IO_WriteHandler() {
-                                public void call(/*Bitu*/int port, /*Bitu*/int val, /*Bitu*/int iolen) {
-                                    if (port == 0x500 || port == 0x503) {
-                                        System.out.print((char) val);
-                                    } else if (port == 0x501 || port == 0x502) {
-                                        System.out.println("panic in vgabios at line " + val);
-                                    }
+                            IoHandler.IO_WriteHandler vga_write = (port, val, iolen) -> {
+                                if (port == 0x500 || port == 0x503) {
+                                    System.out.print((char) val);
+                                } else if (port == 0x501 || port == 0x502) {
+                                    System.out.println("panic in vgabios at line " + val);
                                 }
                             };
                             new IoHandler.IO_WriteHandleObject().Install(0x500, vga_write, IoHandler.IO_MA);
@@ -1222,7 +1232,7 @@ public class Dos_programs {
                             VBE.registerIoPorts();
                         }
 
-                        int endLoadAddress = (int) (0x100000000l - data.length);
+                        int endLoadAddress = (int) (0x100000000L - data.length);
                         Memory.MEM_AddROM(endLoadAddress >>> 12, data.length >>> 12, data);
                         //Memory.MEM_AddROM(0xC0, 0x10, videoData);
                         CPU_Regs.reg_eip = 0xFFF0;
@@ -1239,15 +1249,13 @@ public class Dos_programs {
                         else
                             CPU_Regs.reg_edx.dword = 0x00000402;
 
-                        IoHandler.IO_WriteHandler bios_write = new IoHandler.IO_WriteHandler() {
-                            public void call(/*Bitu*/int port, /*Bitu*/int val, /*Bitu*/int iolen) {
-                                if (port == 0x8900)
-                                    throw new Main.KillException();
-                                if (port == 0x402 || port == 0x403) {
-                                    System.out.print((char) val);
-                                } else if (port == 0x401 || port == 0x402) {
-                                    System.out.println("panic in rombios.c at line " + val);
-                                }
+                        IoHandler.IO_WriteHandler bios_write = (port, val, iolen) -> {
+                            if (port == 0x8900)
+                                throw new Main.KillException();
+                            if (port == 0x402 || port == 0x403) {
+                                System.out.print((char) val);
+                            } else if (port == 0x401 || port == 0x402) {
+                                System.out.println("panic in rombios.c at line " + val);
                             }
                         };
                         new IoHandler.IO_WriteHandleObject().Install(0x400, bios_write, IoHandler.IO_MA);
@@ -1277,7 +1285,8 @@ public class Dos_programs {
                             Cmos.CMOS_SetRegister(0x3d, (byte) 0x2);
                         }
 
-                        Cmos.CMOS_SetRegister(0x12, (IDE.getDrive(0, 0) != null ? 0xf0 : 0) | (IDE.getDrive(0, 1) != null ? 0x0f : 0));
+                        Cmos.CMOS_SetRegister(0x12,
+                            (IDE.getDrive(0, 0) != null ? 0xf0 : 0) | (IDE.getDrive(0, 1) != null ? 0x0f : 0));
                         cmos_init_hd(0x19, 0x1b, IDE.getDrive(0, 0));
                         cmos_init_hd(0x1a, 0x24, IDE.getDrive(0, 1));
 
@@ -1288,8 +1297,9 @@ public class Dos_programs {
                                geometry.  It is always such that: 1 <= sects <= 63, 1
                                <= heads <= 16, 1 <= cylinders <= 16383. The BIOS
                                geometry can be different if a translation is done. */
-                            if (s != null && s.drive_kind == IDE.IDE_HD && s.chs_trans != Block.BIOS_ATA_TRANSLATION_AUTO) {
-                                val |= (s.chs_trans - 1) << (i * 2);
+                            if (s != null && s.drive_kind == Internal.IDE_HD
+                                && s.chs_trans != Block.BIOS_ATA_TRANSLATION_AUTO) {
+                                val |= s.chs_trans - 1 << i * 2;
                             }
                         }
                         Cmos.CMOS_SetRegister(0x39, val);
@@ -1310,7 +1320,8 @@ public class Dos_programs {
                         return;
                     }
                 }
-                for (i = 0; i < bootarea.rawdata.length; i++) Memory.real_writeb(0, 0x7c00 + i, bootarea.rawdata[i]);
+                for (i = 0; i < bootarea.rawdata.length; i++)
+                    Memory.real_writeb(0, 0x7c00 + i, bootarea.rawdata[i]);
 
                 CPU_Regs.SegSet16CS(0);
                 CPU_Regs.reg_eip = eip;
@@ -1342,7 +1353,7 @@ public class Dos_programs {
             }
         }
 
-        static private class bootSector {
+        private static class bootSector {
             //            struct entries {
 //                Bit8u jump[3];
 //                Bit8u oem_name[8];
@@ -1356,6 +1367,7 @@ public class Dos_programs {
     }
 
     private static class LOADFIX extends Program {
+        @Override
         public void Run() {
             /*Bit16u*/
             int commandNr = 1;
@@ -1367,12 +1379,13 @@ public class Dos_programs {
                     if (ch == 'D' || ch == 'F') {
                         // Deallocate all
                         Dos_memory.DOS_FreeProcessMemory(0x40);
-                        WriteOut(Msg.get("PROGRAM_LOADFIX_DEALLOCALL"), new Object[]{new Integer(kb)});
+                        WriteOut(Msg.get("PROGRAM_LOADFIX_DEALLOCALL"), new Object[] { Integer.valueOf(kb) });
                         return;
                     } else {
                         // Set mem amount to allocate
                         kb = Integer.parseInt(temp_line.substring(1));
-                        if (kb == 0) kb = 64;
+                        if (kb == 0)
+                            kb = 64;
                         commandNr++;
                     }
                 }
@@ -1384,8 +1397,8 @@ public class Dos_programs {
             IntRef blocks = new IntRef(kb * 1024 / 16);
             if (Dos_memory.DOS_AllocateMemory(segment, blocks)) {
                 Dos_MCB mcb = new Dos_MCB(segment.value - 1);
-                mcb.SetPSPSeg(0x40);            // use fake segment
-                WriteOut(Msg.get("PROGRAM_LOADFIX_ALLOC"), new Object[]{new Integer(kb)});
+                mcb.SetPSPSeg(0x40); // use fake segment
+                WriteOut(Msg.get("PROGRAM_LOADFIX_ALLOC"), new Object[] { Integer.valueOf(kb) });
                 // Prepare commandline...
                 if ((temp_line = cmd.FindCommand(commandNr++)) != null) {
                     // get Filename
@@ -1403,15 +1416,16 @@ public class Dos_programs {
                     Dos_shell shell = new Dos_shell();
                     shell.Execute(filename, args);
                     Dos_memory.DOS_FreeMemory(segment.value);
-                    WriteOut(Msg.get("PROGRAM_LOADFIX_DEALLOC"), new Object[]{new Integer(kb)});
+                    WriteOut(Msg.get("PROGRAM_LOADFIX_DEALLOC"), new Object[] { Integer.valueOf(kb) });
                 }
             } else {
-                WriteOut(Msg.get("PROGRAM_LOADFIX_ERROR"), new Object[]{new Integer(kb)});
+                WriteOut(Msg.get("PROGRAM_LOADFIX_ERROR"), new Object[] { Integer.valueOf(kb) });
             }
         }
     }
 
     private static class RESCAN extends Program {
+        @Override
         public void Run() {
             boolean all = false;
 
@@ -1420,7 +1434,8 @@ public class Dos_programs {
 
             if ((temp_line = cmd.FindCommand(1)) != null) {
                 //-A -All /A /All
-                if (temp_line.length() >= 2 && (temp_line.charAt(0) == '-' || temp_line.charAt(0) == '/') && (temp_line.charAt(1) == 'a' || temp_line.charAt(1) == 'A'))
+                if (temp_line.length() >= 2 && (temp_line.charAt(0) == '-' || temp_line.charAt(0) == '/')
+                    && (temp_line.charAt(1) == 'a' || temp_line.charAt(1) == 'A'))
                     all = true;
                 else if (temp_line.length() == 2 && temp_line.charAt(1) == ':') {
                     drive = (short) (temp_line.toLowerCase().charAt(0) - 'a');
@@ -1429,7 +1444,8 @@ public class Dos_programs {
             // Get current drive
             if (all) {
                 for (/*Bitu*/int i = 0; i < Dos_files.DOS_DRIVES; i++) {
-                    if (Dos_files.Drives[i] != null) Dos_files.Drives[i].EmptyCache();
+                    if (Dos_files.Drives[i] != null)
+                        Dos_files.Drives[i].EmptyCache();
                 }
                 WriteOut(Msg.get("PROGRAM_RESCAN_SUCCESS"));
             } else {
@@ -1454,9 +1470,11 @@ public class Dos_programs {
             WriteOut(Msg.get("PROGRAM_INTRO_MOUNT_END"));
         }
 
+        @Override
         public void Run() {
             /* Only run if called from the first shell (Xcom TFTD runs any intro file in the path) */
-            if (new Dos_PSP(Dos.dos.psp()).GetParent() != new Dos_PSP(new Dos_PSP(Dos.dos.psp()).GetParent()).GetParent())
+            if (new Dos_PSP(Dos.dos.psp()).GetParent() != new Dos_PSP(new Dos_PSP(Dos.dos.psp()).GetParent())
+                .GetParent())
                 return;
             if (cmd.FindExist("cdrom", false)) {
                 WriteOut(Msg.get("PROGRAM_INTRO_CDROM"));
@@ -1486,6 +1504,7 @@ public class Dos_programs {
     }
 
     private static class IMGMOUNT extends Program {
+        @Override
         public void Run() {
             //Hack To allow long commandlines
             ChangeToLongCmd();
@@ -1512,7 +1531,8 @@ public class Dos_programs {
                             Dos_files.Drives[i_drive] = null;
                             if (i_drive == Dos_files.DOS_GetDefaultDrive())
                                 Dos_files.DOS_SetDrive((short) ('Z' - 'A'));
-                            WriteOut(Msg.get("PROGRAM_MOUNT_UMOUNT_SUCCESS"), new Object[]{new Character(umount.charAt(0))});
+                            WriteOut(Msg.get("PROGRAM_MOUNT_UMOUNT_SUCCESS"),
+                                new Object[] { Character.valueOf(umount.charAt(0)) });
                             break;
                         case 1:
                             WriteOut(Msg.get("PROGRAM_MOUNT_UMOUNT_NO_VIRTUAL"));
@@ -1522,11 +1542,11 @@ public class Dos_programs {
                             break;
                     }
                 } else {
-                    WriteOut(Msg.get("PROGRAM_MOUNT_UMOUNT_NOT_MOUNTED"), new Object[]{new Character(umount.charAt(0))});
+                    WriteOut(Msg.get("PROGRAM_MOUNT_UMOUNT_NOT_MOUNTED"),
+                        new Object[] { Character.valueOf(umount.charAt(0)) });
                 }
                 return;
             }
-
 
             BooleanRef ide_slave = new BooleanRef(false);
             IntRef ide_index = new IntRef(-1);
@@ -1535,18 +1555,25 @@ public class Dos_programs {
             String fstype;
 
             type = cmd.FindString("-t", true);
-            if (type == null) type = "hdd";
-            else type = type.toLowerCase();
+            if (type == null)
+                type = "hdd";
+            else
+                type = type.toLowerCase();
 
             ideattach = cmd.FindString("-ide", true);
-            if (ideattach == null) ideattach = "auto";
-            else ideattach = ideattach.toLowerCase();
+            if (ideattach == null)
+                ideattach = "auto";
+            else
+                ideattach = ideattach.toLowerCase();
 
             fstype = cmd.FindString("-fs", true);
-            if (fstype == null) fstype = "fat";
+            if (fstype == null)
+                fstype = "fat";
 
-            if (type.equals("cdrom")) type = "iso"; //Tiny hack for people who like to type -t cdrom
-            if (type.equals("zip")) fstype = "zip"; // Tiny hack for zip files
+            if (type.equals("cdrom"))
+                type = "iso"; //Tiny hack for people who like to type -t cdrom
+            if (type.equals("zip"))
+                fstype = "zip"; // Tiny hack for zip files
             /*Bit8u*/
             short mediaid;
             if (type.equals("floppy") || type.equals("hdd") || type.equals("iso") || type.equals("zip")) {
@@ -1560,7 +1587,8 @@ public class Dos_programs {
                 if (ideattach.equals("auto")) {
                     IDE.IDE_Auto(ide_index, ide_slave);
                     System.out.println("IDE: index " + ide_index.value + " slave=" + ide_slave.value);
-                } else if (!ideattach.equals("none") && ideattach.length() > 0 && Character.isDigit(ideattach.charAt(0))) {
+                } else if (!ideattach.equals("none") && ideattach.length() > 0
+                    && Character.isDigit(ideattach.charAt(0))) {
                     ide_index.value = ideattach.charAt(0) - '1';
                     if (ideattach.length() > 1 && ideattach.charAt(1) == 's')
                         ide_slave.value = true;
@@ -1593,7 +1621,8 @@ public class Dos_programs {
 
                 if (fstype.equals("fat") || fstype.equals("iso") || fstype.equals("zip")) {
                     // get the drive letter
-                    if ((temp_line = cmd.FindCommand(1)) == null || (temp_line.length() > 2) || ((temp_line.length() > 1) && (temp_line.charAt(1) != ':'))) {
+                    if ((temp_line = cmd.FindCommand(1)) == null || temp_line.length() > 2
+                        || temp_line.length() > 1 && temp_line.charAt(1) != ':') {
                         WriteOut_NoParsing(Msg.get("PROGRAM_IMGMOUNT_SPECIFY_DRIVE"));
                         return;
                     }
@@ -1604,17 +1633,17 @@ public class Dos_programs {
                     }
                 } else if (fstype.equals("none")) {
                     temp_line = cmd.FindCommand(1);
-                    if ((temp_line.length() > 1) || (!StringHelper.isdigit(temp_line.charAt(0)))) {
+                    if (temp_line.length() > 1 || !StringHelper.isdigit(temp_line.charAt(0))) {
                         WriteOut_NoParsing(Msg.get("PROGRAM_IMGMOUNT_SPECIFY2"));
                         return;
                     }
                     drive = temp_line.charAt(0);
-                    if ((drive < '0') || (drive > 3 + '0')) {
+                    if (drive < '0' || drive > 3 + '0') {
                         WriteOut_NoParsing(Msg.get("PROGRAM_IMGMOUNT_SPECIFY2"));
                         return;
                     }
                 } else {
-                    WriteOut(Msg.get("PROGRAM_IMGMOUNT_FORMAT_UNSUPPORTED"), new Object[]{fstype});
+                    WriteOut(Msg.get("PROGRAM_IMGMOUNT_FORMAT_UNSUPPORTED"), new Object[] { fstype });
                     return;
                 }
 
@@ -1638,7 +1667,8 @@ public class Dos_programs {
 
                             /*Bit8u*/
                             ShortRef dummy = new ShortRef();
-                            if (!Dos_files.DOS_MakeName(tmp, fullname, dummy) || !Dos_files.Drives[dummy.value].GetInfo().startsWith("local directory")) {
+                            if (!Dos_files.DOS_MakeName(tmp, fullname, dummy)
+                                || !Dos_files.Drives[dummy.value].GetInfo().startsWith("local directory")) {
                                 WriteOut(Msg.get("PROGRAM_IMGMOUNT_NON_LOCAL_DRIVE"));
                                 return;
                             }
@@ -1680,7 +1710,8 @@ public class Dos_programs {
                         FileIO diskfile = null;
 
                         try {
-                            diskfile = FileIOFactory.open(temp_line, FileIOFactory.MODE_READ | FileIOFactory.MODE_WRITE);
+                            diskfile = FileIOFactory.open(temp_line,
+                                FileIOFactory.MODE_READ | FileIOFactory.MODE_WRITE);
                             /*Bit32u*/
                             long fcsize = diskfile.length() / 512;
                             /*Bit8u*/
@@ -1692,7 +1723,7 @@ public class Dos_programs {
                                 return;
                             }
                             diskfile.close();
-                            if ((buf[510] != 0x55) || (buf[511] != (byte) 0xaa)) {
+                            if (buf[510] != 0x55 || buf[511] != (byte) 0xaa) {
                                 WriteOut(Msg.get("PROGRAM_IMGMOUNT_INVALID_GEOMETRY"));
                                 return;
                             }
@@ -1703,9 +1734,9 @@ public class Dos_programs {
                             /*Bitu*/
                             int startsect = buf[0x1c0] & 0x3f - 1;
                             /*Bitu*/
-                            int startcyl = buf[0x1c1] | ((buf[0x1c0] & 0xc0) << 2);
+                            int startcyl = buf[0x1c1] | (buf[0x1c0] & 0xc0) << 2;
                             /*Bitu*/
-                            int endcyl = buf[0x1c5] | ((buf[0x1c4] & 0xc0) << 2);
+                            int endcyl = buf[0x1c5] | (buf[0x1c4] & 0xc0) << 2;
 
                             /*Bitu*/
                             int heads = (buf[0x1c3] & 0xFF) + 1;
@@ -1727,9 +1758,9 @@ public class Dos_programs {
                                 // real partition size can be a few cylinders less than pe1_size
                                 // if more than 1023 cylinders see if first partition fits
                                 // into 1023, else bail.
-                                if ((part_len < 0) || (part_len > pe1_size) || (pe1_size > fcsize) ||
-                                        ((pe1_size - part_len) / (sectors * heads) > 2) ||
-                                        ((pe1_size / (heads * sectors)) > 1023)) {
+                                if (part_len < 0 || part_len > pe1_size || pe1_size > fcsize
+                                    || (pe1_size - part_len) / (sectors * heads) > 2
+                                    || pe1_size / (heads * sectors) > 1023) {
                                     //LOG_MSG("start(c,h,s) %u,%u,%u",startcyl,starthead,startsect);
                                     //LOG_MSG("endcyl %u heads %u sectors %u",endcyl,heads,sectors);
                                     //LOG_MSG("psize %u start %u end %u",pe1_size,part_start,part_end);
@@ -1738,7 +1769,8 @@ public class Dos_programs {
                                     sizes[1] = sectors;
                                     sizes[2] = heads;
                                     sizes[3] = (int) (fcsize / (heads * sectors));
-                                    if (sizes[3] > 1023) sizes[3] = 1023;
+                                    if (sizes[3] > 1023)
+                                        sizes[3] = 1023;
                                     yet_detected = true;
                                 }
                             }
@@ -1748,7 +1780,7 @@ public class Dos_programs {
                                 int cylinders = (int) (fcsize / (16 * 63));
                                 // Int13 only supports up to 1023 cylinders
                                 // For mounting unknown images we could go up with the heads to 255
-                                if ((cylinders * 16 * 63 == fcsize) && (cylinders < 1024)) {
+                                if (cylinders * 16 * 63 == fcsize && cylinders < 1024) {
                                     yet_detected = true;
                                     sizes[0] = 512;
                                     sizes[1] = 63;
@@ -1758,7 +1790,9 @@ public class Dos_programs {
                             }
 
                             if (yet_detected)
-                                WriteOut(StringHelper.sprintf(Msg.get("PROGRAM_IMGMOUNT_AUTODET_VALUES"), new Object[]{new Integer(sizes[0]), new Integer(sizes[1]), new Integer(sizes[2]), new Integer(sizes[3])}));
+                                WriteOut(StringHelper.sprintf(Msg.get("PROGRAM_IMGMOUNT_AUTODET_VALUES"),
+                                    new Object[] { Integer.valueOf(sizes[0]), Integer.valueOf(sizes[1]),
+                                        Integer.valueOf(sizes[2]), Integer.valueOf(sizes[3]) }));
                             else {
                                 WriteOut(Msg.get("PROGRAM_IMGMOUNT_INVALID_GEOMETRY"));
                                 return;
@@ -1780,16 +1814,17 @@ public class Dos_programs {
                     FileIO newDisk = null;
                     try {
                         newDisk = FileIOFactory.open(temp_line, FileIOFactory.MODE_READ | FileIOFactory.MODE_WRITE);
-                        imagesize = (newDisk.length() / 1024);
+                        imagesize = newDisk.length() / 1024;
                     } catch (Exception e) {
                         e.printStackTrace();
                         return;
                     }
-                    newImage = new Bios_disk.imageDisk(newDisk, temp_line, imagesize, (imagesize > 2880));
-                    if (imagesize > 2880) newImage.Set_Geometry(sizes[2], sizes[3], sizes[1], sizes[0]);
+                    newImage = new Bios_disk.imageDisk(newDisk, temp_line, imagesize, imagesize > 2880);
+                    if (imagesize > 2880)
+                        newImage.Set_Geometry(sizes[2], sizes[3], sizes[1], sizes[0]);
                 }
             } else {
-                WriteOut(Msg.get("PROGRAM_IMGMOUNT_TYPE_UNSUPPORTED"), new Object[]{type});
+                WriteOut(Msg.get("PROGRAM_IMGMOUNT_TYPE_UNSUPPORTED"), new Object[] { type });
                 return;
             }
 
@@ -1805,13 +1840,14 @@ public class Dos_programs {
                 Dos_files.Drives[drive - 'A'] = newdrive;
                 // Set the correct media byte in the table
                 Memory.mem_writeb(Memory.Real2Phys(Dos.dos.tables.mediaid) + (drive - 'A') * 2, mediaid);
-                WriteOut(Msg.get("PROGRAM_MOUNT_STATUS_2"), new Object[]{new Character(drive), temp_line});
+                WriteOut(Msg.get("PROGRAM_MOUNT_STATUS_2"), new Object[] { Character.valueOf(drive), temp_line });
                 if (((Drive_fat) newdrive).loadedDisk.hardDrive) {
                     if (Bios_disk.imageDiskList[2] == null) {
                         Bios_disk.imageDiskList[2] = ((Drive_fat) newdrive).loadedDisk;
                         Bios_disk.imageDisk imageDisk = Bios_disk.imageDiskList[2];
                         if (ide_index.value >= 0)
-                            IDE.IDE_Attach(false, ide_index.value, ide_slave.value, imageDisk.diskimg, (int) imageDisk.cylinders, (int) imageDisk.heads, (int) imageDisk.sectors);
+                            IDE.IDE_Attach(false, ide_index.value, ide_slave.value, imageDisk.diskimg,
+                                (int) imageDisk.cylinders, (int) imageDisk.heads, (int) imageDisk.sectors);
                         Bios_disk.updateDPT();
                         return;
                     }
@@ -1819,7 +1855,8 @@ public class Dos_programs {
                         Bios_disk.imageDiskList[3] = ((Drive_fat) newdrive).loadedDisk;
                         Bios_disk.imageDisk imageDisk = Bios_disk.imageDiskList[3];
                         if (ide_index.value >= 0)
-                            IDE.IDE_Attach(false, ide_index.value, ide_slave.value, imageDisk.diskimg, (int) imageDisk.cylinders, (int) imageDisk.heads, (int) imageDisk.sectors);
+                            IDE.IDE_Attach(false, ide_index.value, ide_slave.value, imageDisk.diskimg,
+                                (int) imageDisk.cylinders, (int) imageDisk.heads, (int) imageDisk.sectors);
                         Bios_disk.updateDPT();
                         return;
                     }
@@ -1832,7 +1869,8 @@ public class Dos_programs {
                 // If instructed, attach to IDE controller as ATAPI CD-ROM device
                 if (ide_index.value >= 0) {
                     try {
-                        IDE.IDE_Attach(true, ide_index.value, ide_slave.value, FileIOFactory.open((String) paths.elementAt(0), FileIOFactory.MODE_READ), 0, 0, 0);
+                        IDE.IDE_Attach(true, ide_index.value, ide_slave.value,
+                            FileIOFactory.open((String) paths.elementAt(0), FileIOFactory.MODE_READ), 0, 0, 0);
                         WriteOut("Attached ISO to IDE\n");
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -1900,7 +1938,7 @@ public class Dos_programs {
                 for (i = 1; i < paths.size(); i++) {
                     tmp += "; " + paths.elementAt(i);
                 }
-                WriteOut(Msg.get("PROGRAM_MOUNT_STATUS_2"), new Object[]{new Character(drive), tmp});
+                WriteOut(Msg.get("PROGRAM_MOUNT_STATUS_2"), new Object[] { Character.valueOf(drive), tmp });
 
             } else if (fstype.equals("zip")) {
                 if (Dos_files.Drives[drive - 'A'] != null) {
@@ -1913,15 +1951,17 @@ public class Dos_programs {
                 }
                 Dos_files.Drives[drive - 'A'] = newdrive;
                 Memory.mem_writeb(Memory.Real2Phys(Dos.dos.tables.mediaid) + (drive - 'A') * 2, mediaid);
-                WriteOut(Msg.get("PROGRAM_MOUNT_STATUS_2"), new Object[]{new Character(drive), temp_line});
+                WriteOut(Msg.get("PROGRAM_MOUNT_STATUS_2"), new Object[] { Character.valueOf(drive), temp_line });
             } else if (fstype.equals("none")) {
                 //if(Bios_disk.imageDiskList[drive-'0'] != null) delete imageDiskList[drive-'0'];
                 Bios_disk.imageDiskList[drive - '0'] = newImage;
                 Bios_disk.updateDPT();
-                WriteOut(Msg.get("PROGRAM_IMGMOUNT_MOUNT_NUMBER"), new Object[]{new Integer(drive - '0'), temp_line});
+                WriteOut(Msg.get("PROGRAM_IMGMOUNT_MOUNT_NUMBER"),
+                    new Object[] { Integer.valueOf(drive - '0'), temp_line });
                 // If instructed, attach to IDE controller as ATA hard disk
                 if (ide_index.value >= 0 && drive >= '2')
-                    IDE.IDE_Attach(false, ide_index.value, ide_slave.value, newImage.diskimg, (int) newImage.cylinders, (int) newImage.heads, (int) newImage.sectors);
+                    IDE.IDE_Attach(false, ide_index.value, ide_slave.value, newImage.diskimg, (int) newImage.cylinders,
+                        (int) newImage.heads, (int) newImage.sectors);
                 if (drive == 48)
                     Floppy.Attach(0, Bios_disk.imageDiskList[0].diskimg);
                 else if (drive == 49)
@@ -1934,6 +1974,7 @@ public class Dos_programs {
     }
 
     private static class KEYB extends Program {
+        @Override
         public void Run() {
             if ((temp_line = cmd.FindCommand(1)) != null) {
                 if ((temp_line = cmd.FindString("?", false)) != null) {
@@ -1960,31 +2001,35 @@ public class Dos_programs {
                             cp_file_name = "auto";
                         }
 
-                        keyb_error = Dos_keyboard_layout.DOS_LoadKeyboardLayout(temp_line, tried_cp.value, cp_file_name);
+                        keyb_error = Dos_keyboard_layout.DOS_LoadKeyboardLayout(temp_line, tried_cp.value,
+                            cp_file_name);
                     } else {
                         keyb_error = Dos_keyboard_layout.DOS_SwitchKeyboardLayout(temp_line, tried_cp);
                     }
                     switch (keyb_error) {
                         case Dos_keyboard_layout.KEYB_NOERROR:
-                            WriteOut(Msg.get("PROGRAM_KEYB_NOERROR"), new Object[]{temp_line, new Integer(Dos.dos.loaded_codepage)});
+                            WriteOut(Msg.get("PROGRAM_KEYB_NOERROR"),
+                                new Object[] { temp_line, Integer.valueOf(Dos.dos.loaded_codepage) });
                             break;
                         case Dos_keyboard_layout.KEYB_FILENOTFOUND:
-                            WriteOut(Msg.get("PROGRAM_KEYB_FILENOTFOUND"), new Object[]{temp_line});
+                            WriteOut(Msg.get("PROGRAM_KEYB_FILENOTFOUND"), new Object[] { temp_line });
                             WriteOut(Msg.get("PROGRAM_KEYB_SHOWHELP"));
                             break;
                         case Dos_keyboard_layout.KEYB_INVALIDFILE:
-                            WriteOut(Msg.get("PROGRAM_KEYB_INVALIDFILE"), new Object[]{temp_line});
+                            WriteOut(Msg.get("PROGRAM_KEYB_INVALIDFILE"), new Object[] { temp_line });
                             break;
                         case Dos_keyboard_layout.KEYB_LAYOUTNOTFOUND:
-                            WriteOut(Msg.get("PROGRAM_KEYB_LAYOUTNOTFOUND"), new Object[]{temp_line, new Integer(tried_cp.value)});
+                            WriteOut(Msg.get("PROGRAM_KEYB_LAYOUTNOTFOUND"),
+                                new Object[] { temp_line, Integer.valueOf(tried_cp.value) });
                             break;
                         case Dos_keyboard_layout.KEYB_INVALIDCPFILE:
-                            WriteOut(Msg.get("PROGRAM_KEYB_INVCPFILE"), new Object[]{temp_line});
+                            WriteOut(Msg.get("PROGRAM_KEYB_INVCPFILE"), new Object[] { temp_line });
                             WriteOut(Msg.get("PROGRAM_KEYB_SHOWHELP"));
                             break;
                         default:
                             if (Log.level <= LogSeverities.LOG_ERROR)
-                                Log.log(LogTypes.LOG_DOSMISC, LogSeverities.LOG_ERROR, "KEYB:Invalid returncode " + Integer.toString(keyb_error, 16));
+                                Log.log(LogTypes.LOG_DOSMISC, LogSeverities.LOG_ERROR,
+                                    "KEYB:Invalid returncode " + Integer.toString(keyb_error, 16));
                             break;
                     }
                 }
@@ -1992,9 +2037,10 @@ public class Dos_programs {
                 /* no parameter in the command line, just output codepage info and possibly loaded layout ID */
                 String layout_name = Dos_keyboard_layout.DOS_GetLoadedLayout();
                 if (layout_name == null) {
-                    WriteOut(Msg.get("PROGRAM_KEYB_INFO"), new Object[]{new Integer(Dos.dos.loaded_codepage)});
+                    WriteOut(Msg.get("PROGRAM_KEYB_INFO"), new Object[] { Integer.valueOf(Dos.dos.loaded_codepage) });
                 } else {
-                    WriteOut(Msg.get("PROGRAM_KEYB_INFO_LAYOUT"), new Object[]{new Integer(Dos.dos.loaded_codepage), layout_name});
+                    WriteOut(Msg.get("PROGRAM_KEYB_INFO_LAYOUT"),
+                        new Object[] { Integer.valueOf(Dos.dos.loaded_codepage), layout_name });
                 }
             }
         }

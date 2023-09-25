@@ -44,12 +44,16 @@ public class Guid {
     }
 
     public boolean IsEqual(int address) {
-        return i1 == Memory.mem_readd(address) && i2 == Memory.mem_readw(address + 4) && i3 == Memory.mem_readw(address + 6) && i4 == Memory.mem_readb(address + 8)
-                && i5 == Memory.mem_readb(address + 9) && i6 == Memory.mem_readb(address + 10) && i7 == Memory.mem_readb(address + 11) && i8 == Memory.mem_readb(address + 12)
-                && i9 == Memory.mem_readb(address + 13) && i10 == Memory.mem_readb(address + 14) && i11 == Memory.mem_readb(address + 15);
+        return i1 == Memory.mem_readd(address) && i2 == Memory.mem_readw(address + 4)
+            && i3 == Memory.mem_readw(address + 6) && i4 == Memory.mem_readb(address + 8)
+            && i5 == Memory.mem_readb(address + 9) && i6 == Memory.mem_readb(address + 10)
+            && i7 == Memory.mem_readb(address + 11) && i8 == Memory.mem_readb(address + 12)
+            && i9 == Memory.mem_readb(address + 13) && i10 == Memory.mem_readb(address + 14)
+            && i11 == Memory.mem_readb(address + 15);
     }
 
     public boolean IsEqual(Guid guid) {
-        return i1 == guid.i1 && i2 == guid.i2 && i3 == guid.i3 && i4 == guid.i4 && i5 == guid.i5 && i6 == guid.i6 && i7 == guid.i7 && i8 == guid.i8 && i9 == guid.i9 && i10 == guid.i10 && i11 == guid.i11;
+        return i1 == guid.i1 && i2 == guid.i2 && i3 == guid.i3 && i4 == guid.i4 && i5 == guid.i5 && i6 == guid.i6
+            && i7 == guid.i7 && i8 == guid.i8 && i9 == guid.i9 && i10 == guid.i10 && i11 == guid.i11;
     }
 }

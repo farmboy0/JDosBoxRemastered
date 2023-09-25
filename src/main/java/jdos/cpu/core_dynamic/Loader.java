@@ -1,14 +1,20 @@
 package jdos.cpu.core_dynamic;
 
-import jdos.Dosbox;
-import jdos.hardware.mame.RasterizerCompiler;
-
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Vector;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import jdos.Dosbox;
+import jdos.hardware.mame.RasterizerCompiler;
 
 public class Loader {
     private static final Vector savedItems = new Vector();
@@ -35,7 +41,7 @@ public class Loader {
                     int len = dis.readInt();
                     item.opCodes = new byte[len];
                     dis.readFully(item.opCodes);
-                    Integer key = new Integer(item.start);
+                    Integer key = item.start;
                     Vector bucket = (Vector) items.get(key);
                     if (bucket == null) {
                         bucket = new Vector();
@@ -55,7 +61,7 @@ public class Loader {
     }
 
     public static Op load(int start, byte[] opCodes) {
-        Integer key = new Integer(start);
+        Integer key = start;
         Vector bucket = (Vector) items.get(key);
         if (bucket != null) {
             for (int i = 0; i < bucket.size(); i++) {
@@ -84,7 +90,8 @@ public class Loader {
             dos.writeInt(savedItems.size());
             ByteArrayOutputStream src_bos = null;
             DataOutputStream src_dos = null;
-            ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(fileName + ".jar")));
+            ZipOutputStream out = new ZipOutputStream(
+                new BufferedOutputStream(new FileOutputStream(fileName + ".jar")));
             String root = fileName + "_src" + File.separator + "jdos";
             String dirName = root + File.separator + "cpu" + File.separator + "core_dynamic";
             if (source) {
@@ -95,8 +102,8 @@ public class Loader {
                 if (!dir.exists())
                     dir.mkdirs();
                 File[] existing = dir.listFiles();
-                for (int i = 0; i < existing.length; i++) {
-                    existing[i].delete();
+                for (File element : existing) {
+                    element.delete();
                 }
             }
             for (int i = 0; i < savedItems.size(); i++) {
@@ -108,7 +115,8 @@ public class Loader {
                 dos.writeInt(item.opCode.length);
                 dos.write(item.opCode);
                 if (source) {
-                    FileOutputStream fos = new FileOutputStream(dirName + File.separator + item.name.substring(item.name.lastIndexOf('.') + 1) + ".java");
+                    FileOutputStream fos = new FileOutputStream(
+                        dirName + File.separator + item.name.substring(item.name.lastIndexOf('.') + 1) + ".java");
                     fos.write(item.source.getBytes());
                     fos.close();
                     src_dos.writeUTF("jdos.cpu.core_dynamic." + item.name);
@@ -141,6 +149,7 @@ public class Loader {
         byte[] byteCode;
         byte[] opCode;
         int start;
+
         public SaveItem(String name, byte[] byteCode, int start, byte[] opCode, String source) {
             this.name = name;
             this.byteCode = byteCode;

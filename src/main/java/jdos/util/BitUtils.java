@@ -22,8 +22,8 @@ package jdos.util;
  */
 
 /**
- * Helper class providing bit-shift functions which are used internally by
- * the <code>Float</code> and <code>Double</code> classes.
+ * Helper class providing bit-shift functions which are used internally by the
+ * <code>Float</code> and <code>Double</code> classes.
  */
 final public class BitUtils {
 
@@ -47,48 +47,48 @@ final public class BitUtils {
     }
 
     /**
-     * Right-shift x by count bits, and if any of the shifted-off bits are 1,
-     * set the least significant bit of the return value to 1.
+     * Right-shift x by count bits, and if any of the shifted-off bits are 1, set
+     * the least significant bit of the return value to 1.
      */
-    static public int stickyRightShift(int x, int count) {
+    public static int stickyRightShift(int x, int count) {
         if (count >= 32) {
-            return ((x == 0) ? 0 : 1);
-        } else if ((x << (32 - count)) == 0) {
+            return x == 0 ? 0 : 1;
+        } else if (x << 32 - count == 0) {
             return x >>> count;
         } else {
-            return (x >>> count) | 1;
+            return x >>> count | 1;
         }
     }
 
     /**
-     * Right-shift x by count bits, and if any of the shifted-off bits are 1,
-     * set the least significant bit of the return value to 1.
+     * Right-shift x by count bits, and if any of the shifted-off bits are 1, set
+     * the least significant bit of the return value to 1.
      */
-    static public long stickyRightShift(long x, int count) {
+    public static long stickyRightShift(long x, int count) {
         if (count >= 64) {
-            return ((x == 0) ? 0 : 1);
-        } else if ((x << (64 - count)) == 0) {
+            return x == 0 ? 0 : 1;
+        } else if (x << 64 - count == 0) {
             return x >>> count;
         } else {
-            return (x >>> count) | 1;
+            return x >>> count | 1;
         }
     }
 
-    static public void shift64ExtraRightJamming(long a0, long a1, int count, LongRef z0Ptr, LongRef z1Ptr) {
+    public static void shift64ExtraRightJamming(long a0, long a1, int count, LongRef z0Ptr, LongRef z1Ptr) {
         long z0, z1;
-        int negCount = (-count) & 63;
+        int negCount = -count & 63;
 
         if (count == 0) {
             z1 = a1;
             z0 = a0;
         } else if (count < 64) {
-            z1 = (a0 << negCount) | ((a1 != 0) ? 1 : 0);
+            z1 = a0 << negCount | (a1 != 0 ? 1 : 0);
             z0 = a0 >> count;
         } else {
             if (count == 64) {
-                z1 = a0 | ((a1 != 0) ? 1 : 0);
+                z1 = a0 | (a1 != 0 ? 1 : 0);
             } else {
-                z1 = ((a0 | a1) != 0) ? 1 : 0;
+                z1 = (a0 | a1) != 0 ? 1 : 0;
             }
             z0 = 0;
         }
@@ -107,10 +107,10 @@ final public class BitUtils {
             remainder = x;
             x = 0;
         } else {
-            remainder = x << (32 - count);
+            remainder = x << 32 - count;
             x >>>= count;
         }
-        if ((remainder < 0) && ((remainder != 0x80000000) || ((x & 1) == 1))) {
+        if (remainder < 0 && (remainder != 0x80000000 || (x & 1) == 1)) {
             return x + 1;
         }
         return x;
@@ -127,11 +127,10 @@ final public class BitUtils {
             remainder = x;
             x = 0;
         } else {
-            remainder = x << (64 - count);
+            remainder = x << 64 - count;
             x >>>= count;
         }
-        if ((remainder < 0)
-                && ((remainder != 0x8000000000000000L) || ((x & 1) == 1))) {
+        if (remainder < 0 && (remainder != 0x8000000000000000L || (x & 1) == 1)) {
             return x + 1;
         }
         return x;

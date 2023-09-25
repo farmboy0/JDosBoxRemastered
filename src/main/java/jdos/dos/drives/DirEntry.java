@@ -3,7 +3,7 @@ package jdos.dos.drives;
 import jdos.util.Ptr;
 
 public class DirEntry {
-    static public final int size = 32;
+    public static final int size = 32;
     public /*Bit8u*/ byte[] entryname = new byte[11];
     public /*Bit8u*/ short attrib;
     public /*Bit8u*/ short NTRes;

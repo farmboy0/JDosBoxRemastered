@@ -38,9 +38,11 @@ public class Decoder_basic {
         // adjust previous and next page pointer
         cpagehandler.prev = Cache.cache.last_page;
         cpagehandler.next = null;
-        if (Cache.cache.last_page != null) Cache.cache.last_page.next = cpagehandler;
+        if (Cache.cache.last_page != null)
+            Cache.cache.last_page.next = cpagehandler;
         Cache.cache.last_page = cpagehandler;
-        if (Cache.cache.used_pages == null) Cache.cache.used_pages = cpagehandler;
+        if (Cache.cache.used_pages == null)
+            Cache.cache.used_pages = cpagehandler;
 
         // initialize the code page handler and add the handler to the memory page
         cpagehandler.SetupAt(phys_page.value, handler);

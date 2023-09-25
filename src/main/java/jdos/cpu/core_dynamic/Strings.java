@@ -9,7 +9,7 @@ import jdos.hardware.RAM;
 import jdos.misc.setup.Config;
 
 public class Strings extends Core {
-    final static public class Movsw32r extends Op {
+    public static final class Movsw32r extends Op {
         public static void doString() {
             doString(base_ds);
         }
@@ -27,10 +27,7 @@ public class Strings extends Core {
                     int src_len;
                     int dst_len;
 
-                    if (dst_index < 0 || src_index < 0) {
-                        break;
-                    }
-                    if (Math.abs(src_index - dst_index) < 2) {
+                    if (dst_index < 0 || src_index < 0 || (Math.abs(src_index - dst_index) < 2)) {
                         break; // don't support overlapping word moves
                     }
                     int len = count << 1;
@@ -57,7 +54,7 @@ public class Strings extends Core {
                         reg_ecx.dword--;
                         count--;
                     } else {
-                        int thisCount = (len >> 1);
+                        int thisCount = len >> 1;
                         if (Math.abs(src_index - dst_index) < len) {
                             // Overlapping read/write
                             for (int i = 0; i < thisCount; i++) {
@@ -93,30 +90,35 @@ public class Strings extends Core {
             }
         }
 
+        @Override
         public int call() {
             doString();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class Movsw32 extends Op {
+    public static final class Movsw32 extends Op {
         public static void doString() {
             doString(base_ds);
         }
@@ -128,30 +130,35 @@ public class Strings extends Core {
             reg_esi.dword += add_index;
         }
 
+        @Override
         public int call() {
             doString();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class Movsw16r extends Op {
+    public static final class Movsw16r extends Op {
         public static void doString() {
             doString(base_ds);
         }
@@ -209,7 +216,7 @@ public class Strings extends Core {
                         reg_ecx.word_dec();
                         count--;
                     } else {
-                        int thisCount = (len >> 1);
+                        int thisCount = len >> 1;
                         if (Math.abs(src_index - dst_index) < len) {
                             // Overlapping read/write
                             for (int i = 0; i < thisCount; i++) {
@@ -245,30 +252,35 @@ public class Strings extends Core {
             }
         }
 
+        @Override
         public int call() {
             doString();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class Movsw16 extends Op {
+    public static final class Movsw16 extends Op {
         public static void doString() {
             doString(base_ds);
         }
@@ -281,30 +293,35 @@ public class Strings extends Core {
             reg_esi.word(reg_esi.word() + add_index);
         }
 
+        @Override
         public int call() {
             doString();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class Movsd32r extends Op {
+    public static final class Movsd32r extends Op {
         public static void doString() {
             doString(base_ds);
         }
@@ -346,7 +363,7 @@ public class Strings extends Core {
                         reg_ecx.dword--;
                         count--;
                     } else {
-                        int thisCount = (len >> 2);
+                        int thisCount = len >> 2;
                         if (Math.abs(src_index - dst_index) < len) {
                             // Overlapping read/write
                             for (int i = 0; i < thisCount; i++) {
@@ -382,30 +399,35 @@ public class Strings extends Core {
             }
         }
 
+        @Override
         public int call() {
             doString();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class Movsd32 extends Op {
+    public static final class Movsd32 extends Op {
         public static void doString() {
             doString(base_ds);
         }
@@ -417,30 +439,35 @@ public class Strings extends Core {
             reg_esi.dword += add_index;
         }
 
+        @Override
         public int call() {
             doString();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class Movsd16r extends Op {
+    public static final class Movsd16r extends Op {
         public static void doString() {
             doString(base_ds);
         }
@@ -498,7 +525,7 @@ public class Strings extends Core {
                         reg_ecx.word_dec();
                         count--;
                     } else {
-                        int thisCount = (len >> 2);
+                        int thisCount = len >> 2;
                         if (Math.abs(src_index - dst_index) < len) {
                             // Overlapping read/write
                             for (int i = 0; i < thisCount; i++) {
@@ -534,30 +561,35 @@ public class Strings extends Core {
             }
         }
 
+        @Override
         public int call() {
             doString();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class Movsd16 extends Op {
+    public static final class Movsd16 extends Op {
         public static void doString() {
             doString(base_ds);
         }
@@ -570,30 +602,35 @@ public class Strings extends Core {
             reg_esi.word(reg_esi.word() + add_index);
         }
 
+        @Override
         public int call() {
             doString();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class Movsb32r extends Op {
+    public static final class Movsb32r extends Op {
         public static void doString() {
             doString(base_ds);
         }
@@ -660,30 +697,35 @@ public class Strings extends Core {
             }
         }
 
+        @Override
         public int call() {
             doString();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class Movsb32 extends Op {
+    public static final class Movsb32 extends Op {
         public static void doString() {
             doString(base_ds);
         }
@@ -696,30 +738,35 @@ public class Strings extends Core {
             reg_esi.dword += add_index;
         }
 
+        @Override
         public int call() {
             doString();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class Movsb16r extends Op {
+    public static final class Movsb16r extends Op {
         public static void doString() {
             doString(base_ds);
         }
@@ -801,30 +848,35 @@ public class Strings extends Core {
             }
         }
 
+        @Override
         public int call() {
             doString();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }
     }
 
-    final static public class Movsb16 extends Op {
+    public static final class Movsb16 extends Op {
         public static void doString() {
             doString(base_ds);
         }
@@ -837,24 +889,29 @@ public class Strings extends Core {
             reg_esi.word(reg_esi.word() + add_index);
         }
 
+        @Override
         public int call() {
             doString();
             CPU_Regs.reg_eip += eip_count;
             return next.call();
         }
 
+        @Override
         public boolean throwsException() {
             return false;
         }
 
+        @Override
         public boolean accessesMemory() {
             return true;
         }
 
+        @Override
         public boolean usesEip() {
             return false;
         }
 
+        @Override
         public boolean setsEip() {
             return false;
         }

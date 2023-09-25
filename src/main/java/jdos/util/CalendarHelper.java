@@ -1,8 +1,8 @@
 package jdos.util;
 
-import jdos.dos.Dos;
-
 import java.util.Calendar;
+
+import jdos.dos.Dos;
 
 public class CalendarHelper {
     public static int Dos_time(long time) {

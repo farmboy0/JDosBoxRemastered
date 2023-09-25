@@ -22,8 +22,8 @@
 package javazoom.jl.decoder;
 
 /**
- * This interface provides constants describing the error
- * codes used by the Decoder to indicate errors.
+ * This interface provides constants describing the error codes used by the
+ * Decoder to indicate errors.
  *
  * @author MDM
  */

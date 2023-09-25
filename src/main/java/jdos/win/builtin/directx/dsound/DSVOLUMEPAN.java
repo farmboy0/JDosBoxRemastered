@@ -8,9 +8,11 @@ public class DSVOLUMEPAN {
     public int lPan;
     public int dwPanLeftAmpFactor;
     public int dwPanRightAmpFactor;
+
     public DSVOLUMEPAN() {
 
     }
+
     public DSVOLUMEPAN(DSVOLUMEPAN vol) {
         this.dwTotalLeftAmpFactor = vol.dwTotalLeftAmpFactor;
         this.dwTotalRightAmpFactor = vol.dwTotalRightAmpFactor;

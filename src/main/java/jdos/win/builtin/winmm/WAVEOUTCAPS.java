@@ -4,7 +4,7 @@ import jdos.win.builtin.WinAPI;
 import jdos.win.utils.StringUtil;
 
 public class WAVEOUTCAPS extends WinAPI {
-    public final static int SIZE = 52;
+    public static final int SIZE = 52;
     public int wMid;
     public int wPid;
     public int vDriverVersion;
@@ -13,6 +13,7 @@ public class WAVEOUTCAPS extends WinAPI {
     public int wChannels;
     public int wReserved1;
     public int dwSupport;
+
     public WAVEOUTCAPS() {
     }
 

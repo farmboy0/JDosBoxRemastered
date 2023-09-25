@@ -1,19 +1,19 @@
 package jdos.dos;
 
+import java.util.Vector;
+
 import jdos.misc.Log;
 import jdos.misc.setup.Section;
 
-import java.util.Vector;
-
 public class DriveManager {
     static int currentDrive;
-    static private final DriveInfo[] driveInfos = new DriveInfo[Dos_files.DOS_DRIVES];
+    private static final DriveInfo[] driveInfos = new DriveInfo[Dos_files.DOS_DRIVES];
 
-    static public void AppendDisk(int drive, Dos_Drive disk) {
+    public static void AppendDisk(int drive, Dos_Drive disk) {
         driveInfos[drive].disks.add(disk);
     }
 
-    static public void InitializeDrive(int drive) {
+    public static void InitializeDrive(int drive) {
         currentDrive = drive;
         DriveInfo driveInfo = driveInfos[currentDrive];
         if (driveInfo.disks.size() > 0) {
@@ -24,7 +24,7 @@ public class DriveManager {
         }
     }
 
-    static public int UnmountDrive(int drive) {
+    public static int UnmountDrive(int drive) {
         int result = 0;
         // unmanaged drive
         if (driveInfos[drive].disks.size() == 0) {
@@ -46,7 +46,7 @@ public class DriveManager {
 
     //	static void CycleDrive(bool pressed);
 //	static void CycleDisk(bool pressed);
-    static public void CycleAllDisks() {
+    public static void CycleAllDisks() {
         for (int idrive = 0; idrive < Dos_files.DOS_DRIVES; idrive++) {
             int numDisks = driveInfos[idrive].disks.size();
             if (numDisks > 1) {
@@ -61,12 +61,13 @@ public class DriveManager {
                 newDisk.curdir = oldDisk.curdir;
                 newDisk.Activate();
                 Dos_files.Drives[idrive] = newDisk;
-                Log.log_msg("Drive " + ('A' + idrive) + ": disk " + (currentDisk + 1) + " of " + numDisks + " now active");
+                Log.log_msg(
+                    "Drive " + ('A' + idrive) + ": disk " + (currentDisk + 1) + " of " + numDisks + " now active");
             }
         }
     }
 
-    static public void Init(Section sec) {
+    public static void Init(Section sec) {
         // setup driveInfos structure
         currentDrive = 0;
         for (int i = 0; i < Dos_files.DOS_DRIVES; i++) {
@@ -75,7 +76,7 @@ public class DriveManager {
         }
     }
 
-    static private class DriveInfo {
+    private static class DriveInfo {
         Vector disks = new Vector();
         /*Bit32u*/ int currentDisk;
     }

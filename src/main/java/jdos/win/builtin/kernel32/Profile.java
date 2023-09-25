@@ -5,7 +5,8 @@ import jdos.win.utils.StringUtil;
 
 public class Profile extends WinAPI {
     // DWORD WINAPI GetPrivateProfileString(LPCTSTR lpAppName, LPCTSTR lpKeyName, LPCTSTR lpDefault, LPTSTR lpReturnedString, DWORD nSize, LPCTSTR lpFileName)
-    static public int GetPrivateProfileStringA(int lpAppName, int lpKeyName, int lpDefault, int lpReturnedString, int nSize, int lpFileName) {
+    public static int GetPrivateProfileStringA(int lpAppName, int lpKeyName, int lpDefault, int lpReturnedString,
+        int nSize, int lpFileName) {
         if (lpDefault != 0)
             return StringUtil.strncpy(lpReturnedString, lpDefault, nSize);
         writeb(lpReturnedString, 0);

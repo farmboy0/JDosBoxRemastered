@@ -5,7 +5,7 @@ import jdos.win.system.WinSystem;
 
 public class Winproc {
     // LRESULT WINAPI CallWindowProc(WNDPROC lpPrevWndFunc, HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
-    static public int CallWindowProcA(int lpPrevWndFunc, int hWnd, int Msg, int wParam, int lParam) {
+    public static int CallWindowProcA(int lpPrevWndFunc, int hWnd, int Msg, int wParam, int lParam) {
         /* Some window procedures modify register they shouldn't, or are not
          * properly declared stdcall; so we need a small assembly wrapper to
          * call them. */

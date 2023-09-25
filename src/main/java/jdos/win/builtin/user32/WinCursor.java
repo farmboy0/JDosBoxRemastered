@@ -1,5 +1,16 @@
 package jdos.win.builtin.user32;
 
+import java.awt.AlphaComposite;
+import java.awt.Cursor;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Point;
+import java.awt.Toolkit;
+import java.awt.image.BufferedImage;
+import java.io.InputStream;
+import java.util.Hashtable;
+import java.util.Vector;
+
 import jdos.gui.Main;
 import jdos.util.IntRef;
 import jdos.win.Win;
@@ -14,14 +25,8 @@ import jdos.win.utils.LittleEndian;
 import jdos.win.utils.Pixel;
 import jdos.win.utils.StreamHelper;
 
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.InputStream;
-import java.util.Hashtable;
-import java.util.Vector;
-
 public class WinCursor extends WinObject {
-    static private final Hashtable cursors = new Hashtable();
+    private static final Hashtable cursors = new Hashtable();
     Cursor cursor = null;
 
     public WinCursor(int handle, int instance, int name) {
@@ -36,14 +41,13 @@ public class WinCursor extends WinObject {
         }
     }
 
-    static public WinCursor create(int instance, int name) {
-        WinCursor cursor = new WinCursor(nextObjectId(), instance, name);
-        return cursor;
+    public static WinCursor create(int instance, int name) {
+        return new WinCursor(nextObjectId(), instance, name);
     }
 
-    static public WinCursor get(int handle) {
+    public static WinCursor get(int handle) {
         WinObject object = getObject(handle);
-        if (object == null && (handle >= 32512 && handle <= 32651)) {
+        if (object == null && handle >= 32512 && handle <= 32651) {
             object = new WinCursor(handle, 0, handle);
         }
         if (object == null || !(object instanceof WinCursor))
@@ -52,12 +56,12 @@ public class WinCursor extends WinObject {
     }
 
     // HCURSOR WINAPI LoadCursor(HINSTANCE hInstance, LPCTSTR lpCursorName)
-    static public int LoadCursorA(int hInstance, int lpCursorName) {
+    public static int LoadCursorA(int hInstance, int lpCursorName) {
         return create(hInstance, lpCursorName).handle;
     }
 
     // HCURSOR WINAPI SetCursor(HCURSOR hCursor)
-    static public int SetCursor(int hCursor) {
+    public static int SetCursor(int hCursor) {
         int result = StaticData.hCursor;
         StaticData.hCursor = hCursor;
         if (hCursor == 0)
@@ -70,7 +74,7 @@ public class WinCursor extends WinObject {
     }
 
     // int WINAPI ShowCursor(BOOL bShow)
-    static public int ShowCursor(int bShow) {
+    public static int ShowCursor(int bShow) {
         if (bShow != 0) {
             StaticData.showCursorCount++;
             if (StaticData.showCursorCount == 0) {
@@ -85,7 +89,7 @@ public class WinCursor extends WinObject {
         return StaticData.showCursorCount;
     }
 
-    static private BufferedImage loadCursor(LittleEndian is) {
+    private static BufferedImage loadCursor(LittleEndian is) {
         int headerSize = is.readInt();
         int bitmapWidth = is.readInt();
         int bitmapHeight = is.readInt();
@@ -119,7 +123,7 @@ public class WinCursor extends WinObject {
         return result;
     }
 
-    static public Image[] loadCursorFromStream(InputStream input, Vector hotspots) {
+    public static Image[] loadCursorFromStream(InputStream input, Vector hotspots) {
         byte[] buffer = null;
         try {
             buffer = StreamHelper.readStream(input);
@@ -202,7 +206,8 @@ public class WinCursor extends WinObject {
             is.read(data);
 
             Toolkit toolkit = Toolkit.getDefaultToolkit();
-            cursor = toolkit.createCustomCursor(loadCursor(new LittleEndian(data)), new Point(xHotspot, yHotspot), name);
+            cursor = toolkit.createCustomCursor(loadCursor(new LittleEndian(data)), new Point(xHotspot, yHotspot),
+                name);
             cursors.put(name, cursor);
         }
         return cursor;
@@ -275,7 +280,7 @@ public class WinCursor extends WinObject {
         return cursor;
     }
 
-    static private class Data {
+    private static class Data {
         public int width;
         public int height;
         public int colorCount;

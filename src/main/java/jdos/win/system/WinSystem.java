@@ -1,5 +1,7 @@
 package jdos.win.system;
 
+import java.awt.image.BufferedImage;
+
 import jdos.Dosbox;
 import jdos.cpu.CPU;
 import jdos.cpu.CPU_Regs;
@@ -7,31 +9,35 @@ import jdos.cpu.Callback;
 import jdos.gui.Main;
 import jdos.win.builtin.kernel32.WinProcess;
 import jdos.win.builtin.kernel32.WinThread;
-import jdos.win.kernel.*;
+import jdos.win.kernel.DescriptorTables;
+import jdos.win.kernel.Interrupts;
+import jdos.win.kernel.KernelMemory;
+import jdos.win.kernel.Timer;
+import jdos.win.kernel.WinCallback;
 import jdos.win.utils.Pixel;
 
-import java.awt.image.BufferedImage;
-
 public class WinSystem {
-    static public KernelMemory memory;
-    static public Interrupts interrupts;
-    static public Timer timer;
-    static public WinRegistry registry;
-    static private WinCallback callbacks;
-    static private DescriptorTables descriptorTables;
-    static private long startTime = System.currentTimeMillis();
-    static private final Callback.Handler returnCallback = new Callback.Handler() {
+    public static KernelMemory memory;
+    public static Interrupts interrupts;
+    public static Timer timer;
+    public static WinRegistry registry;
+    private static WinCallback callbacks;
+    private static DescriptorTables descriptorTables;
+    private static long startTime = System.currentTimeMillis();
+    private static final Callback.Handler returnCallback = new Callback.Handler() {
+        @Override
         public String getName() {
             return "WinProc";
         }
 
+        @Override
         public int call() {
             return 1; // return from SendMessage
         }
     };
     private static int returnEip = 0;
 
-    static public void start() {
+    public static void start() {
         registry = new WinRegistry();
 
         memory = new KernelMemory();
@@ -55,24 +61,25 @@ public class WinSystem {
         startTime = System.currentTimeMillis();
     }
 
-    static public JavaBitmap getScreen() {
+    public static JavaBitmap getScreen() {
         return StaticData.screen;
     }
 
-    static public int getScreenWidth() {
+    public static int getScreenWidth() {
         return StaticData.screen.getWidth();
     }
 
-    static public int getScreenHeight() {
+    public static int getScreenHeight() {
         return StaticData.screen.getHeight();
     }
 
-    static public int getScreenBpp() {
+    public static int getScreenBpp() {
         return StaticData.screen.getBpp();
     }
 
-    static public void setScreenSize(int dwWidth, int dwHeight, int dwBPP) {
-        if (StaticData.screen == null || dwWidth != StaticData.screen.getWidth() || dwHeight != StaticData.screen.getHeight() || StaticData.screen.getBpp() != dwBPP) {
+    public static void setScreenSize(int dwWidth, int dwHeight, int dwBPP) {
+        if (StaticData.screen == null || dwWidth != StaticData.screen.getWidth()
+            || dwHeight != StaticData.screen.getHeight() || StaticData.screen.getBpp() != dwBPP) {
             int[] palette = null;
 
             if (StaticData.screen != null) {
@@ -91,27 +98,28 @@ public class WinSystem {
         }
     }
 
-    static public int getTickCount() {
+    public static int getTickCount() {
         return (int) (System.currentTimeMillis() - startTime);
     }
 
-    static public void call(int eip, int param1, int param2, int param3, int param4, int param5) {
+    public static void call(int eip, int param1, int param2, int param3, int param4, int param5) {
         internalCall(eip, 5, param1, param2, param3, param4, param5);
     }
 
-    static public void call(int eip, int param1, int param2, int param3, int param4) {
+    public static void call(int eip, int param1, int param2, int param3, int param4) {
         internalCall(eip, 4, param1, param2, param3, param4, 0);
     }
 
-    static public void call(int eip, int param1, int param2, int param3) {
+    public static void call(int eip, int param1, int param2, int param3) {
         internalCall(eip, 3, param1, param2, param3, 0, 0);
     }
 
-    static public void call(int eip, int param1, int param2) {
+    public static void call(int eip, int param1, int param2) {
         internalCall(eip, 2, param1, param2, 0, 0, 0);
     }
 
-    static private void internalCall(int eip, int paramCount, int param1, int param2, int param3, int param4, int param5) {
+    private static void internalCall(int eip, int paramCount, int param1, int param2, int param3, int param4,
+        int param5) {
         if (returnEip == 0) {
             int callback = WinCallback.addCallback(returnCallback);
             returnEip = WinSystem.getCurrentProcess().loader.registerFunction(callback);
@@ -135,7 +143,7 @@ public class WinSystem {
         CPU_Regs.reg_esp.dword = oldEsp;
     }
 
-    static public WinProcess getCurrentProcess() {
+    public static WinProcess getCurrentProcess() {
         WinThread currentThread = Scheduler.getCurrentThread();
         if (currentThread != null)
             return currentThread.getProcess();

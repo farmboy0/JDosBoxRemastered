@@ -1,20 +1,36 @@
 package jdos.dos.drives;
 
-import jdos.dos.*;
-import jdos.hardware.IoHandler;
-import jdos.misc.Log;
-import jdos.util.*;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+
+import jdos.dos.DOS_Drive_Cache;
+import jdos.dos.DOS_File;
+import jdos.dos.Dos;
+import jdos.dos.Dos_DTA;
+import jdos.dos.Dos_Drive;
+import jdos.dos.Dos_files;
+import jdos.dos.Dos_system;
+import jdos.dos.Drives;
+import jdos.dos.FileStat_Block;
+import jdos.hardware.IoHandler;
+import jdos.misc.Log;
+import jdos.util.CalendarHelper;
+import jdos.util.FileIO;
+import jdos.util.FileIOFactory;
+import jdos.util.IntRef;
+import jdos.util.LongRef;
+import jdos.util.ShortRef;
+import jdos.util.StringHelper;
+import jdos.util.StringRef;
 
 public class Drive_local extends Dos_Drive {
     public String basedir;
     SrchInfo[] srchInfo = new SrchInfo[DOS_Drive_Cache.MAX_OPENDIRS];
     private final Allocation allocation = new Allocation();
 
-    public Drive_local(String startdir,/*Bit16u*/int _bytes_sector,/*Bit8u*/short _sectors_cluster,/*Bit16u*/int _total_clusters,/*Bit16u*/int _free_clusters,/*Bit8u*/short _mediaid) {
+    public Drive_local(String startdir, /*Bit16u*/int _bytes_sector, /*Bit8u*/short _sectors_cluster,
+        /*Bit16u*/int _total_clusters, /*Bit16u*/int _free_clusters, /*Bit8u*/short _mediaid) {
         for (int i = 0; i < srchInfo.length; i++)
             srchInfo[i] = new SrchInfo();
         basedir = startdir;
@@ -32,7 +48,8 @@ public class Drive_local extends Dos_Drive {
         dirCache.SetBaseDir(basedir);
     }
 
-    public DOS_File FileOpen(String name,/*Bit32u*/int flags) {
+    @Override
+    public DOS_File FileOpen(String name, /*Bit32u*/int flags) {
         int type;
         switch (flags & 0xf) {
             case Dos_files.OPEN_READ:
@@ -65,7 +82,8 @@ public class Drive_local extends Dos_Drive {
             }
         }
         for (i = 0; i < Dos_files.DOS_FILES; i++) {
-            if (Dos_files.Files[i] != null && Dos_files.Files[i].IsOpen() && Dos_files.Files[i].GetDrive() == drive && Dos_files.Files[i].IsName(name)) {
+            if (Dos_files.Files[i] != null && Dos_files.Files[i].IsOpen() && Dos_files.Files[i].GetDrive() == drive
+                && Dos_files.Files[i].IsName(name)) {
                 if (Dos_files.Files[i] instanceof localFile) {
                     ((localFile) Dos_files.Files[i]).Flush();
                 }
@@ -86,7 +104,8 @@ public class Drive_local extends Dos_Drive {
         }
     }
 
-    public DOS_File FileCreate(String name,/*Bit16u*/int attributes) {
+    @Override
+    public DOS_File FileCreate(String name, /*Bit16u*/int attributes) {
         //TODO Maybe care for attributes but not likely
         String newname = basedir + name;
         String temp_name = dirCache.GetExpandName(newname); //Can only be used in till a new drive_cache action is preformed */
@@ -94,8 +113,10 @@ public class Drive_local extends Dos_Drive {
         boolean existing_file = new File(temp_name).exists();
 
         try {
-            FileIO hand = FileIOFactory.open(temp_name, FileIOFactory.MODE_READ | FileIOFactory.MODE_WRITE | FileIOFactory.MODE_TRUNCATE);
-            if (!existing_file) dirCache.AddEntry(newname, true);
+            FileIO hand = FileIOFactory.open(temp_name,
+                FileIOFactory.MODE_READ | FileIOFactory.MODE_WRITE | FileIOFactory.MODE_TRUNCATE);
+            if (!existing_file)
+                dirCache.AddEntry(newname, true);
             /* Make the 16 bit device information */
             DOS_File file = new localFile(temp_name, name, hand);
             file.flags = Dos_files.OPEN_READWRITE;
@@ -106,13 +127,15 @@ public class Drive_local extends Dos_Drive {
         }
     }
 
+    @Override
     public boolean FileUnlink(String name) {
         String newname = basedir + name;
         String fullname = dirCache.GetExpandName(newname);
         File f = new File(fullname);
         if (!f.delete()) {
             //Unlink failed for some reason try finding it.
-            if (!f.exists()) return false; // File not found.
+            if (!f.exists())
+                return false; // File not found.
 
             try {
                 FileInputStream fis = new FileInputStream(f);
@@ -131,12 +154,14 @@ public class Drive_local extends Dos_Drive {
                     int max = Dos_files.DOS_FILES;
                     while (Dos_files.Files[i].IsOpen() && max-- != 0) {
                         Dos_files.Files[i].Close();
-                        if (Dos_files.Files[i].RemoveRef() <= 0) break;
+                        if (Dos_files.Files[i].RemoveRef() <= 0)
+                            break;
                     }
                     found_file = true;
                 }
             }
-            if (!found_file) return false;
+            if (!found_file)
+                return false;
             if (f.delete()) {
                 dirCache.DeleteEntry(newname);
                 return true;
@@ -148,23 +173,28 @@ public class Drive_local extends Dos_Drive {
         }
     }
 
+    @Override
     public boolean RemoveDir(String dir) {
         String newdir = basedir + dir;
-        File f = new File((dirCache.GetExpandName(newdir)));
-        boolean temp = (f.isDirectory() && f.delete());
-        if (temp) dirCache.DeleteEntry(newdir, true);
+        File f = new File(dirCache.GetExpandName(newdir));
+        boolean temp = f.isDirectory() && f.delete();
+        if (temp)
+            dirCache.DeleteEntry(newdir, true);
         return temp;
     }
 
+    @Override
     public boolean MakeDir(String dir) {
         String newdir = basedir + dir;
         File f = new File(dirCache.GetExpandName(newdir));
         boolean temp = !f.exists() && f.mkdir();
-        if (temp) dirCache.CacheOut(newdir, true);
+        if (temp)
+            dirCache.CacheOut(newdir, true);
 
         return temp;
     }
 
+    @Override
     public boolean TestDir(String dir) {
         StringRef newdir = new StringRef(basedir + dir);
         dirCache.ExpandName(newdir);
@@ -177,6 +207,7 @@ public class Drive_local extends Dos_Drive {
         return f.exists();
     }
 
+    @Override
     public boolean FindFirst(String dir, Dos_DTA dta, boolean fcb_findfirst/*=false*/) {
         StringRef tempDir = new StringRef(basedir + dir);
 
@@ -217,7 +248,7 @@ public class Drive_local extends Dos_Drive {
                 }
                 dta.SetResult(dirCache.GetLabel(), 0, 0, 0, (short) Dos_system.DOS_ATTR_VOLUME);
                 return true;
-            } else if ((sAttr.value & Dos_system.DOS_ATTR_VOLUME) != 0 && (dir.length() == 0) && !fcb_findfirst) {
+            } else if ((sAttr.value & Dos_system.DOS_ATTR_VOLUME) != 0 && dir.length() == 0 && !fcb_findfirst) {
                 //should check for a valid leading directory instead of 0
                 //exists==true if the volume label matches the searchmask and the path is valid
                 if (Drives.WildFileCmp(dirCache.GetLabel(), tempDir.value)) {
@@ -229,6 +260,7 @@ public class Drive_local extends Dos_Drive {
         return FindNext(dta);
     }
 
+    @Override
     public boolean FindNext(Dos_DTA dta) {
         StringRef dir_ent = new StringRef();
         String full_name;
@@ -250,7 +282,8 @@ public class Drive_local extends Dos_Drive {
                 Dos.DOS_SetError(Dos.DOSERR_NO_MORE_FILES);
                 return false;
             }
-            if (!Drives.WildFileCmp(dir_ent.value, srch_pattern.value)) continue;
+            if (!Drives.WildFileCmp(dir_ent.value, srch_pattern.value))
+                continue;
 
             full_name = srchInfo[id].srch_dir + dir_ent.value;
 
@@ -263,16 +296,20 @@ public class Drive_local extends Dos_Drive {
                 continue;//No symlinks and such
             }
 
-            if (f.isDirectory()) find_attr = Dos_system.DOS_ATTR_DIRECTORY;
-            else find_attr = Dos_system.DOS_ATTR_ARCHIVE;
-            if ((~srch_attr.value & find_attr & (Dos_system.DOS_ATTR_DIRECTORY | Dos_system.DOS_ATTR_HIDDEN | Dos_system.DOS_ATTR_SYSTEM)) != 0)
+            if (f.isDirectory())
+                find_attr = Dos_system.DOS_ATTR_DIRECTORY;
+            else
+                find_attr = Dos_system.DOS_ATTR_ARCHIVE;
+            if ((~srch_attr.value & find_attr
+                & (Dos_system.DOS_ATTR_DIRECTORY | Dos_system.DOS_ATTR_HIDDEN | Dos_system.DOS_ATTR_SYSTEM)) != 0)
                 continue;
             break;
         }
         /*file is okay, setup everything to be copied in DTA Block */
         String find_name = dir_entcopy.toUpperCase();
         /*Bit16u*/
-        int find_date = CalendarHelper.Dos_date(f.lastModified()), find_time = CalendarHelper.Dos_time(f.lastModified());
+        int find_date = CalendarHelper.Dos_date(f.lastModified()),
+            find_time = CalendarHelper.Dos_time(f.lastModified());
         /*Bit32u*/
         long find_size = f.length();
 
@@ -280,20 +317,23 @@ public class Drive_local extends Dos_Drive {
         return true;
     }
 
-    public boolean GetFileAttr(String name,/*Bit16u*/IntRef attr) {
+    @Override
+    public boolean GetFileAttr(String name, /*Bit16u*/IntRef attr) {
         StringRef newname = new StringRef(basedir + name);
         dirCache.ExpandName(newname);
 
         File f = new File(newname.value);
         if (f.exists()) {
             attr.value = Dos_system.DOS_ATTR_ARCHIVE;
-            if (f.isDirectory()) attr.value |= Dos_system.DOS_ATTR_DIRECTORY;
+            if (f.isDirectory())
+                attr.value |= Dos_system.DOS_ATTR_DIRECTORY;
             return true;
         }
         attr.value = 0;
         return false;
     }
 
+    @Override
     public boolean Rename(String oldname, String newname) {
         StringRef newold = new StringRef(basedir + oldname);
         dirCache.ExpandName(newold);
@@ -305,11 +345,14 @@ public class Drive_local extends Dos_Drive {
         File fnew = new File(newnew.value);
 
         boolean temp = fold.renameTo(fnew);
-        if (temp) dirCache.CacheOut(newnew.value);
+        if (temp)
+            dirCache.CacheOut(newnew.value);
         return temp;
     }
 
-    public boolean AllocationInfo(/*Bit16u*/IntRef _bytes_sector,/*Bit8u*/ShortRef _sectors_cluster,/*Bit16u*/IntRef _total_clusters,/*Bit16u*/IntRef _free_clusters) {
+    @Override
+    public boolean AllocationInfo(/*Bit16u*/IntRef _bytes_sector, /*Bit8u*/ShortRef _sectors_cluster,
+        /*Bit16u*/IntRef _total_clusters, /*Bit16u*/IntRef _free_clusters) {
         _bytes_sector.value = allocation.bytes_sector;
         _sectors_cluster.value = allocation.sectors_cluster;
         _total_clusters.value = allocation.total_clusters;
@@ -317,6 +360,7 @@ public class Drive_local extends Dos_Drive {
         return true;
     }
 
+    @Override
     public boolean FileExists(String name) {
         StringRef newname = new StringRef(basedir + name);
         dirCache.ExpandName(newname);
@@ -329,11 +373,13 @@ public class Drive_local extends Dos_Drive {
         }
     }
 
+    @Override
     public boolean FileStat(String name, FileStat_Block stat_block) {
         StringRef newname = new StringRef(basedir + name);
         dirCache.ExpandName(newname);
         File f = new File(newname.value);
-        if (!f.exists()) return false;
+        if (!f.exists())
+            return false;
         /* Convert the stat to a FileStat */
         stat_block.time = CalendarHelper.Dos_time(f.lastModified());
         stat_block.date = CalendarHelper.Dos_date(f.lastModified());
@@ -341,18 +387,22 @@ public class Drive_local extends Dos_Drive {
         return true;
     }
 
+    @Override
     public /*Bit8u*/short GetMediaByte() {
         return allocation.mediaid;
     }
 
+    @Override
     public boolean isRemote() {
         return false;
     }
 
+    @Override
     public boolean isRemovable() {
         return false;
     }
 
+    @Override
     public /*Bits*/int UnMount() {
         return 0;
     }
@@ -376,7 +426,7 @@ public class Drive_local extends Dos_Drive {
         return true;
     }
 
-    static public class localFile extends DOS_File {
+    public static class localFile extends DOS_File {
         private FileIO fhandle;
         private boolean read_only_medium;
         private int last_action;
@@ -397,8 +447,9 @@ public class Drive_local extends Dos_Drive {
             return machinePath;
         }
 
-        public boolean Read(byte[] data,/*Bit16u*/IntRef size) {
-            if ((this.flags & 0xf) == Dos_files.OPEN_WRITE) {    // check if file opened in write-only mode
+        @Override
+        public boolean Read(byte[] data, /*Bit16u*/IntRef size) {
+            if ((this.flags & 0xf) == Dos_files.OPEN_WRITE) { // check if file opened in write-only mode
                 Dos.DOS_SetError(Dos.DOSERR_ACCESS_DENIED);
                 return false;
             }
@@ -408,18 +459,21 @@ public class Drive_local extends Dos_Drive {
                 size.value = fhandle.read(data, 0, size.value);
             } catch (Exception e) {
             }
-            if (size.value == -1) size.value = 0;
+            if (size.value == -1)
+                size.value = 0;
             /* Fake harddrive motion. Inspector Gadget with soundblaster compatible */
             /* Same for Igor */
             /* hardrive motion => unmask irq 2. Only do it when it's masked as unmasking is realitively heavy to emulate */
             /*Bit8u*/
             int mask = IoHandler.IO_Read(0x21);
-            if ((mask & 0x4) != 0) IoHandler.IO_Write(0x21, mask & 0xfb);
+            if ((mask & 0x4) != 0)
+                IoHandler.IO_Write(0x21, mask & 0xfb);
             return true;
         }
 
-        public boolean Write(byte[] data,/*Bit16u*/IntRef size) {
-            if ((this.flags & 0xf) == Dos_files.OPEN_READ) {    // check if file opened in read-only mode
+        @Override
+        public boolean Write(byte[] data, /*Bit16u*/IntRef size) {
+            if ((this.flags & 0xf) == Dos_files.OPEN_READ) { // check if file opened in read-only mode
                 Dos.DOS_SetError(Dos.DOSERR_ACCESS_DENIED);
                 return false;
             }
@@ -439,8 +493,9 @@ public class Drive_local extends Dos_Drive {
             return true;
         }
 
-        public boolean Seek(/*Bit32u*/LongRef pos,/*Bit32u*/int type) {
-            int p = (int) (pos.value & 0xFFFFFFFFl);
+        @Override
+        public boolean Seek(/*Bit32u*/LongRef pos, /*Bit32u*/int type) {
+            int p = (int) (pos.value & 0xFFFFFFFFL);
             try {
                 switch (type) {
                     case Dos_files.DOS_SEEK_SET:
@@ -463,25 +518,30 @@ public class Drive_local extends Dos_Drive {
             return true;
         }
 
+        @Override
         public boolean Close() {
             // only close if one reference left
             if (refCtr == 1) {
-                if (fhandle != null) try {
-                    fhandle.close();
-                } catch (Exception e) {
-                }
+                if (fhandle != null)
+                    try {
+                        fhandle.close();
+                    } catch (Exception e) {
+                    }
                 fhandle = null;
                 open = false;
             }
             return true;
         }
 
+        @Override
         public /*Bit16u*/int GetInformation() {
             return read_only_medium ? 0x40 : 0;
         }
 
+        @Override
         public boolean UpdateDateTimeFromHost() {
-            if (!open) return false;
+            if (!open)
+                return false;
             long dt = fhandle.lastModified();
             time = CalendarHelper.Dos_time(dt);
             date = CalendarHelper.Dos_date(dt);

@@ -8,11 +8,11 @@ public class WinMenu extends WinObject {
         super(id);
     }
 
-    static public WinMenu create() {
+    public static WinMenu create() {
         return new WinMenu(nextObjectId());
     }
 
-    static public WinMenu get(int handle) {
+    public static WinMenu get(int handle) {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinMenu))
             return null;
@@ -20,22 +20,22 @@ public class WinMenu extends WinObject {
     }
 
     // BOOL WINAPI AppendMenu(HMENU hMenu, UINT uFlags, UINT_PTR uIDNewItem, LPCTSTR lpNewItem)
-    static public int AppendMenuA(int hMenu, int uFlags, int uIDNewItem, int lpNewItem) {
+    public static int AppendMenuA(int hMenu, int uFlags, int uIDNewItem, int lpNewItem) {
         return TRUE;
     }
 
     // DWORD WINAPI CheckMenuItem(HMENU hmenu, UINT uIDCheckItem, UINT uCheck)
-    static public int CheckMenuItem(int hmenu, int uIDCheckItem, int uCheck) {
+    public static int CheckMenuItem(int hmenu, int uIDCheckItem, int uCheck) {
         return 0;
     }
 
     // HMENU WINAPI CreatePopupMenu(void)
-    static public int CreatePopupMenu() {
+    public static int CreatePopupMenu() {
         return create().handle;
     }
 
     // BOOL WINAPI DestroyMenu(HMENU hMenu)
-    static public int DestroyMenu(int hMenu) {
+    public static int DestroyMenu(int hMenu) {
         WinMenu menu = WinMenu.get(hMenu);
         if (menu == null)
             return FALSE;
@@ -44,22 +44,22 @@ public class WinMenu extends WinObject {
     }
 
     // BOOL WINAPI DrawMenuBar(HWND hWnd)
-    static public int DrawMenuBar(int hWnd) {
+    public static int DrawMenuBar(int hWnd) {
         return FALSE;
     }
 
     // BOOL WINAPI EnableMenuItem(HMENU hMenu, UINT uIDEnableItem, UINT uEnable)
-    static public int EnableMenuItem(int hMenu, int uIDEnableItem, int uEnable) {
+    public static int EnableMenuItem(int hMenu, int uIDEnableItem, int uEnable) {
         return FALSE;
     }
 
     // BOOL WINAPI EndMenu(void)
-    static public int EndMenu() {
+    public static int EndMenu() {
         return TRUE;
     }
 
     // HMENU WINAPI GetMenu(HWND hWnd)
-    static public int GetMenu(int hWnd) {
+    public static int GetMenu(int hWnd) {
         WinWindow window = WinWindow.get(hWnd);
         if (window == null)
             return 0;
@@ -67,7 +67,7 @@ public class WinMenu extends WinObject {
     }
 
     // int WINAPI GetMenuItemCount(HMENU hMenu)
-    static public int GetMenuItemCount(int hMenu) {
+    public static int GetMenuItemCount(int hMenu) {
         WinMenu menu = WinMenu.get(hMenu);
         if (menu == null)
             return -1;
@@ -75,12 +75,12 @@ public class WinMenu extends WinObject {
     }
 
     // HMENU WINAPI GetSubMenu(HMENU hMenu, int nPos)
-    static public int GetSubMenu(int hMenu, int nPos) {
+    public static int GetSubMenu(int hMenu, int nPos) {
         return 0;
     }
 
     // HMENU WINAPI GetSystemMenu(HWND hWnd, BOOL bRevert)
-    static public int GetSystemMenu(int hWnd, int bRevert) {
+    public static int GetSystemMenu(int hWnd, int bRevert) {
         WinWindow window = WinWindow.get(hWnd);
         if (window == null)
             return 0;
@@ -97,39 +97,39 @@ public class WinMenu extends WinObject {
             // :TODO: return the submenu
             result = window.hSysMenu;
         }
-        return (bRevert == 0) ? result : 0;
+        return bRevert == 0 ? result : 0;
     }
 
     // HMENU WINAPI LoadMenu(HINSTANCE hInstance, LPCTSTR lpMenuName)
-    static public int LoadMenuA(int hInstance, int lpMenuName) {
+    public static int LoadMenuA(int hInstance, int lpMenuName) {
         return 0;
     }
 
-    static public int LoadMenuW(int hInstance, int lpMenuName) {
+    public static int LoadMenuW(int hInstance, int lpMenuName) {
         return 0;
     }
 
     // BOOL WINAPI ModifyMenu(HMENU hMnu, UINT uPosition, UINT uFlags, UINT_PTR uIDNewItem, LPCTSTR lpNewItem)
-    static public int ModifyMenuA(int hMnu, int uPosition, int uFlags, int uIDNewItem, int lpNewItem) {
+    public static int ModifyMenuA(int hMnu, int uPosition, int uFlags, int uIDNewItem, int lpNewItem) {
         return FALSE;
     }
 
     // BOOL WINAPI SetMenu(HWND hWnd, HMENU hMenu)
-    static public int SetMenu(int hWnd, int hMenu) {
+    public static int SetMenu(int hWnd, int hMenu) {
         return TRUE;
     }
 
     // BOOL WINAPI SetMenuItemInfo(HMENU hMenu, UINT uItem, BOOL fByPosition, LPMENUITEMINFO lpmii)
-    static public int SetMenuItemInfoA(int hMenu, int uItem, int fByPosition, int lpmii) {
+    public static int SetMenuItemInfoA(int hMenu, int uItem, int fByPosition, int lpmii) {
         return TRUE;
     }
 
     // int WINAPI TranslateAccelerator(HWND hWnd, HACCEL hAccTable, LPMSG lpMsg)
-    static public int TranslateAcceleratorA(int hWnd, int hAccTable, int lpMsg) {
+    public static int TranslateAcceleratorA(int hWnd, int hAccTable, int lpMsg) {
         return 0;
     }
 
-    static public int MENU_IsMenuActive() {
+    public static int MENU_IsMenuActive() {
         return StaticData.top_popup;
     }
 }

@@ -24,6 +24,7 @@ public class TEXTMETRIC extends WinAPI {
     public int tmStruckOut;
     public int tmPitchAndFamily;
     public int tmCharSet;
+
     public TEXTMETRIC(int address) {
         tmHeight = readd(address);
         address += 4;

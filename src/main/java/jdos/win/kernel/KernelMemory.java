@@ -10,8 +10,8 @@ import jdos.win.builtin.kernel32.WinProcess;
 // Based heavily on James Molloy's work at http://www.jamesmolloy.co.uk/tutorial_html/6.-Paging.html
 
 public class KernelMemory {
-    static final private int PLACEMENT_START = 0x100000; // map the first meg for dos  :TODO: research not wasting 1MB per process
-    static private final int KHEAP_INITIAL_SIZE = 0x10000;
+    private static final int PLACEMENT_START = 0x100000; // map the first meg for dos  :TODO: research not wasting 1MB per process
+    private static final int KHEAP_INITIAL_SIZE = 0x10000;
     int placement_address = PLACEMENT_START;
     KernelHeap heap = null;
     int[] frames = null;
@@ -19,12 +19,14 @@ public class KernelMemory {
     int kernel_directory = 0;
     int current_directory = 0;
     Callback.Handler pageFaultHandler = new Callback.Handler() {
+        @Override
         public int call() {
             System.out.println("Page Fault");
             System.exit(0);
             return 0;
         }
 
+        @Override
         public String getName() {
             return "PageFault";
         }
@@ -32,19 +34,19 @@ public class KernelMemory {
     private final long KHEAP_START = WinProcess.ADDRESS_KHEAP_START;
     private final long KHEAP_END = WinProcess.ADDRESS_KHEAP_END;
 
-    static private int INDEX_FROM_BIT(int a) {
+    private static int INDEX_FROM_BIT(int a) {
         return a / (8 * 4);
     }
 
-    static private int OFFSET_FROM_BIT(int a) {
+    private static int OFFSET_FROM_BIT(int a) {
         return a % (8 * 4);
     }
 
-    static public void clearPage(int pagePtr) {
+    public static void clearPage(int pagePtr) {
         Memory.mem_writed(pagePtr, 0);
     }
 
-    static public void setPage(int pagePtr, int frame, boolean is_kernel, boolean is_writeable) {
+    public static void setPage(int pagePtr, int frame, boolean is_kernel, boolean is_writeable) {
         int page = Memory.mem_readd(pagePtr);
         page = Page.set(page, true, Page.PRESENT_MASK); // Mark it as present.
         page = Page.set(page, is_writeable, Page.RW_MASK); // Should the page be writeable?
@@ -88,7 +90,7 @@ public class KernelMemory {
     private void set_frame(int frame) {
         int idx = INDEX_FROM_BIT(frame);
         int off = OFFSET_FROM_BIT(frame);
-        frames[idx] |= (0x1 << off);
+        frames[idx] |= 0x1 << off;
     }
 
     // Static function to clear a bit in the frames bitset
@@ -103,7 +105,7 @@ public class KernelMemory {
         int frame = frame_addr / 0x1000;
         int idx = INDEX_FROM_BIT(frame);
         int off = OFFSET_FROM_BIT(frame);
-        return (frames[idx] & (0x1 << off));
+        return frames[idx] & 0x1 << off;
     }
 
     // Static function to find the first free frame.
@@ -143,7 +145,7 @@ public class KernelMemory {
         IntRef used = new IntRef(0);
 
         getInfo(free, used);
-        System.out.print((used.value * 4) + "/" + ((used.value + free.value) * 4) + "KB");
+        System.out.print(used.value * 4 + "/" + (used.value + free.value) * 4 + "KB");
     }
 
     public int getNextFrame() {
@@ -163,7 +165,6 @@ public class KernelMemory {
     void alloc_frame(int pagePtr, boolean is_kernel, boolean is_writeable) {
         int page = Memory.mem_readd(pagePtr);
         if (Page.getFrame(page) != 0) {
-            return; // Frame was already allocated, return straight away.  This will only happen during initialization of paging
         } else {
             int idx = first_frame(); // idx is now the index of the first free frame.
             if (idx == -1) {
@@ -194,11 +195,16 @@ public class KernelMemory {
         int vresult = kmalloc(PageDirectory.SIZE, true, result);
         Memory.mem_zero(vresult, PageDirectory.SIZE);
         for (int i = 0; i < 1024; i++) {
-            int tablePtr = Memory.phys_readd(kernel_directory + PageDirectory.TABLES_OFFSET + i * PageDirectory.TABLES_ENTRY_SIZE);
+            int tablePtr = Memory
+                .phys_readd(kernel_directory + PageDirectory.TABLES_OFFSET + i * PageDirectory.TABLES_ENTRY_SIZE);
             if (tablePtr != 0) {
-                int physicalPtr = Memory.phys_readd(kernel_directory + PageDirectory.TABLES_PHYSICAL_OFFSET + i * PageDirectory.TABLES_PHYSICAL_SIZE);
-                Memory.phys_writed(result.value + PageDirectory.TABLES_OFFSET + i * PageDirectory.TABLES_ENTRY_SIZE, tablePtr);
-                Memory.phys_writed(result.value + PageDirectory.TABLES_PHYSICAL_OFFSET + i * PageDirectory.TABLES_PHYSICAL_SIZE, physicalPtr);
+                int physicalPtr = Memory.phys_readd(
+                    kernel_directory + PageDirectory.TABLES_PHYSICAL_OFFSET + i * PageDirectory.TABLES_PHYSICAL_SIZE);
+                Memory.phys_writed(result.value + PageDirectory.TABLES_OFFSET + i * PageDirectory.TABLES_ENTRY_SIZE,
+                    tablePtr);
+                Memory.phys_writed(
+                    result.value + PageDirectory.TABLES_PHYSICAL_OFFSET + i * PageDirectory.TABLES_PHYSICAL_SIZE,
+                    physicalPtr);
             }
         }
         return result.value;
@@ -240,7 +246,8 @@ public class KernelMemory {
         // Now, enable paging!
         switch_page_directory(kernel_directory);
 
-        heap = new KernelHeap(this, kernel_directory, KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, KHEAP_END, false, false);
+        heap = new KernelHeap(this, kernel_directory, KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, KHEAP_END, false,
+            false);
     }
 
     public void switch_page_directory(int dir) {
@@ -255,17 +262,21 @@ public class KernelMemory {
         // Find the page table containing this address.
         int table_idx = address >> 10;
         // dir->tables[idx]
-        int tablePtr = Memory.phys_readd(dir + PageDirectory.TABLES_OFFSET + table_idx * PageDirectory.TABLES_ENTRY_SIZE);
+        int tablePtr = Memory
+            .phys_readd(dir + PageDirectory.TABLES_OFFSET + table_idx * PageDirectory.TABLES_ENTRY_SIZE);
         if (tablePtr != 0) { // If this table is already assigned
-            return tablePtr + (address % 1024) * PageDirectory.TABLES_ENTRY_SIZE;
+            return tablePtr + address % 1024 * PageDirectory.TABLES_ENTRY_SIZE;
         } else if (make) {
             IntRef phys = new IntRef(0);
             tablePtr = kmalloc(PageDirectory.PAGE_TABLE_COUNT * PageDirectory.TABLES_ENTRY_SIZE, true, phys);
             Memory.mem_zero(tablePtr, PageDirectory.PAGE_TABLE_COUNT * PageDirectory.TABLES_ENTRY_SIZE);
-            Memory.phys_writed(dir + PageDirectory.TABLES_OFFSET + table_idx * PageDirectory.TABLES_ENTRY_SIZE, tablePtr);
+            Memory.phys_writed(dir + PageDirectory.TABLES_OFFSET + table_idx * PageDirectory.TABLES_ENTRY_SIZE,
+                tablePtr);
 
-            Memory.phys_writed(dir + PageDirectory.TABLES_PHYSICAL_OFFSET + table_idx * PageDirectory.TABLES_PHYSICAL_SIZE, phys.value | 0x7); // PRESENT, RW, US.
-            return tablePtr + (address % 1024) * PageDirectory.TABLES_ENTRY_SIZE;
+            Memory.phys_writed(
+                dir + PageDirectory.TABLES_PHYSICAL_OFFSET + table_idx * PageDirectory.TABLES_PHYSICAL_SIZE,
+                phys.value | 0x7); // PRESENT, RW, US.
+            return tablePtr + address % 1024 * PageDirectory.TABLES_ENTRY_SIZE;
         } else {
             return 0;
         }
@@ -282,22 +293,22 @@ public class KernelMemory {
         private static final int ACCESSED_MASK = 0x08; // Has the page been accessed since last refresh?
         private static final int DIRTY_MASK = 0x10; // // Has the page been written to since last refresh?
 
-        static public int set(int page, boolean b, int mask) {
+        public static int set(int page, boolean b, int mask) {
             page &= ~mask;
             if (b)
                 page |= mask;
             return page;
         }
 
-        static public boolean get(int page, int mask) {
+        public static boolean get(int page, int mask) {
             return (page & mask) != 0;
         }
 
-        static public int getFrame(int page) {
+        public static int getFrame(int page) {
             return page >>> 12;
         }
 
-        static public int setFrame(int page, int frame) {
+        public static int setFrame(int page, int frame) {
             page |= frame << 12;
             return page;
         }

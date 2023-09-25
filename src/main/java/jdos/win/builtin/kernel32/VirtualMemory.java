@@ -8,6 +8,7 @@ import jdos.win.system.WinSystem;
 public class VirtualMemory {
     public long address;
     public int size;
+
     public VirtualMemory(long address, int size) {
         this.address = address;
         this.size = size;

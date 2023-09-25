@@ -39,15 +39,14 @@ class LayerIDecoder implements FrameDecoder {
 
     protected int num_subbands;
     protected Subband[] subbands;
-    protected Crc16 crc = null;    // new Crc16[1] to enable CRC checking.
+    protected Crc16 crc = null; // new Crc16[1] to enable CRC checking.
 
     public LayerIDecoder() {
         crc = new Crc16();
     }
 
-    public void create(Bitstream stream0, Header header0,
-                       SynthesisFilter filtera, SynthesisFilter filterb,
-                       Obuffer buffer0, int which_ch0) {
+    public void create(Bitstream stream0, Header header0, SynthesisFilter filtera, SynthesisFilter filterb,
+        Obuffer buffer0, int which_ch0) {
         stream = stream0;
         header = header0;
         filter1 = filtera;
@@ -57,6 +56,7 @@ class LayerIDecoder implements FrameDecoder {
 
     }
 
+    @Override
     public void decodeFrame() throws DecoderException {
 
         num_subbands = header.number_of_subbands();
@@ -68,7 +68,7 @@ class LayerIDecoder implements FrameDecoder {
         readAllocation();
         readScaleFactorSelection();
 
-        if ((crc != null) || header.checksum_ok()) {
+        if (crc != null || header.checksum_ok()) {
             readScaleFactors();
 
             readSampleData();
@@ -121,7 +121,7 @@ class LayerIDecoder implements FrameDecoder {
                     write_ready = subbands[i].put_next_sample(which_channels, filter1, filter2);
 
                 filter1.calculate_pcm_samples(buffer);
-                if ((which_channels == OutputChannels.BOTH_CHANNELS) && (mode != Header.SINGLE_CHANNEL))
+                if (which_channels == OutputChannels.BOTH_CHANNELS && mode != Header.SINGLE_CHANNEL)
                     filter2.calculate_pcm_samples(buffer);
             } while (!write_ready);
         } while (!read_ready);
@@ -138,25 +138,21 @@ class LayerIDecoder implements FrameDecoder {
          *      is illegal (to prevent segmentation faults)
          */
         // Scalefactors for layer I and II, Annex 3-B.1 in ISO/IEC DIS 11172:
-        public static final float[] scalefactors =
-                {
-                        2.00000000000000f, 1.58740105196820f, 1.25992104989487f, 1.00000000000000f,
-                        0.79370052598410f, 0.62996052494744f, 0.50000000000000f, 0.39685026299205f,
-                        0.31498026247372f, 0.25000000000000f, 0.19842513149602f, 0.15749013123686f,
-                        0.12500000000000f, 0.09921256574801f, 0.07874506561843f, 0.06250000000000f,
-                        0.04960628287401f, 0.03937253280921f, 0.03125000000000f, 0.02480314143700f,
-                        0.01968626640461f, 0.01562500000000f, 0.01240157071850f, 0.00984313320230f,
-                        0.00781250000000f, 0.00620078535925f, 0.00492156660115f, 0.00390625000000f,
-                        0.00310039267963f, 0.00246078330058f, 0.00195312500000f, 0.00155019633981f,
-                        0.00123039165029f, 0.00097656250000f, 0.00077509816991f, 0.00061519582514f,
-                        0.00048828125000f, 0.00038754908495f, 0.00030759791257f, 0.00024414062500f,
-                        0.00019377454248f, 0.00015379895629f, 0.00012207031250f, 0.00009688727124f,
-                        0.00007689947814f, 0.00006103515625f, 0.00004844363562f, 0.00003844973907f,
-                        0.00003051757813f, 0.00002422181781f, 0.00001922486954f, 0.00001525878906f,
-                        0.00001211090890f, 0.00000961243477f, 0.00000762939453f, 0.00000605545445f,
-                        0.00000480621738f, 0.00000381469727f, 0.00000302772723f, 0.00000240310869f,
-                        0.00000190734863f, 0.00000151386361f, 0.00000120155435f, 0.00000000000000f /* illegal scalefactor */
-                };
+        public static final float[] scalefactors = { 2.00000000000000f, 1.58740105196820f, 1.25992104989487f,
+            1.00000000000000f, 0.79370052598410f, 0.62996052494744f, 0.50000000000000f, 0.39685026299205f,
+            0.31498026247372f, 0.25000000000000f, 0.19842513149602f, 0.15749013123686f, 0.12500000000000f,
+            0.09921256574801f, 0.07874506561843f, 0.06250000000000f, 0.04960628287401f, 0.03937253280921f,
+            0.03125000000000f, 0.02480314143700f, 0.01968626640461f, 0.01562500000000f, 0.01240157071850f,
+            0.00984313320230f, 0.00781250000000f, 0.00620078535925f, 0.00492156660115f, 0.00390625000000f,
+            0.00310039267963f, 0.00246078330058f, 0.00195312500000f, 0.00155019633981f, 0.00123039165029f,
+            0.00097656250000f, 0.00077509816991f, 0.00061519582514f, 0.00048828125000f, 0.00038754908495f,
+            0.00030759791257f, 0.00024414062500f, 0.00019377454248f, 0.00015379895629f, 0.00012207031250f,
+            0.00009688727124f, 0.00007689947814f, 0.00006103515625f, 0.00004844363562f, 0.00003844973907f,
+            0.00003051757813f, 0.00002422181781f, 0.00001922486954f, 0.00001525878906f, 0.00001211090890f,
+            0.00000961243477f, 0.00000762939453f, 0.00000605545445f, 0.00000480621738f, 0.00000381469727f,
+            0.00000302772723f, 0.00000240310869f, 0.00000190734863f, 0.00000151386361f, 0.00000120155435f,
+            0.00000000000000f /* illegal scalefactor */
+        };
 
         public abstract void read_allocation(Bitstream stream, Header header, Crc16 crc) throws DecoderException;
 
@@ -168,30 +164,27 @@ class LayerIDecoder implements FrameDecoder {
     }
 
     /**
-     * Class for layer I subbands in single channel mode.
-     * Used for single channel mode
-     * and in derived class for intensity stereo mode
+     * Class for layer I subbands in single channel mode. Used for single channel
+     * mode and in derived class for intensity stereo mode
      */
     static class SubbandLayer1 extends Subband {
 
         // Factors and offsets for sample requantization
-        public static final float[] table_factor = {
-                0.0f, (1.0f / 2.0f) * (4.0f / 3.0f), (1.0f / 4.0f) * (8.0f / 7.0f), (1.0f / 8.0f) * (16.0f / 15.0f),
-                (1.0f / 16.0f) * (32.0f / 31.0f), (1.0f / 32.0f) * (64.0f / 63.0f), (1.0f / 64.0f) * (128.0f / 127.0f),
-                (1.0f / 128.0f) * (256.0f / 255.0f), (1.0f / 256.0f) * (512.0f / 511.0f),
-                (1.0f / 512.0f) * (1024.0f / 1023.0f), (1.0f / 1024.0f) * (2048.0f / 2047.0f),
-                (1.0f / 2048.0f) * (4096.0f / 4095.0f), (1.0f / 4096.0f) * (8192.0f / 8191.0f),
-                (1.0f / 8192.0f) * (16384.0f / 16383.0f), (1.0f / 16384.0f) * (32768.0f / 32767.0f)
-        };
+        public static final float[] table_factor = { 0.0f, 1.0f / 2.0f * (4.0f / 3.0f), 1.0f / 4.0f * (8.0f / 7.0f),
+            1.0f / 8.0f * (16.0f / 15.0f), 1.0f / 16.0f * (32.0f / 31.0f), 1.0f / 32.0f * (64.0f / 63.0f),
+            1.0f / 64.0f * (128.0f / 127.0f), 1.0f / 128.0f * (256.0f / 255.0f), 1.0f / 256.0f * (512.0f / 511.0f),
+            1.0f / 512.0f * (1024.0f / 1023.0f), 1.0f / 1024.0f * (2048.0f / 2047.0f),
+            1.0f / 2048.0f * (4096.0f / 4095.0f), 1.0f / 4096.0f * (8192.0f / 8191.0f),
+            1.0f / 8192.0f * (16384.0f / 16383.0f), 1.0f / 16384.0f * (32768.0f / 32767.0f) };
 
-        public static final float[] table_offset = {
-                0.0f, ((1.0f / 2.0f) - 1.0f) * (4.0f / 3.0f), ((1.0f / 4.0f) - 1.0f) * (8.0f / 7.0f), ((1.0f / 8.0f) - 1.0f) * (16.0f / 15.0f),
-                ((1.0f / 16.0f) - 1.0f) * (32.0f / 31.0f), ((1.0f / 32.0f) - 1.0f) * (64.0f / 63.0f), ((1.0f / 64.0f) - 1.0f) * (128.0f / 127.0f),
-                ((1.0f / 128.0f) - 1.0f) * (256.0f / 255.0f), ((1.0f / 256.0f) - 1.0f) * (512.0f / 511.0f),
-                ((1.0f / 512.0f) - 1.0f) * (1024.0f / 1023.0f), ((1.0f / 1024.0f) - 1.0f) * (2048.0f / 2047.0f),
-                ((1.0f / 2048.0f) - 1.0f) * (4096.0f / 4095.0f), ((1.0f / 4096.0f) - 1.0f) * (8192.0f / 8191.0f),
-                ((1.0f / 8192.0f) - 1.0f) * (16384.0f / 16383.0f), ((1.0f / 16384.0f) - 1.0f) * (32768.0f / 32767.0f)
-        };
+        public static final float[] table_offset = { 0.0f, (1.0f / 2.0f - 1.0f) * (4.0f / 3.0f),
+            (1.0f / 4.0f - 1.0f) * (8.0f / 7.0f), (1.0f / 8.0f - 1.0f) * (16.0f / 15.0f),
+            (1.0f / 16.0f - 1.0f) * (32.0f / 31.0f), (1.0f / 32.0f - 1.0f) * (64.0f / 63.0f),
+            (1.0f / 64.0f - 1.0f) * (128.0f / 127.0f), (1.0f / 128.0f - 1.0f) * (256.0f / 255.0f),
+            (1.0f / 256.0f - 1.0f) * (512.0f / 511.0f), (1.0f / 512.0f - 1.0f) * (1024.0f / 1023.0f),
+            (1.0f / 1024.0f - 1.0f) * (2048.0f / 2047.0f), (1.0f / 2048.0f - 1.0f) * (4096.0f / 4095.0f),
+            (1.0f / 4096.0f - 1.0f) * (8192.0f / 8191.0f), (1.0f / 8192.0f - 1.0f) * (16384.0f / 16383.0f),
+            (1.0f / 16384.0f - 1.0f) * (32768.0f / 32767.0f) };
 
         protected int subbandnumber;
         protected int samplenumber;
@@ -212,6 +205,7 @@ class LayerIDecoder implements FrameDecoder {
         /**
          *
          */
+        @Override
         public void read_allocation(Bitstream stream, Header header, Crc16 crc) throws DecoderException {
             if ((allocation = stream.get_bits(4)) == 15) {
                 // CGJ: catch this condition and throw appropriate exception
@@ -220,7 +214,8 @@ class LayerIDecoder implements FrameDecoder {
                 // MPEG-stream is corrupted!
             }
 
-            if (crc != null) crc.add_bits(allocation, 4);
+            if (crc != null)
+                crc.add_bits(allocation, 4);
             if (allocation != 0) {
                 samplelength = allocation + 1;
                 factor = table_factor[allocation];
@@ -231,16 +226,19 @@ class LayerIDecoder implements FrameDecoder {
         /**
          *
          */
+        @Override
         public void read_scalefactor(Bitstream stream, Header header) {
-            if (allocation != 0) scalefactor = scalefactors[stream.get_bits(6)];
+            if (allocation != 0)
+                scalefactor = scalefactors[stream.get_bits(6)];
         }
 
         /**
          *
          */
+        @Override
         public boolean read_sampledata(Bitstream stream) {
             if (allocation != 0) {
-                sample = (float) (stream.get_bits(samplelength));
+                sample = stream.get_bits(samplelength);
             }
             if (++samplenumber == 12) {
                 samplenumber = 0;
@@ -252,8 +250,9 @@ class LayerIDecoder implements FrameDecoder {
         /**
          *
          */
+        @Override
         public boolean put_next_sample(int channels, SynthesisFilter filter1, SynthesisFilter filter2) {
-            if ((allocation != 0) && (channels != OutputChannels.RIGHT_CHANNEL)) {
+            if (allocation != 0 && channels != OutputChannels.RIGHT_CHANNEL) {
                 float scaled_sample = (sample * factor + offset) * scalefactor;
                 filter1.input_sample(scaled_sample, subbandnumber);
             }
@@ -277,6 +276,7 @@ class LayerIDecoder implements FrameDecoder {
         /**
          *
          */
+        @Override
         public void read_allocation(Bitstream stream, Header header, Crc16 crc) throws DecoderException {
             super.read_allocation(stream, header, crc);
         }
@@ -284,6 +284,7 @@ class LayerIDecoder implements FrameDecoder {
         /**
          *
          */
+        @Override
         public void read_scalefactor(Bitstream stream, Header header) {
             if (allocation != 0) {
                 scalefactor = scalefactors[stream.get_bits(6)];
@@ -294,6 +295,7 @@ class LayerIDecoder implements FrameDecoder {
         /**
          *
          */
+        @Override
         public boolean read_sampledata(Bitstream stream) {
             return super.read_sampledata(stream);
         }
@@ -301,12 +303,12 @@ class LayerIDecoder implements FrameDecoder {
         /**
          *
          */
+        @Override
         public boolean put_next_sample(int channels, SynthesisFilter filter1, SynthesisFilter filter2) {
             if (allocation != 0) {
-                sample = sample * factor + offset;        // requantization
+                sample = sample * factor + offset; // requantization
                 if (channels == OutputChannels.BOTH_CHANNELS) {
-                    float sample1 = sample * scalefactor,
-                            sample2 = sample * channel2_scalefactor;
+                    float sample1 = sample * scalefactor, sample2 = sample * channel2_scalefactor;
                     filter1.input_sample(sample1, subbandnumber);
                     filter2.input_sample(sample2, subbandnumber);
                 } else if (channels == OutputChannels.LEFT_CHANNEL) {
@@ -331,7 +333,6 @@ class LayerIDecoder implements FrameDecoder {
         protected float channel2_sample;
         protected float channel2_factor, channel2_offset;
 
-
         /**
          * Constructor
          */
@@ -342,6 +343,7 @@ class LayerIDecoder implements FrameDecoder {
         /**
          *
          */
+        @Override
         public void read_allocation(Bitstream stream, Header header, Crc16 crc) throws DecoderException {
             allocation = stream.get_bits(4);
             channel2_allocation = stream.get_bits(4);
@@ -364,30 +366,34 @@ class LayerIDecoder implements FrameDecoder {
         /**
          *
          */
+        @Override
         public void read_scalefactor(Bitstream stream, Header header) {
-            if (allocation != 0) scalefactor = scalefactors[stream.get_bits(6)];
-            if (channel2_allocation != 0) channel2_scalefactor = scalefactors[stream.get_bits(6)];
+            if (allocation != 0)
+                scalefactor = scalefactors[stream.get_bits(6)];
+            if (channel2_allocation != 0)
+                channel2_scalefactor = scalefactors[stream.get_bits(6)];
         }
 
         /**
          *
          */
+        @Override
         public boolean read_sampledata(Bitstream stream) {
             boolean returnvalue = super.read_sampledata(stream);
             if (channel2_allocation != 0) {
-                channel2_sample = (float) (stream.get_bits(channel2_samplelength));
+                channel2_sample = stream.get_bits(channel2_samplelength);
             }
-            return (returnvalue);
+            return returnvalue;
         }
 
         /**
          *
          */
+        @Override
         public boolean put_next_sample(int channels, SynthesisFilter filter1, SynthesisFilter filter2) {
             super.put_next_sample(channels, filter1, filter2);
-            if ((channel2_allocation != 0) && (channels != OutputChannels.LEFT_CHANNEL)) {
-                float sample2 = (channel2_sample * channel2_factor + channel2_offset) *
-                        channel2_scalefactor;
+            if (channel2_allocation != 0 && channels != OutputChannels.LEFT_CHANNEL) {
+                float sample2 = (channel2_sample * channel2_factor + channel2_offset) * channel2_scalefactor;
                 if (channels == OutputChannels.BOTH_CHANNELS)
                     filter2.input_sample(sample2, subbandnumber);
                 else

@@ -22,12 +22,11 @@ package javazoom.jl.decoder;
 
 import java.io.PrintStream;
 
-
 /**
- * The JavaLayerException is the base class for all API-level
- * exceptions thrown by JavaLayer. To facilitate conversion and
- * common handling of exceptions from other domains, the class
- * can delegate some functionality to a contained Throwable instance.
+ * The JavaLayerException is the base class for all API-level exceptions thrown
+ * by JavaLayer. To facilitate conversion and common handling of exceptions from
+ * other domains, the class can delegate some functionality to a contained
+ * Throwable instance.
  * <p>
  *
  * @author MDM
@@ -35,7 +34,6 @@ import java.io.PrintStream;
 public class JavaLayerException extends Exception {
 
     private Throwable exception;
-
 
     public JavaLayerException() {
     }
@@ -53,11 +51,12 @@ public class JavaLayerException extends Exception {
         return exception;
     }
 
-
+    @Override
     public void printStackTrace() {
         printStackTrace(System.err);
     }
 
+    @Override
     public void printStackTrace(PrintStream ps) {
         if (this.exception == null) {
             super.printStackTrace(ps);
@@ -65,6 +64,5 @@ public class JavaLayerException extends Exception {
             exception.printStackTrace();
         }
     }
-
 
 }

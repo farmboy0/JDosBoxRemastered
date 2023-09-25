@@ -8,6 +8,7 @@ public class WAVEFORMATEXTENSIBLE extends WinAPI {
     public int wSamplesPerBlock;
     public int dwChannelMask;
     public Guid SubFormat;
+
     public WAVEFORMATEXTENSIBLE(WAVEFORMATEX wfx, int address) {
         this.Format = wfx;
         if (wfx.wFormatTag == WAVE_FORMAT_EXTENSIBLE) {

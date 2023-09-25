@@ -21,24 +21,24 @@
 package javazoom.jl.decoder;
 
 /**
- * Instances of <code>BitstreamException</code> are thrown
- * when operations on a <code>Bitstream</code> fail.
+ * Instances of <code>BitstreamException</code> are thrown when operations on a
+ * <code>Bitstream</code> fail.
  * <p>
- * The exception provides details of the exception condition
- * in two ways:
- * <ol><li>
- * 		as an error-code describing the nature of the error
- * </li><br></br><li>
- * 		as the <code>Throwable</code> instance, if any, that was thrown
- * 		indicating that an exceptional condition has occurred.
- * </li></ol></p>
+ * The exception provides details of the exception condition in two ways:
+ * <ol>
+ * <li>as an error-code describing the nature of the error</li><br>
+ * </br>
+ * <li>as the <code>Throwable</code> instance, if any, that was thrown
+ * indicating that an exceptional condition has occurred.</li>
+ * </ol>
+ * </p>
  *
- * @author MDM    12/12/99
+ * @author MDM 12/12/99
+ *
  * @since 0.0.6
  */
 
-public class BitstreamException extends JavaLayerException
-        implements BitstreamErrors {
+public class BitstreamException extends JavaLayerException implements BitstreamErrors {
     private int errorcode = UNKNOWN_ERROR;
 
     public BitstreamException(String msg, Throwable t) {
@@ -50,7 +50,7 @@ public class BitstreamException extends JavaLayerException
         this.errorcode = errorcode;
     }
 
-    static public String getErrorString(int errorcode) {
+    public static String getErrorString(int errorcode) {
         // REVIEW: use resource bundle to map error codes
         // to locale-sensitive strings.
 
@@ -60,6 +60,5 @@ public class BitstreamException extends JavaLayerException
     public int getErrorCode() {
         return errorcode;
     }
-
 
 }

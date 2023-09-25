@@ -1,10 +1,10 @@
 package jdos.misc.setup;
 
-import jdos.util.StringHelper;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Vector;
+
+import jdos.util.StringHelper;
 
 public class Section_prop extends Section {
     private final Vector properties = new Vector();
@@ -152,6 +152,7 @@ public class Section_prop extends Section {
         return null;
     }
 
+    @Override
     public void HandleInputline(String aLine) {
         String[] parts = StringHelper.split(aLine, "=");
         if (parts.length == 2) {
@@ -161,6 +162,7 @@ public class Section_prop extends Section {
         }
     }
 
+    @Override
     public void PrintData(OutputStream os) throws IOException {
         for (int i = 0; i < properties.size(); i++) {
             Property p = (Property) properties.elementAt(i);
@@ -169,6 +171,7 @@ public class Section_prop extends Section {
         }
     }
 
+    @Override
     public String GetPropValue(String _property) {
         Property prop = byname(_property);
         if (prop != null)

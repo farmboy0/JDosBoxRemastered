@@ -1,17 +1,17 @@
 package jdos.win.system;
 
-import jdos.win.builtin.WinAPI;
-import jdos.win.builtin.kernel32.WinThread;
-import jdos.win.builtin.user32.WinWindow;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
 
+import jdos.win.builtin.WinAPI;
+import jdos.win.builtin.kernel32.WinThread;
+
 public class WinTimer {
     int hWnd;
-    ArrayList<TimerItem> itemsByTime = new ArrayList<TimerItem>();
-    Hashtable<Integer, TimerItem> itemsById = new Hashtable<Integer, TimerItem>();
+    ArrayList<TimerItem> itemsByTime = new ArrayList<>();
+    Hashtable<Integer, TimerItem> itemsById = new Hashtable<>();
+
     public WinTimer(int hWnd) {
         this.hWnd = hWnd;
     }
@@ -40,7 +40,7 @@ public class WinTimer {
     }
 
     public int killTimer(int id) {
-        TimerItem item = itemsById.remove(new Integer(id));
+        TimerItem item = itemsById.remove(Integer.valueOf(id));
         if (item != null) {
             itemsByTime.remove(item);
             return WinAPI.TRUE;
@@ -58,7 +58,8 @@ public class WinTimer {
         if (itemsByTime.size() > 0) {
             TimerItem item = itemsByTime.get(0);
             if (item.nextRun < time) {
-                WinThread.setMessage(msgAddress, hWnd, WinWindow.WM_TIMER, item.id, 0, time, StaticData.currentPos.x, StaticData.currentPos.y);
+                WinThread.setMessage(msgAddress, hWnd, WinAPI.WM_TIMER, item.id, 0, time, StaticData.currentPos.x,
+                    StaticData.currentPos.y);
                 if (reset) {
                     item.nextRun = time + item.elapse;
                     Collections.sort(itemsByTime);
@@ -74,15 +75,16 @@ public class WinTimer {
 
         if (item != null && item.eip != 0) {
             // VOID CALLBACK TimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
-            WinSystem.call(item.eip, hWnd, WinWindow.WM_TIMER, id, WinSystem.getTickCount());
+            WinSystem.call(item.eip, hWnd, WinAPI.WM_TIMER, id, WinSystem.getTickCount());
         }
     }
 
-    static private class TimerItem implements Comparable {
+    private static class TimerItem implements Comparable {
         int id;
         int eip;
         int nextRun;
         int elapse;
+
         public TimerItem(int id, int eip, int elapse) {
             this.id = id;
             this.eip = eip;
@@ -90,6 +92,7 @@ public class WinTimer {
             this.nextRun = WinSystem.getTickCount() + elapse;
         }
 
+        @Override
         public int compareTo(Object o) {
             return nextRun - ((TimerItem) o).nextRun;
         }

@@ -1,15 +1,15 @@
 package jdos.host.router;
 
 public class UDP extends EtherUtil {
-    static final public int LEN = 8;
-    static final private byte[] tmp = new byte[2048];
+    public static final int LEN = 8;
+    private static final byte[] tmp = new byte[2048];
     private final BootP bootp = new BootP();
     int sourcePort;
     int destPort;
     int len;
     short sum;
 
-    static private short udp_csum(int sourceAddress, int destAddress, byte[] buffer, int offset, int count) {
+    private static short udp_csum(int sourceAddress, int destAddress, byte[] buffer, int offset, int count) {
         /*
         int total = ~csum(buffer, offset, count) + (sourceAddress & 0xFFFF) + ((sourceAddress >>> 16) & 0xFFFF) + (destAddress & 0xFFFF) + ((destAddress >>> 16) & 0xFFFF) + count + 17;
         int carry;
@@ -29,7 +29,8 @@ public class UDP extends EtherUtil {
         return csum(tmp, 0, count + 12);
     }
 
-    public static void output(int sourceAddress, int destAddress, byte[] buffer, int offset, int sourcePort, int destPort, int payloadLen) {
+    public static void output(int sourceAddress, int destAddress, byte[] buffer, int offset, int sourcePort,
+        int destPort, int payloadLen) {
         writeWord(buffer, offset, sourcePort);
         writeWord(buffer, offset + 2, destPort);
         writeWord(buffer, offset + 4, payloadLen + UDP.LEN);

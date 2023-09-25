@@ -1,32 +1,37 @@
 package jdos.misc.setup;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.util.Vector;
+
 import jdos.misc.Cross;
 import jdos.misc.Log;
 import jdos.misc.Msg;
 import jdos.util.FileIOFactory;
 import jdos.util.StringHelper;
 
-import java.io.*;
-import java.util.Vector;
-
 public class Config {
-    static public final String MAJOR_VERSION = "0.74";
-    static public final String VERSION = "0.74.30";
-    static public final boolean C_DYNAMIC = true;
-    static public final boolean C_DYNREC = false;
-    static public final boolean C_FPU = true;
-    static public final boolean C_IPX = true;
-    static public final boolean C_NE2000 = true;
-    static public final boolean C_DEBUG = false;
-    static public final boolean C_HEAVY_DEBUG = false;
-    static public final boolean USE_FULL_TLB = true;
-    static public final boolean C_VGARAM_CHECKED = true;
-    static public final boolean DEBUG_LOG = false;
-    static public final boolean DEBUG_DEDERMINISTIC = false;
-    static public final boolean IPX_DEBUGMSG = false;
-    static public final boolean DYNAMIC_CORE_VERIFY = false;
-    static public final boolean FAST_STRINGS = true;
-    static public final boolean PCI_FUNCTIONALITY_ENABLED = true;
+    public static final String MAJOR_VERSION = "0.74";
+    public static final String VERSION = "0.74.30";
+    public static final boolean C_DYNAMIC = true;
+    public static final boolean C_DYNREC = false;
+    public static final boolean C_FPU = true;
+    public static final boolean C_IPX = true;
+    public static final boolean C_NE2000 = true;
+    public static final boolean C_DEBUG = false;
+    public static final boolean C_HEAVY_DEBUG = false;
+    public static final boolean USE_FULL_TLB = true;
+    public static final boolean C_VGARAM_CHECKED = true;
+    public static final boolean DEBUG_LOG = false;
+    public static final boolean DEBUG_DEDERMINISTIC = false;
+    public static final boolean IPX_DEBUGMSG = false;
+    public static final boolean DYNAMIC_CORE_VERIFY = false;
+    public static final boolean FAST_STRINGS = true;
+    public static final boolean PCI_FUNCTIONALITY_ENABLED = true;
 
     static String current_config_dir; // Set by parseconfigfile so Prop_path can use it to construct the realpath
     private static boolean first_configfile = true;
@@ -41,7 +46,7 @@ public class Config {
         secure_mode = false;
     }
 
-    static public void fputs(String str, OutputStream outfile) throws IOException {
+    public static void fputs(String str, OutputStream outfile) throws IOException {
         if (Cross.isWindows()) {
             str = StringHelper.replace(str, "\n", "\r\n");
         }
@@ -75,7 +80,8 @@ public class Config {
     public Section GetSection(String _sectionname) {
         for (int i = 0; i < sectionlist.size(); i++) {
             Section s = (Section) sectionlist.elementAt(i);
-            if (s.GetName().equalsIgnoreCase(_sectionname)) return s;
+            if (s.GetName().equalsIgnoreCase(_sectionname))
+                return s;
         }
         return null;
     }
@@ -83,7 +89,8 @@ public class Config {
     public Section GetSectionFromProperty(String prop) {
         for (int i = 0; i < sectionlist.size(); i++) {
             Section s = (Section) sectionlist.elementAt(i);
-            if (!s.GetPropValue(prop).equals(Section.NO_SUCH_PROPERTY)) return s;
+            if (!s.GetPropValue(prop).equals(Section.NO_SUCH_PROPERTY))
+                return s;
         }
         return null;
     }
@@ -209,7 +216,8 @@ public class Config {
                     continue;
                 if (c == '[') {
                     int pos = line.indexOf(']');
-                    if (pos < 0) continue;
+                    if (pos < 0)
+                        continue;
                     String sec = line.substring(1, pos);
                     Section testsec = GetSection(sec);
                     if (testsec != null) {
@@ -225,10 +233,11 @@ public class Config {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if (in != null) try {
-                in.close();
-            } catch (Exception e) {
-            }
+            if (in != null)
+                try {
+                    in.close();
+                } catch (Exception e) {
+                }
 
         }
         current_config_dir = ""; //So internal changes don't use the path information

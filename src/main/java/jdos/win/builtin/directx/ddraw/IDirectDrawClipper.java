@@ -13,11 +13,13 @@ public class IDirectDrawClipper extends IUnknown {
     static final int OFFSET_HWND = 0;
     static final int DATA_SIZE = 4;
     // HRESULT GetClipList(this, LPRECT lpRect, LPRGNDATA lpClipList, LPDWORD lpdwSize)
-    static private final Callback.Handler GetClipList = new HandlerBase() {
+    private static final Callback.Handler GetClipList = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectDrawClipper.GetClipList";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lpRect = CPU.CPU_Pop32();
@@ -27,11 +29,13 @@ public class IDirectDrawClipper extends IUnknown {
         }
     };
     // HRESULT GetHWnd(this, HWND *lphWnd)
-    static private final Callback.Handler GetHWnd = new HandlerBase() {
+    private static final Callback.Handler GetHWnd = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectDrawClipper.GetHWnd";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lphWnd = CPU.CPU_Pop32();
@@ -44,11 +48,13 @@ public class IDirectDrawClipper extends IUnknown {
         }
     };
     // HRESULT Initialize(this, LPDIRECTDRAW lpDD, DWORD dwFlags)
-    static private final Callback.Handler Initialize = new HandlerBase() {
+    private static final Callback.Handler Initialize = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectDrawClipper.Initialize";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lpDD = CPU.CPU_Pop32();
@@ -57,11 +63,13 @@ public class IDirectDrawClipper extends IUnknown {
         }
     };
     // HRESULT IsClipListChanged(this, BOOL *lpbChanged)
-    static private final Callback.Handler IsClipListChanged = new HandlerBase() {
+    private static final Callback.Handler IsClipListChanged = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectDrawClipper.IsClipListChanged";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lpbChanged = CPU.CPU_Pop32();
@@ -69,11 +77,13 @@ public class IDirectDrawClipper extends IUnknown {
         }
     };
     // HRESULT SetClipList(this, LPRGNDATA lpClipList, DWORD dwFlags)
-    static private final Callback.Handler SetClipList = new HandlerBase() {
+    private static final Callback.Handler SetClipList = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectDrawClipper.SetClipList";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lpClipList = CPU.CPU_Pop32();
@@ -82,11 +92,13 @@ public class IDirectDrawClipper extends IUnknown {
         }
     };
     // HRESULT SetHWnd(this, DWORD dwFlags, HWND hWnd)
-    static private final Callback.Handler SetHWnd = new HandlerBase() {
+    private static final Callback.Handler SetHWnd = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectDrawClipper.SetHWnd";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int dwFlags = CPU.CPU_Pop32();
@@ -100,11 +112,10 @@ public class IDirectDrawClipper extends IUnknown {
         int vtable = getVTable("IDirectDrawClipper");
         if (vtable == 0)
             vtable = createVTable();
-        int result = allocate(vtable, DATA_SIZE, 0);
-        return result;
+        return allocate(vtable, DATA_SIZE, 0);
     }
 
-    static private int createVTable() {
+    private static int createVTable() {
         int address = allocateVTable("IDirectDrawPalette", VTABLE_SIZE);
         int result = address;
         address = addIUnknown(address);

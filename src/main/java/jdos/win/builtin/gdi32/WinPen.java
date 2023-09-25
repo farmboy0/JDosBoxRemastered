@@ -1,10 +1,12 @@
 package jdos.win.builtin.gdi32;
 
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics2D;
+
 import jdos.win.system.WinObject;
 import jdos.win.utils.Pixel;
 import jdos.win.utils.Ptr;
-
-import java.awt.*;
 
 public class WinPen extends WinGDI {
     public EXTLOGPEN logpen = new EXTLOGPEN();
@@ -13,11 +15,11 @@ public class WinPen extends WinGDI {
         super(id);
     }
 
-    static public WinPen create(int style, int width, int color) {
+    public static WinPen create(int style, int width, int color) {
         return WinPen.get(CreatePen(style, width, color));
     }
 
-    static public WinPen get(int handle) {
+    public static WinPen get(int handle) {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinPen))
             return null;
@@ -25,10 +27,11 @@ public class WinPen extends WinGDI {
     }
 
     // HPEN CreatePen(int fnPenStyle, int nWidth, COLORREF crColor)
-    static public int CreatePen(int fnPenStyle, int nWidth, int crColor) {
+    public static int CreatePen(int fnPenStyle, int nWidth, int crColor) {
         if (fnPenStyle == PS_NULL) {
             int hpen = GdiObj.GetStockObject(NULL_PEN);
-            if (hpen != 0) return hpen;
+            if (hpen != 0)
+                return hpen;
         }
 
         WinPen penPtr = new WinPen(nextObjectId());
@@ -57,14 +60,14 @@ public class WinPen extends WinGDI {
     }
 
     // HPEN ExtCreatePen(DWORD dwPenStyle,DWORD dwWidth, const LOGBRUSH *lplb, DWORD dwStyleCount, const DWORD *lpStyle)
-    static public int ExtCreatePen(int style, int width, int lplb, int style_count, int lpStyle) {
+    public static int ExtCreatePen(int style, int width, int lplb, int style_count, int lpStyle) {
         int hpen;
 
         if ((style & PS_STYLE_MASK) == PS_USERSTYLE) {
             if (style_count <= 0)
                 return 0;
 
-            if ((style_count > 16) || lpStyle == 0) {
+            if (style_count > 16 || lpStyle == 0) {
                 SetLastError(ERROR_INVALID_PARAMETER);
                 return 0;
             }
@@ -73,10 +76,10 @@ public class WinPen extends WinGDI {
                 int i;
                 boolean has_neg = false, all_zero = true;
 
-                for (i = 0; (i < style_count) && !has_neg; i++) {
+                for (i = 0; i < style_count && !has_neg; i++) {
                     int s = readd(lpStyle + i * 4);
-                    has_neg = has_neg || (s < 0);
-                    all_zero = all_zero && (s == 0);
+                    has_neg = has_neg || s < 0;
+                    all_zero = all_zero && s == 0;
                 }
 
                 if (all_zero || has_neg) {
@@ -102,7 +105,7 @@ public class WinPen extends WinGDI {
                 return 0;
             }
 
-            if (brush.lbHatch != 0 && ((brush.lbStyle != BS_SOLID) && (brush.lbStyle != BS_HOLLOW))) {
+            if (brush.lbHatch != 0 && brush.lbStyle != BS_SOLID && brush.lbStyle != BS_HOLLOW) {
                 warn("ExtCreatePen Hatches not implemented");
             }
         } else {
@@ -164,16 +167,16 @@ public class WinPen extends WinGDI {
 
         switch (logpen.elpPenStyle & PS_STYLE_MASK) {
             case PS_DASH:
-                dash = new float[]{dashSize, dotOffSize};
+                dash = new float[] { dashSize, dotOffSize };
                 break;
             case PS_DOT:
-                dash = new float[]{dotOnSize, dotOffSize};
+                dash = new float[] { dotOnSize, dotOffSize };
                 break;
             case PS_DASHDOT:
-                dash = new float[]{dashSize, dotOffSize, dotOnSize, dotOffSize};
+                dash = new float[] { dashSize, dotOffSize, dotOnSize, dotOffSize };
                 break;
             case PS_DASHDOTDOT:
-                dash = new float[]{dashSize, dotOffSize, dotOnSize, dotOffSize, dotOnSize, dotOffSize};
+                dash = new float[] { dashSize, dotOffSize, dotOnSize, dotOffSize, dotOnSize, dotOffSize };
                 break;
             case PS_USERSTYLE:
                 dash = new float[logpen.elpNumEntries];
@@ -188,7 +191,9 @@ public class WinPen extends WinGDI {
         return true;
     }
 
+    @Override
     public String toString() {
-        return "PEN style=" + logpen.elpPenStyle + " width=" + logpen.elpWidth + " color=0x" + Ptr.toString(logpen.elpColor);
+        return "PEN style=" + logpen.elpPenStyle + " width=" + logpen.elpWidth + " color=0x"
+            + Ptr.toString(logpen.elpColor);
     }
 }

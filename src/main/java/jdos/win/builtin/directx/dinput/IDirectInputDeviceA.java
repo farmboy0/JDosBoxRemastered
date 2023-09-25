@@ -10,11 +10,13 @@ public class IDirectInputDeviceA extends IUnknown {
     static final int DATA_SIZE = 4;
     static int OFFSET_FLAGS = 0;
     // HRESULT GetCapabilities(this, LPDIDEVCAPS lpDIDevCaps)
-    static private final Callback.Handler GetCapabilities = new HandlerBase() {
+    private static final Callback.Handler GetCapabilities = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInputDeviceA.GetCapabilities";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lpDIDevCaps = CPU.CPU_Pop32();
@@ -22,11 +24,13 @@ public class IDirectInputDeviceA extends IUnknown {
         }
     };
     // HRESULT EnumObjects(this, LPDIENUMDEVICEOBJECTSCALLBACKA lpCallback, LPVOID pvRef, DWORD dwFlags)
-    static private final Callback.Handler EnumObjects = new HandlerBase() {
+    private static final Callback.Handler EnumObjects = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInputDeviceA.EnumObjects";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lpCallback = CPU.CPU_Pop32();
@@ -36,11 +40,13 @@ public class IDirectInputDeviceA extends IUnknown {
         }
     };
     // HRESULT GetProperty(this, REFGUID rguidProp, LPDIPROPHEADER pdiph)
-    static private final Callback.Handler GetProperty = new HandlerBase() {
+    private static final Callback.Handler GetProperty = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInputDeviceA.GetProperty";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int rguidProp = CPU.CPU_Pop32();
@@ -49,11 +55,13 @@ public class IDirectInputDeviceA extends IUnknown {
         }
     };
     // HRESULT SetProperty(this, REFGUID rguidProp, LPCDIPROPHEADER pdiph)
-    static private final Callback.Handler SetProperty = new HandlerBase() {
+    private static final Callback.Handler SetProperty = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInputDeviceA.SetProperty";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int rguidProp = CPU.CPU_Pop32();
@@ -62,33 +70,39 @@ public class IDirectInputDeviceA extends IUnknown {
         }
     };
     // HRESULT Acquire(this)
-    static private final Callback.Handler Acquire = new HandlerBase() {
+    private static final Callback.Handler Acquire = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInputDeviceA.Acquire";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             notImplemented();
         }
     };
     // HRESULT Unacquire(this)
-    static private final Callback.Handler Unacquire = new HandlerBase() {
+    private static final Callback.Handler Unacquire = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInputDeviceA.Unacquire";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             notImplemented();
         }
     };
     // HRESULT GetDeviceState(this, DWORD cbData, LPVOID lpvData)
-    static private final Callback.Handler GetDeviceState = new HandlerBase() {
+    private static final Callback.Handler GetDeviceState = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInputDeviceA.GetDeviceState";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int cbData = CPU.CPU_Pop32();
@@ -97,11 +111,13 @@ public class IDirectInputDeviceA extends IUnknown {
         }
     };
     // HRESULT GetDeviceData(this, DWORD cbObjectData, LPDIDEVICEOBJECTDATA rgdod, LPDWORD pdwInOut, DWORD dwFlags)
-    static private final Callback.Handler GetDeviceData = new HandlerBase() {
+    private static final Callback.Handler GetDeviceData = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInputDeviceA.GetDeviceData";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int cbObjectData = CPU.CPU_Pop32();
@@ -112,11 +128,13 @@ public class IDirectInputDeviceA extends IUnknown {
         }
     };
     // HRESULT SetDataFormat(this, LPCDIDATAFORMAT lpdf)
-    static private final Callback.Handler SetDataFormat = new HandlerBase() {
+    private static final Callback.Handler SetDataFormat = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInputDeviceA.SetDataFormat";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lpdf = CPU.CPU_Pop32();
@@ -124,11 +142,13 @@ public class IDirectInputDeviceA extends IUnknown {
         }
     };
     // HRESULT SetEventNotification(this, HANDLE hEvent)
-    static private final Callback.Handler SetEventNotification = new HandlerBase() {
+    private static final Callback.Handler SetEventNotification = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInputDeviceA.SetEventNotification";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int hEvent = CPU.CPU_Pop32();
@@ -136,11 +156,13 @@ public class IDirectInputDeviceA extends IUnknown {
         }
     };
     // HRESULT SetCooperativeLevel(this, HWND hwnd, DWORD dwFlags)
-    static private final Callback.Handler SetCooperativeLevel = new HandlerBase() {
+    private static final Callback.Handler SetCooperativeLevel = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInputDeviceA.SetCooperativeLevel";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int hwnd = CPU.CPU_Pop32();
@@ -149,11 +171,13 @@ public class IDirectInputDeviceA extends IUnknown {
         }
     };
     // HRESULT GetObjectInfo(this, LPDIDEVICEOBJECTINSTANCEA pdidoi, DWORD dwObj, DWORD dwHow)
-    static private final Callback.Handler GetObjectInfo = new HandlerBase() {
+    private static final Callback.Handler GetObjectInfo = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInputDeviceA.GetObjectInfo";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int pdidoi = CPU.CPU_Pop32();
@@ -163,11 +187,13 @@ public class IDirectInputDeviceA extends IUnknown {
         }
     };
     // HRESULT GetDeviceInfo(this, LPDIDEVICEINSTANCEA pdidi)
-    static private final Callback.Handler GetDeviceInfo = new HandlerBase() {
+    private static final Callback.Handler GetDeviceInfo = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInputDeviceA.GetDeviceInfo";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int pdidi = CPU.CPU_Pop32();
@@ -175,11 +201,13 @@ public class IDirectInputDeviceA extends IUnknown {
         }
     };
     // HRESULT RunControlPanel(this, HWND hwndOwner, DWORD dwFlags)
-    static private final Callback.Handler RunControlPanel = new HandlerBase() {
+    private static final Callback.Handler RunControlPanel = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInputDeviceA.RunControlPanel";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int hwndOwner = CPU.CPU_Pop32();
@@ -188,11 +216,13 @@ public class IDirectInputDeviceA extends IUnknown {
         }
     };
     // HRESULT Initialize(this, HINSTANCE hinst, DWORD dwVersion, REFGUID rguid)
-    static private final Callback.Handler Initialize = new HandlerBase() {
+    private static final Callback.Handler Initialize = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "IDirectInputDeviceA.Initialize";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int hinst = CPU.CPU_Pop32();
@@ -224,8 +254,7 @@ public class IDirectInputDeviceA extends IUnknown {
         address = add(address, GetObjectInfo);
         address = add(address, GetDeviceInfo);
         address = add(address, RunControlPanel);
-        address = add(address, Initialize);
-        return address;
+        return add(address, Initialize);
     }
 
     public static int create() {

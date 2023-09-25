@@ -1,16 +1,16 @@
 package jdos.dos;
 
+import java.io.File;
+
 import jdos.util.BooleanRef;
 import jdos.util.IntRef;
 import jdos.util.ShortRef;
 import jdos.util.StringRef;
 
-import java.io.File;
-
 public class Dos_cdrom {
-    static final public int RAW_SECTOR_SIZE = 2352;
-    static final public int COOKED_SECTOR_SIZE = 2048;
-    static final public int CD_FPS = 75;
+    public static final int RAW_SECTOR_SIZE = 2352;
+    public static final int COOKED_SECTOR_SIZE = 2048;
+    public static final int CD_FPS = 75;
 
     public static int CDROM_GetMountType(String path, int forceCD) {
         // 0 - physical CDROM
@@ -79,7 +79,7 @@ public class Dos_cdrom {
         void InitNewMedia();
     }
 
-    static public class TMSF {
+    public static class TMSF {
         public int min;
         public int sec;
         public int fr;
@@ -91,8 +91,9 @@ public class Dos_cdrom {
         }
     }
 
-    static public class TCtrl {
-        /*Bit8u*/ int[] out = new int[4]; // output channel
+    public static class TCtrl {
+        /*Bit8u*/ int[] out = new int[4];
+        // output channel
         /*Bit8u*/ int[] vol = new int[4]; // channel volume
 
         public void copy(TCtrl t) {

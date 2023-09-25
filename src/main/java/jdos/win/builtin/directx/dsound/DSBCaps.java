@@ -9,6 +9,7 @@ public class DSBCaps {
     public int dwBufferBytes;
     public int dwUnlockTransferRate;
     public int dwPlayCpuOverhead;
+
     public DSBCaps(int address) {
         dwSize = Memory.mem_readd(address);
         address += 4;

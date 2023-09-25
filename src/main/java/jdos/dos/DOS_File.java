@@ -28,11 +28,11 @@ public abstract class DOS_File {
         name = orig.name;
     }
 
-    public abstract boolean Read(byte[] data,/*Bit16u*/IntRef size);
+    public abstract boolean Read(byte[] data, /*Bit16u*/IntRef size);
 
-    public abstract boolean Write(byte[] data,/*Bit16u*/IntRef size);
+    public abstract boolean Write(byte[] data, /*Bit16u*/IntRef size);
 
-    public abstract boolean Seek(/*Bit32u*/LongRef pos,/*Bit32u*/int type);
+    public abstract boolean Seek(/*Bit32u*/LongRef pos, /*Bit32u*/int type);
 
     public abstract boolean Close();
 
@@ -51,7 +51,8 @@ public abstract class DOS_File {
     }
 
     public boolean IsName(String _name) {
-        if (name == null) return false;
+        if (name == null)
+            return false;
         return name.compareToIgnoreCase(_name) == 0;
     }
 

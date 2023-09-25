@@ -19,58 +19,51 @@ import jdos.util.LongRef;
 
 public class Bios_disk {
     /* The Section handling Bios Disk Access */
-    static public final int BIOS_MAX_DISK = 10;
+    public static final int BIOS_MAX_DISK = 10;
 
-    static public final int MAX_SWAPPABLE_DISKS = 20;
-    static private final int MAX_HDD_IMAGES = 2;
-    static private final int MAX_DISK_IMAGES = 4;
-    static public /*Bit16u*/ int imgDTASeg;
-    static public /*RealPt*/ int imgDTAPtr;
-    static public Dos_DTA imgDTA;
+    public static final int MAX_SWAPPABLE_DISKS = 20;
+    private static final int MAX_HDD_IMAGES = 2;
+    private static final int MAX_DISK_IMAGES = 4;
+    public static /*Bit16u*/ int imgDTASeg;
+    public static /*RealPt*/ int imgDTAPtr;
+    public static Dos_DTA imgDTA;
     /* 2 floppys and 2 harddrives, max */
-    static public imageDisk[] imageDiskList;
-    static public imageDisk[] diskSwap;
-    static public/*Bits*/ int swapPosition;
-    static private final diskGeo[] DiskGeometryList = {
-            new diskGeo(160, 8, 1, 40, 0),
-            new diskGeo(180, 9, 1, 40, 0),
-            new diskGeo(200, 10, 1, 40, 0),
-            new diskGeo(320, 8, 2, 40, 1),
-            new diskGeo(360, 9, 2, 40, 1),
-            new diskGeo(400, 10, 2, 40, 1),
-            new diskGeo(720, 9, 2, 80, 3),
-            new diskGeo(1200, 15, 2, 80, 2),
-            new diskGeo(1440, 18, 2, 80, 4),
-            new diskGeo(2880, 36, 2, 80, 6),
-            new diskGeo(0, 0, 0, 0, 0)
-    };
-    static private /*Bitu*/ int call_int13;
-    static private /*Bitu*/ int diskparm0, diskparm1;
-    static private /*Bit8u*/ short last_status;
-    static private/*Bit8u*/ short last_drive;
-    static private boolean killRead;
-    static private boolean swapping_requested;
-    static private final Mapper.MAPPER_Handler swapInNextDisk = new Mapper.MAPPER_Handler() {
-        public void call(boolean pressed) {
-            if (!pressed)
-                return;
-            DriveManager.CycleAllDisks();
-            /* Hack/feature: rescan all disks as well */
-            Log.log_msg("Diskcaching reset for normal mounted drives.");
-            for (/*Bitu*/int i = 0; i < Dos_files.DOS_DRIVES; i++) {
-                if (Dos_files.Drives[i] != null) Dos_files.Drives[i].EmptyCache();
-            }
-            swapPosition++;
-            if (diskSwap[swapPosition] == null) swapPosition = 0;
-            swapInDisks();
-            swapping_requested = true;
+    public static imageDisk[] imageDiskList;
+    public static imageDisk[] diskSwap;
+    public static/*Bits*/ int swapPosition;
+    private static final diskGeo[] DiskGeometryList = { new diskGeo(160, 8, 1, 40, 0), new diskGeo(180, 9, 1, 40, 0),
+        new diskGeo(200, 10, 1, 40, 0), new diskGeo(320, 8, 2, 40, 1), new diskGeo(360, 9, 2, 40, 1),
+        new diskGeo(400, 10, 2, 40, 1), new diskGeo(720, 9, 2, 80, 3), new diskGeo(1200, 15, 2, 80, 2),
+        new diskGeo(1440, 18, 2, 80, 4), new diskGeo(2880, 36, 2, 80, 6), new diskGeo(0, 0, 0, 0, 0) };
+    private static /*Bitu*/ int call_int13;
+    private static /*Bitu*/ int diskparm0, diskparm1;
+    private static /*Bit8u*/ short last_status;
+    private static/*Bit8u*/ short last_drive;
+    private static boolean killRead;
+    private static boolean swapping_requested;
+    private static final Mapper.MAPPER_Handler swapInNextDisk = pressed -> {
+        if (!pressed)
+            return;
+        DriveManager.CycleAllDisks();
+        /* Hack/feature: rescan all disks as well */
+        Log.log_msg("Diskcaching reset for normal mounted drives.");
+        for (/*Bitu*/int i = 0; i < Dos_files.DOS_DRIVES; i++) {
+            if (Dos_files.Drives[i] != null)
+                Dos_files.Drives[i].EmptyCache();
         }
+        swapPosition++;
+        if (diskSwap[swapPosition] == null)
+            swapPosition = 0;
+        swapInDisks();
+        swapping_requested = true;
     };
-    static private final Callback.Handler INT13_DiskHandler = new Callback.Handler() {
+    private static final Callback.Handler INT13_DiskHandler = new Callback.Handler() {
+        @Override
         public String getName() {
             return "Bios.INT13_DiskHandler";
         }
 
+        @Override
         public /*Bitu*/int call() {
             /*Bit16u*/
             int segat, bufptr;
@@ -84,7 +77,8 @@ public class Bios_disk {
             drivenum = GetDosDriveNumber(last_drive);
             boolean any_images = false;
             for (i = 0; i < MAX_DISK_IMAGES; i++) {
-                if (imageDiskList[i] != null) any_images = true;
+                if (imageDiskList[i] != null)
+                    any_images = true;
             }
 
             // unconditionally enable the interrupt flag
@@ -100,21 +94,24 @@ public class Bios_disk {
                      */
                     if (any_images && driveInactive(drivenum)) {
                         /* driveInactive sets carry flag if the specified drive is not available */
-                        if ((Dosbox.machine == MachineType.MCH_CGA) || (Dosbox.machine == MachineType.MCH_PCJR)) {
+                        if (Dosbox.machine == MachineType.MCH_CGA || Dosbox.machine == MachineType.MCH_PCJR) {
                             /* those bioses call floppy drive reset for invalid drive values */
-                            if (((imageDiskList[0] != null) && (imageDiskList[0].active)) || ((imageDiskList[1] != null) && (imageDiskList[1].active))) {
-                                if (CPU_Regs.reg_edx.low() < 0x80) CPU_Regs.reg_ip(CPU_Regs.reg_ip() + 1);
+                            if (imageDiskList[0] != null && imageDiskList[0].active
+                                || imageDiskList[1] != null && imageDiskList[1].active) {
+                                if (CPU_Regs.reg_edx.low() < 0x80)
+                                    CPU_Regs.reg_ip(CPU_Regs.reg_ip() + 1);
                                 last_status = 0x00;
                                 Callback.CALLBACK_SCF(false);
                             }
                         }
                         return Callback.CBRET_NONE;
                     }
-                    if (CPU_Regs.reg_edx.low() < 0x80) CPU_Regs.reg_ip(CPU_Regs.reg_ip() + 1);
+                    if (CPU_Regs.reg_edx.low() < 0x80)
+                        CPU_Regs.reg_ip(CPU_Regs.reg_ip() + 1);
                     last_status = 0x00;
                     Callback.CALLBACK_SCF(false);
                 }
-                break;
+                    break;
                 case 0x1: /* Get status of last operation */
 
                     if (last_status != 0x00) {
@@ -133,7 +130,8 @@ public class Bios_disk {
                     }
                     if (!any_images) {
                         // Inherit the Earth cdrom (uses it as disk test)
-                        if (((CPU_Regs.reg_edx.low() & 0x80) == 0x80) && (CPU_Regs.reg_edx.high() == 0) && ((CPU_Regs.reg_ecx.low() & 0x3f) == 1)) {
+                        if ((CPU_Regs.reg_edx.low() & 0x80) == 0x80 && CPU_Regs.reg_edx.high() == 0
+                            && (CPU_Regs.reg_ecx.low() & 0x3f) == 1) {
                             CPU_Regs.reg_eax.high(0);
                             Callback.CALLBACK_SCF(false);
                             return Callback.CBRET_NONE;
@@ -151,8 +149,10 @@ public class Bios_disk {
                         /*Bit32u*/
                         /*Bit32u*/
                         /*Bit32u*/
-                        last_status = imageDiskList[drivenum].Read_Sector(CPU_Regs.reg_edx.high(), CPU_Regs.reg_ecx.high() | ((CPU_Regs.reg_ecx.low() & 0xc0) << 2), (CPU_Regs.reg_ecx.low() & 63) + i, sectbuf);
-                        if ((last_status != 0x00) || (killRead)) {
+                        last_status = imageDiskList[drivenum].Read_Sector(CPU_Regs.reg_edx.high(),
+                            CPU_Regs.reg_ecx.high() | (CPU_Regs.reg_ecx.low() & 0xc0) << 2,
+                            (CPU_Regs.reg_ecx.low() & 63) + i, sectbuf);
+                        if (last_status != 0x00 || killRead) {
                             Log.log_msg("Error in disk read");
                             killRead = false;
                             CPU_Regs.reg_eax.high(0x04);
@@ -175,7 +175,6 @@ public class Bios_disk {
                         return Callback.CBRET_NONE;
                     }
 
-
                     bufptr = CPU_Regs.reg_ebx.word();
                     for (i = 0; i < CPU_Regs.reg_eax.low(); i++) {
                         for (t = 0; t < imageDiskList[drivenum].getSectSize(); t++) {
@@ -186,7 +185,9 @@ public class Bios_disk {
                         /*Bit32u*/
                         /*Bit32u*/
                         /*Bit32u*/
-                        last_status = imageDiskList[drivenum].Write_Sector(CPU_Regs.reg_edx.high(), CPU_Regs.reg_ecx.high() | ((CPU_Regs.reg_ecx.low() & 0xc0) << 2), (CPU_Regs.reg_ecx.low() & 63) + i, sectbuf);
+                        last_status = imageDiskList[drivenum].Write_Sector(CPU_Regs.reg_edx.high(),
+                            CPU_Regs.reg_ecx.high() | (CPU_Regs.reg_ecx.low() & 0xc0) << 2,
+                            (CPU_Regs.reg_ecx.low() & 63) + i, sectbuf);
                         if (last_status != 0x00) {
                             Callback.CALLBACK_SCF(true);
                             return Callback.CBRET_NONE;
@@ -201,7 +202,8 @@ public class Bios_disk {
                         Callback.CALLBACK_SCF(true);
                         return Callback.CBRET_NONE;
                     }
-                    if (driveInactive(drivenum)) return Callback.CBRET_NONE;
+                    if (driveInactive(drivenum))
+                        return Callback.CBRET_NONE;
 
                     /* TODO: Finish coding this section */
                     //            segat = SegValue(es);
@@ -235,26 +237,33 @@ public class Bios_disk {
                     CPU_Regs.reg_eax.word(0x00);
                     CPU_Regs.reg_ebx.low(imageDiskList[drivenum].GetBiosType());
                     /*Bit32u*/
-                    LongRef tmpheads = new LongRef(0), tmpcyl = new LongRef(0), tmpsect = new LongRef(0), tmpsize = new LongRef(0);
+                    LongRef tmpheads = new LongRef(0), tmpcyl = new LongRef(0), tmpsect = new LongRef(0),
+                        tmpsize = new LongRef(0);
                     imageDiskList[drivenum].Get_Geometry(tmpheads, tmpcyl, tmpsect, tmpsize);
                     if (tmpcyl.value == 0)
                         Log.log(LogTypes.LOG_BIOS, LogSeverities.LOG_ERROR, "INT13 DrivParm: cylinder count zero!");
-                    else tmpcyl.value--;        // cylinder count . max cylinder
+                    else
+                        tmpcyl.value--; // cylinder count . max cylinder
                     if (tmpheads.value == 0)
                         Log.log(LogTypes.LOG_BIOS, LogSeverities.LOG_ERROR, "INT13 DrivParm: head count zero!");
-                    else tmpheads.value--;    // head count . max head
+                    else
+                        tmpheads.value--; // head count . max head
                     CPU_Regs.reg_ecx.high((/*Bit8u*/int) (tmpcyl.value & 0xff));
-                    CPU_Regs.reg_ecx.low((/*Bit8u*/int) (((tmpcyl.value >> 2) & 0xc0) | (tmpsect.value & 0x3f)));
+                    CPU_Regs.reg_ecx.low((/*Bit8u*/int) (tmpcyl.value >> 2 & 0xc0 | tmpsect.value & 0x3f));
                     CPU_Regs.reg_edx.high((/*Bit8u*/int) tmpheads.value);
                     last_status = 0x00;
-                    if ((CPU_Regs.reg_edx.low() & 0x80) != 0) {    // harddisks
+                    if ((CPU_Regs.reg_edx.low() & 0x80) != 0) { // harddisks
                         CPU_Regs.reg_edx.low(0);
-                        if (imageDiskList[2] != null) CPU_Regs.reg_edx.low((CPU_Regs.reg_edx.low() + 1));
-                        if (imageDiskList[3] != null) CPU_Regs.reg_edx.low((CPU_Regs.reg_edx.low() + 1));
-                    } else {        // floppy disks
+                        if (imageDiskList[2] != null)
+                            CPU_Regs.reg_edx.low(CPU_Regs.reg_edx.low() + 1);
+                        if (imageDiskList[3] != null)
+                            CPU_Regs.reg_edx.low(CPU_Regs.reg_edx.low() + 1);
+                    } else { // floppy disks
                         CPU_Regs.reg_edx.low(0);
-                        if (imageDiskList[0] != null) CPU_Regs.reg_edx.low((CPU_Regs.reg_edx.low() + 1));
-                        if (imageDiskList[1] != null) CPU_Regs.reg_edx.low((CPU_Regs.reg_edx.low() + 1));
+                        if (imageDiskList[0] != null)
+                            CPU_Regs.reg_edx.low(CPU_Regs.reg_edx.low() + 1);
+                        if (imageDiskList[1] != null)
+                            CPU_Regs.reg_edx.low(CPU_Regs.reg_edx.low() + 1);
                     }
                     Callback.CALLBACK_SCF(false);
                     break;
@@ -270,7 +279,9 @@ public class Bios_disk {
                     break;
                 default:
                     if (Log.level <= LogSeverities.LOG_ERROR)
-                        Log.log(LogTypes.LOG_BIOS, LogSeverities.LOG_ERROR, "INT13: Function " + Integer.toString(CPU_Regs.reg_eax.high(), 16) + " called on drive " + Integer.toString(CPU_Regs.reg_edx.low(), 16) + " (dos drive " + drivenum + ")");
+                        Log.log(LogTypes.LOG_BIOS, LogSeverities.LOG_ERROR,
+                            "INT13: Function " + Integer.toString(CPU_Regs.reg_eax.high(), 16) + " called on drive "
+                                + Integer.toString(CPU_Regs.reg_edx.low(), 16) + " (dos drive " + drivenum + ")");
                     CPU_Regs.reg_eax.high(0xff);
                     Callback.CALLBACK_SCF(true);
             }
@@ -278,7 +289,7 @@ public class Bios_disk {
         }
     };
 
-    static public void updateDPT() {
+    public static void updateDPT() {
         /*Bit32u*/
         LongRef tmpheads = new LongRef(0), tmpcyl = new LongRef(0), tmpsect = new LongRef(0), tmpsize = new LongRef(0);
         if (imageDiskList[2] != null) {
@@ -291,7 +302,7 @@ public class Bios_disk {
             /*Bit16u*/
             Memory.phys_writew(dp0physaddr + 0x5, -1);
             Memory.phys_writeb(dp0physaddr + 0x7, (short) 0);
-            Memory.phys_writeb(dp0physaddr + 0x8, (short) ((0xc0 | (((imageDiskList[2].heads) > 8) ? 1 : 0 << 3))));
+            Memory.phys_writeb(dp0physaddr + 0x8, (short) (0xc0 | (imageDiskList[2].heads > 8 ? 1 : 0 << 3)));
             Memory.phys_writeb(dp0physaddr + 0x9, (short) 0);
             Memory.phys_writeb(dp0physaddr + 0xa, (short) 0);
             Memory.phys_writeb(dp0physaddr + 0xb, (short) 0);
@@ -308,22 +319,24 @@ public class Bios_disk {
         }
     }
 
-    static public void incrementFDD() {
+    public static void incrementFDD() {
         /*Bit16u*/
         int equipment = Memory.mem_readw(Bios.BIOS_CONFIGURATION);
         if ((equipment & 1) != 0) {
             /*Bitu*/
-            int numofdisks = (equipment >> 6) & 3;
+            int numofdisks = equipment >> 6 & 3;
             numofdisks++;
-            if (numofdisks > 1) numofdisks = 1;//max 2 floppies at the moment
+            if (numofdisks > 1)
+                numofdisks = 1;//max 2 floppies at the moment
             equipment &= ~0x00C0;
-            equipment |= (numofdisks << 6);
-        } else equipment |= 1;
+            equipment |= numofdisks << 6;
+        } else
+            equipment |= 1;
         Memory.mem_writew(Bios.BIOS_CONFIGURATION, equipment);
         Cmos.CMOS_SetRegister(0x14, (/*Bit8u*/short) (equipment & 0xff));
     }
 
-    static public void swapInDisks() {
+    public static void swapInDisks() {
         boolean allNull = true;
         /*Bits*/
         int diskcount = 0;
@@ -340,17 +353,20 @@ public class Bios_disk {
         }
 
         /* No disks setup... fail */
-        if (allNull) return;
+        if (allNull)
+            return;
 
         /* If only one disk is loaded, this loop will load the same disk in dive A and drive B */
         while (diskcount < 2) {
             if (diskSwap[swapPos] != null) {
-                Log.log_msg("Loaded disk " + diskcount + " from swaplist position " + swapPos + " - \"" + diskSwap[swapPos].diskname + "\"");
+                Log.log_msg("Loaded disk " + diskcount + " from swaplist position " + swapPos + " - \""
+                    + diskSwap[swapPos].diskname + "\"");
                 imageDiskList[diskcount] = diskSwap[swapPos];
                 diskcount++;
             }
             swapPos++;
-            if (swapPos >= MAX_SWAPPABLE_DISKS) swapPos = 0;
+            if (swapPos >= MAX_SWAPPABLE_DISKS)
+                swapPos = 0;
         }
     }
 
@@ -360,7 +376,7 @@ public class Bios_disk {
         return sreq;
     }
 
-    static private /*Bitu*/int GetDosDriveNumber(/*Bitu*/int biosNum) {
+    private static /*Bitu*/int GetDosDriveNumber(/*Bitu*/int biosNum) {
         switch (biosNum) {
             case 0x0:
                 return 0x0;
@@ -380,21 +396,14 @@ public class Bios_disk {
     }
 
     static boolean driveInactive(/*Bitu*/int driveNum) {
-        if (driveNum >= (2 + MAX_HDD_IMAGES)) {
+        if (driveNum >= 2 + MAX_HDD_IMAGES) {
             if (Log.level <= LogSeverities.LOG_ERROR)
                 Log.log(LogTypes.LOG_BIOS, LogSeverities.LOG_ERROR, "Disk " + driveNum + " non-existant");
             last_status = 0x01;
             Callback.CALLBACK_SCF(true);
             return true;
         }
-        if (imageDiskList[driveNum] == null) {
-            if (Log.level <= LogSeverities.LOG_ERROR)
-                Log.log(LogTypes.LOG_BIOS, LogSeverities.LOG_ERROR, "Disk " + driveNum + " not active");
-            last_status = 0x01;
-            Callback.CALLBACK_SCF(true);
-            return true;
-        }
-        if (!imageDiskList[driveNum].active) {
+        if ((imageDiskList[driveNum] == null) || !imageDiskList[driveNum].active) {
             if (Log.level <= LogSeverities.LOG_ERROR)
                 Log.log(LogTypes.LOG_BIOS, LogSeverities.LOG_ERROR, "Disk " + driveNum + " not active");
             last_status = 0x01;
@@ -404,12 +413,12 @@ public class Bios_disk {
         return false;
     }
 
-    static public void BIOS_CloseDisks() {
+    public static void BIOS_CloseDisks() {
         imageDiskList = null;
         diskSwap = null;
     }
 
-    static public void BIOS_SetupDisks() {
+    public static void BIOS_SetupDisks() {
         imageDiskList = new imageDisk[MAX_DISK_IMAGES];
         diskSwap = new imageDisk[MAX_SWAPPABLE_DISKS];
 
@@ -452,12 +461,13 @@ public class Bios_disk {
         swapping_requested = false;
     }
 
-    static public class diskGeo {
-        public /*Bit32u*/ long ksize;  /* Size in kilobytes */
+    public static class diskGeo {
+        public /*Bit32u*/ long ksize; /* Size in kilobytes */
         public /*Bit16u*/ int secttrack; /* Sectors per track */
-        public /*Bit16u*/ int headscyl;  /* Heads per cylinder */
-        public /*Bit16u*/ int cylcount;  /* Cylinders per side */
-        public /*Bit16u*/ int biosval;   /* Type to return from BIOS */
+        public /*Bit16u*/ int headscyl; /* Heads per cylinder */
+        public /*Bit16u*/ int cylcount; /* Cylinders per side */
+        public /*Bit16u*/ int biosval; /* Type to return from BIOS */
+
         public diskGeo(long ksize, int secttrack, int headscyl, int cylcount, int biosval) {
             this.ksize = ksize;
             this.secttrack = secttrack;
@@ -467,7 +477,7 @@ public class Bios_disk {
         }
     }
 
-    static public class imageDisk {
+    public static class imageDisk {
         public boolean hardDrive;
         public boolean active;
         public FileIO diskimg;
@@ -496,8 +506,7 @@ public class Bios_disk {
                 short i = 0;
                 boolean founddisk = false;
                 while (DiskGeometryList[i].ksize != 0x0) {
-                    if ((DiskGeometryList[i].ksize == imgSizeK) ||
-                            (DiskGeometryList[i].ksize + 1 == imgSizeK)) {
+                    if (DiskGeometryList[i].ksize == imgSizeK || DiskGeometryList[i].ksize + 1 == imgSizeK) {
                         if (DiskGeometryList[i].ksize != imgSizeK)
                             Log.log_msg("ImageLoader: image file with additional data, might not load!");
                         founddisk = true;
@@ -528,11 +537,12 @@ public class Bios_disk {
             }
         }
 
-        public /*Bit8u*/short Read_Sector(/*Bit32u*/long head,/*Bit32u*/long cylinder,/*Bit32u*/long sector, byte[] data) {
+        public /*Bit8u*/short Read_Sector(/*Bit32u*/long head, /*Bit32u*/long cylinder, /*Bit32u*/long sector,
+            byte[] data) {
             /*Bit32u*/
             long sectnum;
 
-            sectnum = ((cylinder * heads + head) * sectors) + sector - 1L;
+            sectnum = (cylinder * heads + head) * sectors + sector - 1L;
 
             return Read_AbsoluteSector(sectnum, data, 0);
         }
@@ -553,11 +563,12 @@ public class Bios_disk {
             return 0x00;
         }
 
-        public /*Bit8u*/short Write_Sector(/*Bit32u*/long head,/*Bit32u*/long cylinder,/*Bit32u*/long sector, byte[] data) {
+        public /*Bit8u*/short Write_Sector(/*Bit32u*/long head, /*Bit32u*/long cylinder, /*Bit32u*/long sector,
+            byte[] data) {
             /*Bit32u*/
             long sectnum;
 
-            sectnum = ((cylinder * heads + head) * sectors) + sector - 1L;
+            sectnum = (cylinder * heads + head) * sectors + sector - 1L;
 
             return Write_AbsoluteSector(sectnum, data, 0);
 
@@ -578,10 +589,11 @@ public class Bios_disk {
                 ret = 0;
                 e.printStackTrace();
             }
-            return (short) (((ret > 0) ? 0x00 : 0x05));
+            return (short) (ret > 0 ? 0x00 : 0x05);
         }
 
-        public void Set_Geometry(/*Bit32u*/long setHeads, /*Bit32u*/long setCyl, /*Bit32u*/long setSect, /*Bit32u*/long setSectSize) {
+        public void Set_Geometry(/*Bit32u*/long setHeads, /*Bit32u*/long setCyl, /*Bit32u*/long setSect,
+            /*Bit32u*/long setSectSize) {
             heads = setHeads;
             cylinders = setCyl;
             sectors = setSect;
@@ -589,7 +601,8 @@ public class Bios_disk {
             active = true;
         }
 
-        public void Get_Geometry(/*Bit32u*/LongRef getHeads, /*Bit32u*/LongRef getCyl, /*Bit32u*/LongRef getSect, /*Bit32u*/LongRef getSectSize) {
+        public void Get_Geometry(/*Bit32u*/LongRef getHeads, /*Bit32u*/LongRef getCyl, /*Bit32u*/LongRef getSect,
+            /*Bit32u*/LongRef getSectSize) {
             getHeads.value = heads;
             getCyl.value = cylinders;
             getSect.value = sectors;
@@ -599,7 +612,8 @@ public class Bios_disk {
         public /*Bit8u*/short GetBiosType() {
             if (!hardDrive) {
                 return (/*Bit8u*/short) DiskGeometryList[floppytype].biosval;
-            } else return 0;
+            } else
+                return 0;
         }
 
         public /*Bit32u*/long getSectSize() {

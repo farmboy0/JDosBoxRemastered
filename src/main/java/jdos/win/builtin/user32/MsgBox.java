@@ -1,13 +1,13 @@
 package jdos.win.builtin.user32;
 
+import javax.swing.JOptionPane;
+
 import jdos.win.builtin.WinAPI;
 import jdos.win.utils.StringUtil;
 
-import javax.swing.*;
-
 public class MsgBox extends WinAPI {
     // int WINAPI MessageBox(HWND hWnd, LPCTSTR lpText, LPCTSTR lpCaption, UINT uType)
-    static public int MessageBoxA(int hWnd, int lpText, int lpCaption, int uType) {
+    public static int MessageBoxA(int hWnd, int lpText, int lpCaption, int uType) {
         String text = StringUtil.getString(lpText);
         String caption = "";
         if (lpCaption != 0)

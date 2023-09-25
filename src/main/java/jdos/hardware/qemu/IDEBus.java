@@ -6,25 +6,22 @@ import jdos.misc.setup.Section;
 import jdos.misc.setup.Section_prop;
 
 public class IDEBus extends Module_base {
-    static private final int[] IDE_default_IRQs = new int[]{
-            14,    /* primary */
-            15,    /* secondary */
-            11,    /* tertiary */
-            10    /* quaternary */
+    private static final int[] IDE_default_IRQs = { 14, /* primary */
+        15, /* secondary */
+        11, /* tertiary */
+        10 /* quaternary */
     };
 
-    static private final int[] IDE_default_bases = new int[]{
-            0x1F0,    /* primary */
-            0x170,    /* secondary */
-            0x1E8,    /* tertiary */
-            0x168    /* quaternary */
+    private static final int[] IDE_default_bases = { 0x1F0, /* primary */
+        0x170, /* secondary */
+        0x1E8, /* tertiary */
+        0x168 /* quaternary */
     };
 
-    static private final int[] IDE_default_alts = new int[]{
-            0x3F6,    /* primary */
-            0x376,    /* secondary */
-            0x3EE,    /* tertiary */
-            0x36E    /* quaternary */
+    private static final int[] IDE_default_alts = { 0x3F6, /* primary */
+        0x376, /* secondary */
+        0x3EE, /* tertiary */
+        0x36E /* quaternary */
     };
 
     public IoHandler.IO_ReadHandleObject[] ReadHandler = new IoHandler.IO_ReadHandleObject[8];
@@ -71,7 +68,8 @@ public class IDEBus extends Module_base {
 
     public void initIO() {
         if (base_io != 0 || alt_io != 0 || irq >= 0)
-            System.out.println("IDE: Adding IDE controller to port 0x" + Integer.toHexString(base_io) + "/%03x IRQ " + alt_io);
+            System.out.println(
+                "IDE: Adding IDE controller to port 0x" + Integer.toHexString(base_io) + "/%03x IRQ " + alt_io);
 
         for (int i = 0; i < WriteHandler.length; i++)
             WriteHandler[i] = new IoHandler.IO_WriteHandleObject();

@@ -5,11 +5,7 @@ import jdos.util.StringHelper;
 import jdos.util.StringRef;
 
 public class Drives {
-    public static Section.SectionFunction DRIVES_Init = new Section.SectionFunction() {
-        public void call(Section section) {
-            DriveManager.Init(section);
-        }
-    };
+    public static Section.SectionFunction DRIVES_Init = section -> DriveManager.Init(section);
 
     public static boolean WildFileCmp(String file, String wild) {
         String file_name;
@@ -38,22 +34,34 @@ public class Drives {
         }
         wild_name = wild_name.toUpperCase();
         wild_ext = wild_ext.toUpperCase();
-        while (wild_name.length() < 8) wild_name += ' ';
-        while (wild_ext.length() < 3) wild_ext += ' ';
-        while (file_name.length() < 8) file_name += ' ';
-        while (file_ext.length() < 3) file_ext += ' ';
-        if (wild_name.length() > 8) wild_name = wild_name.substring(0, 8);
-        if (wild_ext.length() > 3) wild_name = wild_ext.substring(0, 3);
-        if (file_name.length() > 8) wild_name = file_name.substring(0, 8);
-        if (file_ext.length() > 3) wild_name = file_ext.substring(0, 3);
+        while (wild_name.length() < 8)
+            wild_name += ' ';
+        while (wild_ext.length() < 3)
+            wild_ext += ' ';
+        while (file_name.length() < 8)
+            file_name += ' ';
+        while (file_ext.length() < 3)
+            file_ext += ' ';
+        if (wild_name.length() > 8)
+            wild_name = wild_name.substring(0, 8);
+        if (wild_ext.length() > 3)
+            wild_name = wild_ext.substring(0, 3);
+        if (file_name.length() > 8)
+            wild_name = file_name.substring(0, 8);
+        if (file_ext.length() > 3)
+            wild_name = file_ext.substring(0, 3);
         /* Names are right do some checking */
         for (int i = 0; i < wild_name.length() && i < file_name.length(); i++) {
-            if (wild_name.charAt(i) == '*') break;
-            if (wild_name.charAt(i) != '?' && wild_name.charAt(i) != file_name.charAt(i)) return false;
+            if (wild_name.charAt(i) == '*')
+                break;
+            if (wild_name.charAt(i) != '?' && wild_name.charAt(i) != file_name.charAt(i))
+                return false;
         }
         for (int i = 0; i < wild_ext.length() && i < file_ext.length(); i++) {
-            if (wild_ext.charAt(i) == '*') break;
-            if (wild_ext.charAt(i) != '?' && wild_ext.charAt(i) != file_ext.charAt(i)) return false;
+            if (wild_ext.charAt(i) == '*')
+                break;
+            if (wild_ext.charAt(i) != '?' && wild_ext.charAt(i) != file_ext.charAt(i))
+                return false;
         }
         return true;
     }
@@ -72,8 +80,9 @@ public class Drives {
         // HELLO\0' '' '
 
         while (togo > 0) {
-            if (vnamePos >= input.length() || input.charAt(vnamePos) == 0) break;
-            if (!point && (input.charAt(vnamePos) == '.')) {
+            if (vnamePos >= input.length() || input.charAt(vnamePos) == 0)
+                break;
+            if (!point && input.charAt(vnamePos) == '.') {
                 togo = 4;
                 point = true;
             }
@@ -84,8 +93,9 @@ public class Drives {
             labelPos++;
             vnamePos++;
             togo--;
-            if (vnamePos < input.length() && (togo == 0) && !point) {
-                if (input.charAt(vnamePos) == '.') vnamePos++;
+            if (vnamePos < input.length() && togo == 0 && !point) {
+                if (input.charAt(vnamePos) == '.')
+                    vnamePos++;
                 output[labelPos] = '.';
                 labelPos++;
                 point = true;
@@ -95,7 +105,7 @@ public class Drives {
         output[labelPos] = 0;
 
         //Remove trailing dot. except when on cdrom and filename is exactly 8 (9 including the dot) letters. MSCDEX feature/bug (fifa96 cdrom detection)
-        if ((labelPos > 0) && (output[labelPos - 1] == '.') && !(cdrom && labelPos == 9))
+        if (labelPos > 0 && output[labelPos - 1] == '.' && !(cdrom && labelPos == 9))
             output[labelPos - 1] = 0;
         result.value = StringHelper.toString(output);
     }

@@ -9,10 +9,10 @@ import jdos.win.system.Scheduler;
 import jdos.win.system.WinSystem;
 import jdos.win.utils.Error;
 
-abstract public class HandlerBase extends WinAPI implements Callback.Handler {
-    static public HandlerBase currentHandler;
-    static public int level = 0;
-    static public boolean tick = false;
+public abstract class HandlerBase extends WinAPI implements Callback.Handler {
+    public static HandlerBase currentHandler;
+    public static int level = 0;
+    public static boolean tick = false;
     public boolean wait = false;
     boolean resetError = true;
 
@@ -23,25 +23,26 @@ abstract public class HandlerBase extends WinAPI implements Callback.Handler {
         this.resetError = resetError;
     }
 
-    static public void dumpRegs() {
+    public static void dumpRegs() {
         System.out.print("eax=");
-        System.out.print(Long.toString(CPU_Regs.reg_eax.dword & 0xFFFFFFFFl, 16));
+        System.out.print(Long.toString(CPU_Regs.reg_eax.dword & 0xFFFFFFFFL, 16));
         System.out.print(" ecx=");
-        System.out.print(Long.toString(CPU_Regs.reg_ecx.dword & 0xFFFFFFFFl, 16));
+        System.out.print(Long.toString(CPU_Regs.reg_ecx.dword & 0xFFFFFFFFL, 16));
         System.out.print(" edx=");
-        System.out.print(Long.toString(CPU_Regs.reg_edx.dword & 0xFFFFFFFFl, 16));
+        System.out.print(Long.toString(CPU_Regs.reg_edx.dword & 0xFFFFFFFFL, 16));
         System.out.print(" ebx=");
-        System.out.print(Long.toString(CPU_Regs.reg_ebx.dword & 0xFFFFFFFFl, 16));
+        System.out.print(Long.toString(CPU_Regs.reg_ebx.dword & 0xFFFFFFFFL, 16));
         System.out.print(" esp=");
-        System.out.print(Long.toString(CPU_Regs.reg_esp.dword & 0xFFFFFFFFl, 16));
+        System.out.print(Long.toString(CPU_Regs.reg_esp.dword & 0xFFFFFFFFL, 16));
         System.out.print(" ebp=");
-        System.out.print(Long.toString(CPU_Regs.reg_ebp.dword & 0xFFFFFFFFl, 16));
+        System.out.print(Long.toString(CPU_Regs.reg_ebp.dword & 0xFFFFFFFFL, 16));
         System.out.print(" esi=");
-        System.out.print(Long.toString(CPU_Regs.reg_esi.dword & 0xFFFFFFFFl, 16));
+        System.out.print(Long.toString(CPU_Regs.reg_esi.dword & 0xFFFFFFFFL, 16));
         System.out.print(" edi=");
-        System.out.println(Long.toString(CPU_Regs.reg_edi.dword & 0xFFFFFFFFl, 16));
+        System.out.println(Long.toString(CPU_Regs.reg_edi.dword & 0xFFFFFFFFL, 16));
     }
 
+    @Override
     public int call() {
         currentHandler = this;
         if (level == 0) {
@@ -72,7 +73,7 @@ abstract public class HandlerBase extends WinAPI implements Callback.Handler {
         return true;
     }
 
-    abstract public void onCall();
+    public abstract void onCall();
 
     protected void notImplemented() {
         System.out.println(getName() + " not implemented yet.");

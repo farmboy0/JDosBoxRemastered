@@ -1,9 +1,7 @@
 package jdos.host.router;
 
-import jdos.host.UserEthernet;
-
 public class BootP extends EtherUtil {
-    private static final byte[] rfc1533_cookie = new byte[]{99, (byte) 130, 83, 99};
+    private static final byte[] rfc1533_cookie = { 99, (byte) 130, 83, 99 };
     private static final int DHCPDISCOVER = 1;
     private static final int DHCPOFFER = 2;
     private static final int DHCPREQUEST = 3;
@@ -34,9 +32,11 @@ public class BootP extends EtherUtil {
     byte[] sname = new byte[64];
     byte[] file = new byte[128];
     byte[] vend = new byte[312];
+
     public BootP() {
         bootp_response = new BootP(true);
     }
+
     public BootP(boolean isResponse) {
         bootp_response = null;
     }
@@ -93,9 +93,10 @@ public class BootP extends EtherUtil {
         offset += file.length;
         System.arraycopy(vend, 0, data, offset, vendorLen);
         UDP.output(sourceAddress, destAddress, data, Ether.LEN + IP.LEN, sourcePort, destPort, 236 + vendorLen);
-        IP.output(data, Ether.LEN, 17, sourceAddress, destAddress, 236 + vendorLen + UDP.LEN + IP.LEN, IP.IPTOS_LOWDELAY, ttl);
-        Ether.output(data, 0, UserEthernet.SERVER_MAC_ADDRESS, UserEthernet.ether.src);
-        UserEthernet.frames.add(data);
+        IP.output(data, Ether.LEN, 17, sourceAddress, destAddress, 236 + vendorLen + UDP.LEN + IP.LEN,
+            IP.IPTOS_LOWDELAY, ttl);
+        Ether.output(data, 0, EtherUtil.SERVER_MAC_ADDRESS, EtherUtil.ether.src);
+        EtherUtil.frames.add(data);
     }
 
     public void handle(byte[] buffer, int offset, int len) {
@@ -174,11 +175,11 @@ public class BootP extends EtherUtil {
         bootp_response.vend[3] = 99;
         int index = 4;
         if (address != -1) {
-            System.out.println("  DHCP Response " + ((msg == DHCPDISCOVER) ? "OFFER" : "ACK"));
+            System.out.println("  DHCP Response " + (msg == DHCPDISCOVER ? "OFFER" : "ACK"));
             System.out.println("    Transaction ID: 0x" + Integer.toHexString(bootp_response.xid));
             bootp_response.vend[index++] = RFC2132_MSG_TYPE;
             bootp_response.vend[index++] = 1;
-            bootp_response.vend[index++] = (byte) ((msg == DHCPDISCOVER) ? DHCPOFFER : DHCPACK);
+            bootp_response.vend[index++] = (byte) (msg == DHCPDISCOVER ? DHCPOFFER : DHCPACK);
 
             System.out.print("    Client Address: ");
             printAddress(address);

@@ -9,9 +9,11 @@ public class DRAWTEXTPARAMS extends WinAPI {
     public int iLeftMargin;
     public int iRightMargin;
     public int uiLengthDrawn;
+
     public DRAWTEXTPARAMS() {
         cbSize = SIZE;
     }
+
     public DRAWTEXTPARAMS(int address) {
         cbSize = readd(address);
         address += 4;

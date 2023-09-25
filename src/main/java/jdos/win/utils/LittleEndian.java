@@ -9,8 +9,8 @@ public class LittleEndian {
         this.pos = 0;
     }
 
-    static public String readCString(byte[] buffer, int offset) {
-        StringBuffer result = new StringBuffer();
+    public static String readCString(byte[] buffer, int offset) {
+        StringBuilder result = new StringBuilder();
         while (offset < buffer.length) {
             char c = (char) buffer[offset++]; // :TODO: need to research converting according to 1252
             if (c == 0)
@@ -20,14 +20,14 @@ public class LittleEndian {
         return result.toString();
     }
 
-    static public void writeCString(byte[] buffer, int offset, String s) {
+    public static void writeCString(byte[] buffer, int offset, String s) {
         byte[] b = s.getBytes();
         System.arraycopy(b, 0, buffer, offset, b.length);
         buffer[b.length] = 0;
     }
 
-    static public String readCString(byte[] buffer, int offset, int len) {
-        StringBuffer result = new StringBuffer();
+    public static String readCString(byte[] buffer, int offset, int len) {
+        StringBuilder result = new StringBuilder();
         while (offset < buffer.length && len > 0) {
             char c = (char) buffer[offset++]; // :TODO: need to research converting according to 1252
             if (c == 0)
@@ -38,8 +38,8 @@ public class LittleEndian {
         return result.toString();
     }
 
-    static public String readCStringW(byte[] buffer, int offset) {
-        StringBuffer result = new StringBuffer();
+    public static String readCStringW(byte[] buffer, int offset) {
+        StringBuilder result = new StringBuilder();
         while (offset < buffer.length) {
             char c = (char) readShort(buffer, offset);
             if (c == 0)
@@ -50,8 +50,8 @@ public class LittleEndian {
         return result.toString();
     }
 
-    static public String readCStringW(byte[] buffer, int offset, int len) {
-        StringBuffer result = new StringBuffer();
+    public static String readCStringW(byte[] buffer, int offset, int len) {
+        StringBuilder result = new StringBuilder();
         while (offset < buffer.length && len > 0) {
             char c = (char) readShort(buffer, offset);
             if (c == 0)
@@ -63,23 +63,24 @@ public class LittleEndian {
         return result.toString();
     }
 
-    static public final short readShort(byte[] buffer, int offset) {
-        return (short) ((buffer[offset] & 0xFF) | ((buffer[offset + 1] & 0xFF) << 8));
+    public static final short readShort(byte[] buffer, int offset) {
+        return (short) (buffer[offset] & 0xFF | (buffer[offset + 1] & 0xFF) << 8);
     }
 
-    static public final int readUnsignedShort(byte[] buffer, int offset) {
-        return (buffer[offset] & 0xFF) | ((buffer[offset + 1] & 0xFF) << 8);
+    public static final int readUnsignedShort(byte[] buffer, int offset) {
+        return buffer[offset] & 0xFF | (buffer[offset + 1] & 0xFF) << 8;
     }
 
-    static public final int readInt(byte[] buffer, int offset) {
-        return (buffer[offset] & 0xFF) | ((buffer[offset + 1] & 0xFF) << 8) | ((buffer[offset + 2] & 0xFF) << 16) | ((buffer[offset + 3] & 0xFF) << 24);
+    public static final int readInt(byte[] buffer, int offset) {
+        return buffer[offset] & 0xFF | (buffer[offset + 1] & 0xFF) << 8 | (buffer[offset + 2] & 0xFF) << 16
+            | (buffer[offset + 3] & 0xFF) << 24;
     }
 
-    static public final long readUnsignedInt(byte[] buffer, int offset) {
-        return readInt(buffer, offset) & 0xFFFFFFFFl;
+    public static final long readUnsignedInt(byte[] buffer, int offset) {
+        return readInt(buffer, offset) & 0xFFFFFFFFL;
     }
 
-    static public final short readUnsignedByte(byte[] buffer, int offset) {
+    public static final short readUnsignedByte(byte[] buffer, int offset) {
         return (short) (buffer[offset] & 0xFF);
     }
 

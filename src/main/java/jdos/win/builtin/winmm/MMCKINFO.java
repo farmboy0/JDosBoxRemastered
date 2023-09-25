@@ -3,7 +3,7 @@ package jdos.win.builtin.winmm;
 import jdos.win.builtin.WinAPI;
 
 public class MMCKINFO extends WinAPI {
-    static final public int SIZE = 20;
+    public static final int SIZE = 20;
     public int ckid;
     public int cksize;
     public int fccType;
@@ -12,6 +12,7 @@ public class MMCKINFO extends WinAPI {
 
     public MMCKINFO() {
     }
+
     public MMCKINFO(int address) {
         read(address);
     }

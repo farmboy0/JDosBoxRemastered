@@ -3,13 +3,14 @@ package jdos.dos;
 import jdos.hardware.Memory;
 
 public class Dos_SDA extends MemStruct {
-    public Dos_SDA(/*Bit16u*/int _seg,/*Bit16u*/int _offs) {
+    public Dos_SDA(/*Bit16u*/int _seg, /*Bit16u*/int _offs) {
         SetPt(_seg, _offs);
     }
 
     public void Init() {
         /* Clear */
-        for (/*Bitu*/int i = 0; i < 26; i++) Memory.mem_writeb(pt + i, 0x00);
+        for (/*Bitu*/int i = 0; i < 26; i++)
+            Memory.mem_writeb(pt + i, 0x00);
         SaveIt(1, 2, 0xFF); // sSave(sSDA,drive_crit_error,0xff);
     }
 

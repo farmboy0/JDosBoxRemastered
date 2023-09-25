@@ -23,7 +23,7 @@ public class WinFileMapping extends WinObject {
             buffer = new byte[4096];
             fileName = file.name;
         }
-        this.size = ((int) size + 0xFFF) & ~0xFFF;
+        this.size = (int) size + 0xFFF & ~0xFFF;
 
         this.frames = new int[(this.size >> 12) + 1];
         for (int i = 0; i < frames.length; i++) {
@@ -38,18 +38,18 @@ public class WinFileMapping extends WinObject {
         }
     }
 
-    static public WinFileMapping create(int hFile, String name, long size) {
+    public static WinFileMapping create(int hFile, String name, long size) {
         return new WinFileMapping(hFile, name, size, nextObjectId());
     }
 
-    static public WinFileMapping get(int handle) {
+    public static WinFileMapping get(int handle) {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinFileMapping))
             return null;
         return (WinFileMapping) object;
     }
 
-    static public boolean unmap(int address) {
+    public static boolean unmap(int address) {
         int handle = Memory.mem_readd(address - 0x1000);
         int frameCount = Memory.mem_readd(address - 0x1000 + 4);
         WinFileMapping mapping = WinFileMapping.get(handle);
@@ -74,7 +74,7 @@ public class WinFileMapping extends WinObject {
         int directory = WinSystem.getCurrentProcess().page_directory;
         int p = address;
         offset >>>= 12;
-        int maxFrames = (((size + 0xFFF) & ~0xFFF) >>> 12) + offset;
+        int maxFrames = ((size + 0xFFF & ~0xFFF) >>> 12) + offset;
 
         // always map the first frame since it contains metadata
         int page = WinSystem.memory.get_page(p, true, directory);
@@ -93,12 +93,13 @@ public class WinFileMapping extends WinObject {
         return address + 0x1000;
     }
 
+    @Override
     public void onFree() {
         if (WinAPI.LOG) {
             System.out.println("Freeing File Mapping: handle=" + handle + " name=" + name + " fileName=" + fileName);
         }
-        for (int i = 0; i < frames.length; i++) {
-            WinSystem.memory.freeFrame(frames[i]);
+        for (int frame : frames) {
+            WinSystem.memory.freeFrame(frame);
         }
     }
 

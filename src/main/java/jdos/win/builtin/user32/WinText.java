@@ -4,37 +4,42 @@ import jdos.hardware.Memory;
 import jdos.util.IntRef;
 import jdos.win.Win;
 import jdos.win.builtin.WinAPI;
-import jdos.win.builtin.gdi32.*;
+import jdos.win.builtin.gdi32.GdiObj;
+import jdos.win.builtin.gdi32.PaintingGDI;
+import jdos.win.builtin.gdi32.TEXTMETRIC;
+import jdos.win.builtin.gdi32.WinDC;
+import jdos.win.builtin.gdi32.WinFont;
+import jdos.win.builtin.gdi32.WinPen;
 import jdos.win.system.WinRect;
 import jdos.win.system.WinSize;
 import jdos.win.system.WinSystem;
 import jdos.win.utils.StringUtil;
 
 public class WinText extends WinAPI {
-    static final public int TAB = 9;
-    static final public int LF = 10;
-    static final public int CR = 13;
-    static final public int SPACE = 32;
-    static final public int PREFIX = 38;
+    public static final int TAB = 9;
+    public static final int LF = 10;
+    public static final int CR = 13;
+    public static final int SPACE = 32;
+    public static final int PREFIX = 38;
 
-    static final public String ELLIPSIS = "...";
+    public static final String ELLIPSIS = "...";
 
-    static final public char FORWARD_SLASH = '/';
-    static final public char BACK_SLASH = '\\';
+    public static final char FORWARD_SLASH = '/';
+    public static final char BACK_SLASH = '\\';
 
     // int DrawText(HDC hDC, LPCTSTR lpchText, int nCount, LPRECT lpRect, UINT uFormat)
-    static public int DrawTextA(int hDC, int lpchText, int nCount, int lpRect, int flags) {
+    public static int DrawTextA(int hDC, int lpchText, int nCount, int lpRect, int flags) {
         DRAWTEXTPARAMS dtp = new DRAWTEXTPARAMS();
 
         if ((flags & DT_TABSTOP) != 0) {
-            dtp.iTabLength = (flags >> 8) & 0xff;
+            dtp.iTabLength = flags >> 8 & 0xff;
             flags &= 0xffff00ff;
         }
         return DrawTextEx(hDC, lpchText, nCount, lpRect, flags, dtp);
     }
 
     // int DrawTextEx(HDC hdc, LPTSTR lpchText, int cchText, LPRECT lprc, UINT dwDTFormat, LPDRAWTEXTPARAMS lpDTParams)
-    static public int DrawTextExA(int hdc, int lpchText, int i_count, int lpRect, int flags, int pDtp) {
+    public static int DrawTextExA(int hdc, int lpchText, int i_count, int lpRect, int flags, int pDtp) {
         DRAWTEXTPARAMS dtp = null;
 
         if (pDtp != 0)
@@ -46,7 +51,7 @@ public class WinText extends WinAPI {
         return result;
     }
 
-    static public int DrawTextEx(int hdc, int lpchText, int i_count, int lpRect, int flags, DRAWTEXTPARAMS dtp) {
+    public static int DrawTextEx(int hdc, int lpchText, int i_count, int lpRect, int flags, DRAWTEXTPARAMS dtp) {
         if (lpchText == 0)
             return 0;
         String text = StringUtil.getString(lpchText, i_count);
@@ -104,11 +109,11 @@ public class WinText extends WinAPI {
             rmargin = dtp.iRightMargin;
             if ((flags & (DT_CENTER | DT_RIGHT)) == 0)
                 x += lmargin;
-            dtp.uiLengthDrawn = 0;     /* This param RECEIVES number of chars processed */
+            dtp.uiLengthDrawn = 0; /* This param RECEIVES number of chars processed */
         }
 
         if ((flags & DT_EXPANDTABS) != 0) {
-            int tabstop = ((flags & DT_TABSTOP) != 0 && dtp != null) ? dtp.iTabLength : 8;
+            int tabstop = (flags & DT_TABSTOP) != 0 && dtp != null ? dtp.iTabLength : 8;
             tabwidth = tm.tmAveCharWidth * tabstop;
         }
 
@@ -116,7 +121,7 @@ public class WinText extends WinAPI {
             flags |= DT_NOCLIP;
 
         if ((flags & DT_MODIFYSTRING) != 0) {
-            size_retstr = (count.value + 4);
+            size_retstr = count.value + 4;
             retstr = WinSystem.getCurrentProcess().heap.alloc(size_retstr, false);
             if (retstr == 0)
                 return 0;
@@ -129,8 +134,9 @@ public class WinText extends WinAPI {
 
         do {
             len.value = MAX_BUFFER_SIZE;
-            last_line = (flags & DT_NOCLIP) == 0 && (y + ((flags & DT_EDITCONTROL) != 0 ? 2 * lh - 1 : lh) > rect.bottom);
-            strPtr = TEXT_NextLine(hdc, strPtr, count, line, len, width, flags, size, last_line, p_retstr, tabwidth, prefix_offset, ellip);
+            last_line = (flags & DT_NOCLIP) == 0 && y + ((flags & DT_EDITCONTROL) != 0 ? 2 * lh - 1 : lh) > rect.bottom;
+            strPtr = TEXT_NextLine(hdc, strPtr, count, line, len, width, flags, size, last_line, p_retstr, tabwidth,
+                prefix_offset, ellip);
 
             if ((flags & DT_CENTER) != 0)
                 x = (rect.left + rect.right - size.cx) / 2;
@@ -152,7 +158,8 @@ public class WinText extends WinAPI {
                     WinSize tmpSize = new WinSize();
                     if ((flags & DT_EXPANDTABS) != 0) {
                         int p = str;
-                        while (p < str + len.value && readb(p) != TAB) p++;
+                        while (p < str + len.value && readb(p) != TAB)
+                            p++;
                         len_seg = p - str;
                         int pSize = tmpSize.allocTemp();
                         if (len_seg != len.value && WinFont.GetTextExtentPointA(hdc, str, len_seg, pSize) == 0)
@@ -162,11 +169,13 @@ public class WinText extends WinAPI {
                         len_seg = len.value;
 
                     int pRect = rect.allocTemp();
-                    if (WinDC.ExtTextOutA(hdc, xseg, y, ((flags & DT_NOCLIP) != 0 ? 0 : ETO_CLIPPED) | ((flags & DT_RTLREADING) != 0 ? ETO_RTLREADING : 0), pRect, str, len_seg, NULL) == 0)
+                    if (WinDC.ExtTextOutA(hdc, xseg, y, ((flags & DT_NOCLIP) != 0 ? 0 : ETO_CLIPPED)
+                        | ((flags & DT_RTLREADING) != 0 ? ETO_RTLREADING : 0), pRect, str, len_seg, NULL) == 0)
                         return 0;
                     rect.copy(pRect);
                     if (prefix_offset.value != -1 && prefix_offset.value < len_seg) {
-                        TEXT_DrawUnderscore(hdc, xseg, y + tm.tmAscent + 1, str, prefix_offset.value, (flags & DT_NOCLIP) != 0 ? null : rect);
+                        TEXT_DrawUnderscore(hdc, xseg, y + tm.tmAscent + 1, str, prefix_offset.value,
+                            (flags & DT_NOCLIP) != 0 ? null : rect);
                     }
                     len.value -= len_seg;
                     str += len_seg;
@@ -176,7 +185,7 @@ public class WinText extends WinAPI {
                         }
                         len.value--;
                         str++;
-                        xseg += ((tmpSize.cx / tabwidth) + 1) * tabwidth;
+                        xseg += (tmpSize.cx / tabwidth + 1) * tabwidth;
                         if (prefix_offset.value != -1) {
                             if (prefix_offset.value < len_seg) {
                                 /* We have just drawn an underscore; we ought to
@@ -199,8 +208,7 @@ public class WinText extends WinAPI {
             y += lh;
             if (dtp != null)
                 dtp.uiLengthDrawn += len.value;
-        }
-        while (strPtr != 0 && !last_line);
+        } while (strPtr != 0 && !last_line);
 
         if ((flags & DT_CALCRECT) != 0) {
             rect.right = rect.left + max_width;
@@ -217,36 +225,31 @@ public class WinText extends WinAPI {
     }
 
     /**
-     * ******************************************************************
-     * Return next line of text from a string.
+     * ****************************************************************** Return
+     * next line of text from a string.
      * <p/>
-     * hdc - handle to DC.
-     * str - string to parse into lines.
-     * count - length of str.
-     * dest - destination in which to return line.
-     * len - dest buffer size in chars on input, copied length into dest on output.
-     * width - maximum width of line in pixels.
-     * format - format type passed to DrawText.
-     * retsize - returned size of the line in pixels.
-     * last_line - TRUE if is the last line that will be processed
-     * p_retstr - If DT_MODIFYSTRING this points to a cursor in the buffer in which
-     * the return string is built.
-     * tabwidth - The width of a tab in logical coordinates
-     * pprefix_offset - Here is where we return the offset within dest of the first
-     * prefixed (underlined) character.  -1 is returned if there
-     * are none.  Note that there may be more; the calling code
-     * will need to use TEXT_Reprefix to find any later ones.
-     * pellip - Here is where we return the information about any ellipsification
-     * that was carried out.  Note that if tabs are being expanded then
-     * this data will correspond to the last text segment actually
-     * returned in dest; by definition there would not have been any
+     * hdc - handle to DC. str - string to parse into lines. count - length of str.
+     * dest - destination in which to return line. len - dest buffer size in chars
+     * on input, copied length into dest on output. width - maximum width of line in
+     * pixels. format - format type passed to DrawText. retsize - returned size of
+     * the line in pixels. last_line - TRUE if is the last line that will be
+     * processed p_retstr - If DT_MODIFYSTRING this points to a cursor in the buffer
+     * in which the return string is built. tabwidth - The width of a tab in logical
+     * coordinates pprefix_offset - Here is where we return the offset within dest
+     * of the first prefixed (underlined) character. -1 is returned if there are
+     * none. Note that there may be more; the calling code will need to use
+     * TEXT_Reprefix to find any later ones. pellip - Here is where we return the
+     * information about any ellipsification that was carried out. Note that if tabs
+     * are being expanded then this data will correspond to the last text segment
+     * actually returned in dest; by definition there would not have been any
      * ellipsification in earlier text segments of the line.
      * <p/>
-     * Returns pointer to next char in str after end of the line
-     * or NULL if end of str reached.
+     * Returns pointer to next char in str after end of the line or NULL if end of
+     * str reached.
      */
-    static private int TEXT_NextLine(int hdc, int str, IntRef count, int dest, IntRef len, int width, int format,
-                                     WinSize retsize, boolean last_line, IntRef p_retstr, int tabwidth, IntRef pprefix_offset, ellipsis_data pellip) {
+    private static int TEXT_NextLine(int hdc, int str, IntRef count, int dest, IntRef len, int width, int format,
+        WinSize retsize, boolean last_line, IntRef p_retstr, int tabwidth, IntRef pprefix_offset,
+        ellipsis_data pellip) {
         int i = 0, j = 0;
         int plen = 0;
         WinSize size = new WinSize();
@@ -269,7 +272,7 @@ public class WinText extends WinAPI {
         while (count.value != 0) {
             /* Skip any leading tabs */
             if (readb(str + i) == TAB && (format & DT_EXPANDTABS) != 0) {
-                plen = ((plen / tabwidth) + 1) * tabwidth;
+                plen = (plen / tabwidth + 1) * tabwidth;
                 count.value--;
                 if (j < maxl)
                     writeb(dest + j++, readb(str + i++));
@@ -285,14 +288,14 @@ public class WinText extends WinAPI {
                 }
             }
 
-
             /* Now copy as far as the next tab or cr/lf or eos */
 
             seg_i = i;
             seg_count = count.value;
             seg_j = j;
 
-            while (count.value != 0 && (readb(str + i) != TAB || (format & DT_EXPANDTABS) == 0) && ((readb(str + i) != CR && readb(str + i) != LF) || (format & DT_SINGLELINE) != 0)) {
+            while (count.value != 0 && (readb(str + i) != TAB || (format & DT_EXPANDTABS) == 0)
+                && (readb(str + i) != CR && readb(str + i) != LF || (format & DT_SINGLELINE) != 0)) {
                 if (readb(str + i) == PREFIX && (format & DT_NOPREFIX) == 0 && count.value > 1) {
                     count.value--;
                     i++; /* Throw away the prefix itself */
@@ -335,14 +338,16 @@ public class WinText extends WinAPI {
              * several bugs in the Microsoft versions).
              */
             word_broken = 0;
-            line_fits = (num_fit >= j_in_seg.value);
+            line_fits = num_fit >= j_in_seg.value;
             if (!line_fits && (format & DT_WORDBREAK) != 0) {
                 IntRef s = new IntRef(0);
                 IntRef chars_used = new IntRef(0);
-                TEXT_WordBreak(hdc, dest + seg_j, maxl - seg_j, j_in_seg, max_seg_width, format, num_fit, chars_used, size);
-                line_fits = (size.cx <= max_seg_width);
+                TEXT_WordBreak(hdc, dest + seg_j, maxl - seg_j, j_in_seg, max_seg_width, format, num_fit, chars_used,
+                    size);
+                line_fits = size.cx <= max_seg_width;
                 /* and correct the counts */
-                TEXT_SkipChars(count, s, seg_count, str + seg_i, i - seg_i, chars_used.value, (format & DT_NOPREFIX) == 0);
+                TEXT_SkipChars(count, s, seg_count, str + seg_i, i - seg_i, chars_used.value,
+                    (format & DT_NOPREFIX) == 0);
                 i = s.value - str;
                 word_broken = 1;
             }
@@ -352,17 +357,20 @@ public class WinText extends WinAPI {
             pellip.len = 0;
             ellipsified = 0;
             if (!line_fits && (format & DT_PATH_ELLIPSIS) != 0) {
-                TEXT_PathEllipsify(hdc, dest + seg_j, maxl - seg_j, j_in_seg, max_seg_width, size, p_retstr.value, pellip);
-                line_fits = (size.cx <= max_seg_width);
+                TEXT_PathEllipsify(hdc, dest + seg_j, maxl - seg_j, j_in_seg, max_seg_width, size, p_retstr.value,
+                    pellip);
+                line_fits = size.cx <= max_seg_width;
                 ellipsified = 1;
             }
             /* NB we may end up ellipsifying a word-broken or path_ellipsified
              * string */
-            if ((!line_fits && (format & DT_WORD_ELLIPSIS) != 0) || ((format & DT_END_ELLIPSIS) != 0 && ((last_line && count.value != 0) ||
-                    (remainder_is_none_or_newline(count.value, str + i) && !line_fits)))) {
+            if (!line_fits && (format & DT_WORD_ELLIPSIS) != 0
+                || (format & DT_END_ELLIPSIS) != 0 && (last_line && count.value != 0
+                    || remainder_is_none_or_newline(count.value, str + i) && !line_fits)) {
                 IntRef before = new IntRef(0);
                 IntRef len_ellipsis = new IntRef(0);
-                TEXT_Ellipsify(hdc, dest + seg_j, maxl - seg_j, j_in_seg, max_seg_width, size, p_retstr.value, before, len_ellipsis);
+                TEXT_Ellipsify(hdc, dest + seg_j, maxl - seg_j, j_in_seg, max_seg_width, size, p_retstr.value, before,
+                    len_ellipsis);
                 if (before.value > pellip.before) {
                     /* We must have done a path ellipsis too */
                     pellip.after = before.value - pellip.before - pellip.len;
@@ -371,7 +379,7 @@ public class WinText extends WinAPI {
                     /* If we are here after a path ellipsification it must be
                      * because even the ellipsis itself didn't fit.
                      */
-                    assert (pellip.under == 0 && pellip.after == 0);
+                    assert pellip.under == 0 && pellip.after == 0;
                     pellip.before = before.value;
                     pellip.len = len_ellipsis.value;
                     /* pellip->after remains as zero as does
@@ -413,7 +421,8 @@ public class WinText extends WinAPI {
             else if (readb(str + i) == CR || readb(str + i) == LF) {
                 count.value--;
                 i++;
-                if (count.value != 0 && (readb(str + i) == CR || readb(str + i) == LF) && readb(str + i) != readb(str + i - 1)) {
+                if (count.value != 0 && (readb(str + i) == CR || readb(str + i) == LF)
+                    && readb(str + i) != readb(str + i - 1)) {
                     count.value--;
                     i++;
                 }
@@ -436,14 +445,11 @@ public class WinText extends WinAPI {
      * <p/>
      * Draw the underline under the prefixed character
      * <p/>
-     * Parameters
-     * hdc        [in] The handle of the DC for drawing
-     * x          [in] The x location of the line segment (logical coordinates)
-     * y          [in] The y location of where the underscore should appear
-     * (logical coordinates)
-     * str        [in] The text of the line segment
-     * offset     [in] The offset of the underscored character within str
-     * rect       [in] Clipping rectangle (if not NULL)
+     * Parameters hdc [in] The handle of the DC for drawing x [in] The x location of
+     * the line segment (logical coordinates) y [in] The y location of where the
+     * underscore should appear (logical coordinates) str [in] The text of the line
+     * segment offset [in] The offset of the underscored character within str rect
+     * [in] Clipping rectangle (if not NULL)
      */
 
     static void TEXT_DrawUnderscore(int hdc, int x, int y, int str, int offset, WinRect rect) {
@@ -489,27 +495,24 @@ public class WinText extends WinAPI {
      * <p/>
      * See Also TEXT_PathEllipsify
      * <p/>
-     * Arguments
-     * hdc        [in] The handle to the DC that defines the font.
-     * str        [in/out] The string that needs to be modified.
-     * max_str    [in] The dimension of str (number of WCHAR).
-     * len_str    [in/out] The number of characters in str
-     * width      [in] The maximum width permitted (in logical coordinates)
-     * size       [out] The dimensions of the text
-     * modstr     [out] The modified form of the string, to be returned to the
-     * calling program.  It is assumed that the caller has
-     * made sufficient space available so we don't need to
-     * know the size of the space.  This pointer may be NULL if
-     * the modified string is not required.
-     * len_before [out] The number of characters before the ellipsis.
-     * len_ellip  [out] The number of characters in the ellipsis.
+     * Arguments hdc [in] The handle to the DC that defines the font. str [in/out]
+     * The string that needs to be modified. max_str [in] The dimension of str
+     * (number of WCHAR). len_str [in/out] The number of characters in str width
+     * [in] The maximum width permitted (in logical coordinates) size [out] The
+     * dimensions of the text modstr [out] The modified form of the string, to be
+     * returned to the calling program. It is assumed that the caller has made
+     * sufficient space available so we don't need to know the size of the space.
+     * This pointer may be NULL if the modified string is not required. len_before
+     * [out] The number of characters before the ellipsis. len_ellip [out] The
+     * number of characters in the ellipsis.
      * <p/>
      * See for example Microsoft article Q249678.
      * <p/>
-     * For now we will simply use three dots rather than worrying about whether
-     * the font contains an explicit ellipsis character.
+     * For now we will simply use three dots rather than worrying about whether the
+     * font contains an explicit ellipsis character.
      */
-    static void TEXT_Ellipsify(int hdc, int str, int max_len, IntRef len_str, int width, WinSize size, int modstr, IntRef len_before, IntRef len_ellip) {
+    static void TEXT_Ellipsify(int hdc, int str, int max_len, IntRef len_str, int width, WinSize size, int modstr,
+        IntRef len_before, IntRef len_ellip) {
         int len_ellipsis;
         int lo, mid, hi;
 
@@ -521,10 +524,11 @@ public class WinText extends WinAPI {
 
         /* First do a quick binary search to get an upper bound for *len_str. */
         int pSize = getTempBuffer(WinSize.SIZE);
-        if (len_str.value > 0 && WinFont.GetTextExtentExPointA(hdc, str, len_str.value, width, NULL, NULL, pSize) != 0) {
+        if (len_str.value > 0
+            && WinFont.GetTextExtentExPointA(hdc, str, len_str.value, width, NULL, NULL, pSize) != 0) {
             size.copy(pSize);
             if (size.cx > width) {
-                for (lo = 0, hi = len_str.value; lo < hi; ) {
+                for (lo = 0, hi = len_str.value; lo < hi;) {
                     mid = (lo + hi) / 2;
                     if (WinFont.GetTextExtentExPointA(hdc, str, mid, width, NULL, NULL, pSize) == 0)
                         break;
@@ -541,10 +545,7 @@ public class WinText extends WinAPI {
         while (true) {
             Memory.mem_memcpy(str + len_str.value, ELLIPSIS.getBytes(), 0, len_ellipsis);
 
-            if (WinFont.GetTextExtentExPointA(hdc, str, len_str.value + len_ellipsis, width, NULL, NULL, pSize) == 0)
-                break;
-
-            if (len_str.value == 0 || size.cx <= width)
+            if ((WinFont.GetTextExtentExPointA(hdc, str, len_str.value + len_ellipsis, width, NULL, NULL, pSize) == 0) || len_str.value == 0 || size.cx <= width)
                 break;
 
             len_str.value--;
@@ -564,54 +565,50 @@ public class WinText extends WinAPI {
      * ******************************************************************
      * TEXT_PathEllipsify (static)
      * <p/>
-     * Add an ellipsis to the provided string in order to make it fit within
-     * the width.  The ellipsis is added as specified for the DT_PATH_ELLIPSIS
-     * flag.
+     * Add an ellipsis to the provided string in order to make it fit within the
+     * width. The ellipsis is added as specified for the DT_PATH_ELLIPSIS flag.
      * <p/>
      * See Also TEXT_Ellipsify
      * <p/>
-     * Arguments
-     * hdc        [in] The handle to the DC that defines the font.
-     * str        [in/out] The string that needs to be modified
-     * max_str    [in] The dimension of str (number of WCHAR).
-     * len_str    [in/out] The number of characters in str
-     * width      [in] The maximum width permitted (in logical coordinates)
-     * size       [out] The dimensions of the text
-     * modstr     [out] The modified form of the string, to be returned to the
-     * calling program.  It is assumed that the caller has
-     * made sufficient space available so we don't need to
-     * know the size of the space.  This pointer may be NULL if
-     * the modified string is not required.
-     * pellip     [out] The ellipsification results
+     * Arguments hdc [in] The handle to the DC that defines the font. str [in/out]
+     * The string that needs to be modified max_str [in] The dimension of str
+     * (number of WCHAR). len_str [in/out] The number of characters in str width
+     * [in] The maximum width permitted (in logical coordinates) size [out] The
+     * dimensions of the text modstr [out] The modified form of the string, to be
+     * returned to the calling program. It is assumed that the caller has made
+     * sufficient space available so we don't need to know the size of the space.
+     * This pointer may be NULL if the modified string is not required. pellip [out]
+     * The ellipsification results
      * <p/>
-     * For now we will simply use three dots rather than worrying about whether
-     * the font contains an explicit ellipsis character.
+     * For now we will simply use three dots rather than worrying about whether the
+     * font contains an explicit ellipsis character.
      * <p/>
-     * The following applies, I think to Win95.  We will need to extend it for
-     * Win98 which can have both path and end ellipsis at the same time (e.g.
+     * The following applies, I think to Win95. We will need to extend it for Win98
+     * which can have both path and end ellipsis at the same time (e.g.
      * C:\MyLongFileName.Txt becomes ...\MyLongFileN...)
      * <p/>
-     * The resulting string consists of as much as possible of the following:
-     * 1. The ellipsis itself
-     * 2. The last \ or / of the string (if any)
-     * 3. Everything after the last \ or / of the string (if any) or the whole
-     * string if there is no / or \.  I believe that under Win95 this would
-     * include everything even though some might be clipped off the end whereas
-     * under Win98 that might be ellipsified too.
-     * Yet to be investigated is whether this would include wordbreaking if the
-     * filename is more than 1 word and splitting if DT_EDITCONTROL was in
-     * effect.  (If DT_EDITCONTROL is in effect then on occasions text will be
-     * broken within words).
-     * 4. All the stuff before the / or \, which is placed before the ellipsis.
+     * The resulting string consists of as much as possible of the following: 1. The
+     * ellipsis itself 2. The last \ or / of the string (if any) 3. Everything after
+     * the last \ or / of the string (if any) or the whole string if there is no /
+     * or \. I believe that under Win95 this would include everything even though
+     * some might be clipped off the end whereas under Win98 that might be
+     * ellipsified too. Yet to be investigated is whether this would include
+     * wordbreaking if the filename is more than 1 word and splitting if
+     * DT_EDITCONTROL was in effect. (If DT_EDITCONTROL is in effect then on
+     * occasions text will be broken within words). 4. All the stuff before the / or
+     * \, which is placed before the ellipsis.
      */
-    static void TEXT_PathEllipsify(int hdc, int str, int max_len, IntRef len_str, int width, WinSize size, int modstr, ellipsis_data pellip) {
+    static void TEXT_PathEllipsify(int hdc, int str, int max_len, IntRef len_str, int width, WinSize size, int modstr,
+        ellipsis_data pellip) {
         int len_ellipsis;
         int len_trailing;
         int len_under;
 
         len_ellipsis = ELLIPSIS.length();
-        if (max_len == 0) return;
-        if (len_ellipsis >= max_len) len_ellipsis = max_len - 1;
+        if (max_len == 0)
+            return;
+        if (len_ellipsis >= max_len)
+            len_ellipsis = max_len - 1;
         if (len_str.value + len_ellipsis >= max_len)
             len_str.value = max_len - len_ellipsis - 1;
         /* Hopefully this will never happen, otherwise it would probably lose
@@ -622,7 +619,8 @@ public class WinText extends WinAPI {
         int lastBkSlash = StringUtil.strrchr(str, BACK_SLASH);
         int lastFwdSlash = StringUtil.strrchr(str, FORWARD_SLASH);
         int lastSlash = lastBkSlash > lastFwdSlash ? lastBkSlash : lastFwdSlash;
-        if (lastSlash == 0) lastSlash = str;
+        if (lastSlash == 0)
+            lastSlash = str;
         len_trailing = len_str.value - (lastSlash - str);
 
         /* overlap-safe movement to the right */
@@ -647,7 +645,7 @@ public class WinText extends WinAPI {
             lastSlash--;
             len_under++;
 
-            assert (len_str.value != 0);
+            assert len_str.value != 0;
             len_str.value--;
         }
         pellip.before = lastSlash - str;
@@ -668,34 +666,28 @@ public class WinText extends WinAPI {
      * <p/>
      * Perform wordbreak processing on the given string
      * <p/>
-     * Assumes that DT_WORDBREAK has been specified and not all the characters
-     * fit.  Note that this function should even be called when the first character
-     * that doesn't fit is known to be a space or tab, so that it can swallow them.
+     * Assumes that DT_WORDBREAK has been specified and not all the characters fit.
+     * Note that this function should even be called when the first character that
+     * doesn't fit is known to be a space or tab, so that it can swallow them.
      * <p/>
-     * Note that the Windows processing has some strange properties.
-     * 1. If the text is left-justified and there is room for some of the spaces
-     * that follow the last word on the line then those that fit are included on
-     * the line.
-     * 2. If the text is centered or right-justified and there is room for some of
-     * the spaces that follow the last word on the line then all but one of those
-     * that fit are included on the line.
-     * 3. (Reasonable behaviour) If the word breaking causes a space to be the first
-     * character of a new line it will be skipped.
+     * Note that the Windows processing has some strange properties. 1. If the text
+     * is left-justified and there is room for some of the spaces that follow the
+     * last word on the line then those that fit are included on the line. 2. If the
+     * text is centered or right-justified and there is room for some of the spaces
+     * that follow the last word on the line then all but one of those that fit are
+     * included on the line. 3. (Reasonable behaviour) If the word breaking causes a
+     * space to be the first character of a new line it will be skipped.
      * <p/>
-     * Arguments
-     * hdc        [in] The handle to the DC that defines the font.
-     * str        [in/out] The string that needs to be broken.
-     * max_str    [in] The dimension of str (number of WCHAR).
-     * len_str    [in/out] The number of characters in str
-     * width      [in] The maximum width permitted
-     * format     [in] The format flags in effect
-     * chars_fit  [in] The maximum number of characters of str that are already
-     * known to fit; chars_fit+1 is known not to fit.
-     * chars_used [out] The number of characters of str that have been "used" and
-     * do not need to be included in later text.  For example this will
-     * include any spaces that have been discarded from the start of
-     * the next line.
-     * size       [out] The size of the returned text in logical coordinates
+     * Arguments hdc [in] The handle to the DC that defines the font. str [in/out]
+     * The string that needs to be broken. max_str [in] The dimension of str (number
+     * of WCHAR). len_str [in/out] The number of characters in str width [in] The
+     * maximum width permitted format [in] The format flags in effect chars_fit [in]
+     * The maximum number of characters of str that are already known to fit;
+     * chars_fit+1 is known not to fit. chars_used [out] The number of characters of
+     * str that have been "used" and do not need to be included in later text. For
+     * example this will include any spaces that have been discarded from the start
+     * of the next line. size [out] The size of the returned text in logical
+     * coordinates
      * <p/>
      * Pedantic assumption - Assumes that the text length is monotonically
      * increasing with number of characters (i.e. no weird kernings)
@@ -703,31 +695,26 @@ public class WinText extends WinAPI {
      * Algorithm
      * <p/>
      * Work back from the last character that did fit to either a space or the last
-     * character of a word, whichever is met first.
-     * If there was one or the first character didn't fit then
-     * If the text is centered or right justified and that one character was a
-     * space then break the line before that character
-     * Otherwise break the line after that character
-     * and if the next character is a space then discard it.
-     * Suppose there was none (and the first character did fit).
-     * If Break Within Word is permitted
-     * break the word after the last character that fits (there must be
-     * at least one; none is caught earlier).
-     * Otherwise
-     * discard any trailing space.
-     * include the whole word; it may be ellipsified later
+     * character of a word, whichever is met first. If there was one or the first
+     * character didn't fit then If the text is centered or right justified and that
+     * one character was a space then break the line before that character Otherwise
+     * break the line after that character and if the next character is a space then
+     * discard it. Suppose there was none (and the first character did fit). If
+     * Break Within Word is permitted break the word after the last character that
+     * fits (there must be at least one; none is caught earlier). Otherwise discard
+     * any trailing space. include the whole word; it may be ellipsified later
      * <p/>
      * Break Within Word is permitted under a set of circumstances that are not
-     * totally clear yet.  Currently our best guess is:
-     * If DT_EDITCONTROL is in effect and neither DT_WORD_ELLIPSIS nor
-     * DT_PATH_ELLIPSIS is
+     * totally clear yet. Currently our best guess is: If DT_EDITCONTROL is in
+     * effect and neither DT_WORD_ELLIPSIS nor DT_PATH_ELLIPSIS is
      */
 
-    static void TEXT_WordBreak(int hdc, int str, int max_str, IntRef len_str, int width, int format, int chars_fit, IntRef chars_used, WinSize size) {
+    static void TEXT_WordBreak(int hdc, int str, int max_str, IntRef len_str, int width, int format, int chars_fit,
+        IntRef chars_used, WinSize size) {
         int p;
         boolean word_fits;
-        assert ((format & DT_WORDBREAK) != 0);
-        assert (chars_fit < len_str.value);
+        assert (format & DT_WORDBREAK) != 0;
+        assert chars_fit < len_str.value;
 
         /* Work back from the last character that did fit to either a space or the
          * last character of a word, whichever is met first.
@@ -741,7 +728,7 @@ public class WinText extends WinAPI {
         else {
             while (p > str && readb(--p) != SPACE)
                 ;
-            word_fits = (p != str || readb(p) == SPACE);
+            word_fits = p != str || readb(p) == SPACE;
         }
         /* If there was one or the first character didn't fit then */
         if (word_fits) {
@@ -749,7 +736,7 @@ public class WinText extends WinAPI {
             /* break the line before/after that character */
             if ((format & (DT_RIGHT | DT_CENTER)) == 0 || readb(p) != SPACE)
                 p++;
-            next_is_space = (p - str) < len_str.value && readb(p) == SPACE;
+            next_is_space = p - str < len_str.value && readb(p) == SPACE;
             len_str.value = p - str;
             /* and if the next character is a space then discard it. */
             chars_used.value = len_str.value;
@@ -798,33 +785,26 @@ public class WinText extends WinAPI {
      * ******************************************************************
      * TEXT_SkipChars
      * <p/>
-     * Skip over the given number of characters, bearing in mind prefix
-     * substitution and the fact that a character may take more than one
-     * WCHAR (Unicode surrogates are two words long) (and there may have been
-     * a trailing &)
+     * Skip over the given number of characters, bearing in mind prefix substitution
+     * and the fact that a character may take more than one WCHAR (Unicode
+     * surrogates are two words long) (and there may have been a trailing &)
      * <p/>
-     * Parameters
-     * new_count  [out] The updated count
-     * new_str    [out] The updated pointer
-     * start_count [in] The count of remaining characters corresponding to the
-     * start of the string
-     * start_str  [in] The starting point of the string
-     * max        [in] The number of characters actually in this segment of the
-     * string (the & counts)
-     * n          [in] The number of characters to skip (if prefix then
-     * &c counts as one)
-     * prefix     [in] Apply prefix substitution
+     * Parameters new_count [out] The updated count new_str [out] The updated
+     * pointer start_count [in] The count of remaining characters corresponding to
+     * the start of the string start_str [in] The starting point of the string max
+     * [in] The number of characters actually in this segment of the string (the &
+     * counts) n [in] The number of characters to skip (if prefix then &c counts as
+     * one) prefix [in] Apply prefix substitution
      * <p/>
-     * Return Values
-     * none
+     * Return Values none
      * <p/>
-     * Remarks
-     * There must be at least n characters in the string
-     * We need max because the "line" may have ended with a & followed by a tab
-     * or newline etc. which we don't want to swallow
+     * Remarks There must be at least n characters in the string We need max because
+     * the "line" may have ended with a & followed by a tab or newline etc. which we
+     * don't want to swallow
      */
 
-    static void TEXT_SkipChars(IntRef new_count, IntRef new_str, int start_count, int start_str, int max, int n, boolean prefix) {
+    static void TEXT_SkipChars(IntRef new_count, IntRef new_str, int start_count, int start_str, int max, int n,
+        boolean prefix) {
         /* This is specific to wide characters, MSDN doesn't say anything much
          * about Unicode surrogates yet and it isn't clear if _wcsinc will
          * correctly handle them so we'll just do this the easy way for now
@@ -832,13 +812,13 @@ public class WinText extends WinAPI {
 
         if (prefix) {
             int str_on_entry = start_str;
-            assert (max >= n);
+            assert max >= n;
             max -= n;
             while (n-- != 0) {
                 if (readb(start_str++) == PREFIX && max-- != 0)
                     start_str++;
             }
-            start_count -= (start_str - str_on_entry);
+            start_count -= start_str - str_on_entry;
         } else {
             start_str += n;
             start_count -= n;
@@ -851,25 +831,24 @@ public class WinText extends WinAPI {
      * ******************************************************************
      * TEXT_Reprefix
      * <p/>
-     * Reanalyse the text to find the prefixed character.  This is called when
+     * Reanalyse the text to find the prefixed character. This is called when
      * wordbreaking or ellipsification has shortened the string such that the
      * previously noted prefixed character is no longer visible.
      * <p/>
-     * Parameters
-     * str        [in] The original string segment (including all characters)
-     * ns         [in] The number of characters in str (including prefixes)
-     * pe         [in] The ellipsification data
+     * Parameters str [in] The original string segment (including all characters) ns
+     * [in] The number of characters in str (including prefixes) pe [in] The
+     * ellipsification data
      * <p/>
-     * Return Values
-     * The prefix offset within the new string segment (the one that contains the
-     * ellipses and does not contain the prefix characters) (-1 if none)
+     * Return Values The prefix offset within the new string segment (the one that
+     * contains the ellipses and does not contain the prefix characters) (-1 if
+     * none)
      */
 
     static int TEXT_Reprefix(int str, int ns, ellipsis_data pe) {
         int result = -1;
         int i = 0;
         int n = pe.before + pe.under + pe.after;
-        assert (n <= ns);
+        assert n <= ns;
         while (i < n) {
             if (i == pe.before) {
                 /* Reached the path ellipsis; jump over it */
@@ -888,7 +867,7 @@ public class WinText extends WinAPI {
                 if (ns == 0)
                     break;
                 if (readb(str) != PREFIX)
-                    result = (i < pe.before || pe.under == 0) ? i : i - pe.under + pe.len;
+                    result = i < pe.before || pe.under == 0 ? i : i - pe.under + pe.len;
                 /* pe->len may be non-zero while pe_under is zero */
                 str++;
                 ns--;
@@ -899,22 +878,27 @@ public class WinText extends WinAPI {
     }
 
     /**
-     * ******************************************************************
-     * Returns true if and only if the remainder of the line is a single
-     * newline representation or nothing
+     * ****************************************************************** Returns
+     * true if and only if the remainder of the line is a single newline
+     * representation or nothing
      */
 
-    static private boolean remainder_is_none_or_newline(int num_chars, int str) {
-        if (num_chars == 0) return true;
-        if (readb(str) != LF && readb(str) != CR) return false;
-        if (--num_chars == 0) return true;
-        if (readb(str) == readb(str + 1)) return false;
+    private static boolean remainder_is_none_or_newline(int num_chars, int str) {
+        if (num_chars == 0)
+            return true;
+        if (readb(str) != LF && readb(str) != CR)
+            return false;
+        if (--num_chars == 0)
+            return true;
+        if (readb(str) == readb(str + 1))
+            return false;
         str++;
-        if (readb(str) != CR && readb(str) != LF) return false;
+        if (readb(str) != CR && readb(str) != LF)
+            return false;
         return --num_chars == 0;
     }
 
-    static private class ellipsis_data {
+    private static class ellipsis_data {
         int before;
         int len;
         int under;

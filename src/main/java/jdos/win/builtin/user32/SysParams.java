@@ -9,38 +9,37 @@ import jdos.win.system.WinRect;
 import jdos.win.utils.Ptr;
 
 public class SysParams extends WinAPI {
-    static public final DefColor[] DefSysColors = new DefColor[]{
-            new DefColor("Scrollbar", RGB(212, 208, 200)),              /* COLOR_SCROLLBAR */
-            new DefColor("Background", RGB(58, 110, 165)),              /* COLOR_BACKGROUND */
-            new DefColor("ActiveTitle", RGB(10, 36, 106)),              /* COLOR_ACTIVECAPTION */
-            new DefColor("InactiveTitle", RGB(128, 128, 128)),          /* COLOR_INACTIVECAPTION */
-            new DefColor("Menu", RGB(212, 208, 200)),                   /* COLOR_MENU */
-            new DefColor("Window", RGB(255, 255, 255)),                 /* COLOR_WINDOW */
-            new DefColor("WindowFrame", RGB(0, 0, 0)),                  /* COLOR_WINDOWFRAME */
-            new DefColor("MenuText", RGB(0, 0, 0)),                     /* COLOR_MENUTEXT */
-            new DefColor("WindowText", RGB(0, 0, 0)),                   /* COLOR_WINDOWTEXT */
-            new DefColor("TitleText", RGB(255, 255, 255)),              /* COLOR_CAPTIONTEXT */
-            new DefColor("ActiveBorder", RGB(212, 208, 200)),           /* COLOR_ACTIVEBORDER */
-            new DefColor("InactiveBorder", RGB(212, 208, 200)),         /* COLOR_INACTIVEBORDER */
-            new DefColor("AppWorkSpace", RGB(128, 128, 128)),           /* COLOR_APPWORKSPACE */
-            new DefColor("Hilight", RGB(10, 36, 106)),                  /* COLOR_HIGHLIGHT */
-            new DefColor("HilightText", RGB(255, 255, 255)),            /* COLOR_HIGHLIGHTTEXT */
-            new DefColor("ButtonFace", RGB(212, 208, 200)),             /* COLOR_BTNFACE */
-            new DefColor("ButtonShadow", RGB(128, 128, 128)),           /* COLOR_BTNSHADOW */
-            new DefColor("GrayText", RGB(128, 128, 128)),               /* COLOR_GRAYTEXT */
-            new DefColor("ButtonText", RGB(0, 0, 0)),                   /* COLOR_BTNTEXT */
-            new DefColor("InactiveTitleText", RGB(212, 208, 200)),      /* COLOR_INACTIVECAPTIONTEXT */
-            new DefColor("ButtonHilight", RGB(255, 255, 255)),          /* COLOR_BTNHIGHLIGHT */
-            new DefColor("ButtonDkShadow", RGB(64, 64, 64)),            /* COLOR_3DDKSHADOW */
-            new DefColor("ButtonLight", RGB(212, 208, 200)),            /* COLOR_3DLIGHT */
-            new DefColor("InfoText", RGB(0, 0, 0)),                     /* COLOR_INFOTEXT */
-            new DefColor("InfoWindow", RGB(255, 255, 225)),             /* COLOR_INFOBK */
-            new DefColor("ButtonAlternateFace", RGB(181, 181, 181)),    /* COLOR_ALTERNATEBTNFACE */
-            new DefColor("HotTrackingColor", RGB(0, 0, 200)),           /* COLOR_HOTLIGHT */
-            new DefColor("GradientActiveTitle", RGB(166, 202, 240)),    /* COLOR_GRADIENTACTIVECAPTION */
-            new DefColor("GradientInactiveTitle", RGB(192, 192, 192)),  /* COLOR_GRADIENTINACTIVECAPTION */
-            new DefColor("MenuHilight", RGB(10, 36, 106)),              /* COLOR_MENUHILIGHT */
-            new DefColor("MenuBar", RGB(212, 208, 200))                 /* COLOR_MENUBAR */
+    public static final DefColor[] DefSysColors = { new DefColor("Scrollbar", RGB(212, 208, 200)), /* COLOR_SCROLLBAR */
+        new DefColor("Background", RGB(58, 110, 165)), /* COLOR_BACKGROUND */
+        new DefColor("ActiveTitle", RGB(10, 36, 106)), /* COLOR_ACTIVECAPTION */
+        new DefColor("InactiveTitle", RGB(128, 128, 128)), /* COLOR_INACTIVECAPTION */
+        new DefColor("Menu", RGB(212, 208, 200)), /* COLOR_MENU */
+        new DefColor("Window", RGB(255, 255, 255)), /* COLOR_WINDOW */
+        new DefColor("WindowFrame", RGB(0, 0, 0)), /* COLOR_WINDOWFRAME */
+        new DefColor("MenuText", RGB(0, 0, 0)), /* COLOR_MENUTEXT */
+        new DefColor("WindowText", RGB(0, 0, 0)), /* COLOR_WINDOWTEXT */
+        new DefColor("TitleText", RGB(255, 255, 255)), /* COLOR_CAPTIONTEXT */
+        new DefColor("ActiveBorder", RGB(212, 208, 200)), /* COLOR_ACTIVEBORDER */
+        new DefColor("InactiveBorder", RGB(212, 208, 200)), /* COLOR_INACTIVEBORDER */
+        new DefColor("AppWorkSpace", RGB(128, 128, 128)), /* COLOR_APPWORKSPACE */
+        new DefColor("Hilight", RGB(10, 36, 106)), /* COLOR_HIGHLIGHT */
+        new DefColor("HilightText", RGB(255, 255, 255)), /* COLOR_HIGHLIGHTTEXT */
+        new DefColor("ButtonFace", RGB(212, 208, 200)), /* COLOR_BTNFACE */
+        new DefColor("ButtonShadow", RGB(128, 128, 128)), /* COLOR_BTNSHADOW */
+        new DefColor("GrayText", RGB(128, 128, 128)), /* COLOR_GRAYTEXT */
+        new DefColor("ButtonText", RGB(0, 0, 0)), /* COLOR_BTNTEXT */
+        new DefColor("InactiveTitleText", RGB(212, 208, 200)), /* COLOR_INACTIVECAPTIONTEXT */
+        new DefColor("ButtonHilight", RGB(255, 255, 255)), /* COLOR_BTNHIGHLIGHT */
+        new DefColor("ButtonDkShadow", RGB(64, 64, 64)), /* COLOR_3DDKSHADOW */
+        new DefColor("ButtonLight", RGB(212, 208, 200)), /* COLOR_3DLIGHT */
+        new DefColor("InfoText", RGB(0, 0, 0)), /* COLOR_INFOTEXT */
+        new DefColor("InfoWindow", RGB(255, 255, 225)), /* COLOR_INFOBK */
+        new DefColor("ButtonAlternateFace", RGB(181, 181, 181)), /* COLOR_ALTERNATEBTNFACE */
+        new DefColor("HotTrackingColor", RGB(0, 0, 200)), /* COLOR_HOTLIGHT */
+        new DefColor("GradientActiveTitle", RGB(166, 202, 240)), /* COLOR_GRADIENTACTIVECAPTION */
+        new DefColor("GradientInactiveTitle", RGB(192, 192, 192)), /* COLOR_GRADIENTINACTIVECAPTION */
+        new DefColor("MenuHilight", RGB(10, 36, 106)), /* COLOR_MENUHILIGHT */
+        new DefColor("MenuBar", RGB(212, 208, 200)) /* COLOR_MENUBAR */
     };
 
     // DWORD WINAPI GetSysColor(int nIndex)
@@ -84,7 +83,7 @@ public class SysParams extends WinAPI {
     }
 
     // INT WINAPI GetSystemMetrics( INT index )
-    static public int GetSystemMetrics(int index) {
+    public static int GetSystemMetrics(int index) {
         /* some metrics are dynamic */
         switch (index) {
             case SM_CXSCREEN:
@@ -251,7 +250,7 @@ public class SysParams extends WinAPI {
                 /* FIXME: subtract the width of any horizontal application toolbars*/
                 return GetSystemMetrics(SM_CYSCREEN) + 2 * GetSystemMetrics(SM_CYCAPTION);
             case SM_NETWORK:
-                return 3;  /* FIXME */
+                return 3; /* FIXME */
             case SM_CLEANBOOT:
                 return 0; /* 0 = ok, 1 = failsafe, 2 = failsafe + network */
             case SM_CXDRAG:
@@ -266,9 +265,9 @@ public class SysParams extends WinAPI {
 //            return tmMenuFont.tmHeight <= 0 ? 13 :
 //            ((tmMenuFont.tmHeight + tmMenuFont.tmExternalLeading + 1) / 2) * 2 - 1;
             case SM_SLOWMACHINE:
-                return 0;  /* Never true */
+                return 0; /* Never true */
             case SM_MIDEASTENABLED:
-                return 0;  /* FIXME */
+                return 0; /* FIXME */
             case SM_MOUSEWHEELPRESENT:
                 return 1;
 //        case SM_XVIRTUALSCREEN:
@@ -300,7 +299,7 @@ public class SysParams extends WinAPI {
             case SM_SAMEDISPLAYFORMAT:
                 return 1;
             case SM_IMMENABLED:
-                return 0;  /* FIXME */
+                return 0; /* FIXME */
             case SM_CXFOCUSBORDER:
             case SM_CYFOCUSBORDER:
                 return 1;
@@ -315,7 +314,7 @@ public class SysParams extends WinAPI {
     }
 
     // BOOL WINAPI SystemParametersInfo(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni)
-    static public int SystemParametersInfoA(int uiAction, int uiParam, int pvParam, int fWinIni) {
+    public static int SystemParametersInfoA(int uiAction, int uiParam, int pvParam, int fWinIni) {
         switch (uiAction) {
             case 0x0010: // SPI_GETSCREENSAVEACTIVE
                 writed(pvParam, FALSE);
@@ -332,9 +331,10 @@ public class SysParams extends WinAPI {
         return TRUE;
     }
 
-    static public class DefColor {
+    public static class DefColor {
         public String name;
         public int color;
+
         public DefColor(String name, int color) {
             this.name = name;
             this.color = color;

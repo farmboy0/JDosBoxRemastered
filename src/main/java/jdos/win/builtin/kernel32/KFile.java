@@ -11,7 +11,7 @@ import jdos.win.utils.StringUtil;
 
 public class KFile extends WinAPI {
     // HFILE WINAPI OpenFile(LPCSTR lpFileName, LPOFSTRUCT lpReOpenBuff, UINT uStyle)
-    static public int OpenFile(int lpFileName, int lpReOpenBuff, int uStyle) {
+    public static int OpenFile(int lpFileName, int lpReOpenBuff, int uStyle) {
         String fileName = StringUtil.getString(lpFileName);
         FilePath file = WinSystem.getCurrentProcess().getFile(fileName);
         if ((uStyle & OF_EXIST) != 0) {

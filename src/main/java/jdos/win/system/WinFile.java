@@ -1,17 +1,17 @@
 package jdos.win.system;
 
+import java.io.File;
+import java.io.FileFilter;
+
 import jdos.hardware.Memory;
 import jdos.win.Win;
 import jdos.win.utils.FilePath;
 
-import java.io.File;
-import java.io.FileFilter;
-
 public class WinFile extends WinObject {
-    public final static int FILE_SHARE_NONE = 0x0;
-    public final static int FILE_SHARE_READ = 0x1;
-    public final static int FILE_SHARE_WRITE = 0x2;
-    public final static int FILE_SHARE_DELETE = 0x4;
+    public static final int FILE_SHARE_NONE = 0x0;
+    public static final int FILE_SHARE_READ = 0x1;
+    public static final int FILE_SHARE_WRITE = 0x2;
+    public static final int FILE_SHARE_DELETE = 0x4;
     public static final int STD_OUT = 1;
     public static final int STD_IN = 2;
     public static final int STD_ERROR = 3;
@@ -45,19 +45,19 @@ public class WinFile extends WinObject {
         this.attributes = attributes;
     }
 
-    static public WinFile create(FilePath file, boolean write, int shareMode, int attributes) {
+    public static WinFile create(FilePath file, boolean write, int shareMode, int attributes) {
         if (file.open(write))
             return new WinFile(nextObjectId(), file, write, shareMode, attributes);
         return null;
     }
 
-    static public WinFile createNoHandle(FilePath file, boolean write, int shareMode, int attributes) {
+    public static WinFile createNoHandle(FilePath file, boolean write, int shareMode, int attributes) {
         if (file.open(write))
             return new WinFile(0, file, write, shareMode, attributes);
         return null;
     }
 
-    static public WinFile get(int handle) {
+    public static WinFile get(int handle) {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinFile))
             return null;
@@ -65,7 +65,7 @@ public class WinFile extends WinObject {
     }
 
     public static long filetimeToMillis(final long filetime) {
-        return (filetime / FILETIME_ONE_MILLISECOND) - FILETIME_EPOCH_DIFF;
+        return filetime / FILETIME_ONE_MILLISECOND - FILETIME_EPOCH_DIFF;
     }
 
     public static long millisToFiletime(final long millis) {
@@ -80,7 +80,7 @@ public class WinFile extends WinObject {
     }
 
     public static long readFileTime(int address) {
-        return (Memory.mem_readd(address) & 0xFFFFFFFFl) | ((Memory.mem_readd(address + 4) & 0xFFFFFFFFl) << 32);
+        return Memory.mem_readd(address) & 0xFFFFFFFFL | (Memory.mem_readd(address + 4) & 0xFFFFFFFFL) << 32;
     }
 
     public long size() {
@@ -145,7 +145,7 @@ public class WinFile extends WinObject {
         try {
             byte[] buffer = new byte[2];
             file.read(buffer);
-            return (buffer[0] & 0xFF) | ((buffer[1] & 0xFF) << 8);
+            return buffer[0] & 0xFF | (buffer[1] & 0xFF) << 8;
         } catch (Exception e) {
             return -1;
         }
@@ -155,7 +155,7 @@ public class WinFile extends WinObject {
         try {
             byte[] buffer = new byte[4];
             file.read(buffer);
-            return (buffer[0] & 0xFF) | ((buffer[1] & 0xFF) << 8) | ((buffer[2] & 0xFF) << 16) | ((buffer[3] & 0xFF) << 24);
+            return buffer[0] & 0xFF | (buffer[1] & 0xFF) << 8 | (buffer[2] & 0xFF) << 16 | (buffer[3] & 0xFF) << 24;
         } catch (Exception e) {
             return -1;
         }
@@ -172,6 +172,7 @@ public class WinFile extends WinObject {
         }
     }
 
+    @Override
     protected void onFree() {
         try {
             file.close();
@@ -199,6 +200,7 @@ public class WinFile extends WinObject {
             end = end.toLowerCase();
         }
 
+        @Override
         public boolean accept(File pathname) {
             String name = pathname.getName().toLowerCase();
             return name.startsWith(begin) && name.endsWith(end);

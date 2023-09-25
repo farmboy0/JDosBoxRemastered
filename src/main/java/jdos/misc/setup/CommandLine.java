@@ -1,8 +1,8 @@
 package jdos.misc.setup;
 
-import jdos.util.StringRef;
-
 import java.util.Vector;
+
+import jdos.util.StringRef;
 
 public class CommandLine {
     private final Vector cmds;
@@ -10,8 +10,8 @@ public class CommandLine {
 
     public CommandLine(String[] args) {
         cmds = new Vector(args.length);
-        for (int i = 0; i < args.length; i++)
-            cmds.add(args[i]);
+        for (String arg : args)
+            cmds.add(arg);
         // :TODO: file_name = ?
     }
 
@@ -23,7 +23,7 @@ public class CommandLine {
         char c;
         inword = false;
         inquote = false;
-        StringBuffer str = new StringBuffer();
+        StringBuilder str = new StringBuilder();
         for (int i = 0; i < cmdline.length(); i++) {
             c = cmdline.charAt(i);
             if (inquote) {
@@ -32,7 +32,7 @@ public class CommandLine {
                 else {
                     inquote = false;
                     cmds.addElement(str.toString());
-                    str = new StringBuffer();
+                    str = new StringBuilder();
                 }
             } else if (inword) {
                 if (c != ' ')
@@ -40,7 +40,7 @@ public class CommandLine {
                 else {
                     inword = false;
                     cmds.addElement(str.toString());
-                    str = new StringBuffer();
+                    str = new StringBuilder();
                 }
             } else if (c == '"') {
                 inquote = true;
@@ -49,7 +49,8 @@ public class CommandLine {
                 inword = true;
             }
         }
-        if (inword || inquote) cmds.addElement(str.toString());
+        if (inword || inquote)
+            cmds.addElement(str.toString());
     }
 
     public String GetFileName() {
@@ -62,8 +63,10 @@ public class CommandLine {
 
     public boolean FindExist(String name, boolean remove) {
         int index = FindEntry(name, false);
-        if (index < 0) return false;
-        if (remove) cmds.removeElementAt(index);
+        if (index < 0)
+            return false;
+        if (remove)
+            cmds.removeElementAt(index);
         return true;
     }
 
@@ -73,9 +76,10 @@ public class CommandLine {
 
     public Integer FindHex(String name, boolean remove) {
         int index = FindEntry(name, true);
-        if (index < 0) return null;
+        if (index < 0)
+            return null;
         try {
-            Integer result = new Integer(Integer.parseInt((String) cmds.elementAt(index + 1), 16));
+            int result = Integer.parseInt((String) cmds.elementAt(index + 1), 16);
             if (remove) {
                 cmds.removeElementAt(index);
                 cmds.removeElementAt(index);
@@ -92,9 +96,10 @@ public class CommandLine {
 
     public Integer FindInt(String name, boolean remove) {
         int index = FindEntry(name, true);
-        if (index < 0) return null;
+        if (index < 0)
+            return null;
         try {
-            Integer result = new Integer(Integer.parseInt((String) cmds.elementAt(index + 1), 10));
+            int result = Integer.parseInt((String) cmds.elementAt(index + 1), 10);
             if (remove) {
                 cmds.removeElementAt(index);
                 cmds.removeElementAt(index);
@@ -111,7 +116,8 @@ public class CommandLine {
 
     public String FindString(String name, boolean remove) {
         int index = FindEntry(name, true);
-        if (index < 0) return null;
+        if (index < 0)
+            return null;
         String result = (String) cmds.elementAt(index + 1);
         if (remove) {
             cmds.removeElementAt(index);
@@ -121,8 +127,8 @@ public class CommandLine {
     }
 
     public String FindCommand(int which) {
-        if (which < 1) return null;
-        if (which > cmds.size()) return null;
+        if ((which < 1) || (which > cmds.size()))
+            return null;
         return (String) cmds.elementAt(which - 1);
     }
 
@@ -145,9 +151,10 @@ public class CommandLine {
 
     public String FindStringRemain(String name) {
         int index = FindEntry(name, false);
-        if (index < 0) return null;
+        if (index < 0)
+            return null;
         index++;
-        StringBuffer value = new StringBuffer();
+        StringBuilder value = new StringBuilder();
         for (int i = index; i < cmds.size(); i++) {
             value.append(" ");
             value.append(cmds.elementAt(i));
@@ -167,7 +174,8 @@ public class CommandLine {
             boolean found = false;
             for (i = 0; i < cmds.size(); i++) {
                 String s = (String) cmds.elementAt(i);
-                if (s.length() > len) s = s.substring(0, len);
+                if (s.length() > len)
+                    s = s.substring(0, len);
                 if (s.equalsIgnoreCase(name)) {
                     String temp = "";
                     s = (String) cmds.elementAt(i);
@@ -182,7 +190,8 @@ public class CommandLine {
                     break;
                 }
             }
-            if (!found) return false;
+            if (!found)
+                return false;
         }
         i++;
         for (; i < cmds.size(); i++) {
@@ -197,8 +206,9 @@ public class CommandLine {
     }
 
     public String GetStringRemain() {
-        if (cmds.size() == 0) return null;
-        StringBuffer value = new StringBuffer();
+        if (cmds.size() == 0)
+            return null;
+        StringBuilder value = new StringBuilder();
         for (int i = 0; i < cmds.size(); i++) {
             if (i > 0)
                 value.append(" ");
@@ -214,7 +224,8 @@ public class CommandLine {
     public void Shift(int amount) {
         for (int i = 0; i < amount; i++) {
             file_name = cmds.size() > 0 ? (String) cmds.elementAt(0) : "";
-            if (cmds.size() > 0) cmds.removeElementAt(0);
+            if (cmds.size() > 0)
+                cmds.removeElementAt(0);
         }
     }
 

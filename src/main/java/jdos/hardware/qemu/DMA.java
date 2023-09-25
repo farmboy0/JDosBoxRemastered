@@ -4,8 +4,8 @@ import jdos.cpu.CPU;
 import jdos.util.IntRef;
 
 public class DMA {
-    static public final int DMA_DIRECTION_TO_DEVICE = 0;
-    static public final int DMA_DIRECTION_FROM_DEVICE = 1;
+    public static final int DMA_DIRECTION_TO_DEVICE = 0;
+    public static final int DMA_DIRECTION_FROM_DEVICE = 1;
 
     public static int DMA_get_channel_mode(int nchan) {
         jdos.hardware.DMA.DmaChannel channel = jdos.hardware.DMA.GetDMAChannel(nchan);
@@ -56,7 +56,8 @@ public class DMA {
     }
 
     public interface DMAIOFunc {
-        Block.BlockDriverAIOCB call(Block.BlockDriverState bs, long sector_num, QemuCommon.QEMUIOVector iov, int nb_sectors, Block.BlockDriverCompletionFunc cb, Object opaque);
+        Block.BlockDriverAIOCB call(Block.BlockDriverState bs, long sector_num, QemuCommon.QEMUIOVector iov,
+            int nb_sectors, Block.BlockDriverCompletionFunc cb, Object opaque);
     }
 
     public static class DMAContext {
@@ -65,7 +66,7 @@ public class DMA {
         DMAUnmapFunc unmap;
     }
 
-    static public class ScatterGatherEntry {
+    public static class ScatterGatherEntry {
         public int base;
         public int len;
     }

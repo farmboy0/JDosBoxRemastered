@@ -3,17 +3,17 @@ package jdos.win.builtin.directx.dsound;
 import jdos.hardware.Memory;
 
 public class DSCaps {
-    static final public int DSCAPS_PRIMARYMONO = 0x00000001;
-    static final public int DSCAPS_PRIMARYSTEREO = 0x00000002;
-    static final public int DSCAPS_PRIMARY8BIT = 0x00000004;
-    static final public int DSCAPS_PRIMARY16BIT = 0x00000008;
-    static final public int DSCAPS_CONTINUOUSRATE = 0x00000010;
-    static final public int DSCAPS_EMULDRIVER = 0x00000020;
-    static final public int DSCAPS_CERTIFIED = 0x00000040;
-    static final public int DSCAPS_SECONDARYMONO = 0x00000100;
-    static final public int DSCAPS_SECONDARYSTEREO = 0x00000200;
-    static final public int DSCAPS_SECONDARY8BIT = 0x00000400;
-    static final public int DSCAPS_SECONDARY16BIT = 0x00000800;
+    public static final int DSCAPS_PRIMARYMONO = 0x00000001;
+    public static final int DSCAPS_PRIMARYSTEREO = 0x00000002;
+    public static final int DSCAPS_PRIMARY8BIT = 0x00000004;
+    public static final int DSCAPS_PRIMARY16BIT = 0x00000008;
+    public static final int DSCAPS_CONTINUOUSRATE = 0x00000010;
+    public static final int DSCAPS_EMULDRIVER = 0x00000020;
+    public static final int DSCAPS_CERTIFIED = 0x00000040;
+    public static final int DSCAPS_SECONDARYMONO = 0x00000100;
+    public static final int DSCAPS_SECONDARYSTEREO = 0x00000200;
+    public static final int DSCAPS_SECONDARY8BIT = 0x00000400;
+    public static final int DSCAPS_SECONDARY16BIT = 0x00000800;
     public int dwSize;
     public int dwFlags;
     public int dwMinSecondarySampleRate;
@@ -38,9 +38,11 @@ public class DSCaps {
     public int dwPlayCpuOverheadSwBuffers;
     public int dwReserved1;
     public int dwReserved2;
+
     public DSCaps() {
 
     }
+
     public DSCaps(int address) {
         dwSize = Memory.mem_readd(address);
         address += 4;

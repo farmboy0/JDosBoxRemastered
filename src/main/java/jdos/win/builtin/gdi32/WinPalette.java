@@ -12,11 +12,11 @@ public class WinPalette extends WinGDI {
         this.palette = palette;
     }
 
-    static public WinPalette create(int[] palette) {
+    public static WinPalette create(int[] palette) {
         return new WinPalette(nextObjectId(), palette);
     }
 
-    static public WinPalette get(int handle) {
+    public static WinPalette get(int handle) {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinPalette))
             return null;
@@ -24,7 +24,7 @@ public class WinPalette extends WinGDI {
     }
 
     // HPALETTE CreatePalette(const LOGPALETTE *lplgpl)
-    static public int CreatePalette(int lplgpl) {
+    public static int CreatePalette(int lplgpl) {
         if (lplgpl == 0)
             return 0;
         int count = readw(lplgpl + 2);
@@ -37,7 +37,7 @@ public class WinPalette extends WinGDI {
     }
 
     // UINT GetPaletteEntries(HPALETTE hpal, UINT iStartIndex, UINT nEntries, LPPALETTEENTRY lppe)
-    static public int GetPaletteEntries(int hpal, int iStartIndex, int nEntries, int lppe) {
+    public static int GetPaletteEntries(int hpal, int iStartIndex, int nEntries, int lppe) {
         WinPalette palette = WinPalette.get(hpal);
         if (palette == null)
             return 0;
@@ -51,12 +51,12 @@ public class WinPalette extends WinGDI {
     }
 
     // UINT GetSystemPaletteUse(HDC hdc)
-    static public int GetSystemPaletteUse(int hdc) {
+    public static int GetSystemPaletteUse(int hdc) {
         return SYSPAL_NOSTATIC;
     }
 
     // BOOL ResizePalette(HPALETTE hpal, UINT nEntries)
-    static public int ResizePalette(int hpal, int nEntries) {
+    public static int ResizePalette(int hpal, int nEntries) {
         WinPalette palette = WinPalette.get(hpal);
         if (palette == null)
             return FALSE;
@@ -71,7 +71,7 @@ public class WinPalette extends WinGDI {
     }
 
     // UINT SetPaletteEntries(HPALETTE hpal, UINT iStart, UINT cEntries, const PALETTEENTRY *lppe)
-    static public int SetPaletteEntries(int hpal, int iStart, int cEntries, int lppe) {
+    public static int SetPaletteEntries(int hpal, int iStart, int cEntries, int lppe) {
         WinPalette palette = WinPalette.get(hpal);
         if (palette == null)
             return 0;
@@ -81,7 +81,7 @@ public class WinPalette extends WinGDI {
     }
 
     // UINT SetSystemPaletteUse(HDC hdc, UINT uUsage)
-    static public int SetSystemPaletteUse(int hdc, int uUsage) {
+    public static int SetSystemPaletteUse(int hdc, int uUsage) {
         return SYSPAL_NOSTATIC;
     }
 
@@ -91,7 +91,9 @@ public class WinPalette extends WinGDI {
         return count;
     }
 
+    @Override
     public String toString() {
-        return "PALETTE size=" + palette.length + " 0=0x" + Ptr.toString(palette[0]) + " 1=0x" + Ptr.toString(palette[1]);
+        return "PALETTE size=" + palette.length + " 0=0x" + Ptr.toString(palette[0]) + " 1=0x"
+            + Ptr.toString(palette[1]);
     }
 }

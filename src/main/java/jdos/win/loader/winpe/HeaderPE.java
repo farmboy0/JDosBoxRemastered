@@ -1,10 +1,10 @@
 package jdos.win.loader.winpe;
 
-import jdos.win.builtin.WinAPI;
-import jdos.win.system.WinFile;
-
 import java.io.IOException;
 import java.io.OutputStream;
+
+import jdos.win.builtin.WinAPI;
+import jdos.win.system.WinFile;
 
 public class HeaderPE {
     public HeaderDOS dos = new HeaderDOS();
@@ -12,11 +12,11 @@ public class HeaderPE {
     public HeaderImageOptional imageOptional = new HeaderImageOptional();
     public HeaderImageSection[] imageSections = null;
 
-    static public boolean fastCheckWinPE(WinFile file) {
+    public static boolean fastCheckWinPE(WinFile file) {
         byte[] buffer = new byte[4];
         file.seek(HeaderDOS.SIZE - 4, WinAPI.SEEK_SET);
         file.read(buffer);
-        int offset = (buffer[0] & 0xFF) | (buffer[1] & 0xFF) << 8 | (buffer[2] & 0xFF) << 16 | (buffer[3] & 0xFF) << 24;
+        int offset = buffer[0] & 0xFF | (buffer[1] & 0xFF) << 8 | (buffer[2] & 0xFF) << 16 | (buffer[3] & 0xFF) << 24;
         file.seek(offset, WinAPI.SEEK_SET);
         file.read(buffer);
         return buffer[0] == 0x50 && buffer[1] == 0x45 && buffer[2] == 0 && buffer[3] == 0;

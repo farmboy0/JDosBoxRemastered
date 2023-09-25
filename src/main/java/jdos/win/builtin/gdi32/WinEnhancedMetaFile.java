@@ -7,11 +7,11 @@ public class WinEnhancedMetaFile extends WinObject {
         super(id);
     }
 
-    static public WinEnhancedMetaFile create(int style, int color, int hatch) {
+    public static WinEnhancedMetaFile create(int style, int color, int hatch) {
         return new WinEnhancedMetaFile(nextObjectId());
     }
 
-    static public WinEnhancedMetaFile get(int handle) {
+    public static WinEnhancedMetaFile get(int handle) {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinEnhancedMetaFile))
             return null;

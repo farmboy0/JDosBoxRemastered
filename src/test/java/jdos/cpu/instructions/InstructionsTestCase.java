@@ -1,16 +1,25 @@
 package jdos.cpu.instructions;
 
-import jdos.cpu.*;
+import jdos.cpu.CPU;
+import jdos.cpu.CPU_Regs;
+import jdos.cpu.Core_dynamic;
+import jdos.cpu.Core_switch;
+import jdos.cpu.Flags;
+import jdos.cpu.Paging;
 import jdos.cpu.core_dynamic.Compiler;
 import jdos.cpu.core_dynamic.DecodeBlock;
 import jdos.cpu.core_dynamic.Mod;
 import jdos.hardware.Memory;
 import jdos.hardware.Pic;
 import jdos.hardware.RAM;
-import jdos.misc.setup.*;
+import jdos.misc.setup.Prop_int;
+import jdos.misc.setup.Prop_multival_remain;
+import jdos.misc.setup.Prop_string;
+import jdos.misc.setup.Property;
+import jdos.misc.setup.Section_prop;
 import junit.framework.TestCase;
 
-abstract public class InstructionsTestCase extends TestCase {
+public abstract class InstructionsTestCase extends TestCase {
     protected final static int MEM_BASE_DS = 0x2000;
     protected final static int MEM_BASE_SS = 0x3000;
     // static CPU.CPU_Decoder decoder = Core_normal.CPU_Core_Normal_Run;
@@ -47,7 +56,7 @@ abstract public class InstructionsTestCase extends TestCase {
     }
 
     protected void pushIw(short iw) {
-        RAM.writebs(cseip++, (byte) (iw));
+        RAM.writebs(cseip++, (byte) iw);
         RAM.writebs(cseip++, (byte) (iw >> 8));
     }
 
@@ -613,6 +622,7 @@ abstract public class InstructionsTestCase extends TestCase {
         CPU_Regs.reg_edi.dword(0);
     }
 
+    @Override
     protected void setUp() throws java.lang.Exception {
         super.setUp();
 
@@ -627,17 +637,17 @@ abstract public class InstructionsTestCase extends TestCase {
         Core_switch.instruction_count = 1;
         Core_dynamic.CPU_Core_Dynamic_Cache_Init(true);
 
-        String[] cores = new String[]{"auto", "dynamic", "normal", "simple"};
+        String[] cores = { "auto", "dynamic", "normal", "simple" };
         Prop_string Pstring = cpu_prop.Add_string("core", Property.Changeable.WhenIdle, "auto");
         Pstring.Set_values(cores);
         Pstring.Set_help("CPU Core used in emulation. auto will switch to dynamic if available and appropriate.");
 
-        String[] cputype_values = {"auto", "386", "386_slow", "486_slow", "pentium_slow", "386_prefetch"};
+        String[] cputype_values = { "auto", "386", "386_slow", "486_slow", "pentium_slow", "386_prefetch" };
         Pstring = cpu_prop.Add_string("cputype", Property.Changeable.Always, "auto");
         Pstring.Set_values(cputype_values);
 
         Prop_multival_remain Pmulti_remain = cpu_prop.Add_multiremain("cycles", Property.Changeable.Always, " ");
-        String[] cyclest = {"auto", "fixed", "max", "%u"};
+        String[] cyclest = { "auto", "fixed", "max", "%u" };
         Pstring = Pmulti_remain.GetSection().Add_string("type", Property.Changeable.Always, "auto");
         Pmulti_remain.SetValue("auto");
         Pstring.Set_values(cyclest);
@@ -664,6 +674,7 @@ abstract public class InstructionsTestCase extends TestCase {
         Compiler.min_block_size = 1;
     }
 
+    @Override
     protected void tearDown() throws java.lang.Exception {
         dosbox_prop.ExecuteDestroy(true);
         cpu_prop.ExecuteDestroy(true);

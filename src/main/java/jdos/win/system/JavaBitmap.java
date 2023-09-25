@@ -1,13 +1,18 @@
 package jdos.win.system;
 
+import java.awt.Transparency;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.DataBufferByte;
+import java.awt.image.DataBufferUShort;
+import java.awt.image.IndexColorModel;
+import java.awt.image.WritableRaster;
+
 import jdos.cpu.Paging;
 import jdos.hardware.Memory;
 import jdos.win.Win;
 import jdos.win.builtin.WinAPI;
 import jdos.win.builtin.kernel32.WinProcess;
-
-import java.awt.*;
-import java.awt.image.*;
 
 public class JavaBitmap {
     public BufferedImage image;
@@ -29,7 +34,7 @@ public class JavaBitmap {
         this.palette = palette;
     }
 
-    static public IndexColorModel createColorModel(int bpp, int[] palette, boolean alpha) {
+    public static IndexColorModel createColorModel(int bpp, int[] palette, boolean alpha) {
         byte[] r = new byte[palette.length];
         byte[] g = new byte[palette.length];
         byte[] b = new byte[palette.length];
@@ -47,7 +52,7 @@ public class JavaBitmap {
             return new IndexColorModel(bpp, palette.length, r, g, b);
     }
 
-    static public int[] getDefaultPalette() {
+    public static int[] getDefaultPalette() {
         int[] table = new int[256];
         table[0] = 0x000000;
         table[1] = 0x800000;
@@ -63,7 +68,7 @@ public class JavaBitmap {
         for (int r = 0; r < 256; r += 51) {
             for (int g = 0; r < 256; r += 51) {
                 for (int b = 0; r < 256; r += 51) {
-                    table[pos++] = (r << 16) | (g << 8) | b;
+                    table[pos++] = r << 16 | g << 8 | b;
                 }
             }
         }
@@ -187,9 +192,10 @@ public class JavaBitmap {
             return address;
         }
         int size = width * height * bpp / 8;
-        address = (int) WinSystem.getCurrentProcess().addressSpace.getNextAddress(WinProcess.ADDRESS_VIDEO_BITMAP_START, size, true);
+        address = (int) WinSystem.getCurrentProcess().addressSpace.getNextAddress(WinProcess.ADDRESS_VIDEO_BITMAP_START,
+            size, true);
         WinSystem.getCurrentProcess().addressSpace.alloc(address, size);
-        int frameCount = (size + 0xFFF) >> 12;
+        int frameCount = size + 0xFFF >> 12;
         int frame = address >>> 12;
         int frameStart = frame;
         Paging.PageHandler handler;
@@ -210,14 +216,15 @@ public class JavaBitmap {
             Paging.writehandler[frame++] = handler;
         }
         if (WinAPI.LOG) {
-            System.out.println("JavaBitmap.map address=0x" + Long.toString(address & 0xFFFFFFFFl, 16) + " size=" + size + " frames=" + frameStart + "-" + frame + " handler=" + handler + " this=" + this);
+            System.out.println("JavaBitmap.map address=0x" + Long.toString(address & 0xFFFFFFFFL, 16) + " size=" + size
+                + " frames=" + frameStart + "-" + frame + " handler=" + handler + " this=" + this);
         }
         return address;
     }
 
     public void unmap() {
         int size = width * height;
-        int frameCount = (size + 0xFFF) >> 12;
+        int frameCount = size + 0xFFF >> 12;
         int frame = address >>> 12;
 
         for (int i = 0; i < frameCount; i++) {
@@ -226,7 +233,7 @@ public class JavaBitmap {
         }
         WinSystem.getCurrentProcess().addressSpace.free(address);
         if (WinAPI.LOG) {
-            System.out.println("JavaBitmap.unmap address=0x" + Long.toString(address & 0xFFFFFFFFl, 16));
+            System.out.println("JavaBitmap.unmap address=0x" + Long.toString(address & 0xFFFFFFFFL, 16));
         }
         address = 0;
         if (bpp == 8) {
@@ -238,7 +245,7 @@ public class JavaBitmap {
         }
     }
 
-    static private class PageHandler8 extends Paging.PageHandler {
+    private static class PageHandler8 extends Paging.PageHandler {
         byte[] data;
         int address;
 
@@ -246,33 +253,40 @@ public class JavaBitmap {
             this.address = address;
         }
 
+        @Override
         public /*Bitu*/int readb(/*PhysPt*/int addr) {
             int index = addr - address;
             return data[index] & 0xFF;
         }
 
+        @Override
         public /*Bitu*/int readw(/*PhysPt*/int addr) {
             int index = addr - address;
-            return (data[index] & 0xFF) | ((data[index + 1] & 0xFF) << 8);
+            return data[index] & 0xFF | (data[index + 1] & 0xFF) << 8;
         }
 
+        @Override
         public /*Bitu*/int readd(/*PhysPt*/int addr) {
             int index = addr - address;
-            return (data[index] & 0xFF) | ((data[index + 1] & 0xFF) << 8) | ((data[index + 2] & 0xFF) << 16) | ((data[index + 3] & 0xFF) << 24);
+            return data[index] & 0xFF | (data[index + 1] & 0xFF) << 8 | (data[index + 2] & 0xFF) << 16
+                | (data[index + 3] & 0xFF) << 24;
         }
 
-        public void writeb(/*PhysPt*/int addr,/*Bitu*/int val) {
+        @Override
+        public void writeb(/*PhysPt*/int addr, /*Bitu*/int val) {
             int index = addr - address;
             data[index] = (byte) val;
         }
 
-        public void writew(/*PhysPt*/int addr,/*Bitu*/int val) {
+        @Override
+        public void writew(/*PhysPt*/int addr, /*Bitu*/int val) {
             int index = addr - address;
             data[index] = (byte) val;
             data[index + 1] = (byte) (val >> 8);
         }
 
-        public void writed(/*PhysPt*/int addr,/*Bitu*/int val) {
+        @Override
+        public void writed(/*PhysPt*/int addr, /*Bitu*/int val) {
             int index = addr - address;
             data[index] = (byte) val;
             data[index + 1] = (byte) (val >> 8);
@@ -281,7 +295,7 @@ public class JavaBitmap {
         }
     }
 
-    static private class PageHandler16 extends Paging.PageHandler {
+    private static class PageHandler16 extends Paging.PageHandler {
         short[] data;
         int address;
 
@@ -289,60 +303,66 @@ public class JavaBitmap {
             this.address = address;
         }
 
+        @Override
         public /*Bitu*/int readb(/*PhysPt*/int addr) {
             int index = addr - address;
-            return (data[(index >> 1)] >>> ((index & 0x1) << 3)) & 0xFF;
+            return data[index >> 1] >>> ((index & 0x1) << 3) & 0xFF;
         }
 
+        @Override
         public /*Bitu*/int readw(/*PhysPt*/int addr) {
             int index = addr - address;
-            int rem = (index & 0x1);
+            int rem = index & 0x1;
             if (rem == 0) {
                 return data[index >>> 1];
             }
             short[] local = data;
-            index = (index >>> 1);
+            index = index >>> 1;
             return local[index] >>> 8 | local[index + 1] << 8;
         }
 
+        @Override
         public /*Bitu*/int readd(/*PhysPt*/int addr) {
             int index = addr - address;
-            int rem = (index & 0x1);
+            int rem = index & 0x1;
             if (rem == 0) {
                 index >>>= 1;
-                return (data[index] & 0xFFFF) | data[index + 1] << 16;
+                return data[index] & 0xFFFF | data[index + 1] << 16;
             }
-            return (readw(addr) & 0xFFFF) | readw(addr + 2) << 16;
+            return readw(addr) & 0xFFFF | readw(addr + 2) << 16;
         }
 
-        public void writeb(/*PhysPt*/int addr,/*Bitu*/int value) {
+        @Override
+        public void writeb(/*PhysPt*/int addr, /*Bitu*/int value) {
             int address = addr - this.address;
             int off = (address & 0x1) << 3;
             short[] local = data;
             int mask = ~(0xFF << off);
-            int index = (address >>> 1);
+            int index = address >>> 1;
             int val = local[index] & mask | (value & 0xFF) << off;
             local[index] = (short) val;
         }
 
-        public void writew(/*PhysPt*/int addr,/*Bitu*/int val) {
+        @Override
+        public void writew(/*PhysPt*/int addr, /*Bitu*/int val) {
             int address = addr - this.address;
-            int rem = (address & 0x1);
+            int rem = address & 0x1;
             if (rem == 0) {
                 data[address >>> 1] = (short) val;
             } else {
-                int index = (address >>> 1);
+                int index = address >>> 1;
                 short[] local = data;
                 int off = rem << 3;
-                local[index] = (short) ((local[index] & ~0xFF) | (val << off));
+                local[index] = (short) (local[index] & ~0xFF | val << off);
                 index++;
-                local[index] = (short) ((local[index] & 0xFF) | (val >>> (32 - off)));
+                local[index] = (short) (local[index] & 0xFF | val >>> 32 - off);
             }
         }
 
-        public void writed(/*PhysPt*/int addr,/*Bitu*/int val) {
+        @Override
+        public void writed(/*PhysPt*/int addr, /*Bitu*/int val) {
             int address = addr - this.address;
-            int rem = (address & 0x1);
+            int rem = address & 0x1;
             if (rem == 0) {
                 int index = address >>> 1;
                 data[index] = (short) val;

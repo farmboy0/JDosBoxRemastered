@@ -17,7 +17,7 @@ public class MemStruct {
         return 0;
     }
 
-    public void SaveIt(/*Bitu*/int size,/*PhysPt*/int addr,/*Bitu*/int val) {
+    public void SaveIt(/*Bitu*/int size, /*PhysPt*/int addr, /*Bitu*/int val) {
         switch (size) {
             case 1:
                 Memory.mem_writeb(pt + addr, val);
@@ -35,7 +35,7 @@ public class MemStruct {
         pt = Memory.PhysMake(seg, 0);
     }
 
-    void SetPt(/*Bit16u*/int seg,/*Bit16u*/int off) {
+    void SetPt(/*Bit16u*/int seg, /*Bit16u*/int off) {
         pt = Memory.PhysMake(seg, off);
     }
 

@@ -15,31 +15,31 @@ import jdos.util.IntRef;
 public class PCI extends Module_base {
     static final int PCI_MAX_PCIDEVICES = 10;
     static final int PCI_MAX_PCIFUNCTIONS = 8;
-    static final private Callback.Handler PCI_PM_Handler = new Callback.Handler() {
+    private static final Callback.Handler PCI_PM_Handler = new Callback.Handler() {
+        @Override
         public int call() {
             Log.log_msg("PCI PMode handler, function " + Integer.toString(CPU_Regs.reg_eax.word(), 16));
             return Callback.CBRET_NONE;
         }
 
+        @Override
         public String getName() {
             return "PCI_PM_Handler";
         }
     };
     // queued devices (PCI device registering requested before the PCI framework was initialized)
     private static final int max_rqueued_devices = 16;
-    static public PCI pci_interface = null;
-    public static Section.SectionFunction PCI_Init = new Section.SectionFunction() {
-        public void call(Section sec) {
-            Section_prop section = (Section_prop) sec;
-            if (section.Get_bool("enabled")) {
-                pci_interface = new PCI(sec);
-                new PCIHostBridge();
-                //new PCIIsaBridge();
-                sec.AddDestroyFunction(PCI_ShutDown, false);
-            }
+    public static PCI pci_interface = null;
+    public static Section.SectionFunction PCI_Init = sec -> {
+        Section_prop section = (Section_prop) sec;
+        if (section.Get_bool("enabled")) {
+            pci_interface = new PCI(sec);
+            new PCIHostBridge();
+            //new PCIIsaBridge();
+            sec.AddDestroyFunction(PCI.PCI_ShutDown, false);
         }
     };
-    private static /*Bit32u*/ int pci_caddress = 0;            // current PCI addressing
+    private static /*Bit32u*/ int pci_caddress = 0; // current PCI addressing
     // PCI address
     // 31    - set for a PCI access
     // 30-24 - 0
@@ -47,128 +47,135 @@ public class PCI extends Module_base {
     // 15-11 - device number (slot)	(0x0000f800)
     // 10- 8 - subfunction number	(0x00000700)
     //  7- 2 - config register #	(0x000000fc)
-    static private final IoHandler.IO_WriteHandler write_pci_addr = new IoHandler.IO_WriteHandler() {
-        public void call(int port, int val, int iolen) {
+    private static final IoHandler.IO_WriteHandler write_pci_addr = (port, val, iolen) -> {
+        if (Log.level <= LogSeverities.LOG_NORMAL)
+            Log.log(LogTypes.LOG_PCI, LogSeverities.LOG_NORMAL, "Write PCI address :=" + Integer.toString(val, 16));
+        pci_caddress = val;
+    };
+    private static final IoHandler.IO_ReadHandler read_pci_addr = (port, iolen) -> {
+        if (Log.level <= LogSeverities.LOG_NORMAL)
+            Log.log(LogTypes.LOG_PCI, LogSeverities.LOG_NORMAL,
+                "Read PCI address . " + Integer.toString(pci_caddress, 16));
+        return pci_caddress;
+    };
+    private static /*Bitu*/ int pci_devices_installed = 0; // number of registered PCI devices
+    private static final /*Bit8u*/ byte[][][] pci_cfg_data = new byte[PCI_MAX_PCIDEVICES][PCI_MAX_PCIFUNCTIONS][256]; // PCI configuration data
+    private static final PCI_Device[] pci_devices = new PCI_Device[PCI_MAX_PCIDEVICES]; // registered PCI devices
+    private static final IoHandler.IO_WriteHandler write_pci = (port, val, iolen) -> {
+        if (Log.level <= LogSeverities.LOG_NORMAL)
+            Log.log(LogTypes.LOG_PCI, LogSeverities.LOG_NORMAL,
+                "Write PCI data :=" + Integer.toString(val, 16) + " (len " + iolen + ")");
+
+        // check for enabled/bus 0
+        if ((pci_caddress & 0x80ff0000) == 0x80000000) {
+            int devnum = pci_caddress >> 11 & 0x1f;
+            int fctnum = pci_caddress >> 8 & 0x7;
+            int regnum = (pci_caddress & 0xfc) + (port & 0x03);
             if (Log.level <= LogSeverities.LOG_NORMAL)
-                Log.log(LogTypes.LOG_PCI, LogSeverities.LOG_NORMAL, "Write PCI address :=" + Integer.toString(val, 16));
-            pci_caddress = val;
+                Log.log(LogTypes.LOG_PCI, LogSeverities.LOG_NORMAL,
+                    "  Write to device " + Integer.toString(devnum, 16) + " register "
+                        + Integer.toString(regnum, 16) + " (function " + Integer.toString(fctnum, 16) + ") (:="
+                        + Integer.toString(val, 16) + ")");
+
+            if (devnum >= pci_devices_installed)
+                return;
+            PCI_Device masterdev = pci_devices[devnum];
+            if ((masterdev == null) || (fctnum > masterdev.NumSubdevices()))
+                return;
+
+            PCI_Device dev = masterdev.GetSubdevice(fctnum);
+            if (dev == null)
+                return;
+            System.out.println("PCI 0x" + Integer.toHexString(dev.PCIId()) + " write " + Integer.toHexString(regnum)
+                + ":" + Integer.toHexString(val));
+            // write data to PCI device/configuration
+            switch (iolen) {
+                case 1:
+                    write_pci_register(dev, regnum + 0, val & 0xff);
+                    break;
+                case 2:
+                    write_pci_register(dev, regnum + 0, val & 0xff);
+                    write_pci_register(dev, regnum + 1, val >> 8 & 0xff);
+                    break;
+                case 4:
+                    write_pci_register(dev, regnum + 0, val & 0xff);
+                    write_pci_register(dev, regnum + 1, val >> 8 & 0xff);
+                    write_pci_register(dev, regnum + 2, val >> 16 & 0xff);
+                    write_pci_register(dev, regnum + 3, val >> 24 & 0xff);
+                    break;
+            }
         }
     };
-    static private final IoHandler.IO_ReadHandler read_pci_addr = new IoHandler.IO_ReadHandler() {
-        public int call(int port, int iolen) {
+    private static final IoHandler.IO_ReadHandler read_pci = (port, iolen) -> {
+        if (Log.level <= LogSeverities.LOG_NORMAL)
+            Log.log(LogTypes.LOG_PCI, LogSeverities.LOG_NORMAL,
+                "Read PCI data . " + Integer.toString(pci_caddress, 16));
+
+        if ((pci_caddress & 0x80ff0000) == 0x80000000) {
+            /*Bit8u*/
+            int devnum = pci_caddress >> 11 & 0x1f;
+            /*Bit8u*/
+            int fctnum = pci_caddress >> 8 & 0x7;
+            /*Bit8u*/
+            int regnum = (pci_caddress & 0xfc) + (port & 0x03);
+            if (devnum >= pci_devices_installed)
+                return 0xffffffff;
             if (Log.level <= LogSeverities.LOG_NORMAL)
-                Log.log(LogTypes.LOG_PCI, LogSeverities.LOG_NORMAL, "Read PCI address . " + Integer.toString(pci_caddress, 16));
-            return pci_caddress;
-        }
-    };
-    private static /*Bitu*/ int pci_devices_installed = 0;    // number of registered PCI devices
-    private static final /*Bit8u*/ byte[][][] pci_cfg_data = new byte[PCI_MAX_PCIDEVICES][PCI_MAX_PCIFUNCTIONS][256];        // PCI configuration data
-    private static final PCI_Device[] pci_devices = new PCI_Device[PCI_MAX_PCIDEVICES];        // registered PCI devices
-    static private final IoHandler.IO_WriteHandler write_pci = new IoHandler.IO_WriteHandler() {
-        public void call(int port, int val, int iolen) {
-            if (Log.level <= LogSeverities.LOG_NORMAL)
-                Log.log(LogTypes.LOG_PCI, LogSeverities.LOG_NORMAL, "Write PCI data :=" + Integer.toString(val, 16) + " (len " + iolen + ")");
+                Log.log(LogTypes.LOG_PCI, LogSeverities.LOG_NORMAL,
+                    "  Read from device " + Integer.toString(devnum, 16) + " register "
+                        + Integer.toString(regnum, 16) + " (function " + Integer.toString(fctnum, 16) + "); addr "
+                        + Integer.toString(pci_caddress, 16));
 
-            // check for enabled/bus 0
-            if ((pci_caddress & 0x80ff0000) == 0x80000000) {
-                int devnum = (pci_caddress >> 11) & 0x1f;
-                int fctnum = (pci_caddress >> 8) & 0x7;
-                int regnum = (pci_caddress & 0xfc) + (port & 0x03);
-                if (Log.level <= LogSeverities.LOG_NORMAL)
-                    Log.log(LogTypes.LOG_PCI, LogSeverities.LOG_NORMAL, "  Write to device " + Integer.toString(devnum, 16) + " register " + Integer.toString(regnum, 16) + " (function " + Integer.toString(fctnum, 16) + ") (:=" + Integer.toString(val, 16) + ")");
+            PCI_Device masterdev = pci_devices[devnum];
+            if ((masterdev == null) || (fctnum > masterdev.NumSubdevices()))
+                return 0xffffffff;
 
-                if (devnum >= pci_devices_installed) return;
-                PCI_Device masterdev = pci_devices[devnum];
-                if (masterdev == null) return;
-                if (fctnum > masterdev.NumSubdevices()) return;
-
-                PCI_Device dev = masterdev.GetSubdevice(fctnum);
-                if (dev == null) return;
-                System.out.println("PCI 0x" + Integer.toHexString(dev.PCIId()) + " write " + Integer.toHexString(regnum) + ":" + Integer.toHexString(val));
-                // write data to PCI device/configuration
+            PCI_Device dev = masterdev.GetSubdevice(fctnum);
+            if (regnum > 3) {
+                int ii = 0;
+            }
+            if (dev != null) {
                 switch (iolen) {
-                    case 1:
-                        write_pci_register(dev, regnum + 0, (val & 0xff));
-                        break;
-                    case 2:
-                        write_pci_register(dev, regnum + 0, (val & 0xff));
-                        write_pci_register(dev, regnum + 1, ((val >> 8) & 0xff));
-                        break;
-                    case 4:
-                        write_pci_register(dev, regnum + 0, (val & 0xff));
-                        write_pci_register(dev, regnum + 1, ((val >> 8) & 0xff));
-                        write_pci_register(dev, regnum + 2, ((val >> 16) & 0xff));
-                        write_pci_register(dev, regnum + 3, ((val >> 24) & 0xff));
-                        break;
-                }
-            }
-        }
-    };
-    static private final IoHandler.IO_ReadHandler read_pci = new IoHandler.IO_ReadHandler() {
-        public int call(int port, int iolen) {
-            if (Log.level <= LogSeverities.LOG_NORMAL)
-                Log.log(LogTypes.LOG_PCI, LogSeverities.LOG_NORMAL, "Read PCI data . " + Integer.toString(pci_caddress, 16));
-
-            if ((pci_caddress & 0x80ff0000) == 0x80000000) {
-                /*Bit8u*/
-                int devnum = (pci_caddress >> 11) & 0x1f;
-                /*Bit8u*/
-                int fctnum = (pci_caddress >> 8) & 0x7;
-                /*Bit8u*/
-                int regnum = (pci_caddress & 0xfc) + (port & 0x03);
-                if (devnum >= pci_devices_installed) return 0xffffffff;
-                if (Log.level <= LogSeverities.LOG_NORMAL)
-                    Log.log(LogTypes.LOG_PCI, LogSeverities.LOG_NORMAL, "  Read from device " + Integer.toString(devnum, 16) + " register " + Integer.toString(regnum, 16) + " (function " + Integer.toString(fctnum, 16) + "); addr " + Integer.toString(pci_caddress, 16));
-
-                PCI_Device masterdev = pci_devices[devnum];
-                if (masterdev == null) return 0xffffffff;
-                if (fctnum > masterdev.NumSubdevices()) return 0xffffffff;
-
-                PCI_Device dev = masterdev.GetSubdevice(fctnum);
-                if (regnum > 3) {
-                    int ii = 0;
-                }
-                if (dev != null) {
-                    switch (iolen) {
-                        case 1: {
-                            int val8 = read_pci_register(dev, regnum) & 0xFF;
-                            System.out.println("PCI 0x" + Integer.toHexString(dev.PCIId()) + " read1 " + Integer.toHexString(regnum) + ":" + Integer.toHexString(val8));
-                            return val8;
-                        }
-                        case 2: {
-                            int val16 = read_pci_register(dev, regnum) & 0xFFFF;
-                            val16 |= (read_pci_register(dev, regnum + 1) << 8);
-                            System.out.println("PCI 0x" + Integer.toHexString(dev.PCIId()) + " read2 " + Integer.toHexString(regnum) + ":" + Integer.toHexString(val16));
-                            return val16;
-                        }
-                        case 4: {
-                            int val32 = read_pci_register(dev, regnum);
-                            val32 |= (read_pci_register(dev, regnum + 1) << 8);
-                            val32 |= (read_pci_register(dev, regnum + 2) << 16);
-                            val32 |= (read_pci_register(dev, regnum + 3) << 24);
-                            System.out.println("PCI 0x" + Integer.toHexString(dev.PCIId()) + " read4 " + Integer.toHexString(regnum) + ":" + Integer.toHexString(val32));
-                            return val32;
-                        }
-                        default:
-                            break;
+                    case 1: {
+                        int val8 = read_pci_register(dev, regnum) & 0xFF;
+                        System.out.println("PCI 0x" + Integer.toHexString(dev.PCIId()) + " read1 "
+                            + Integer.toHexString(regnum) + ":" + Integer.toHexString(val8));
+                        return val8;
                     }
+                    case 2: {
+                        int val16 = read_pci_register(dev, regnum) & 0xFFFF;
+                        val16 |= read_pci_register(dev, regnum + 1) << 8;
+                        System.out.println("PCI 0x" + Integer.toHexString(dev.PCIId()) + " read2 "
+                            + Integer.toHexString(regnum) + ":" + Integer.toHexString(val16));
+                        return val16;
+                    }
+                    case 4: {
+                        int val32 = read_pci_register(dev, regnum);
+                        val32 |= read_pci_register(dev, regnum + 1) << 8;
+                        val32 |= read_pci_register(dev, regnum + 2) << 16;
+                        val32 |= read_pci_register(dev, regnum + 3) << 24;
+                        System.out.println("PCI 0x" + Integer.toHexString(dev.PCIId()) + " read4 "
+                            + Integer.toHexString(regnum) + ":" + Integer.toHexString(val32));
+                        return val32;
+                    }
+                    default:
+                        break;
                 }
             }
-            return 0xffffffff;
         }
+        return 0xffffffff;
     };
     private static int num_rqueued_devices = 0;
-    public static Section.SectionFunction PCI_ShutDown = new Section.SectionFunction() {
-        public void call(Section section) {
-            pci_interface.destroy();
-            pci_interface = null;
-        }
+    public static Section.SectionFunction PCI_ShutDown = section -> {
+        pci_interface.destroy();
+        pci_interface = null;
     };
     private static final PCI_Device[] rqueued_devices = new PCI_Device[max_rqueued_devices];
     protected IoHandler.IO_WriteHandleObject[] PCI_WriteHandler = new IoHandler.IO_WriteHandleObject[5];
     protected IoHandler.IO_ReadHandleObject[] PCI_ReadHandler = new IoHandler.IO_ReadHandleObject[5];
     protected Callback callback_pci = new Callback();
     private boolean initialized;
+
     private PCI(Section configuration) {
         super(configuration);
         initialized = false;
@@ -194,25 +201,29 @@ public class PCI extends Module_base {
         }
     }
 
-    static public boolean PCI_IsInitialized() {
-        if (pci_interface != null) return pci_interface.IsInitialized();
+    public static boolean PCI_IsInitialized() {
+        if (pci_interface != null)
+            return pci_interface.IsInitialized();
         return false;
     }
 
-    static public /*RealPt*/int PCI_GetPModeInterface() {
+    public static /*RealPt*/int PCI_GetPModeInterface() {
         if (pci_interface != null) {
             return pci_interface.GetPModeCallbackPointer();
         }
         return 0;
     }
 
-    static void write_pci_register(PCI_Device dev,/*Bit8u*/int regnum,/*Bit8u*/int value) {
+    static void write_pci_register(PCI_Device dev, /*Bit8u*/int regnum, /*Bit8u*/int value) {
         // vendor/device/class IDs/header type/etc. are read-only
-        if ((regnum < 0x04) || ((regnum >= 0x06) && (regnum < 0x0c)) || (regnum == 0x0e)) return;
-        if (dev == null) return;
-        switch (pci_cfg_data[dev.PCIId()][dev.PCISubfunction()][0x0e] & 0x7f) {    // header-type specific handling
+        if (regnum < 0x04 || regnum >= 0x06 && regnum < 0x0c || regnum == 0x0e)
+            return;
+        if (dev == null)
+            return;
+        switch (pci_cfg_data[dev.PCIId()][dev.PCISubfunction()][0x0e] & 0x7f) { // header-type specific handling
             case 0x00:
-                if ((regnum >= 0x28) && (regnum < 0x30)) return;    // subsystem information is read-only
+                if (regnum >= 0x28 && regnum < 0x30)
+                    return; // subsystem information is read-only
                 break;
             case 0x01:
             case 0x02:
@@ -227,10 +238,11 @@ public class PCI extends Module_base {
         if (parsed_register >= 0) {
             pci_cfg_data[dev.PCIId()][dev.PCISubfunction()][regnum] = (/*Bit8u*/byte) (parsed_register & 0xff);
 
-            if (regnum >= 0x10 && regnum < 0x28 && (regnum % 4) == 3) {
+            if (regnum >= 0x10 && regnum < 0x28 && regnum % 4 == 3) {
                 int index = regnum / 4 * 4;
                 byte[] config = pci_cfg_data[dev.PCIId()][dev.PCISubfunction()];
-                int newBAR = (config[index] & 0xFF) | ((config[index + 1] & 0xFF) << 8) | ((config[index + 2] & 0xFF) << 16) | ((config[index + 3] & 0xFF) << 24);
+                int newBAR = config[index] & 0xFF | (config[index + 1] & 0xFF) << 8 | (config[index + 2] & 0xFF) << 16
+                    | (config[index + 3] & 0xFF) << 24;
                 if (newBAR != -1)
                     dev.setBAR((regnum - 0x10) / 4, newBAR);
             }
@@ -238,42 +250,43 @@ public class PCI extends Module_base {
     }
 
     // read single 8bit value from register file (special register treatment included)
-    static /*Bit8u*/int read_pci_register(PCI_Device dev,/*Bit8u*/int regnum) {
+    static /*Bit8u*/int read_pci_register(PCI_Device dev, /*Bit8u*/int regnum) {
         byte[] config = pci_cfg_data[dev.PCIId()][dev.PCISubfunction()];
         switch (regnum) {
             case 0x00:
-                return (dev.VendorID() & 0xff);
+                return dev.VendorID() & 0xff;
             case 0x01:
-                return ((dev.VendorID() >> 8) & 0xff);
+                return dev.VendorID() >> 8 & 0xff;
             case 0x02:
-                return (dev.DeviceID() & 0xff);
+                return dev.DeviceID() & 0xff;
             case 0x03:
-                return ((dev.DeviceID() >> 8) & 0xff);
+                return dev.DeviceID() >> 8 & 0xff;
             case 0x0e:
-                return (config[regnum] & 0x7f) | ((dev.NumSubdevices() > 0) ? 0x80 : 0x00);
+                return config[regnum] & 0x7f | (dev.NumSubdevices() > 0 ? 0x80 : 0x00);
             default:
                 break;
         }
 
         if (regnum >= 0x10 && regnum < 0x28) {
             int index = regnum / 4 * 4;
-            int value = (config[index] & 0xFF) | ((config[index + 1] & 0xFF) << 8) | ((config[index + 2] & 0xFF) << 16) | ((config[index + 3] & 0xFF) << 24);
+            int value = config[index] & 0xFF | (config[index + 1] & 0xFF) << 8 | (config[index + 2] & 0xFF) << 16
+                | (config[index + 3] & 0xFF) << 24;
             value = dev.getBAR((regnum - 0x10) / 4, value);
-            return (value >>> ((regnum % 4) * 8)) & 0xFF;
+            return value >>> regnum % 4 * 8 & 0xFF;
         }
 
         // call device routine for special actions and possibility to discard/remap register
         /*Bits*/
         int parsed_regnum = dev.ParseReadRegister(regnum);
-        if ((parsed_regnum >= 0) && (parsed_regnum < 256))
+        if (parsed_regnum >= 0 && parsed_regnum < 256)
             return config[parsed_regnum];
 
         /*Bit8u*/
         IntRef newval = new IntRef(0), mask = new IntRef(0);
         if (dev.OverrideReadRegister(regnum, newval, mask)) {
             /*Bit8u*/
-            int oldval = config[regnum] & (~mask.value);
-            return oldval | (newval.value & mask.value);
+            int oldval = config[regnum] & ~mask.value;
+            return oldval | newval.value & mask.value;
         }
 
         return 0xff;
@@ -314,23 +327,29 @@ public class PCI extends Module_base {
     }
 
     public int RegisterPCIDevice(PCI_Device device, int slot) {
-        if (device == null) return -1;
+        if (device == null)
+            return -1;
 
         if (slot >= 0) {
             // specific slot specified, basic check for validity
-            if (slot >= PCI_MAX_PCIDEVICES) return -1;
+            if (slot >= PCI_MAX_PCIDEVICES)
+                return -1;
         } else {
             // auto-add to new slot, check if one is still free
-            if (pci_devices_installed >= PCI_MAX_PCIDEVICES) return -1;
+            if (pci_devices_installed >= PCI_MAX_PCIDEVICES)
+                return -1;
         }
 
-        if (!initialized) InitializePCI();
+        if (!initialized)
+            InitializePCI();
 
-        if (slot < 0) slot = pci_devices_installed;    // use next slot
-        int subfunction = 0;    // main device unless specific already-occupied slot is requested
+        if (slot < 0)
+            slot = pci_devices_installed; // use next slot
+        int subfunction = 0; // main device unless specific already-occupied slot is requested
         if (pci_devices[slot] != null) {
             subfunction = pci_devices[slot].GetNextSubdeviceNumber();
-            if (subfunction < 0) Log.exit("Too many PCI subdevices!");
+            if (subfunction < 0)
+                Log.exit("Too many PCI subdevices!");
         }
 
         if (device.InitializeRegisters(pci_cfg_data[slot][subfunction])) {
@@ -378,14 +397,14 @@ public class PCI extends Module_base {
                     for (int sct = 1; sct < PCI_MAX_PCIFUNCTIONS; sct++) {
                         PCI_Device sdev = pci_devices[dct].GetSubdevice(sct);
                         if (sdev != null) {
-                            if ((sdev.VendorID() == vendor_id) && (sdev.DeviceID() == device_id)) {
+                            if (sdev.VendorID() == vendor_id && sdev.DeviceID() == device_id) {
                                 pci_devices[dct].RemoveSubdevice(sct);
                             }
                         }
                     }
                 }
 
-                if ((pci_devices[dct].VendorID() == vendor_id) && (pci_devices[dct].DeviceID() == device_id)) {
+                if (pci_devices[dct].VendorID() == vendor_id && pci_devices[dct].DeviceID() == device_id) {
                     //pci_devices[dct].destroy();
                     pci_devices[dct] = null;
                 }
@@ -395,17 +414,20 @@ public class PCI extends Module_base {
         // check if all devices have been removed
         boolean any_device_left = false;
         for (int dct = 0; dct < PCI_MAX_PCIDEVICES; dct++) {
-            if (dct >= pci_devices_installed) break;
+            if (dct >= pci_devices_installed)
+                break;
             if (pci_devices[dct] != null) {
                 any_device_left = true;
                 break;
             }
         }
-        if (!any_device_left) Deinitialize();
+        if (!any_device_left)
+            Deinitialize();
 
         int last_active_device = PCI_MAX_PCIDEVICES;
         for (int dct = 0; dct < PCI_MAX_PCIDEVICES; dct++) {
-            if (pci_devices[dct] != null) last_active_device = dct;
+            if (pci_devices[dct] != null)
+                last_active_device = dct;
         }
         if (last_active_device < pci_devices_installed)
             pci_devices_installed = last_active_device + 1;

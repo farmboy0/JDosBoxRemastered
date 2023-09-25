@@ -9,25 +9,26 @@ import jdos.win.system.WinFile;
 import jdos.win.system.WinObject;
 
 public class Lz32 extends BuiltinModule {
-    static final public int LZERROR_BADINHANDLE = -1;
-    static final public int LZERROR_BADOUTHANDLE = -2;
-    static final public int LZERROR_READ = -3;
-    static final public int LZERROR_WRITE = -4;
-    static final public int LZERROR_GLOBALLOC = -5;
-    static final public int LZERROR_GLOBLOCK = -6;
-    static final public int LZERROR_BADVALUE = -7;
-    static final public int LZERROR_UNKNOWNALG = -8;
-    static final private int LZ_TABLE_SIZE = 0x1000;
-    static private final int LZ_MAGIC_LEN = 8;
-    static private final int LZ_HEADER_LEN = 14;
-    static private final byte[] LZMagic = new byte[]{(byte) 'S', (byte) 'Z', (byte) 'D', (byte) 'D', (byte) 0x88, (byte) 0xf0, 0x27, 0x33};
+    public static final int LZERROR_BADINHANDLE = -1;
+    public static final int LZERROR_BADOUTHANDLE = -2;
+    public static final int LZERROR_READ = -3;
+    public static final int LZERROR_WRITE = -4;
+    public static final int LZERROR_GLOBALLOC = -5;
+    public static final int LZERROR_GLOBLOCK = -6;
+    public static final int LZERROR_BADVALUE = -7;
+    public static final int LZERROR_UNKNOWNALG = -8;
+    private static final int LZ_TABLE_SIZE = 0x1000;
+    private static final int LZ_MAGIC_LEN = 8;
+    private static final int LZ_HEADER_LEN = 14;
+    private static final byte[] LZMagic = { (byte) 'S', (byte) 'Z', (byte) 'D', (byte) 'D', (byte) 0x88, (byte) 0xf0,
+        0x27, 0x33 };
 
     public Lz32(Loader loader, int handle) {
         super(loader, "Lz32.dll", handle);
-        add(Lz32.class, "LZClose", new String[]{"hFile"});
-        add(Lz32.class, "LZOpenFileA", new String[]{"(STRING)lpFileName", "(HEX)lpReOpenBuf", "(HEX)wStyle"});
-        add(Lz32.class, "LZRead", new String[]{"hFile", "lpBuffer", "cbRead"});
-        add(Lz32.class, "LZSeek", new String[]{"hFile", "lOffset", "iOrigin"});
+        add(Lz32.class, "LZClose", new String[] { "hFile" });
+        add(Lz32.class, "LZOpenFileA", new String[] { "(STRING)lpFileName", "(HEX)lpReOpenBuf", "(HEX)wStyle" });
+        add(Lz32.class, "LZRead", new String[] { "hFile", "lpBuffer", "cbRead" });
+        add(Lz32.class, "LZSeek", new String[] { "hFile", "lOffset", "iOrigin" });
     }
 
     // void APIENTRY LZClose(INT hFile)
@@ -106,19 +107,17 @@ public class Lz32 extends BuiltinModule {
 
         int newwanted = lzs.realwanted;
         switch (iOrigin) {
-            case 1:    /* SEEK_CUR */
+            case 1: /* SEEK_CUR */
                 newwanted += lOffset;
                 break;
-            case 2:    /* SEEK_END */
+            case 2: /* SEEK_END */
                 newwanted = lzs.reallength - lOffset;
                 break;
             default:/* SEEK_SET */
                 newwanted = lOffset;
                 break;
         }
-        if (newwanted > lzs.reallength)
-            return LZERROR_BADVALUE;
-        if (newwanted < 0)
+        if ((newwanted > lzs.reallength) || (newwanted < 0))
             return LZERROR_BADVALUE;
         lzs.realwanted = newwanted;
         return newwanted;
@@ -141,14 +140,14 @@ public class Lz32 extends BuiltinModule {
         }
     }
 
-    static private void GET_FLUSH(LZState lzs) {
+    private static void GET_FLUSH(LZState lzs) {
         lzs.getcur = lzs.getlen;
     }
 
-    static private boolean DECOMPRESS_ONE_BYTE(LZState lzs, IntRef b) {
+    private static boolean DECOMPRESS_ONE_BYTE(LZState lzs, IntRef b) {
         if (lzs.stringlen != 0) {
             b.value = lzs.table[lzs.stringpos];
-            lzs.stringpos = (lzs.stringpos + 1) & 0xFFF;
+            lzs.stringpos = lzs.stringpos + 1 & 0xFFF;
             lzs.stringlen--;
         } else {
             if ((lzs.bytetype & 0x100) == 0) {
@@ -163,9 +162,7 @@ public class Lz32 extends BuiltinModule {
                 IntRef b1 = new IntRef(0);
                 IntRef b2 = new IntRef(0);
 
-                if (1 != GET(lzs, b1))
-                    return false;
-                if (1 != GET(lzs, b2))
+                if ((1 != GET(lzs, b1)) || (1 != GET(lzs, b2)))
                     return false;
                 /* Format:
                  * b1 b2
@@ -173,11 +170,11 @@ public class Lz32 extends BuiltinModule {
                  * where CAB is the stringoffset in the table
                  * and D+3 is the len of the string
                  */
-                lzs.stringpos = (b1.value & 0xFF) | ((b2.value & 0xf0) << 4);
+                lzs.stringpos = b1.value & 0xFF | (b2.value & 0xf0) << 4;
                 lzs.stringlen = (b2.value & 0xf) + 2;
                 /* 3, but we use a  byte already below ... */
                 b.value = lzs.table[lzs.stringpos];
-                lzs.stringpos = (lzs.stringpos + 1) & 0xFFF;
+                lzs.stringpos = lzs.stringpos + 1 & 0xFFF;
             }
             lzs.bytetype >>= 1;
         }
@@ -194,7 +191,7 @@ public class Lz32 extends BuiltinModule {
      * return UNKNOWNALG for unknown algorithm
      * returns lzfileheader in *head
      */
-    static private int read_header(WinFile file, lzfileheader head) {
+    private static int read_header(WinFile file, lzfileheader head) {
         file.seek(0, SEEK_SET);
         head.read(file);
 
@@ -205,7 +202,7 @@ public class Lz32 extends BuiltinModule {
         return 1;
     }
 
-    static private int LZInit(int hFile) {
+    private static int LZInit(int hFile) {
         WinFile file = WinFile.get(hFile);
         lzfileheader head = new lzfileheader();
 
@@ -231,11 +228,12 @@ public class Lz32 extends BuiltinModule {
         return lzs.handle;
     }
 
-    static private class lzfileheader {
+    private static class lzfileheader {
         byte[] magic = new byte[LZ_MAGIC_LEN];
         int compressiontype;
         int lastchar;
         int reallength;
+
         public lzfileheader() {
         }
 
@@ -247,28 +245,30 @@ public class Lz32 extends BuiltinModule {
         }
     }
 
-    static private class LZState extends WinObject {
-        WinFile realfd;        /* the real filedescriptor */
-        int lastchar;    /* the last char of the filename */
-        int reallength;    /* the decompressed length of the file */
-        int realcurrent;    /* the position the decompressor currently is */
-        int realwanted;    /* the position the user wants to read from */
-        byte[] table = new byte[LZ_TABLE_SIZE];    /* the rotating LZ table */
-        int curtabent;    /* CURrent TABle ENTry */
-        int stringlen;    /* length and position of current string */
-        int stringpos;    /* from stringtable */
-        int bytetype;    /* bitmask within blocks */
-        byte[] get = new byte[2048];        /* GETLEN bytes */
-        int getcur;        /* current read */
-        int getlen;        /* length last got */
+    private static class LZState extends WinObject {
+        WinFile realfd; /* the real filedescriptor */
+        int lastchar; /* the last char of the filename */
+        int reallength; /* the decompressed length of the file */
+        int realcurrent; /* the position the decompressor currently is */
+        int realwanted; /* the position the user wants to read from */
+        byte[] table = new byte[LZ_TABLE_SIZE]; /* the rotating LZ table */
+        int curtabent; /* CURrent TABle ENTry */
+        int stringlen; /* length and position of current string */
+        int stringpos; /* from stringtable */
+        int bytetype; /* bitmask within blocks */
+        byte[] get = new byte[2048]; /* GETLEN bytes */
+        int getcur; /* current read */
+        int getlen; /* length last got */
+
         public LZState(int handle) {
             super(handle);
         }
 
-        static public LZState create() {
+        public static LZState create() {
             return new LZState(nextObjectId());
         }
 
+        @Override
         protected void onFree() {
             realfd.close();
         }

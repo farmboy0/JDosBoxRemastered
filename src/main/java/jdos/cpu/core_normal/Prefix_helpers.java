@@ -15,62 +15,22 @@ public class Prefix_helpers extends Instructions {
     public static final int CONTINUE = 6;
     public static final int RETURN = 7;
     public static final int DECODE_END = 8;
-    static protected final int[] AddrMaskTable1 = {0x0000ffff, 0xffffffff};
+    protected static final int[] AddrMaskTable1 = { 0x0000ffff, 0xffffffff };
     protected static final int OPCODE_NONE = 0x000;
     protected static final int OPCODE_0F = 0x100;
     protected static final int OPCODE_SIZE = 0x200;
-    static protected int r;
-    static protected final Instructions.loadw rw_l = new Instructions.loadw() {
-        final public int call() {
-            return Modrm.Getrw[r].word();
-        }
-    };
-    static protected final Instructions.savew rw_s = new Instructions.savew() {
-        final public void call(int value) {
-            Modrm.Getrw[r].word(value);
-        }
-    };
-    static protected final Instructions.loadb earb_l = new Instructions.loadb() {
-        final public int call() {
-            return Modrm.GetEArb[r].get();
-        }
-    };
-    static protected final Instructions.saveb earb_s = new Instructions.saveb() {
-        final public void call(int value) {
-            Modrm.GetEArb[r].set(value);
-        }
-    };
-    static protected final Instructions.loadw earw_l = new Instructions.loadw() {
-        final public int call() {
-            return Modrm.GetEArw[r].word();
-        }
-    };
-    static protected final Instructions.savew earw_s = new Instructions.savew() {
-        final public void call(int value) {
-            Modrm.GetEArw[r].word(value);
-        }
-    };
-    static protected int m;
-    static protected final Instructions.loadb b_l = new Instructions.loadb() {
-        final public int call() {
-            return Memory.mem_readb(m);
-        }
-    };
-    static protected final Instructions.saveb b_s = new Instructions.saveb() {
-        final public void call(int value) {
-            Memory.mem_writeb(m, value);
-        }
-    };
-    static protected final Instructions.loadw w_l = new Instructions.loadw() {
-        final public int call() {
-            return Memory.mem_readw(m);
-        }
-    };
-    static protected final Instructions.savew w_s = new Instructions.savew() {
-        final public void call(int value) {
-            Memory.mem_writew(m, value);
-        }
-    };
+    protected static int r;
+    protected static final Instructions.loadw rw_l = () -> Modrm.Getrw[r].word();
+    protected static final Instructions.savew rw_s = value -> Modrm.Getrw[r].word(value);
+    protected static final Instructions.loadb earb_l = () -> Modrm.GetEArb[r].get();
+    protected static final Instructions.saveb earb_s = value -> Modrm.GetEArb[r].set(value);
+    protected static final Instructions.loadw earw_l = () -> Modrm.GetEArw[r].word();
+    protected static final Instructions.savew earw_s = value -> Modrm.GetEArw[r].word(value);
+    protected static int m;
+    protected static final Instructions.loadb b_l = () -> Memory.mem_readb(m);
+    protected static final Instructions.saveb b_s = value -> Memory.mem_writeb(m, value);
+    protected static final Instructions.loadw w_l = () -> Memory.mem_readw(m);
+    protected static final Instructions.savew w_s = value -> Memory.mem_writew(m, value);
 
 //    #define RMGdEdOp3(inst,op3)													\
 //	{																		\
@@ -79,8 +39,8 @@ public class Prefix_helpers extends Instructions {
 //		else {GetEAa;inst(*rmrd,LoadMd(eaa),op3,LoadRd,SaveRd);}			\
 //	}
 
-    static protected int TEST_PREFIX_ADDR() {
-        return (prefixes & PREFIX_ADDR);
+    protected static int TEST_PREFIX_ADDR() {
+        return prefixes & PREFIX_ADDR;
     }
 
     public static int RUNEXCEPTION() {
@@ -93,16 +53,16 @@ public class Prefix_helpers extends Instructions {
         return CONTINUE;
     }
 
-    static protected int GETIP() {
-        return (cseip - CPU_Regs.reg_csPhys.dword);
+    protected static int GETIP() {
+        return cseip - CPU_Regs.reg_csPhys.dword;
     }
 
-    static public void SAVEIP() {
+    public static void SAVEIP() {
         CPU_Regs.reg_eip = GETIP();
         //System.out.println("SAVEIP: "+CPU_Regs.reg_eip);
     }
 
-    static protected void LOADIP() {
+    protected static void LOADIP() {
         cseip = CPU_Regs.reg_csPhys.dword + CPU_Regs.reg_eip;
         //System.out.println("LOADIP: "+cseip);
     }
@@ -155,15 +115,15 @@ public class Prefix_helpers extends Instructions {
         /*Bit8u*/
         int rm = Fetchb();
         if (rm >= 0xc0) {
-            Modrm.GetEArb[rm].set((short) ((cc) ? 1 : 0));
+            Modrm.GetEArb[rm].set((short) (cc ? 1 : 0));
         } else {
-            Memory.mem_writeb(getEaa(rm), (cc) ? 1 : 0);
+            Memory.mem_writeb(getEaa(rm), cc ? 1 : 0);
         }
     }
 
-    static protected void GRP2B(final int rm, int blah) {
+    protected static void GRP2B(final int rm, int blah) {
         /*Bitu*/
-        int which = (rm >> 3) & 7;
+        int which = rm >> 3 & 7;
         if (rm >= 0xc0) {
             /*Bit8u*/
             int val = blah & 0x1f;
@@ -224,9 +184,9 @@ public class Prefix_helpers extends Instructions {
         }
     }
 
-    static protected void GRP2B_fetchb(final int rm) {
+    protected static void GRP2B_fetchb(final int rm) {
         /*Bitu*/
-        int which = (rm >> 3) & 7;
+        int which = rm >> 3 & 7;
         if (rm >= 0xc0) {
             int blah = Fetchb();
             /*Bit8u*/
@@ -289,9 +249,9 @@ public class Prefix_helpers extends Instructions {
         }
     }
 
-    static protected void GRP2W(final int rm, int blah) {
+    protected static void GRP2W(final int rm, int blah) {
         /*Bitu*/
-        int which = (rm >> 3) & 7;
+        int which = rm >> 3 & 7;
         if (rm >= 0xc0) {
             /*Bit8u*/
             int val = blah & 0x1f;
@@ -353,9 +313,9 @@ public class Prefix_helpers extends Instructions {
         }
     }
 
-    static protected void GRP2W_fetchb(final int rm) {
+    protected static void GRP2W_fetchb(final int rm) {
         /*Bitu*/
-        int which = (rm >> 3) & 7;
+        int which = rm >> 3 & 7;
         if (rm >= 0xc0) {
             int blah = Fetchb();
             /*Bit8u*/
@@ -419,13 +379,14 @@ public class Prefix_helpers extends Instructions {
         }
     }
 
-    static protected void GRP2D(final int rm, int blah) {
+    protected static void GRP2D(final int rm, int blah) {
         /*Bitu*/
-        int which = (rm >> 3) & 7;
+        int which = rm >> 3 & 7;
         if (rm >= 0xc0) {
             /*Bit8u*/
             int val = blah & 0x1f;
-            if (val == 0) return;
+            if (val == 0)
+                return;
             Reg r = Modrm.GetEArd[rm];
             switch (which) {
                 case 0x00:
@@ -456,7 +417,8 @@ public class Prefix_helpers extends Instructions {
             /*Bit8u*/
             int val = blah & 0x1f;
 
-            if (val == 0) return;
+            if (val == 0)
+                return;
             switch (which) {
                 case 0x00:
                     Memory.mem_writed(eaa, ROLD(val, Memory.mem_readd(eaa)));

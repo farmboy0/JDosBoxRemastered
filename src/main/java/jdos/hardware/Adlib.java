@@ -5,14 +5,14 @@ import jdos.misc.setup.Section;
 import jdos.misc.setup.Section_prop;
 
 public class Adlib {
-    static private final int HW_OPL2 = 0;
-    static private final int HW_DUALOPL2 = 1;
-    static private final int HW_OPL3 = 2;
+    private static final int HW_OPL2 = 0;
+    private static final int HW_DUALOPL2 = 1;
+    private static final int HW_OPL3 = 2;
     //The type of handler this is
-    static final private int MODE_OPL2 = 0;
-    static final private int MODE_DUALOPL2 = 1;
+    private static final int MODE_OPL2 = 0;
+    private static final int MODE_DUALOPL2 = 1;
 
-//    static private final class Capture {
+//    private static final class Capture {
 //        //127 entries to go from raw data to registers
 //        /*Bit8u*/short ToReg[127];
 //        //How many entries in the ToPort are used
@@ -227,42 +227,35 @@ public class Adlib {
 //        }
 //
 //    };
-    static final private int MODE_OPL3 = 2;
+    private static final int MODE_OPL3 = 2;
     private static Module module = null;
-    static private final Mixer.MIXER_Handler OPL_CallBack = new Mixer.MIXER_Handler() {
-        public void call(/*Bitu*/int len) {
-            module.handler.Generate(module.mixerChan, len);
-            //Disable the sound generation after 30 seconds of silence
-            if ((Pic.PIC_Ticks - module.lastUsed) > 30000) {
-                /*Bitu*/
-                int i;
-                for (i = 0xb0; i < 0xb9; i++)
-                    if ((module.cache[i] & 0x20) != 0 || (module.cache[i + 0x100] & 0x20) != 0) break;
-                if (i == 0xb9) module.mixerChan.Enable(false);
-                else module.lastUsed = Pic.PIC_Ticks;
-            }
+    private static final Mixer.MIXER_Handler OPL_CallBack = len -> {
+        module.handler.Generate(module.mixerChan, len);
+        //Disable the sound generation after 30 seconds of silence
+        if (Pic.PIC_Ticks - module.lastUsed > 30000) {
+            /*Bitu*/
+            int i;
+            for (i = 0xb0; i < 0xb9; i++)
+                if ((module.cache[i] & 0x20) != 0 || (module.cache[i + 0x100] & 0x20) != 0)
+                    break;
+            if (i == 0xb9)
+                module.mixerChan.Enable(false);
+            else
+                module.lastUsed = Pic.PIC_Ticks;
         }
     };
-    static final private IoHandler.IO_ReadHandler OPL_Read = new IoHandler.IO_ReadHandler() {
-        public /*Bitu*/int call(/*Bitu*/int port, /*Bitu*/int iolen) {
-            return module.PortRead(port, iolen);
-        }
-    };
-    static final private IoHandler.IO_WriteHandler OPL_Write = new IoHandler.IO_WriteHandler() {
-        public void call(/*Bitu*/int port, /*Bitu*/int val, /*Bitu*/int iolen) {
-            module.PortWrite(port, (short) val, iolen);
-        }
-    };
+    private static final IoHandler.IO_ReadHandler OPL_Read = (port, iolen) -> module.PortRead(port, iolen);
+    private static final IoHandler.IO_WriteHandler OPL_Write = (port, val, iolen) -> module.PortWrite(port, (short) val, iolen);
 
 //The cache for 2 chips or an opl3
 //    typedef /*Bit8u*/short RegisterCache[512];
 
-    static public void OPL_Init(Section sec, int oplmode) {
+    public static void OPL_Init(Section sec, int oplmode) {
         Module.oplmode = oplmode;
         module = new Module(sec);
     }
 
-    static public void OPL_ShutDown(Section sec) {
+    public static void OPL_ShutDown(Section sec) {
         module = null;
     }
 
@@ -280,21 +273,31 @@ public class Adlib {
         void Init( /*Bitu*/long rate);
     }
 
-    static private class RawHeader {
-        /*Bit8u*/ byte[] id = new byte[8];                /* 0x00, "DBRAWOPL" */
-        /*Bit16u*/ int versionHigh;            /* 0x08, size of the data following the m */
-        /*Bit16u*/ int versionLow;            /* 0x0a, size of the data following the m */
-        /*Bit32u*/ long commands;            /* 0x0c, Bit32u amount of command/data pairs */
-        /*Bit32u*/ long milliseconds;        /* 0x10, Bit32u Total milliseconds of data in this chunk */
-        /*Bit8u*/ short hardware;                /* 0x14, Bit8u Hardware Type 0=opl2,1=dual-opl2,2=opl3 */
-        /*Bit8u*/ short format;                /* 0x15, Bit8u Format 0=cmd/data interleaved, 1 maybe all cdms, followed by all data */
-        /*Bit8u*/ short compression;            /* 0x16, Bit8u Compression Type, 0 = No Compression */
-        /*Bit8u*/ short delay256;                /* 0x17, Bit8u Delay 1-256 msec command */
-        /*Bit8u*/ short delayShift8;            /* 0x18, Bit8u (delay + 1)*256 */
-        /*Bit8u*/ short conversionTableSize;    /* 0x191, Bit8u Raw Conversion Table size */
+    private static class RawHeader {
+        /*Bit8u*/ byte[] id = new byte[8];
+        /* 0x00, "DBRAWOPL" */
+        /*Bit16u*/ int versionHigh;
+        /* 0x08, size of the data following the m */
+        /*Bit16u*/ int versionLow;
+        /* 0x0a, size of the data following the m */
+        /*Bit32u*/ long commands;
+        /* 0x0c, Bit32u amount of command/data pairs */
+        /*Bit32u*/ long milliseconds;
+        /* 0x10, Bit32u Total milliseconds of data in this chunk */
+        /*Bit8u*/ short hardware;
+        /* 0x14, Bit8u Hardware Type 0=opl2,1=dual-opl2,2=opl3 */
+        /*Bit8u*/ short format;
+        /* 0x15, Bit8u Format 0=cmd/data interleaved, 1 maybe all cdms, followed by all data */
+        /*Bit8u*/ short compression;
+        /* 0x16, Bit8u Compression Type, 0 = No Compression */
+        /*Bit8u*/ short delay256;
+        /* 0x17, Bit8u Delay 1-256 msec command */
+        /*Bit8u*/ short delayShift8;
+        /* 0x18, Bit8u (delay + 1)*256 */
+        /*Bit8u*/ short conversionTableSize; /* 0x191, Bit8u Raw Conversion Table size */
     }
 
-    static final private class Timer {
+    private static final class Timer {
         double start;
         double delay;
         boolean enabled, overflow, masked;
@@ -324,7 +327,7 @@ public class Adlib {
             overflow = false;
             if (delay == 0 || !enabled)
                 return;
-            double delta = (time - start);
+            double delta = time - start;
             double rem = delta % delay;
             double next = delay - rem;
             start = time + next;
@@ -346,9 +349,9 @@ public class Adlib {
 
     }
 
-/*
-	Save the current state of the operators as instruments in an reality adlib tracker file
-*/
+    /*
+    	Save the current state of the operators as instruments in an reality adlib tracker file
+    */
 //    static void SaveRad() {
 //        char b[16 * 1024];
 //        int w = 0;
@@ -483,12 +486,12 @@ public class Adlib {
         }
     }
 
-    static private class Module extends Module_base {
+    private static class Module extends Module_base {
         public static int oplmode = Hardware.OPL_none;
-        static private final Reg reg = new Reg();
+        private static final Reg reg = new Reg();
         public Mixer.MixerChannel mixerChan;
-        public /*Bit32u*/ long lastUsed;                //Ticks when adlib was last used to turn of mixing after a few second
-        public Handler handler;                //Handler that will generate the sound
+        public /*Bit32u*/ long lastUsed; //Ticks when adlib was last used to turn of mixing after a few second
+        public Handler handler; //Handler that will generate the sound
         //        public RegisterCache cache;
         public short[] cache = new short[512];
         //        public Capture capture;
@@ -498,6 +501,7 @@ public class Adlib {
         private final Mixer.MixerObject mixerObject = new Mixer.MixerObject();
         //Mode we're running in
         private int mode;
+
         public Module(Section configuration) {
             super(configuration);
             for (int i = 0; i < ReadHandler.length; i++)
@@ -675,7 +679,7 @@ public class Adlib {
                         return 0xff;
                     }
                     //Make sure the low /*Bits*/int are 6 on opl2
-                    return chip[(port >> 1) & 1].Read() | 0x6;
+                    return chip[port >> 1 & 1].Read() | 0x6;
             }
             return 0;
         }
@@ -696,14 +700,14 @@ public class Adlib {
         }
 
         //Last selected address in the chip for the different modes
-        static private class Reg {
+        private static class Reg {
             /*Bit32u*/ int normal;
 
             /*Bit8u*/short dual(int index) {
                 if (index == 0)
                     return (short) (normal & 0xFF);
                 else
-                    return (short) ((normal >> 8) & 0xFF);
+                    return (short) (normal >> 8 & 0xFF);
             }
 
             /*Bit8u*/void dual(int index, int value) {
@@ -712,7 +716,7 @@ public class Adlib {
                     normal |= value & 0xFF;
                 } else {
                     normal &= 0xFFFF00FF;
-                    normal |= (value << 8) & 0xFF;
+                    normal |= value << 8 & 0xFF;
                 }
             }
         }

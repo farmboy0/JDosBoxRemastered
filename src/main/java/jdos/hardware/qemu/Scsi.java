@@ -25,18 +25,18 @@ public class Scsi {
     /*
      *  SENSE KEYS
      */
-    static public final int NO_SENSE = 0x00;
-    static public final int NOT_READY = 0x02;
-    static public final int ILLEGAL_REQUEST = 0x05;
-    static public final int UNIT_ATTENTION = 0x06;
+    public static final int NO_SENSE = 0x00;
+    public static final int NOT_READY = 0x02;
+    public static final int ILLEGAL_REQUEST = 0x05;
+    public static final int UNIT_ATTENTION = 0x06;
 
     /* Some generally useful CD-ROM information */
     public static final int CD_MINS = 80; /* max. minutes per CD */
     public static final int CD_SECS = 60; /* seconds per minute */
     public static final int CD_FRAMES = 75; /* frames per second */
     public static final int CD_FRAMESIZE = 2048; /* bytes per frame, "cooked" mode */
-    public static final int CD_MAX_BYTES = (CD_MINS * CD_SECS * CD_FRAMES * CD_FRAMESIZE);
-    public static final int CD_MAX_SECTORS = (CD_MAX_BYTES / 512);
+    public static final int CD_MAX_BYTES = CD_MINS * CD_SECS * CD_FRAMES * CD_FRAMESIZE;
+    public static final int CD_MAX_SECTORS = CD_MAX_BYTES / 512;
 
     /* Mode page codes for mode sense/set */
     public static final int MODE_PAGE_R_W_ERROR = 0x01;

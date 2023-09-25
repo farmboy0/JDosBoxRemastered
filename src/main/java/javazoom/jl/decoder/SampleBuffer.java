@@ -26,8 +26,8 @@
 package javazoom.jl.decoder;
 
 /**
- * The <code>SampleBuffer</code> class implements an output buffer
- * that provides storage for a fixed size block of samples.
+ * The <code>SampleBuffer</code> class implements an output buffer that provides
+ * storage for a fixed size block of samples.
  */
 public class SampleBuffer extends Obuffer {
     private final short[] buffer;
@@ -68,20 +68,21 @@ public class SampleBuffer extends Obuffer {
     /**
      * Takes a 16 Bit PCM sample.
      */
+    @Override
     public void append(int channel, short value) {
         buffer[bufferp[channel]] = value;
         bufferp[channel] += channels;
     }
 
+    @Override
     public void appendSamples(int channel, float[] f) {
         int pos = bufferp[channel];
 
         short s;
         float fs;
-        for (int i = 0; i < 32; ) {
+        for (int i = 0; i < 32;) {
             fs = f[i++];
-            fs = (fs > 32767.0f ? 32767.0f
-                    : (fs < -32767.0f ? -32767.0f : fs));
+            fs = fs > 32767.0f ? 32767.0f : fs < -32767.0f ? -32767.0f : fs;
 
             s = (short) fs;
             buffer[pos] = s;
@@ -91,10 +92,10 @@ public class SampleBuffer extends Obuffer {
         bufferp[channel] = pos;
     }
 
-
     /**
      * Write the samples to the file (Random Acces).
      */
+    @Override
     public void write_buffer(int val) {
 
         //for (int i = 0; i < channels; ++i)
@@ -102,12 +103,14 @@ public class SampleBuffer extends Obuffer {
 
     }
 
+    @Override
     public void close() {
     }
 
     /**
      *
      */
+    @Override
     public void clear_buffer() {
         for (int i = 0; i < channels; ++i)
             bufferp[i] = (short) i;
@@ -116,6 +119,7 @@ public class SampleBuffer extends Obuffer {
     /**
      *
      */
+    @Override
     public void set_stop_flag() {
     }
 }

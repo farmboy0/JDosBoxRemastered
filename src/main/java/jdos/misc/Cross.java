@@ -1,13 +1,13 @@
 package jdos.misc;
 
+import java.io.File;
+
 import jdos.Dosbox;
 import jdos.misc.setup.Config;
 import jdos.util.BooleanRef;
 import jdos.util.FileHelper;
 import jdos.util.HomeDirectory;
 import jdos.util.StringRef;
-
-import java.io.File;
 
 public class Cross {
     public static boolean isWindows() {
@@ -19,8 +19,9 @@ public class Cross {
         return label.indexOf("bd-rom") >= 0 || label.indexOf("dvd") >= 0;
     }
 
-    static public dir_information open_directory(String dirname) {
-        if (!new File(dirname).exists()) return null;
+    public static dir_information open_directory(String dirname) {
+        if (!new File(dirname).exists())
+            return null;
         dir_information result = new dir_information();
 
         result.list = new File(dirname).listFiles();
@@ -28,31 +29,34 @@ public class Cross {
         return result;
     }
 
-    static public boolean read_directory_first(dir_information dirp, StringRef entry_name, BooleanRef is_directory) {
-        if (dirp.list.length == 0) return false;
+    public static boolean read_directory_first(dir_information dirp, StringRef entry_name, BooleanRef is_directory) {
+        if (dirp.list.length == 0)
+            return false;
         entry_name.value = dirp.list[0].getName();
         is_directory.value = dirp.list[0].isDirectory();
         dirp.index = 0;
         return true;
     }
 
-    static public boolean read_directory_next(dir_information dirp, StringRef entry_name, BooleanRef is_directory) {
-        if (dirp.index + 1 >= dirp.list.length) return false;
+    public static boolean read_directory_next(dir_information dirp, StringRef entry_name, BooleanRef is_directory) {
+        if (dirp.index + 1 >= dirp.list.length)
+            return false;
         dirp.index++;
         entry_name.value = dirp.list[dirp.index].getName();
         is_directory.value = dirp.list[dirp.index].isDirectory();
         return true;
     }
 
-    static public void close_directory(dir_information dirp) {
+    public static void close_directory(dir_information dirp) {
     }
 
-    static public String ResolveHomedir(String temp_line) {
+    public static String ResolveHomedir(String temp_line) {
         return FileHelper.resolve_path(temp_line);
     }
 
-    static public String CreatePlatformConfigDir() {
-        if (!Dosbox.allPrivileges) return "";
+    public static String CreatePlatformConfigDir() {
+        if (!Dosbox.allPrivileges)
+            return "";
         String result = System.getProperty("user.dir");
         if (result != null && result.length() != 0 && new File(result).exists()) {
             result += File.separator + ".dosbox";
@@ -65,15 +69,15 @@ public class Cross {
         return "";
     }
 
-    static public String GetPlatformConfigName() {
+    public static String GetPlatformConfigName() {
         return "dosbox-" + Config.MAJOR_VERSION + ".conf";
     }
 
-    static public void CreateDir(String dir) {
+    public static void CreateDir(String dir) {
         new File(dir).mkdirs();
     }
 
-    static public class dir_information {
+    public static class dir_information {
         private File[] list;
         private int index;
     }

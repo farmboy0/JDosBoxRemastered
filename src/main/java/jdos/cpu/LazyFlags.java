@@ -6,6 +6,7 @@ public final class LazyFlags {
     public int res;
     public boolean oldcf;
     public Flags.GetFlags type = Flags.t_UNKNOWN;
+
     public LazyFlags() {
         var1 = Flags.var1;
         var2 = Flags.var2;
@@ -13,6 +14,7 @@ public final class LazyFlags {
         oldcf = Flags.oldcf;
         type = Flags.type;
     }
+
     public LazyFlags(LazyFlags in) {
         this.copy(in);
     }

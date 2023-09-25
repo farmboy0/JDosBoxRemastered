@@ -1,16 +1,20 @@
 package jdos.misc;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Vector;
+
 import jdos.Dosbox;
 import jdos.misc.setup.Prop_path;
 import jdos.misc.setup.Section_prop;
 
-import java.io.*;
-import java.util.Vector;
-
 public class Msg {
     static Vector Lang = new Vector();
 
-    static public void add(String name, String value) {
+    public static void add(String name, String value) {
         for (int i = 0; i < Lang.size(); i++) {
             MessageBlock m = (MessageBlock) Lang.elementAt(i);
             if (m.name.equals(name))
@@ -19,7 +23,7 @@ public class Msg {
         Lang.add(new MessageBlock(name, value));
     }
 
-    static public void replace(String name, String value) {
+    public static void replace(String name, String value) {
         for (int i = 0; i < Lang.size(); i++) {
             MessageBlock m = (MessageBlock) Lang.elementAt(i);
             if (m.name.equals(name))
@@ -28,8 +32,9 @@ public class Msg {
         Lang.add(new MessageBlock(name, value));
     }
 
-    static public void LoadMessageFile(String fname) {
-        if (fname == null || fname.length() == 0) return; //empty string=no languagefile
+    public static void LoadMessageFile(String fname) {
+        if (fname == null || fname.length() == 0)
+            return; //empty string=no languagefile
         FileReader fr = null;
         try {
             fr = new FileReader(fname);
@@ -68,7 +73,7 @@ public class Msg {
         }
     }
 
-    static public String get(String msg) {
+    public static String get(String msg) {
         for (int i = 0; i < Lang.size(); i++) {
             MessageBlock m = (MessageBlock) Lang.elementAt(i);
             if (m.name.equals(msg))
@@ -77,7 +82,7 @@ public class Msg {
         return "Message not Found!\n";
     }
 
-    static public void write(String location) {
+    public static void write(String location) {
         FileOutputStream fos = null;
         try {
             fos = new FileOutputStream(location);
@@ -98,13 +103,14 @@ public class Msg {
         }
     }
 
-    static public void init(Section_prop section) {
+    public static void init(Section_prop section) {
         String file_name = Dosbox.control.cmdline.FindString("-lang", true);
         if (file_name != null) {
             LoadMessageFile(file_name);
         } else {
             Prop_path pathprop = section.Get_path("language");
-            if (pathprop != null) LoadMessageFile(pathprop.realpath);
+            if (pathprop != null)
+                LoadMessageFile(pathprop.realpath);
         }
     }
 

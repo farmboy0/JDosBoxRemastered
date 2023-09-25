@@ -4,8 +4,9 @@ import jdos.win.builtin.WinAPI;
 
 public class KTime extends WinAPI {
     // LONG WINAPI CompareFileTime(const FILETIME *lpFileTime1, const FILETIME *lpFileTime2)
-    static public int CompareFileTime(int lpFileTime1, int lpFileTime2) {
-        if (lpFileTime1 == 0 || lpFileTime2 == 0) return -1;
+    public static int CompareFileTime(int lpFileTime1, int lpFileTime2) {
+        if (lpFileTime1 == 0 || lpFileTime2 == 0)
+            return -1;
         FILETIME x = new FILETIME(lpFileTime1);
         FILETIME y = new FILETIME(lpFileTime2);
 

@@ -1,15 +1,20 @@
 package jdos.hardware.qemu;
 
+import java.util.Arrays;
+
 import jdos.Dosbox;
 import jdos.cpu.Paging;
 import jdos.gui.Main;
+import jdos.gui.MainBase;
 import jdos.gui.Render;
-import jdos.hardware.*;
+import jdos.hardware.IoHandler;
+import jdos.hardware.Memory;
+import jdos.hardware.Pic;
+import jdos.hardware.RAM;
+import jdos.hardware.VBE;
 import jdos.misc.setup.Section;
 import jdos.misc.setup.Section_prop;
 import jdos.types.SVGACards;
-
-import java.util.Arrays;
 
 // Ported to Java by James Bryant
 /*
@@ -36,18 +41,18 @@ import java.util.Arrays;
  * THE SOFTWARE.
  */
 public class VGA extends VGA_header {
-    static public final int ST01_V_RETRACE = 0x08;
-    static public final int ST01_DISP_ENABLE = 0x01;
-    static public final boolean CONFIG_BOCHS_VBE = true;
+    public static final int ST01_V_RETRACE = 0x08;
+    public static final int ST01_DISP_ENABLE = 0x01;
+    public static final boolean CONFIG_BOCHS_VBE = true;
 
-    static public final boolean DEBUG_VGA = false;
-    static public final boolean DEBUG_VGA_MEM = false;
-    static public final boolean DEBUG_VGA_REG = false;
+    public static final boolean DEBUG_VGA = false;
+    public static final boolean DEBUG_VGA_MEM = false;
+    public static final boolean DEBUG_VGA_REG = false;
 
-    static public final boolean DEBUG_BOCHS_VBE = true;
+    public static final boolean DEBUG_BOCHS_VBE = true;
 
     /* 16 state changes per vertical frame @60 Hz */
-    static public final int VGA_TEXT_CURSOR_PERIOD_MS = (1000 * 2 * 16 / 60);
+    public static final int VGA_TEXT_CURSOR_PERIOD_MS = 1000 * 2 * 16 / 60;
 
     /*
      * Video Graphics Array (VGA)
@@ -62,186 +67,81 @@ public class VGA extends VGA_header {
      */
 
     /* force some bits to zero */
-    static public final int[] sr_mask = new int[]{
-            0x03,
-            0x3d,
-            0x0f,
-            0x3f,
-            0x0e,
-            0x00,
-            0x00,
-            0xff,
-    };
+    public static final int[] sr_mask = { 0x03, 0x3d, 0x0f, 0x3f, 0x0e, 0x00, 0x00, 0xff, };
 
-    static public final int[] gr_mask = new int[]{
-            0x0f, /* 0x00 */
-            0x0f, /* 0x01 */
-            0x0f, /* 0x02 */
-            0x1f, /* 0x03 */
-            0x03, /* 0x04 */
-            0x7b, /* 0x05 */
-            0x0f, /* 0x06 */
-            0x0f, /* 0x07 */
-            0xff, /* 0x08 */
-            0x00, /* 0x09 */
-            0x00, /* 0x0a */
-            0x00, /* 0x0b */
-            0x00, /* 0x0c */
-            0x00, /* 0x0d */
-            0x00, /* 0x0e */
-            0x00, /* 0x0f */
+    public static final int[] gr_mask = { 0x0f, /* 0x00 */
+        0x0f, /* 0x01 */
+        0x0f, /* 0x02 */
+        0x1f, /* 0x03 */
+        0x03, /* 0x04 */
+        0x7b, /* 0x05 */
+        0x0f, /* 0x06 */
+        0x0f, /* 0x07 */
+        0xff, /* 0x08 */
+        0x00, /* 0x09 */
+        0x00, /* 0x0a */
+        0x00, /* 0x0b */
+        0x00, /* 0x0c */
+        0x00, /* 0x0d */
+        0x00, /* 0x0e */
+        0x00, /* 0x0f */
     };
-    static public final int[] mask16 = new int[]{
-            0x00000000,
-            0x000000ff,
-            0x0000ff00,
-            0x0000ffff,
-            0x00ff0000,
-            0x00ff00ff,
-            0x00ffff00,
-            0x00ffffff,
-            0xff000000,
-            0xff0000ff,
-            0xff00ff00,
-            0xff00ffff,
-            0xffff0000,
-            0xffff00ff,
-            0xffffff00,
-            0xffffffff,
-    };
-    static public final int[] dmask16 = new int[]{
-            0x00000000,
-            0xff000000,
-            0x00ff0000,
-            0xffff0000,
-            0x0000ff00,
-            0xff00ff00,
-            0x00ffff00,
-            0xffffff00,
-            0xff000000,
-            0xff0000ff,
-            0x00ff00ff,
-            0xffff00ff,
-            0x0000ffff,
-            0xff00ffff,
-            0x00ffffff,
-            0xffffffff,
-    };
-    static public final int[] dmask4 = new int[]{
-            0x00000000,
-            0xffff0000,
-            0x0000ffff,
-            0xffffffff,
-    };
-    static public final int[] expand4 = new int[256];
-    static public final int[] expand2 = new int[256];
-    static public final int[] expand4to8 = new int[16];
-    static private final int NB_DEPTHS = 7;
-    static private final vga_draw_glyph8_func[] vga_draw_glyph8_table = new vga_draw_glyph8_func[]{
-            new vga_draw_glyph8_8(),
-            new vga_draw_glyph8_16(),
-            new vga_draw_glyph8_16(),
-            new vga_draw_glyph8_32(),
-            new vga_draw_glyph8_32(),
-            new vga_draw_glyph8_16(),
-            new vga_draw_glyph8_16(),
-    };
-    static private final vga_draw_glyph8_func[] vga_draw_glyph16_table = new vga_draw_glyph8_func[]{
-            new vga_draw_glyph16_8(),
-            new vga_draw_glyph16_16(),
-            new vga_draw_glyph16_16(),
-            new vga_draw_glyph16_32(),
-            new vga_draw_glyph16_32(),
-            new vga_draw_glyph16_16(),
-            new vga_draw_glyph16_16(),
-    };
-    static private final vga_draw_glyph9_func[] vga_draw_glyph9_table = new vga_draw_glyph9_func[]{
-            new vga_draw_glyph9_8(),
-            new vga_draw_glyph9_16(),
-            new vga_draw_glyph9_16(),
-            new vga_draw_glyph9_32(),
-            new vga_draw_glyph9_32(),
-            new vga_draw_glyph9_16(),
-            new vga_draw_glyph9_16(),
-    };
-    static private final VGACommonState.rgb_to_pixel_dup_func[] rgb_to_pixel_dup_table = new VGACommonState.rgb_to_pixel_dup_func[]{
-            new rgb_to_pixel8_dup(),
-            new rgb_to_pixel15_dup(),
-            new rgb_to_pixel16_dup(),
-            new rgb_to_pixel32_dup(),
-            new rgb_to_pixel32bgr_dup(),
-            new rgb_to_pixel15bgr_dup(),
-            new rgb_to_pixel16bgr_dup(),
-    };
-    static private final int VGA_DRAW_LINE2 = 0;
-    static private final int VGA_DRAW_LINE4 = 1;
-    static private final int VGA_DRAW_LINE8 = 2;
-    static private final int VGA_DRAW_LINE15 = 3;
-    static private final int VGA_DRAW_LINE16 = 4;
-    static private final int VGA_DRAW_LINE24 = 5;
-    static private final int VGA_DRAW_LINE32 = 6;
-    static private final int VGA_DRAW_LINE_NB = 7;
-    static private final vga_draw_line_func[] vga_draw_line_table = new vga_draw_line_func[]{
-            new vga_draw_line2_8(),
-            new vga_draw_line2_16(),
-            new vga_draw_line2_16(),
-            new vga_draw_line2_32(),
-            new vga_draw_line2_32(),
-            new vga_draw_line2_16(),
-            new vga_draw_line2_16(),
+    public static final int[] mask16 = { 0x00000000, 0x000000ff, 0x0000ff00, 0x0000ffff, 0x00ff0000, 0x00ff00ff,
+        0x00ffff00, 0x00ffffff, 0xff000000, 0xff0000ff, 0xff00ff00, 0xff00ffff, 0xffff0000, 0xffff00ff, 0xffffff00,
+        0xffffffff, };
+    public static final int[] dmask16 = { 0x00000000, 0xff000000, 0x00ff0000, 0xffff0000, 0x0000ff00, 0xff00ff00,
+        0x00ffff00, 0xffffff00, 0xff000000, 0xff0000ff, 0x00ff00ff, 0xffff00ff, 0x0000ffff, 0xff00ffff, 0x00ffffff,
+        0xffffffff, };
+    public static final int[] dmask4 = { 0x00000000, 0xffff0000, 0x0000ffff, 0xffffffff, };
+    public static final int[] expand4 = new int[256];
+    public static final int[] expand2 = new int[256];
+    public static final int[] expand4to8 = new int[16];
+    private static final int NB_DEPTHS = 7;
+    private static final vga_draw_glyph8_func[] vga_draw_glyph8_table = { new vga_draw_glyph8_8(),
+        new vga_draw_glyph8_16(), new vga_draw_glyph8_16(), new vga_draw_glyph8_32(), new vga_draw_glyph8_32(),
+        new vga_draw_glyph8_16(), new vga_draw_glyph8_16(), };
+    private static final vga_draw_glyph8_func[] vga_draw_glyph16_table = { new vga_draw_glyph16_8(),
+        new vga_draw_glyph16_16(), new vga_draw_glyph16_16(), new vga_draw_glyph16_32(), new vga_draw_glyph16_32(),
+        new vga_draw_glyph16_16(), new vga_draw_glyph16_16(), };
+    private static final vga_draw_glyph9_func[] vga_draw_glyph9_table = { new vga_draw_glyph9_8(),
+        new vga_draw_glyph9_16(), new vga_draw_glyph9_16(), new vga_draw_glyph9_32(), new vga_draw_glyph9_32(),
+        new vga_draw_glyph9_16(), new vga_draw_glyph9_16(), };
+    private static final VGACommonState.rgb_to_pixel_dup_func[] rgb_to_pixel_dup_table = { new rgb_to_pixel8_dup(),
+        new rgb_to_pixel15_dup(), new rgb_to_pixel16_dup(), new rgb_to_pixel32_dup(), new rgb_to_pixel32bgr_dup(),
+        new rgb_to_pixel15bgr_dup(), new rgb_to_pixel16bgr_dup(), };
+    private static final int VGA_DRAW_LINE2 = 0;
+    private static final int VGA_DRAW_LINE4 = 1;
+    private static final int VGA_DRAW_LINE8 = 2;
+    private static final int VGA_DRAW_LINE15 = 3;
+    private static final int VGA_DRAW_LINE16 = 4;
+    private static final int VGA_DRAW_LINE24 = 5;
+    private static final int VGA_DRAW_LINE32 = 6;
+    private static final int VGA_DRAW_LINE_NB = 7;
+    private static final vga_draw_line_func[] vga_draw_line_table = { new vga_draw_line2_8(), new vga_draw_line2_16(),
+        new vga_draw_line2_16(), new vga_draw_line2_32(), new vga_draw_line2_32(), new vga_draw_line2_16(),
+        new vga_draw_line2_16(),
 
-            new vga_draw_line4_8(),
-            new vga_draw_line4_16(),
-            new vga_draw_line4_16(),
-            new vga_draw_line4_32(),
-            new vga_draw_line4_32(),
-            new vga_draw_line4_16(),
-            new vga_draw_line4_16(),
+        new vga_draw_line4_8(), new vga_draw_line4_16(), new vga_draw_line4_16(), new vga_draw_line4_32(),
+        new vga_draw_line4_32(), new vga_draw_line4_16(), new vga_draw_line4_16(),
 
-            new vga_draw_line8_8(),
-            new vga_draw_line8_16(),
-            new vga_draw_line8_16(),
-            new vga_draw_line8_32(),
-            new vga_draw_line8_32(),
-            new vga_draw_line8_16(),
-            new vga_draw_line8_16(),
+        new vga_draw_line8_8(), new vga_draw_line8_16(), new vga_draw_line8_16(), new vga_draw_line8_32(),
+        new vga_draw_line8_32(), new vga_draw_line8_16(), new vga_draw_line8_16(),
 
-            new vga_draw_line15_8(),
-            new vga_draw_line15_15(),
-            new vga_draw_line15_16(),
-            new vga_draw_line15_32(),
-            new vga_draw_line15_32bgr(),
-            new vga_draw_line15_15bgr(),
-            new vga_draw_line15_16bgr(),
+        new vga_draw_line15_8(), new vga_draw_line15_15(), new vga_draw_line15_16(), new vga_draw_line15_32(),
+        new vga_draw_line15_32bgr(), new vga_draw_line15_15bgr(), new vga_draw_line15_16bgr(),
 
-            new vga_draw_line16_8(),
-            new vga_draw_line16_15(),
-            new vga_draw_line16_16(),
-            new vga_draw_line16_32(),
-            new vga_draw_line16_32bgr(),
-            new vga_draw_line16_15bgr(),
-            new vga_draw_line16_16bgr(),
+        new vga_draw_line16_8(), new vga_draw_line16_15(), new vga_draw_line16_16(), new vga_draw_line16_32(),
+        new vga_draw_line16_32bgr(), new vga_draw_line16_15bgr(), new vga_draw_line16_16bgr(),
 
-            new vga_draw_line24_8(),
-            new vga_draw_line24_15(),
-            new vga_draw_line24_16(),
-            new vga_draw_line24_32(),
-            new vga_draw_line24_32bgr(),
-            new vga_draw_line24_15bgr(),
-            new vga_draw_line24_16bgr(),
+        new vga_draw_line24_8(), new vga_draw_line24_15(), new vga_draw_line24_16(), new vga_draw_line24_32(),
+        new vga_draw_line24_32bgr(), new vga_draw_line24_15bgr(), new vga_draw_line24_16bgr(),
 
-            new vga_draw_line32_8(),
-            new vga_draw_line32_15(),
-            new vga_draw_line32_16(),
-            new vga_draw_line32_32(),
-            new vga_draw_line32_32bgr(),
-            new vga_draw_line32_15bgr(),
-            new vga_draw_line32_16bgr()
-    };
-    static private final int GMODE_TEXT = 0;
-    static private final int GMODE_GRAPH = 1;
-    static private final int GMODE_BLANK = 2;
-    static private int cursor_glyph;
+        new vga_draw_line32_8(), new vga_draw_line32_15(), new vga_draw_line32_16(), new vga_draw_line32_32(),
+        new vga_draw_line32_32bgr(), new vga_draw_line32_15bgr(), new vga_draw_line32_16bgr() };
+    private static final int GMODE_TEXT = 0;
+    private static final int GMODE_GRAPH = 1;
+    private static final int GMODE_BLANK = 2;
+    private static int cursor_glyph;
     /********************************************************/
     /* vga screen dump */
 
@@ -301,14 +201,17 @@ public class VGA extends VGA_header {
 //        vga_hw_update();
 //        ppm_save(filename, s.ds.surface);
 //    }
-    static private VGACommonState vgaCommonState;
+    private static VGACommonState vgaCommonState;
     public static Pic.PIC_EventHandler VGA_Draw = new Pic.PIC_EventHandler() {
+        @Override
         public String toString() {
             return "VGA_Draw";
         }
 
+        @Override
         public void call(/*Bitu*/int val) {
             Thread t = new Thread() {
+                @Override
                 public void run() {
                     while (true) {
                         vga_update_display(vgaCommonState);
@@ -324,54 +227,52 @@ public class VGA extends VGA_header {
             //Pic.PIC_AddEvent(VGA_Draw,25);
         }
     };
-    public static Section.SectionFunction QEMU_VGA_Init = new Section.SectionFunction() {
-        public void call(Section sec) {
-            if (Dosbox.svgaCard == SVGACards.SVGA_QEMU) {
-                Section_prop section = (Section_prop) sec;
-                vgaCommonState = new VGACommonState();
-                vga_init(vgaCommonState, section.Get_int("vmemsize") * 1024 * 1024);
-                vga_init_vbe(vgaCommonState);
-                vga_common_init(vgaCommonState);
-                Pic.PIC_AddEvent(VGA_Draw, 70 / 1000);
-            }
+    public static Section.SectionFunction QEMU_VGA_Init = sec -> {
+        if (Dosbox.svgaCard == SVGACards.SVGA_QEMU) {
+            Section_prop section = (Section_prop) sec;
+            vgaCommonState = new VGACommonState();
+            vga_init(vgaCommonState, section.Get_int("vmemsize") * 1024 * 1024);
+            vga_init_vbe(vgaCommonState);
+            vga_common_init(vgaCommonState);
+            Pic.PIC_AddEvent(VGA_Draw, 70 / 1000);
         }
     };
 
-    static private int GET_PLANE(int data, int p) {
-        return (((data) >> ((p) * 8)) & 0xff);
+    private static int GET_PLANE(int data, int p) {
+        return data >> p * 8 & 0xff;
     }
 
     public static boolean vga_ioport_invalid(VGACommonState s, int addr) {
         if ((s.msr & VGA_MIS_COLOR) != 0) {
             /* Color */
-            return (addr >= 0x3b0 && addr <= 0x3bf);
+            return addr >= 0x3b0 && addr <= 0x3bf;
         } else {
             /* Monochrome */
-            return (addr >= 0x3d0 && addr <= 0x3df);
+            return addr >= 0x3d0 && addr <= 0x3df;
         }
     }
 
-    static private void vga_draw_glyph_line_8(VGACommonState s, int d, int font_data, int xorcol, int bgcol) {
-        s.writed(d, (dmask16[(font_data >> 4)] & xorcol) ^ bgcol);
-        s.writed(d + 4, (dmask16[(font_data >> 0) & 0xf] & xorcol) ^ bgcol);
+    private static void vga_draw_glyph_line_8(VGACommonState s, int d, int font_data, int xorcol, int bgcol) {
+        s.writed(d, dmask16[font_data >> 4] & xorcol ^ bgcol);
+        s.writed(d + 4, dmask16[font_data >> 0 & 0xf] & xorcol ^ bgcol);
     }
 
-    static private void vga_draw_glyph_line_16(VGACommonState s, int d, int font_data, int xorcol, int bgcol) {
-        s.writed(d, (dmask4[(font_data >> 6)] & xorcol) ^ bgcol);
-        s.writed(d + 4, (dmask4[(font_data >> 4) & 3] & xorcol) ^ bgcol);
-        s.writed(d + 8, (dmask4[(font_data >> 2) & 3] & xorcol) ^ bgcol);
-        s.writed(d + 12, (dmask4[(font_data >> 0) & 3] & xorcol) ^ bgcol);
+    private static void vga_draw_glyph_line_16(VGACommonState s, int d, int font_data, int xorcol, int bgcol) {
+        s.writed(d, dmask4[font_data >> 6] & xorcol ^ bgcol);
+        s.writed(d + 4, dmask4[font_data >> 4 & 3] & xorcol ^ bgcol);
+        s.writed(d + 8, dmask4[font_data >> 2 & 3] & xorcol ^ bgcol);
+        s.writed(d + 12, dmask4[font_data >> 0 & 3] & xorcol ^ bgcol);
     }
 
-    static private void vga_draw_glyph_line_32(VGACommonState s, int d, int font_data, int xorcol, int bgcol) {
-        s.writed(d, (-((font_data >> 7)) & xorcol) ^ bgcol);
-        s.writed(d + 4, (-((font_data >> 6) & 1) & xorcol) ^ bgcol);
-        s.writed(d + 8, (-((font_data >> 5) & 1) & xorcol) ^ bgcol);
-        s.writed(d + 12, (-((font_data >> 4) & 1) & xorcol) ^ bgcol);
-        s.writed(d + 16, (-((font_data >> 3) & 1) & xorcol) ^ bgcol);
-        s.writed(d + 20, (-((font_data >> 2) & 1) & xorcol) ^ bgcol);
-        s.writed(d + 24, (-((font_data >> 1) & 1) & xorcol) ^ bgcol);
-        s.writed(d + 28, (-((font_data >> 0) & 1) & xorcol) ^ bgcol);
+    private static void vga_draw_glyph_line_32(VGACommonState s, int d, int font_data, int xorcol, int bgcol) {
+        s.writed(d, -(font_data >> 7) & xorcol ^ bgcol);
+        s.writed(d + 4, -(font_data >> 6 & 1) & xorcol ^ bgcol);
+        s.writed(d + 8, -(font_data >> 5 & 1) & xorcol ^ bgcol);
+        s.writed(d + 12, -(font_data >> 4 & 1) & xorcol ^ bgcol);
+        s.writed(d + 16, -(font_data >> 3 & 1) & xorcol ^ bgcol);
+        s.writed(d + 20, -(font_data >> 2 & 1) & xorcol ^ bgcol);
+        s.writed(d + 24, -(font_data >> 1 & 1) & xorcol ^ bgcol);
+        s.writed(d + 28, -(font_data >> 0 & 1) & xorcol ^ bgcol);
     }
 
     /* return true if the palette was modified */
@@ -385,9 +286,9 @@ public class VGA extends VGA_header {
         for (i = 0; i < 16; i++) {
             v = s.ar[i];
             if ((s.ar[VGA_ATC_MODE] & 0x80) != 0) {
-                v = ((s.ar[VGA_ATC_COLOR_PAGE] & 0xf) << 4) | (v & 0xf);
+                v = (s.ar[VGA_ATC_COLOR_PAGE] & 0xf) << 4 | v & 0xf;
             } else {
-                v = ((s.ar[VGA_ATC_COLOR_PAGE] & 0xc) << 4) | (v & 0x3f);
+                v = (s.ar[VGA_ATC_COLOR_PAGE] & 0xc) << 4 | v & 0x3f;
             }
             v = v * 3;
             int r = c6_to_8(s.palette[v]);
@@ -397,7 +298,7 @@ public class VGA extends VGA_header {
             if (col != palette[i]) {
                 full_update = true;
                 palette[i] = col;
-                s.renderer_palette[i] = Main.GFX_GetRGB(r, g, b);
+                s.renderer_palette[i] = MainBase.GFX_GetRGB(r, g, b);
             }
         }
         if (full_update) {
@@ -430,7 +331,7 @@ public class VGA extends VGA_header {
             if (col != palette[i]) {
                 full_update = true;
                 palette[i] = col;
-                s.renderer_palette[i] = Main.GFX_GetRGB(r, g, b);
+                s.renderer_palette[i] = MainBase.GFX_GetRGB(r, g, b);
             }
             v += 3;
         }
@@ -441,15 +342,13 @@ public class VGA extends VGA_header {
     }
 
     /* update start_addr and line_offset. Return TRUE if modified */
-    static private boolean update_basic_params(VGACommonState s) {
+    private static boolean update_basic_params(VGACommonState s) {
         boolean full_update = false;
         int start_addr = s.getStartAddress.call(s);
         int line_offset = s.getLineOffset.call(s);
         int line_compare = s.getLineCompare.call(s);
 
-        if (line_offset != s.line_offset ||
-                start_addr != s.start_addr ||
-                line_compare != s.line_compare) {
+        if (line_offset != s.line_offset || start_addr != s.start_addr || line_compare != s.line_compare) {
             s.line_offset = line_offset;
             s.start_addr = start_addr;
             s.line_compare = line_compare;
@@ -458,7 +357,7 @@ public class VGA extends VGA_header {
         return full_update;
     }
 
-    static private int get_depth_index(DisplayState s) {
+    private static int get_depth_index(DisplayState s) {
         switch (s.ds_get_bits_per_pixel()) {
             default:
             case 8:
@@ -481,7 +380,8 @@ public class VGA extends VGA_header {
             /* ugly hack for CGA 160x100x16 - explain me the logic */
             height = 100;
         } else {
-            height = s.cr[VGA_CRTC_V_DISP_END] | ((s.cr[VGA_CRTC_OVERFLOW] & 0x02) << 7) | ((s.cr[VGA_CRTC_OVERFLOW] & 0x40) << 3);
+            height = s.cr[VGA_CRTC_V_DISP_END] | (s.cr[VGA_CRTC_OVERFLOW] & 0x02) << 7
+                | (s.cr[VGA_CRTC_OVERFLOW] & 0x40) << 3;
             height = (height + 1) / vga_get_text_cheight(s);
         }
         return height;
@@ -531,20 +431,20 @@ public class VGA extends VGA_header {
 
         /* compute font data address (in plane 2) */
         v = s.sr[VGA_SEQ_CHARACTER_MAP];
-        offset = (((v >> 4) & 1) | ((v << 1) & 6)) * 8192 * 4 + 2;
+        offset = (v >> 4 & 1 | v << 1 & 6) * 8192 * 4 + 2;
         if (offset != s.font_offsets[0]) {
             s.font_offsets[0] = offset;
             full_update = true;
         }
         font_base[0] = offset;
 
-        offset = (((v >> 5) & 1) | ((v >> 1) & 6)) * 8192 * 4 + 2;
+        offset = (v >> 5 & 1 | v >> 1 & 6) * 8192 * 4 + 2;
         font_base[1] = offset;
         if (offset != s.font_offsets[1]) {
             s.font_offsets[1] = offset;
             full_update = true;
         }
-        if ((s.plane_updated & (1 << 2)) != 0 || s.chain4_alias != null) {
+        if ((s.plane_updated & 1 << 2) != 0 || s.chain4_alias != null) {
             /* if the plane 2 was modified since the last display, it
                indicates the font may have been modified */
             s.plane_updated = 0;
@@ -559,16 +459,13 @@ public class VGA extends VGA_header {
         cw = vga_get_text_cwidth(s);
         cheight = vga_get_text_cheight(s);
 
-        if ((height * width) <= 1) {
-            /* better than nothing: exit if transient size is too small */
-            return;
-        }
-        if ((height * width) > CH_ATTR_SIZE) {
+        if ((height * width <= 1) || (height * width > CH_ATTR_SIZE)) {
             /* better than nothing: exit if transient size is too big */
             return;
         }
 
-        if (width != s.last_width || height != s.last_height || cw != s.last_cw || cheight != s.last_ch || s.last_depth != 0) {
+        if (width != s.last_width || height != s.last_height || cw != s.last_cw || cheight != s.last_ch
+            || s.last_depth != 0) {
             s.last_scr_width = width * cw;
             s.last_scr_height = height * cheight;
             s.last_depth = 0;
@@ -577,20 +474,20 @@ public class VGA extends VGA_header {
             s.last_ch = cheight;
             s.last_cw = cw;
             full_update = true;
-            Render.RENDER_SetSize(s.last_scr_width, s.last_scr_height, 32, 70, (double) s.last_scr_width / s.last_scr_height, false, false); // don't use 8 bpp
+            Render.RENDER_SetSize(s.last_scr_width, s.last_scr_height, 32, 70,
+                (double) s.last_scr_width / s.last_scr_height, false, false); // don't use 8 bpp
             if (!Render.RENDER_StartUpdate())
                 return;
         }
         s.rgb_to_pixel = rgb_to_pixel_dup_table[get_depth_index(s.ds)];
         full_update |= update_palette16(s);
         palette = s.last_palette;
-        x_incr = cw * ((s.ds.ds_get_bits_per_pixel() + 7) >> 3);
+        x_incr = cw * (s.ds.ds_get_bits_per_pixel() + 7 >> 3);
 
-        cursor_offset = ((s.cr[VGA_CRTC_CURSOR_HI] << 8) | s.cr[VGA_CRTC_CURSOR_LO]) - s.start_addr;
-        if (cursor_offset != s.cursor_offset ||
-                s.cr[VGA_CRTC_CURSOR_START] != s.cursor_start ||
-                s.cr[VGA_CRTC_CURSOR_END] != s.cursor_end) {
-          /* if the cursor position changed, we update the old and new
+        cursor_offset = (s.cr[VGA_CRTC_CURSOR_HI] << 8 | s.cr[VGA_CRTC_CURSOR_LO]) - s.start_addr;
+        if (cursor_offset != s.cursor_offset || s.cr[VGA_CRTC_CURSOR_START] != s.cursor_start
+            || s.cr[VGA_CRTC_CURSOR_END] != s.cursor_end) {
+            /* if the cursor position changed, we update the old and new
              chars */
             if (s.cursor_offset < CH_ATTR_SIZE)
                 s.last_ch_attr[s.cursor_offset] = -1;
@@ -633,7 +530,7 @@ public class VGA extends VGA_header {
                     s.last_ch_attr[ch_attr_ptr] = ch_attr;
                     ch = ch_attr & 0xff;
                     cattr = ch_attr >> 8;
-                    font_ptr = font_base[(cattr >> 3) & 1];
+                    font_ptr = font_base[cattr >> 3 & 1];
                     font_ptr += 32 * 4 * ch;
                     bgcol = palette[cattr >> 4];
                     fgcol = palette[cattr & 0x0f];
@@ -705,18 +602,17 @@ public class VGA extends VGA_header {
         height = s.get_resolutionCy.call(s);
         disp_width = width;
 
-        shift_control = (s.gr[VGA_GFX_MODE] >> 5) & 3;
-        double_scan = (s.cr[VGA_CRTC_MAX_SCAN] >> 7);
+        shift_control = s.gr[VGA_GFX_MODE] >> 5 & 3;
+        double_scan = s.cr[VGA_CRTC_MAX_SCAN] >> 7;
         if (shift_control != 1) {
-            multi_scan = (((s.cr[VGA_CRTC_MAX_SCAN] & 0x1f) + 1) << double_scan) - 1;
+            multi_scan = ((s.cr[VGA_CRTC_MAX_SCAN] & 0x1f) + 1 << double_scan) - 1;
         } else {
             /* in CGA modes, multi_scan is ignored */
             /* XXX: is it correct ? */
             multi_scan = double_scan;
         }
         multi_run = multi_scan;
-        if (shift_control != s.shift_control ||
-                double_scan != s.double_scan) {
+        if (shift_control != s.shift_control || double_scan != s.double_scan) {
             full_update = true;
             s.shift_control = shift_control;
             s.double_scan = double_scan;
@@ -735,7 +631,8 @@ public class VGA extends VGA_header {
         }
 
         depth = s.get_bpp.call(s);
-        if (s.line_offset != s.last_line_offset || disp_width != s.last_width || width != s.last_scr_width || height != s.last_height || s.last_depth != depth) {
+        if (s.line_offset != s.last_line_offset || disp_width != s.last_width || width != s.last_scr_width
+            || height != s.last_height || s.last_depth != depth) {
             s.last_scr_width = width;
             s.last_scr_height = height;
             s.last_width = disp_width;
@@ -796,7 +693,7 @@ public class VGA extends VGA_header {
 
         line_offset = s.line_offset;
 
-        addr1 = (s.start_addr * 4);
+        addr1 = s.start_addr * 4;
         bwidth = (width * bits + 7) / 8;
         y_start = -1;
         page_min = -1;
@@ -809,18 +706,18 @@ public class VGA extends VGA_header {
             if ((s.cr[VGA_CRTC_MODE] & 1) == 0) {
                 int shift;
                 /* CGA compatibility handling */
-                shift = 14 + ((s.cr[VGA_CRTC_MODE] >> 6) & 1);
-                addr = (addr & ~(1 << shift)) | ((y1 & 1) << shift);
+                shift = 14 + (s.cr[VGA_CRTC_MODE] >> 6 & 1);
+                addr = addr & ~(1 << shift) | (y1 & 1) << shift;
             }
             if ((s.cr[VGA_CRTC_MODE] & 2) == 0) {
-                addr = (addr & ~0x8000) | ((y1 & 2) << 14);
+                addr = addr & ~0x8000 | (y1 & 2) << 14;
             }
             update = full_update;
             page0 = addr;
             page1 = addr + bwidth - 1;
             update |= true;//memory_region_get_dirty(&s.vram, page0, page1 - page0, DIRTY_MEMORY_VGA);
             /* explicit invalidation for the hardware cursor */
-            update |= ((s.invalidated_y_table[y >> 5] >> (y & 0x1f)) & 1) != 0;
+            update |= (s.invalidated_y_table[y >> 5] >> (y & 0x1f) & 1) != 0;
             if (update) {
                 if (y_start < 0)
                     y_start = y;
@@ -841,7 +738,7 @@ public class VGA extends VGA_header {
                 }
             }
             if (multi_run == 0) {
-                mask = (s.cr[VGA_CRTC_MODE] & 3) ^ 3;
+                mask = s.cr[VGA_CRTC_MODE] & 3 ^ 3;
                 if ((y1 & mask) == mask)
                     addr1 += line_offset;
                 y1++;
@@ -862,25 +759,22 @@ public class VGA extends VGA_header {
         //if (page_max >= page_min) {
         //    memory_region_reset_dirty(&s.vram, page_min, page_max - page_min, DIRTY_MEMORY_VGA);
         //}
-        Arrays.fill(s.invalidated_y_table, 0, 0, ((height + 31) >> 5) * 4 - 1);
+        Arrays.fill(s.invalidated_y_table, 0, 0, (height + 31 >> 5) * 4 - 1);
     }
 
-    static private void vga_draw_blank(VGACommonState s, boolean full_update) {
+    private static void vga_draw_blank(VGACommonState s, boolean full_update) {
         int i, w, val;
         int d;
 
-        if (!full_update)
-            return;
-        if (s.last_scr_width <= 0 || s.last_scr_height <= 0)
+        if (!full_update || s.last_scr_width <= 0 || s.last_scr_height <= 0)
             return;
 
-        s.rgb_to_pixel =
-                rgb_to_pixel_dup_table[get_depth_index(s.ds)];
+        s.rgb_to_pixel = rgb_to_pixel_dup_table[get_depth_index(s.ds)];
         if (s.ds.ds_get_bits_per_pixel() == 8)
             val = s.rgb_to_pixel.call(0, 0, 0);
         else
             val = 0;
-        w = s.last_scr_width * ((s.ds.ds_get_bits_per_pixel() + 7) >> 3);
+        w = s.last_scr_width * (s.ds.ds_get_bits_per_pixel() + 7 >> 3);
         d = s.ds.ds_get_data();
         for (i = 0; i < s.last_scr_height; i++) {
             s.memset(d, val, w);
@@ -990,20 +884,20 @@ public class VGA extends VGA_header {
         //vga_update_memory_access(s);
     }
 
-    static private void vga_reset(VGACommonState s) {
+    private static void vga_reset(VGACommonState s) {
         vga_common_reset(s);
     }
 
-    static private int TEXTMODE_X(int x, int width) {
-        return ((x) % width);
+    private static int TEXTMODE_X(int x, int width) {
+        return x % width;
     }
 
-    static private int TEXTMODE_Y(int x, int width) {
-        return ((x) / width);
+    private static int TEXTMODE_Y(int x, int width) {
+        return x / width;
     }
 
-    static private int VMEM2CHTYPE(int v) {
-        return ((v & 0xff0007ff) | ((v & 0x00000800) << 10) | ((v & 0x00007000) >> 1));
+    private static int VMEM2CHTYPE(int v) {
+        return v & 0xff0007ff | (v & 0x00000800) << 10 | (v & 0x00007000) >> 1;
     }
 
     static void vga_common_init(VGACommonState s) {
@@ -1012,22 +906,22 @@ public class VGA extends VGA_header {
         for (i = 0; i < 256; i++) {
             v = 0;
             for (j = 0; j < 8; j++) {
-                v |= ((i >> j) & 1) << (j * 4);
+                v |= (i >> j & 1) << j * 4;
             }
             expand4[i] = v;
 
             v = 0;
             for (j = 0; j < 4; j++) {
-                v |= ((i >> (2 * j)) & 3) << (j * 4);
+                v |= (i >> 2 * j & 3) << j * 4;
             }
             expand2[i] = v;
         }
         for (i = 0; i < 16; i++) {
             v = 0;
             for (j = 0; j < 4; j++) {
-                b = ((i >> j) & 1);
-                v |= b << (2 * j);
-                v |= b << (2 * j + 1);
+                b = i >> j & 1;
+                v |= b << 2 * j;
+                v |= b << 2 * j + 1;
             }
             expand4to8[i] = v;
         }
@@ -1147,12 +1041,14 @@ public class VGA extends VGA_header {
         void call(VGACommonState s1, int d, int s, int width);
     }
 
-    static private class vga_dumb_update_retrace_info implements VGACommonState.vga_update_retrace_info_fn {
+    private static class vga_dumb_update_retrace_info implements VGACommonState.vga_update_retrace_info_fn {
+        @Override
         public void call(VGACommonState s) {
         }
     }
 
-    static private class vga_precise_update_retrace_info implements VGACommonState.vga_update_retrace_info_fn {
+    private static class vga_precise_update_retrace_info implements VGACommonState.vga_update_retrace_info_fn {
+        @Override
         public void call(VGACommonState s) {
             int htotal_chars;
             int hretr_start_char;
@@ -1166,21 +1062,23 @@ public class VGA extends VGA_header {
             int dots;
             int clocking_mode;
             int clock_sel;
-            final int[] clk_hz = {25175000, 28322000, 25175000, 25175000};
+            final int[] clk_hz = { 25175000, 28322000, 25175000, 25175000 };
             long chars_per_sec;
             vga_precise_retrace r = s.retrace_info;
 
             htotal_chars = s.cr[VGA_CRTC_H_TOTAL] + 5;
             hretr_start_char = s.cr[VGA_CRTC_H_SYNC_START];
-            hretr_skew_chars = (s.cr[VGA_CRTC_H_SYNC_END] >> 5) & 3;
+            hretr_skew_chars = s.cr[VGA_CRTC_H_SYNC_END] >> 5 & 3;
             hretr_end_char = s.cr[VGA_CRTC_H_SYNC_END] & 0x1f;
 
-            vtotal_lines = (s.cr[VGA_CRTC_V_TOTAL] | (((s.cr[VGA_CRTC_OVERFLOW] & 1) | ((s.cr[VGA_CRTC_OVERFLOW] >> 4) & 2)) << 8)) + 2;
-            vretr_start_line = s.cr[VGA_CRTC_V_SYNC_START] | ((((s.cr[VGA_CRTC_OVERFLOW] >> 2) & 1) | ((s.cr[VGA_CRTC_OVERFLOW] >> 6) & 2)) << 8);
+            vtotal_lines = (s.cr[VGA_CRTC_V_TOTAL]
+                | (s.cr[VGA_CRTC_OVERFLOW] & 1 | s.cr[VGA_CRTC_OVERFLOW] >> 4 & 2) << 8) + 2;
+            vretr_start_line = s.cr[VGA_CRTC_V_SYNC_START]
+                | (s.cr[VGA_CRTC_OVERFLOW] >> 2 & 1 | s.cr[VGA_CRTC_OVERFLOW] >> 6 & 2) << 8;
             vretr_end_line = s.cr[VGA_CRTC_V_SYNC_END] & 0xf;
 
-            clocking_mode = (s.sr[VGA_SEQ_CLOCK_MODE] >> 3) & 1;
-            clock_sel = (s.msr >> 2) & 3;
+            clocking_mode = s.sr[VGA_SEQ_CLOCK_MODE] >> 3 & 1;
+            clock_sel = s.msr >> 2 & 3;
             dots = (s.msr & 1) != 0 ? 8 : 9;
 
             chars_per_sec = clk_hz[clock_sel] / dots;
@@ -1203,7 +1101,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class vga_precise_retrace_impl implements VGACommonState.Retrace {
+    private static class vga_precise_retrace_impl implements VGACommonState.Retrace {
+        @Override
         public int call(VGACommonState s) {
             vga_precise_retrace r = s.retrace_info;
             int val = s.st01 & ~(ST01_V_RETRACE | ST01_DISP_ENABLE);
@@ -1214,7 +1113,7 @@ public class VGA extends VGA_header {
 
                 cur_tick = Qemu.qemu_get_clock_ns();
 
-                cur_char = (int) ((cur_tick / r.ticks_per_char) % r.total_chars);
+                cur_char = (int) (cur_tick / r.ticks_per_char % r.total_chars);
                 cur_line = cur_char / r.htotal;
 
                 if (cur_line >= r.vstart && cur_line <= r.vend) {
@@ -1233,7 +1132,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class vga_dumb_retrace_impl implements VGACommonState.Retrace {
+    private static class vga_dumb_retrace_impl implements VGACommonState.Retrace {
+        @Override
         public int call(VGACommonState s) {
             return s.st01 ^ (ST01_V_RETRACE | ST01_DISP_ENABLE);
         }
@@ -1246,6 +1146,7 @@ public class VGA extends VGA_header {
             this.s = s;
         }
 
+        @Override
         public void call(/*Bitu*/int addr, /*Bitu*/int val, /*Bitu*/int len) {
             int index;
 
@@ -1254,7 +1155,8 @@ public class VGA extends VGA_header {
                 return;
             }
             if (DEBUG_VGA)
-                System.out.println("VGA: write addr=0x" + Integer.toHexString(addr) + " data=0x" + Integer.toHexString(val));
+                System.out
+                    .println("VGA: write addr=0x" + Integer.toHexString(addr) + " data=0x" + Integer.toHexString(val));
 
             switch (addr) {
                 case VGA_ATT_W:
@@ -1312,7 +1214,8 @@ public class VGA extends VGA_header {
                     break;
                 case VGA_SEQ_D:
                     if (DEBUG_VGA_REG)
-                        System.out.println("vga: write SR" + Integer.toHexString(s.sr_index) + " = 0x" + Integer.toHexString(val));
+                        System.out.println(
+                            "vga: write SR" + Integer.toHexString(s.sr_index) + " = 0x" + Integer.toHexString(val));
                     s.sr[s.sr_index] = val & sr_mask[s.sr_index];
                     if (s.sr_index == VGA_SEQ_CLOCK_MODE) {
                         s.update_retrace_info.call(s);
@@ -1342,7 +1245,8 @@ public class VGA extends VGA_header {
                     break;
                 case VGA_GFX_D:
                     if (DEBUG_VGA_REG)
-                        System.out.println("vga: write GR" + Integer.toHexString(s.gr_index) + " = 0x" + Integer.toHexString(val));
+                        System.out.println(
+                            "vga: write GR" + Integer.toHexString(s.gr_index) + " = 0x" + Integer.toHexString(val));
                     s.gr[s.gr_index] = val & gr_mask[s.gr_index];
                     //vga_update_memory_access(s);
                     break;
@@ -1353,13 +1257,13 @@ public class VGA extends VGA_header {
                 case VGA_CRT_DM:
                 case VGA_CRT_DC:
                     if (DEBUG_VGA_REG)
-                        System.out.println("vga: write CR" + Integer.toHexString(s.cr_index) + " = 0x" + Integer.toHexString(val));
+                        System.out.println(
+                            "vga: write CR" + Integer.toHexString(s.cr_index) + " = 0x" + Integer.toHexString(val));
                     /* handle CR0-7 protection */
                     if ((s.cr[VGA_CRTC_V_SYNC_END] & VGA_CR11_LOCK_CR0_CR7) != 0 && s.cr_index <= VGA_CRTC_OVERFLOW) {
                         /* can always write bit 4 of CR7 */
                         if (s.cr_index == VGA_CRTC_OVERFLOW) {
-                            s.cr[VGA_CRTC_OVERFLOW] = (s.cr[VGA_CRTC_OVERFLOW] & ~0x10) |
-                                    (val & 0x10);
+                            s.cr[VGA_CRTC_OVERFLOW] = s.cr[VGA_CRTC_OVERFLOW] & ~0x10 | val & 0x10;
                         }
                         return;
                     }
@@ -1392,6 +1296,7 @@ public class VGA extends VGA_header {
             this.s = s;
         }
 
+        @Override
         public /*Bitu*/int call(/*Bitu*/int addr, /*Bitu*/int len) {
             int val, index;
 
@@ -1423,7 +1328,8 @@ public class VGA extends VGA_header {
                     case VGA_SEQ_D:
                         val = s.sr[s.sr_index];
                         if (DEBUG_VGA_REG)
-                            System.out.println("vga: read SR" + Integer.toHexString(s.sr_index) + " = 0x" + Integer.toHexString(val));
+                            System.out.println(
+                                "vga: read SR" + Integer.toHexString(s.sr_index) + " = 0x" + Integer.toHexString(val));
                         break;
                     case VGA_PEL_IR:
                         val = s.dac_state;
@@ -1450,7 +1356,8 @@ public class VGA extends VGA_header {
                     case VGA_GFX_D:
                         val = s.gr[s.gr_index];
                         if (DEBUG_VGA_REG)
-                            System.out.println("vga: read GR" + Integer.toHexString(s.gr_index) + " = 0x" + Integer.toHexString(val));
+                            System.out.println(
+                                "vga: read GR" + Integer.toHexString(s.gr_index) + " = 0x" + Integer.toHexString(val));
                         break;
                     case VGA_CRT_IM:
                     case VGA_CRT_IC:
@@ -1460,7 +1367,8 @@ public class VGA extends VGA_header {
                     case VGA_CRT_DC:
                         val = s.cr[s.cr_index];
                         if (DEBUG_VGA_REG)
-                            System.out.println("vga: read CR" + Integer.toHexString(s.cr_index) + " = 0x" + Integer.toHexString(val));
+                            System.out.println(
+                                "vga: read CR" + Integer.toHexString(s.cr_index) + " = 0x" + Integer.toHexString(val));
                         break;
                     case VGA_IS1_RM:
                     case VGA_IS1_RC:
@@ -1474,7 +1382,8 @@ public class VGA extends VGA_header {
                 }
             }
             if (DEBUG_VGA)
-                System.out.println("VGA: read addr=0x" + Integer.toHexString(addr) + " data=0x" + Integer.toHexString(val));
+                System.out
+                    .println("VGA: read addr=0x" + Integer.toHexString(addr) + " data=0x" + Integer.toHexString(val));
             return val;
         }
     }
@@ -1486,10 +1395,10 @@ public class VGA extends VGA_header {
             this.s = s;
         }
 
+        @Override
         public /*Bitu*/int call(/*Bitu*/int addr, /*Bitu*/int len) {
             int val;
-            val = s.vbe_index;
-            return val;
+            return s.vbe_index;
         }
     }
 
@@ -1500,6 +1409,7 @@ public class VGA extends VGA_header {
             this.s = s;
         }
 
+        @Override
         public /*Bitu*/int call(/*Bitu*/int addr, /*Bitu*/int len) {
             int val;
 
@@ -1529,7 +1439,8 @@ public class VGA extends VGA_header {
                 val = 0;
             }
             if (DEBUG_BOCHS_VBE)
-                System.out.println("VBE: read index=0x" + Integer.toHexString(s.vbe_index) + " val=0x" + Integer.toHexString(val));
+                System.out.println(
+                    "VBE: read index=0x" + Integer.toHexString(s.vbe_index) + " val=0x" + Integer.toHexString(val));
             return val;
         }
     }
@@ -1541,6 +1452,7 @@ public class VGA extends VGA_header {
             this.s = s;
         }
 
+        @Override
         public void call(/*Bitu*/int addr, /*Bitu*/int val, /*Bitu*/int len) {
             s.vbe_index = val;
         }
@@ -1553,22 +1465,21 @@ public class VGA extends VGA_header {
             this.s = s;
         }
 
+        @Override
         public void call(/*Bitu*/int addr, /*Bitu*/int val, /*Bitu*/int len) {
             if (s.vbe_index <= VBE_DISPI_INDEX_NB) {
                 if (DEBUG_BOCHS_VBE)
-                    System.out.println("VBE: write index=0x" + Integer.toHexString(s.vbe_index) + " val=0x" + Integer.toHexString(val));
+                    System.out.println("VBE: write index=0x" + Integer.toHexString(s.vbe_index) + " val=0x"
+                        + Integer.toHexString(val));
                 switch (s.vbe_index) {
                     case VBE_DISPI_INDEX_ID:
-                        if (val == VBE_DISPI_ID0 ||
-                                val == VBE_DISPI_ID1 ||
-                                val == VBE_DISPI_ID2 ||
-                                val == VBE_DISPI_ID3 ||
-                                val == VBE_DISPI_ID4) {
+                        if (val == VBE_DISPI_ID0 || val == VBE_DISPI_ID1 || val == VBE_DISPI_ID2 || val == VBE_DISPI_ID3
+                            || val == VBE_DISPI_ID4) {
                             s.vbe_regs[s.vbe_index] = val;
                         }
                         break;
                     case VBE_DISPI_INDEX_XRES:
-                        if ((val <= VBE_DISPI_MAX_XRES) && ((val & 7) == 0)) {
+                        if (val <= VBE_DISPI_MAX_XRES && (val & 7) == 0) {
                             s.vbe_regs[s.vbe_index] = val;
                         }
                         break;
@@ -1580,37 +1491,35 @@ public class VGA extends VGA_header {
                     case VBE_DISPI_INDEX_BPP:
                         if (val == 0)
                             val = 8;
-                        if (val == 4 || val == 8 || val == 15 ||
-                                val == 16 || val == 24 || val == 32) {
+                        if (val == 4 || val == 8 || val == 15 || val == 16 || val == 24 || val == 32) {
                             s.vbe_regs[s.vbe_index] = val;
                         }
                         break;
                     case VBE_DISPI_INDEX_BANK:
                         if (s.vbe_regs[VBE_DISPI_INDEX_BPP] == 4) {
-                            val &= (s.vbe_bank_mask >> 2);
+                            val &= s.vbe_bank_mask >> 2;
                         } else {
                             val &= s.vbe_bank_mask;
                         }
                         s.vbe_regs[s.vbe_index] = val;
-                        s.bank_offset = (val << 16);
+                        s.bank_offset = val << 16;
                         //vga_update_memory_access(s);
                         break;
                     case VBE_DISPI_INDEX_ENABLE:
-                        if ((val & VBE_DISPI_ENABLED) != 0 && (s.vbe_regs[VBE_DISPI_INDEX_ENABLE] & VBE_DISPI_ENABLED) == 0) {
+                        if ((val & VBE_DISPI_ENABLED) != 0
+                            && (s.vbe_regs[VBE_DISPI_INDEX_ENABLE] & VBE_DISPI_ENABLED) == 0) {
                             int h, shift_control;
 
-                            s.vbe_regs[VBE_DISPI_INDEX_VIRT_WIDTH] =
-                                    s.vbe_regs[VBE_DISPI_INDEX_XRES];
-                            s.vbe_regs[VBE_DISPI_INDEX_VIRT_HEIGHT] =
-                                    s.vbe_regs[VBE_DISPI_INDEX_YRES];
+                            s.vbe_regs[VBE_DISPI_INDEX_VIRT_WIDTH] = s.vbe_regs[VBE_DISPI_INDEX_XRES];
+                            s.vbe_regs[VBE_DISPI_INDEX_VIRT_HEIGHT] = s.vbe_regs[VBE_DISPI_INDEX_YRES];
                             s.vbe_regs[VBE_DISPI_INDEX_X_OFFSET] = 0;
                             s.vbe_regs[VBE_DISPI_INDEX_Y_OFFSET] = 0;
 
                             if (s.vbe_regs[VBE_DISPI_INDEX_BPP] == 4)
                                 s.vbe_line_offset = s.vbe_regs[VBE_DISPI_INDEX_XRES] >> 1;
                             else
-                                s.vbe_line_offset = s.vbe_regs[VBE_DISPI_INDEX_XRES] *
-                                        ((s.vbe_regs[VBE_DISPI_INDEX_BPP] + 7) >> 3);
+                                s.vbe_line_offset = s.vbe_regs[VBE_DISPI_INDEX_XRES]
+                                    * (s.vbe_regs[VBE_DISPI_INDEX_BPP] + 7 >> 3);
                             s.vbe_start_addr = 0;
 
                             /* clear the screen (should be done in BIOS) */
@@ -1618,21 +1527,18 @@ public class VGA extends VGA_header {
                                 s.memset(0, 0, s.vbe_regs[VBE_DISPI_INDEX_YRES] * s.vbe_line_offset);
                             }
 
-                        /* we initialize the VGA graphic mode (should be done
-                           in BIOS) */
+                            /* we initialize the VGA graphic mode (should be done
+                               in BIOS) */
                             /* graphic mode + memory map 1 */
-                            s.gr[VGA_GFX_MISC] = (s.gr[VGA_GFX_MISC] & ~0x0c) | 0x04 |
-                                    VGA_GR06_GRAPHICS_MODE;
+                            s.gr[VGA_GFX_MISC] = s.gr[VGA_GFX_MISC] & ~0x0c | 0x04 | VGA_GR06_GRAPHICS_MODE;
                             s.cr[VGA_CRTC_MODE] |= 3; /* no CGA modes */
                             s.cr[VGA_CRTC_OFFSET] = s.vbe_line_offset >> 3;
                             /* width */
-                            s.cr[VGA_CRTC_H_DISP] =
-                                    (s.vbe_regs[VBE_DISPI_INDEX_XRES] >> 3) - 1;
+                            s.cr[VGA_CRTC_H_DISP] = (s.vbe_regs[VBE_DISPI_INDEX_XRES] >> 3) - 1;
                             /* height (only meaningful if < 1024) */
                             h = s.vbe_regs[VBE_DISPI_INDEX_YRES] - 1;
                             s.cr[VGA_CRTC_V_DISP_END] = h;
-                            s.cr[VGA_CRTC_OVERFLOW] = (s.cr[VGA_CRTC_OVERFLOW] & ~0x42) |
-                                    ((h >> 7) & 0x02) | ((h >> 3) & 0x40);
+                            s.cr[VGA_CRTC_OVERFLOW] = s.cr[VGA_CRTC_OVERFLOW] & ~0x42 | h >> 7 & 0x02 | h >> 3 & 0x40;
                             /* line compare to 1023 */
                             s.cr[VGA_CRTC_LINE_COMPARE] = 0xff;
                             s.cr[VGA_CRTC_OVERFLOW] |= 0x10;
@@ -1648,8 +1554,7 @@ public class VGA extends VGA_header {
                                 /* activate all planes */
                                 s.sr[VGA_SEQ_PLANE_WRITE] |= VGA_SR02_ALL_PLANES;
                             }
-                            s.gr[VGA_GFX_MODE] = (s.gr[VGA_GFX_MODE] & ~0x60) |
-                                    (shift_control << 5);
+                            s.gr[VGA_GFX_MODE] = s.gr[VGA_GFX_MODE] & ~0x60 | shift_control << 5;
                             s.cr[VGA_CRTC_MAX_SCAN] &= ~0x9f; /* no double scan */
                         } else {
                             /* XXX: the bios should do that */
@@ -1668,7 +1573,7 @@ public class VGA extends VGA_header {
                         if (s.vbe_regs[VBE_DISPI_INDEX_BPP] == 4)
                             line_offset = w >> 1;
                         else
-                            line_offset = w * ((s.vbe_regs[VBE_DISPI_INDEX_BPP] + 7) >> 3);
+                            line_offset = w * (s.vbe_regs[VBE_DISPI_INDEX_BPP] + 7 >> 3);
                         h = s.vram_size / line_offset;
                         /* XXX: support weird bochs semantics ? */
                         if (h < s.vbe_regs[VBE_DISPI_INDEX_YRES])
@@ -1677,7 +1582,7 @@ public class VGA extends VGA_header {
                         s.vbe_regs[VBE_DISPI_INDEX_VIRT_HEIGHT] = h;
                         s.vbe_line_offset = line_offset;
                     }
-                    break;
+                        break;
                     case VBE_DISPI_INDEX_X_OFFSET:
                     case VBE_DISPI_INDEX_Y_OFFSET: {
                         int x;
@@ -1687,10 +1592,10 @@ public class VGA extends VGA_header {
                         if (s.vbe_regs[VBE_DISPI_INDEX_BPP] == 4)
                             s.vbe_start_addr += x >> 1;
                         else
-                            s.vbe_start_addr += x * ((s.vbe_regs[VBE_DISPI_INDEX_BPP] + 7) >> 3);
+                            s.vbe_start_addr += x * (s.vbe_regs[VBE_DISPI_INDEX_BPP] + 7 >> 3);
                         s.vbe_start_addr >>= 2;
                     }
-                    break;
+                        break;
                     default:
                         break;
                 }
@@ -1698,7 +1603,7 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class vga_mem extends Paging.PageHandler {
+    private static class vga_mem extends Paging.PageHandler {
         VGACommonState s;
 
         public vga_mem(VGACommonState s) {
@@ -1706,22 +1611,25 @@ public class VGA extends VGA_header {
             flags = Paging.PFLAG_NOCODE;
         }
 
+        @Override
         public /*HostPt*/int GetHostReadPt(/*Bitu*/int phys_page) {
             return -1;
         }
 
+        @Override
         public /*HostPt*/int GetHostWritePt(/*Bitu*/int phys_page) {
             return -1;
         }
 
-        public void writeb(/*PhysPt*/int addr,/*Bitu*/int val) {
+        @Override
+        public void writeb(/*PhysPt*/int addr, /*Bitu*/int val) {
             int memory_map_mode, plane, write_mode, b, func_select, mask;
             int write_mask, bit_mask = 0, set_mask;
 
             if (DEBUG_VGA_MEM)
                 System.out.println("vga: [0x" + Integer.toHexString(addr) + "] = 0x" + Integer.toHexString(val));
             /* convert to VGA memory offset */
-            memory_map_mode = (s.gr[VGA_GFX_MISC] >> 2) & 3;
+            memory_map_mode = s.gr[VGA_GFX_MISC] >> 2 & 3;
             addr &= 0x1ffff;
             switch (memory_map_mode) {
                 case 0:
@@ -1747,7 +1655,7 @@ public class VGA extends VGA_header {
             if ((s.sr[VGA_SEQ_MEMORY_MODE] & VGA_SR04_CHN_4M) != 0) {
                 /* chain 4 mode : simplest access */
                 plane = addr & 3;
-                mask = (1 << plane);
+                mask = 1 << plane;
                 if ((s.sr[VGA_SEQ_PLANE_WRITE] & mask) != 0) {
                     s.writeb(addr, val);
                     if (DEBUG_VGA_MEM)
@@ -1757,10 +1665,10 @@ public class VGA extends VGA_header {
                 }
             } else if ((s.gr[VGA_GFX_MODE] & 0x10) != 0) {
                 /* odd/even mode (aka text mode mapping) */
-                plane = (s.gr[VGA_GFX_PLANE_READ] & 2) | (addr & 1);
-                mask = (1 << plane);
+                plane = s.gr[VGA_GFX_PLANE_READ] & 2 | addr & 1;
+                mask = 1 << plane;
                 if ((s.sr[VGA_SEQ_PLANE_WRITE] & mask) != 0) {
-                    addr = ((addr & ~1) << 1) | plane;
+                    addr = (addr & ~1) << 1 | plane;
                     s.writeb(addr, val);
                     if (DEBUG_VGA_MEM)
                         System.out.println("vga: odd/even: [0x" + Integer.toHexString(addr) + "]");
@@ -1776,14 +1684,13 @@ public class VGA extends VGA_header {
                     case 0:
                         /* rotate */
                         b = s.gr[VGA_GFX_DATA_ROTATE] & 7;
-                        val = ((val >> b) | (val << (8 - b))) & 0xff;
+                        val = (val >> b | val << 8 - b) & 0xff;
                         val |= val << 8;
                         val |= val << 16;
 
                         /* apply set/reset mask */
                         set_mask = mask16[s.gr[VGA_GFX_SR_ENABLE]];
-                        val = (val & ~set_mask) |
-                                (mask16[s.gr[VGA_GFX_SR_VALUE]] & set_mask);
+                        val = val & ~set_mask | mask16[s.gr[VGA_GFX_SR_VALUE]] & set_mask;
                         bit_mask = s.gr[VGA_GFX_BIT_MASK];
                         break;
                     case 1:
@@ -1797,7 +1704,7 @@ public class VGA extends VGA_header {
                     case 3:
                         /* rotate */
                         b = s.gr[VGA_GFX_DATA_ROTATE] & 7;
-                        val = (val >> b) | (val << (8 - b));
+                        val = val >> b | val << 8 - b;
 
                         bit_mask = s.gr[VGA_GFX_BIT_MASK] & val;
                         val = mask16[s.gr[VGA_GFX_SR_VALUE]];
@@ -1828,25 +1735,27 @@ public class VGA extends VGA_header {
                     /* apply bit mask */
                     bit_mask |= bit_mask << 8;
                     bit_mask |= bit_mask << 16;
-                    val = (val & bit_mask) | (s.latch & ~bit_mask);
+                    val = val & bit_mask | s.latch & ~bit_mask;
                 }
                 /* mask data according to sr[2] */
                 mask = s.sr[VGA_SEQ_PLANE_WRITE];
                 s.plane_updated |= mask; /* only used to detect font change */
                 write_mask = mask16[mask];
-                s.writed(addr * 4, (s.readd(addr * 4) & ~write_mask) | (val & write_mask));
+                s.writed(addr * 4, s.readd(addr * 4) & ~write_mask | val & write_mask);
                 if (DEBUG_VGA_MEM)
-                    System.out.println("vga: latch: [0x" + Integer.toHexString(addr * 4) + "] mask=0x" + Integer.toHexString(write_mask) + " val=0x" + Integer.toHexString(val));
+                    System.out.println("vga: latch: [0x" + Integer.toHexString(addr * 4) + "] mask=0x"
+                        + Integer.toHexString(write_mask) + " val=0x" + Integer.toHexString(val));
                 //memory_region_set_dirty(&s.vram, addr << 2, sizeof(uint32_t));
             }
         }
 
+        @Override
         public /*Bitu*/int readb(/*PhysPt*/int addr) {
             int memory_map_mode, plane;
             int ret;
 
             /* convert to VGA memory offset */
-            memory_map_mode = (s.gr[VGA_GFX_MISC] >> 2) & 3;
+            memory_map_mode = s.gr[VGA_GFX_MISC] >> 2 & 3;
             addr &= 0x1ffff;
             switch (memory_map_mode) {
                 case 0:
@@ -1874,8 +1783,8 @@ public class VGA extends VGA_header {
                 ret = s.readb(addr);
             } else if ((s.gr[VGA_GFX_MODE] & 0x10) != 0) {
                 /* odd/even mode (aka text mode mapping) */
-                plane = (s.gr[VGA_GFX_PLANE_READ] & 2) | (addr & 1);
-                ret = s.readb(((addr & ~1) << 1) | plane);
+                plane = s.gr[VGA_GFX_PLANE_READ] & 2 | addr & 1;
+                ret = s.readb((addr & ~1) << 1 | plane);
             } else {
                 /* standard VGA latched access */
                 s.latch = s.readd(addr * 4);
@@ -1886,18 +1795,18 @@ public class VGA extends VGA_header {
                     ret = GET_PLANE(s.latch, plane);
                 } else {
                     /* read mode 1 */
-                    ret = (s.latch ^ mask16[s.gr[VGA_GFX_COMPARE_VALUE]]) &
-                            mask16[s.gr[VGA_GFX_COMPARE_MASK]];
+                    ret = (s.latch ^ mask16[s.gr[VGA_GFX_COMPARE_VALUE]]) & mask16[s.gr[VGA_GFX_COMPARE_MASK]];
                     ret |= ret >> 16;
                     ret |= ret >> 8;
-                    ret = (~ret) & 0xff;
+                    ret = ~ret & 0xff;
                 }
             }
             return ret;
         }
     }
 
-    static private class vga_draw_glyph8_8 implements vga_draw_glyph8_func {
+    private static class vga_draw_glyph8_8 implements vga_draw_glyph8_func {
+        @Override
         public void call(VGACommonState s, int d, int linesize, int font_ptr, int h, int fgcol, int bgcol) {
             int font_data, xorcol;
 
@@ -1912,7 +1821,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class vga_draw_glyph8_16 implements vga_draw_glyph8_func {
+    private static class vga_draw_glyph8_16 implements vga_draw_glyph8_func {
+        @Override
         public void call(VGACommonState s, int d, int linesize, int font_ptr, int h, int fgcol, int bgcol) {
             int font_data, xorcol;
 
@@ -1927,7 +1837,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class vga_draw_glyph8_32 implements vga_draw_glyph8_func {
+    private static class vga_draw_glyph8_32 implements vga_draw_glyph8_func {
+        @Override
         public void call(VGACommonState s, int d, int linesize, int font_ptr, int h, int fgcol, int bgcol) {
             int font_data, xorcol;
 
@@ -1942,7 +1853,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class vga_draw_glyph16_8 implements vga_draw_glyph8_func {
+    private static class vga_draw_glyph16_8 implements vga_draw_glyph8_func {
+        @Override
         public void call(VGACommonState s, int d, int linesize, int font_ptr, int h, int fgcol, int bgcol) {
             int font_data, xorcol;
 
@@ -1958,7 +1870,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class vga_draw_glyph16_16 implements vga_draw_glyph8_func {
+    private static class vga_draw_glyph16_16 implements vga_draw_glyph8_func {
+        @Override
         public void call(VGACommonState s, int d, int linesize, int font_ptr, int h, int fgcol, int bgcol) {
             int font_data, xorcol;
 
@@ -1974,7 +1887,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class vga_draw_glyph16_32 implements vga_draw_glyph8_func {
+    private static class vga_draw_glyph16_32 implements vga_draw_glyph8_func {
+        @Override
         public void call(VGACommonState s, int d, int linesize, int font_ptr, int h, int fgcol, int bgcol) {
             int font_data, xorcol;
 
@@ -1990,15 +1904,17 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class vga_draw_glyph9_8 implements vga_draw_glyph9_func {
-        public void call(VGACommonState s, int d, int linesize, int font_ptr, int h, int fgcol, int bgcol, boolean dup9) {
+    private static class vga_draw_glyph9_8 implements vga_draw_glyph9_func {
+        @Override
+        public void call(VGACommonState s, int d, int linesize, int font_ptr, int h, int fgcol, int bgcol,
+            boolean dup9) {
             int font_data, xorcol, v;
 
             xorcol = bgcol ^ fgcol;
             do {
                 font_data = s.readb(font_ptr);
-                s.writed(d, (dmask16[(font_data >> 4)] & xorcol) ^ bgcol);
-                v = (dmask16[(font_data >> 0) & 0xf] & xorcol) ^ bgcol;
+                s.writed(d, dmask16[font_data >> 4] & xorcol ^ bgcol);
+                v = dmask16[font_data >> 0 & 0xf] & xorcol ^ bgcol;
                 s.writed(d + 4, v);
                 if (dup9)
                     s.writeb(d + 8, v >> 24);
@@ -2011,17 +1927,19 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class vga_draw_glyph9_16 implements vga_draw_glyph9_func {
-        public void call(VGACommonState s, int d, int linesize, int font_ptr, int h, int fgcol, int bgcol, boolean dup9) {
+    private static class vga_draw_glyph9_16 implements vga_draw_glyph9_func {
+        @Override
+        public void call(VGACommonState s, int d, int linesize, int font_ptr, int h, int fgcol, int bgcol,
+            boolean dup9) {
             int font_data, xorcol, v;
 
             xorcol = bgcol ^ fgcol;
             do {
                 font_data = s.readb(font_ptr);
-                s.writed(d, (dmask4[(font_data >> 6)] & xorcol) ^ bgcol);
-                s.writed(d + 4, (dmask4[(font_data >> 4) & 3] & xorcol) ^ bgcol);
-                s.writed(d + 8, (dmask4[(font_data >> 2) & 3] & xorcol) ^ bgcol);
-                v = (dmask4[(font_data >> 0) & 3] & xorcol) ^ bgcol;
+                s.writed(d, dmask4[font_data >> 6] & xorcol ^ bgcol);
+                s.writed(d + 4, dmask4[font_data >> 4 & 3] & xorcol ^ bgcol);
+                s.writed(d + 8, dmask4[font_data >> 2 & 3] & xorcol ^ bgcol);
+                v = dmask4[font_data >> 0 & 3] & xorcol ^ bgcol;
                 s.writed(d + 12, v);
                 if (dup9)
                     s.writew(d + 16, v >> 16);
@@ -2034,21 +1952,23 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class vga_draw_glyph9_32 implements vga_draw_glyph9_func {
-        public void call(VGACommonState s, int d, int linesize, int font_ptr, int h, int fgcol, int bgcol, boolean dup9) {
+    private static class vga_draw_glyph9_32 implements vga_draw_glyph9_func {
+        @Override
+        public void call(VGACommonState s, int d, int linesize, int font_ptr, int h, int fgcol, int bgcol,
+            boolean dup9) {
             int font_data, xorcol, v;
 
             xorcol = bgcol ^ fgcol;
             do {
                 font_data = s.readb(font_ptr);
-                s.writed(d, (-((font_data >> 7)) & xorcol) ^ bgcol);
-                s.writed(d + 4, (-((font_data >> 6) & 1) & xorcol) ^ bgcol);
-                s.writed(d + 8, (-((font_data >> 5) & 1) & xorcol) ^ bgcol);
-                s.writed(d + 12, (-((font_data >> 4) & 1) & xorcol) ^ bgcol);
-                s.writed(d + 16, (-((font_data >> 3) & 1) & xorcol) ^ bgcol);
-                s.writed(d + 20, (-((font_data >> 2) & 1) & xorcol) ^ bgcol);
-                s.writed(d + 24, (-((font_data >> 1) & 1) & xorcol) ^ bgcol);
-                v = (-((font_data >> 0) & 1) & xorcol) ^ bgcol;
+                s.writed(d, -(font_data >> 7) & xorcol ^ bgcol);
+                s.writed(d + 4, -(font_data >> 6 & 1) & xorcol ^ bgcol);
+                s.writed(d + 8, -(font_data >> 5 & 1) & xorcol ^ bgcol);
+                s.writed(d + 12, -(font_data >> 4 & 1) & xorcol ^ bgcol);
+                s.writed(d + 16, -(font_data >> 3 & 1) & xorcol ^ bgcol);
+                s.writed(d + 20, -(font_data >> 2 & 1) & xorcol ^ bgcol);
+                s.writed(d + 24, -(font_data >> 1 & 1) & xorcol ^ bgcol);
+                v = -(font_data >> 0 & 1) & xorcol ^ bgcol;
                 s.writed(d + 28, v);
                 if (dup9)
                     s.writed(d + 32, v);
@@ -2061,7 +1981,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line2_8 implements vga_draw_line_func {
+    private static final class vga_draw_line2_8 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int plane_mask, data, v;
             int x;
@@ -2073,24 +1994,25 @@ public class VGA extends VGA_header {
                 data &= plane_mask;
                 v = expand2[GET_PLANE(data, 0)];
                 v |= expand2[GET_PLANE(data, 2)] << 2;
-                s1.writeb(d, (v >> 12) & 0xf);
-                s1.writeb(d + 1, (v >> 8) & 0xf);
-                s1.writeb(d + 2, (v >> 4) & 0xf);
-                s1.writeb(d + 3, (v >> 0) & 0xf);
+                s1.writeb(d, v >> 12 & 0xf);
+                s1.writeb(d + 1, v >> 8 & 0xf);
+                s1.writeb(d + 2, v >> 4 & 0xf);
+                s1.writeb(d + 3, v >> 0 & 0xf);
 
                 v = expand2[GET_PLANE(data, 1)];
                 v |= expand2[GET_PLANE(data, 3)] << 2;
-                s1.writeb(d + 4, (v >> 12) & 0xf);
-                s1.writeb(d + 5, (v >> 8) & 0xf);
-                s1.writeb(d + 6, (v >> 4) & 0xf);
-                s1.writeb(d + 7, (v >> 0) & 0xf);
+                s1.writeb(d + 4, v >> 12 & 0xf);
+                s1.writeb(d + 5, v >> 8 & 0xf);
+                s1.writeb(d + 6, v >> 4 & 0xf);
+                s1.writeb(d + 7, v >> 0 & 0xf);
                 d += 8;
                 s += 4;
             }
         }
     }
 
-    static private final class vga_draw_line2_16 implements vga_draw_line_func {
+    private static final class vga_draw_line2_16 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int plane_mask, data, v;
             int[] palette;
@@ -2105,23 +2027,24 @@ public class VGA extends VGA_header {
                 v = expand2[GET_PLANE(data, 0)];
                 v |= expand2[GET_PLANE(data, 2)] << 2;
                 s1.writew(d, palette[v >> 12]);
-                s1.writew(d + 2, palette[(v >> 8) & 0xf]);
-                s1.writew(d + 4, palette[(v >> 4) & 0xf]);
-                s1.writew(d + 6, palette[(v >> 0) & 0xf]);
+                s1.writew(d + 2, palette[v >> 8 & 0xf]);
+                s1.writew(d + 4, palette[v >> 4 & 0xf]);
+                s1.writew(d + 6, palette[v >> 0 & 0xf]);
 
                 v = expand2[GET_PLANE(data, 1)];
                 v |= expand2[GET_PLANE(data, 3)] << 2;
                 s1.writew(d + 8, palette[v >> 12]);
-                s1.writew(d + 10, palette[(v >> 8) & 0xf]);
-                s1.writew(d + 12, palette[(v >> 4) & 0xf]);
-                s1.writew(d + 14, palette[(v >> 0) & 0xf]);
+                s1.writew(d + 10, palette[v >> 8 & 0xf]);
+                s1.writew(d + 12, palette[v >> 4 & 0xf]);
+                s1.writew(d + 14, palette[v >> 0 & 0xf]);
                 d += 16;
                 s += 4;
             }
         }
     }
 
-    static private final class vga_draw_line2_32 implements vga_draw_line_func {
+    private static final class vga_draw_line2_32 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int plane_mask, data, v;
             int[] palette;
@@ -2136,23 +2059,24 @@ public class VGA extends VGA_header {
                 v = expand2[GET_PLANE(data, 0)];
                 v |= expand2[GET_PLANE(data, 2)] << 2;
                 s1.writed(d, palette[v >> 12]);
-                s1.writed(d + 4, palette[(v >> 8) & 0xf]);
-                s1.writed(d + 8, palette[(v >> 4) & 0xf]);
-                s1.writed(d + 12, palette[(v >> 0) & 0xf]);
+                s1.writed(d + 4, palette[v >> 8 & 0xf]);
+                s1.writed(d + 8, palette[v >> 4 & 0xf]);
+                s1.writed(d + 12, palette[v >> 0 & 0xf]);
 
                 v = expand2[GET_PLANE(data, 1)];
                 v |= expand2[GET_PLANE(data, 3)] << 2;
                 s1.writed(d + 16, palette[v >> 12]);
-                s1.writed(d + 20, palette[(v >> 8) & 0xf]);
-                s1.writed(d + 24, palette[(v >> 4) & 0xf]);
-                s1.writed(d + 28, palette[(v >> 0) & 0xf]);
+                s1.writed(d + 20, palette[v >> 8 & 0xf]);
+                s1.writed(d + 24, palette[v >> 4 & 0xf]);
+                s1.writed(d + 28, palette[v >> 0 & 0xf]);
                 d += 32;
                 s += 4;
             }
         }
     }
 
-    static private final class vga_draw_line4_8 implements vga_draw_line_func {
+    private static final class vga_draw_line4_8 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int plane_mask, data, v;
             int x;
@@ -2167,20 +2091,21 @@ public class VGA extends VGA_header {
                 v |= expand4[GET_PLANE(data, 2)] << 2;
                 v |= expand4[GET_PLANE(data, 3)] << 3;
                 s1.writeb(d, v >>> 28);
-                s1.writeb(d + 1, (v >> 24) & 0xf);
-                s1.writeb(d + 2, (v >> 20) & 0xf);
-                s1.writeb(d + 3, (v >> 16) & 0xf);
-                s1.writeb(d + 4, (v >> 12) & 0xf);
-                s1.writeb(d + 5, (v >> 8) & 0xf);
-                s1.writeb(d + 6, (v >> 4) & 0xf);
-                s1.writeb(d + 7, (v >> 0) & 0xf);
+                s1.writeb(d + 1, v >> 24 & 0xf);
+                s1.writeb(d + 2, v >> 20 & 0xf);
+                s1.writeb(d + 3, v >> 16 & 0xf);
+                s1.writeb(d + 4, v >> 12 & 0xf);
+                s1.writeb(d + 5, v >> 8 & 0xf);
+                s1.writeb(d + 6, v >> 4 & 0xf);
+                s1.writeb(d + 7, v >> 0 & 0xf);
                 d += 8;
                 s += 4;
             }
         }
     }
 
-    static private final class vga_draw_line4_16 implements vga_draw_line_func {
+    private static final class vga_draw_line4_16 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int plane_mask, data, v;
             int[] palette;
@@ -2197,20 +2122,21 @@ public class VGA extends VGA_header {
                 v |= expand4[GET_PLANE(data, 2)] << 2;
                 v |= expand4[GET_PLANE(data, 3)] << 3;
                 s1.writew(d, palette[v >> 28]);
-                s1.writew(d + 2, palette[(v >> 24) & 0xf]);
-                s1.writew(d + 4, palette[(v >> 20) & 0xf]);
-                s1.writew(d + 6, palette[(v >> 16) & 0xf]);
-                s1.writew(d + 8, palette[(v >> 12) & 0xf]);
-                s1.writew(d + 10, palette[(v >> 8) & 0xf]);
-                s1.writew(d + 12, palette[(v >> 4) & 0xf]);
-                s1.writew(d + 14, palette[(v >> 0) & 0xf]);
+                s1.writew(d + 2, palette[v >> 24 & 0xf]);
+                s1.writew(d + 4, palette[v >> 20 & 0xf]);
+                s1.writew(d + 6, palette[v >> 16 & 0xf]);
+                s1.writew(d + 8, palette[v >> 12 & 0xf]);
+                s1.writew(d + 10, palette[v >> 8 & 0xf]);
+                s1.writew(d + 12, palette[v >> 4 & 0xf]);
+                s1.writew(d + 14, palette[v >> 0 & 0xf]);
                 d += 16;
                 s += 4;
             }
         }
     }
 
-    static private final class vga_draw_line4_32 implements vga_draw_line_func {
+    private static final class vga_draw_line4_32 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int plane_mask, data, v;
             int[] palette;
@@ -2227,20 +2153,21 @@ public class VGA extends VGA_header {
                 v |= expand4[GET_PLANE(data, 2)] << 2;
                 v |= expand4[GET_PLANE(data, 3)] << 3;
                 s1.writed(d, palette[v >>> 28]);
-                s1.writed(d + 4, palette[(v >> 24) & 0xf]);
-                s1.writed(d + 8, palette[(v >> 20) & 0xf]);
-                s1.writed(d + 12, palette[(v >> 16) & 0xf]);
-                s1.writed(d + 16, palette[(v >> 12) & 0xf]);
-                s1.writed(d + 20, palette[(v >> 8) & 0xf]);
-                s1.writed(d + 24, palette[(v >> 4) & 0xf]);
-                s1.writed(d + 28, palette[(v >> 0) & 0xf]);
+                s1.writed(d + 4, palette[v >> 24 & 0xf]);
+                s1.writed(d + 8, palette[v >> 20 & 0xf]);
+                s1.writed(d + 12, palette[v >> 16 & 0xf]);
+                s1.writed(d + 16, palette[v >> 12 & 0xf]);
+                s1.writed(d + 20, palette[v >> 8 & 0xf]);
+                s1.writed(d + 24, palette[v >> 4 & 0xf]);
+                s1.writed(d + 28, palette[v >> 0 & 0xf]);
                 d += 32;
                 s += 4;
             }
         }
     }
 
-    static private final class vga_draw_line8_8 implements vga_draw_line_func {
+    private static final class vga_draw_line8_8 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int x;
 
@@ -2260,7 +2187,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line8_16 implements vga_draw_line_func {
+    private static final class vga_draw_line8_16 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int[] palette;
             int x;
@@ -2282,7 +2210,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line8_32 implements vga_draw_line_func {
+    private static final class vga_draw_line8_32 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int[] palette;
             int x;
@@ -2304,7 +2233,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line15_8 implements vga_draw_line_func {
+    private static final class vga_draw_line15_8 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int v, r, g, b;
@@ -2312,9 +2242,9 @@ public class VGA extends VGA_header {
             w = width;
             do {
                 v = s1.readw(s);
-                r = (v >> 7) & 0xf8;
-                g = (v >> 2) & 0xf8;
-                b = (v << 3) & 0xf8;
+                r = v >> 7 & 0xf8;
+                g = v >> 2 & 0xf8;
+                b = v << 3 & 0xf8;
                 s1.writeb(d, PixelOps.rgb_to_pixel8(r, g, b));
                 s += 2;
                 d++;
@@ -2322,7 +2252,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line15_15 implements vga_draw_line_func {
+    private static final class vga_draw_line15_15 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int v, r, g, b;
@@ -2330,9 +2261,9 @@ public class VGA extends VGA_header {
             w = width;
             do {
                 v = s1.readw(s);
-                r = (v >> 7) & 0xf8;
-                g = (v >> 2) & 0xf8;
-                b = (v << 3) & 0xf8;
+                r = v >> 7 & 0xf8;
+                g = v >> 2 & 0xf8;
+                b = v << 3 & 0xf8;
                 s1.writew(d, PixelOps.rgb_to_pixel15(r, g, b));
                 s += 2;
                 d += 2;
@@ -2340,7 +2271,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line15_15bgr implements vga_draw_line_func {
+    private static final class vga_draw_line15_15bgr implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int v, r, g, b;
@@ -2348,9 +2280,9 @@ public class VGA extends VGA_header {
             w = width;
             do {
                 v = s1.readw(s);
-                r = (v >> 7) & 0xf8;
-                g = (v >> 2) & 0xf8;
-                b = (v << 3) & 0xf8;
+                r = v >> 7 & 0xf8;
+                g = v >> 2 & 0xf8;
+                b = v << 3 & 0xf8;
                 s1.writew(d, PixelOps.rgb_to_pixel15bgr(r, g, b));
                 s += 2;
                 d += 2;
@@ -2358,7 +2290,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line15_16 implements vga_draw_line_func {
+    private static final class vga_draw_line15_16 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int v, r, g, b;
@@ -2366,9 +2299,9 @@ public class VGA extends VGA_header {
             w = width;
             do {
                 v = s1.readw(s);
-                r = (v >> 7) & 0xf8;
-                g = (v >> 2) & 0xf8;
-                b = (v << 3) & 0xf8;
+                r = v >> 7 & 0xf8;
+                g = v >> 2 & 0xf8;
+                b = v << 3 & 0xf8;
                 s1.writew(d, PixelOps.rgb_to_pixel16(r, g, b));
                 s += 2;
                 d += 2;
@@ -2376,7 +2309,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line15_16bgr implements vga_draw_line_func {
+    private static final class vga_draw_line15_16bgr implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int v, r, g, b;
@@ -2384,9 +2318,9 @@ public class VGA extends VGA_header {
             w = width;
             do {
                 v = s1.readw(s);
-                r = (v >> 7) & 0xf8;
-                g = (v >> 2) & 0xf8;
-                b = (v << 3) & 0xf8;
+                r = v >> 7 & 0xf8;
+                g = v >> 2 & 0xf8;
+                b = v << 3 & 0xf8;
                 s1.writew(d, PixelOps.rgb_to_pixel16bgr(r, g, b));
                 s += 2;
                 d += 2;
@@ -2394,7 +2328,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line15_32 implements vga_draw_line_func {
+    private static final class vga_draw_line15_32 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int v, r, g, b;
@@ -2402,9 +2337,9 @@ public class VGA extends VGA_header {
             w = width;
             do {
                 v = s1.readw(s);
-                r = (v >> 7) & 0xf8;
-                g = (v >> 2) & 0xf8;
-                b = (v << 3) & 0xf8;
+                r = v >> 7 & 0xf8;
+                g = v >> 2 & 0xf8;
+                b = v << 3 & 0xf8;
                 s1.writed(d, PixelOps.rgb_to_pixel32(r, g, b));
                 s += 2;
                 d += 4;
@@ -2412,7 +2347,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line15_32bgr implements vga_draw_line_func {
+    private static final class vga_draw_line15_32bgr implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int v, r, g, b;
@@ -2420,9 +2356,9 @@ public class VGA extends VGA_header {
             w = width;
             do {
                 v = s1.readw(s);
-                r = (v >> 7) & 0xf8;
-                g = (v >> 2) & 0xf8;
-                b = (v << 3) & 0xf8;
+                r = v >> 7 & 0xf8;
+                g = v >> 2 & 0xf8;
+                b = v << 3 & 0xf8;
                 s1.writed(d, PixelOps.rgb_to_pixel32bgr(r, g, b));
                 s += 2;
                 d += 4;
@@ -2430,7 +2366,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line16_8 implements vga_draw_line_func {
+    private static final class vga_draw_line16_8 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int v, r, g, b;
@@ -2438,9 +2375,9 @@ public class VGA extends VGA_header {
             w = width;
             do {
                 v = s1.readw(s);
-                r = (v >> 8) & 0xf8;
-                g = (v >> 3) & 0xfc;
-                b = (v << 3) & 0xf8;
+                r = v >> 8 & 0xf8;
+                g = v >> 3 & 0xfc;
+                b = v << 3 & 0xf8;
                 s1.writeb(d, PixelOps.rgb_to_pixel8(r, g, b));
                 s += 2;
                 d++;
@@ -2448,7 +2385,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line16_15 implements vga_draw_line_func {
+    private static final class vga_draw_line16_15 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int v, r, g, b;
@@ -2456,9 +2394,9 @@ public class VGA extends VGA_header {
             w = width;
             do {
                 v = s1.readw(s);
-                r = (v >> 8) & 0xf8;
-                g = (v >> 3) & 0xfc;
-                b = (v << 3) & 0xf8;
+                r = v >> 8 & 0xf8;
+                g = v >> 3 & 0xfc;
+                b = v << 3 & 0xf8;
                 s1.writew(d, PixelOps.rgb_to_pixel15(r, g, b));
                 s += 2;
                 d += 2;
@@ -2466,7 +2404,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line16_15bgr implements vga_draw_line_func {
+    private static final class vga_draw_line16_15bgr implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int v, r, g, b;
@@ -2474,9 +2413,9 @@ public class VGA extends VGA_header {
             w = width;
             do {
                 v = s1.readw(s);
-                r = (v >> 8) & 0xf8;
-                g = (v >> 3) & 0xfc;
-                b = (v << 3) & 0xf8;
+                r = v >> 8 & 0xf8;
+                g = v >> 3 & 0xfc;
+                b = v << 3 & 0xf8;
                 s1.writew(d, PixelOps.rgb_to_pixel15bgr(r, g, b));
                 s += 2;
                 d += 2;
@@ -2484,7 +2423,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line16_16 implements vga_draw_line_func {
+    private static final class vga_draw_line16_16 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int v, r, g, b;
@@ -2492,9 +2432,9 @@ public class VGA extends VGA_header {
             w = width;
             do {
                 v = s1.readw(s);
-                r = (v >> 8) & 0xf8;
-                g = (v >> 3) & 0xfc;
-                b = (v << 3) & 0xf8;
+                r = v >> 8 & 0xf8;
+                g = v >> 3 & 0xfc;
+                b = v << 3 & 0xf8;
                 s1.writew(d, PixelOps.rgb_to_pixel16(r, g, b));
                 s += 2;
                 d += 2;
@@ -2502,7 +2442,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line16_16bgr implements vga_draw_line_func {
+    private static final class vga_draw_line16_16bgr implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int v, r, g, b;
@@ -2510,9 +2451,9 @@ public class VGA extends VGA_header {
             w = width;
             do {
                 v = s1.readw(s);
-                r = (v >> 8) & 0xf8;
-                g = (v >> 3) & 0xfc;
-                b = (v << 3) & 0xf8;
+                r = v >> 8 & 0xf8;
+                g = v >> 3 & 0xfc;
+                b = v << 3 & 0xf8;
                 s1.writew(d, PixelOps.rgb_to_pixel16bgr(r, g, b));
                 s += 2;
                 d += 2;
@@ -2520,7 +2461,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line16_32 implements vga_draw_line_func {
+    private static final class vga_draw_line16_32 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int v, r, g, b;
@@ -2528,9 +2470,9 @@ public class VGA extends VGA_header {
             w = width;
             do {
                 v = s1.readw(s);
-                r = (v >> 8) & 0xf8;
-                g = (v >> 3) & 0xfc;
-                b = (v << 3) & 0xf8;
+                r = v >> 8 & 0xf8;
+                g = v >> 3 & 0xfc;
+                b = v << 3 & 0xf8;
                 s1.writed(d, PixelOps.rgb_to_pixel32(r, g, b));
                 s += 2;
                 d += 4;
@@ -2538,7 +2480,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line16_32bgr implements vga_draw_line_func {
+    private static final class vga_draw_line16_32bgr implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int v, r, g, b;
@@ -2546,9 +2489,9 @@ public class VGA extends VGA_header {
             w = width;
             do {
                 v = s1.readw(s);
-                r = (v >> 8) & 0xf8;
-                g = (v >> 3) & 0xfc;
-                b = (v << 3) & 0xf8;
+                r = v >> 8 & 0xf8;
+                g = v >> 3 & 0xfc;
+                b = v << 3 & 0xf8;
                 s1.writed(d, PixelOps.rgb_to_pixel32bgr(r, g, b));
                 s += 2;
                 d += 4;
@@ -2556,126 +2499,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line24_8 implements vga_draw_line_func {
-        public void call(VGACommonState s1, int d, int s, int width) {
-            int w;
-            int r, g, b;
-
-            w = width;
-            do {
-                b = s1.readb(s);
-                g = s1.readb(s + 1);
-                r = s1.readb(s + 2);
-                s1.writeb(d, PixelOps.rgb_to_pixel8(r, g, b));
-                s += 3;
-                d++;
-            } while (--w != 0);
-        }
-    }
-
-    static private final class vga_draw_line24_15 implements vga_draw_line_func {
-        public void call(VGACommonState s1, int d, int s, int width) {
-            int w;
-            int r, g, b;
-
-            w = width;
-            do {
-                b = s1.readb(s);
-                g = s1.readb(s + 1);
-                r = s1.readb(s + 2);
-                s1.writew(d, PixelOps.rgb_to_pixel15(r, g, b));
-                s += 3;
-                d += 2;
-            } while (--w != 0);
-        }
-    }
-
-    static private final class vga_draw_line24_15bgr implements vga_draw_line_func {
-        public void call(VGACommonState s1, int d, int s, int width) {
-            int w;
-            int r, g, b;
-
-            w = width;
-            do {
-                b = s1.readb(s);
-                g = s1.readb(s + 1);
-                r = s1.readb(s + 2);
-                s1.writew(d, PixelOps.rgb_to_pixel15bgr(r, g, b));
-                s += 3;
-                d += 2;
-            } while (--w != 0);
-        }
-    }
-
-    static private final class vga_draw_line24_16 implements vga_draw_line_func {
-        public void call(VGACommonState s1, int d, int s, int width) {
-            int w;
-            int r, g, b;
-
-            w = width;
-            do {
-                b = s1.readb(s);
-                g = s1.readb(s + 1);
-                r = s1.readb(s + 2);
-                s1.writew(d, PixelOps.rgb_to_pixel16(r, g, b));
-                s += 3;
-                d += 2;
-            } while (--w != 0);
-        }
-    }
-
-    static private final class vga_draw_line24_16bgr implements vga_draw_line_func {
-        public void call(VGACommonState s1, int d, int s, int width) {
-            int w;
-            int r, g, b;
-
-            w = width;
-            do {
-                b = s1.readb(s);
-                g = s1.readb(s + 1);
-                r = s1.readb(s + 2);
-                s1.writew(d, PixelOps.rgb_to_pixel16bgr(r, g, b));
-                s += 3;
-                d += 2;
-            } while (--w != 0);
-        }
-    }
-
-    static private final class vga_draw_line24_32 implements vga_draw_line_func {
-        public void call(VGACommonState s1, int d, int s, int width) {
-            int w;
-            int r, g, b;
-
-            w = width;
-            do {
-                b = s1.readb(s);
-                g = s1.readb(s + 1);
-                r = s1.readb(s + 2);
-                s1.writed(d, PixelOps.rgb_to_pixel32(r, g, b));
-                s += 3;
-                d += 4;
-            } while (--w != 0);
-        }
-    }
-
-    static private final class vga_draw_line24_32bgr implements vga_draw_line_func {
-        public void call(VGACommonState s1, int d, int s, int width) {
-            int w;
-            int r, g, b;
-
-            w = width;
-            do {
-                b = s1.readb(s);
-                g = s1.readb(s + 1);
-                r = s1.readb(s + 2);
-                s1.writed(d, PixelOps.rgb_to_pixel32bgr(r, g, b));
-                s += 3;
-                d += 4;
-            } while (--w != 0);
-        }
-    }
-
-    static private final class vga_draw_line32_8 implements vga_draw_line_func {
+    private static final class vga_draw_line24_8 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int r, g, b;
@@ -2686,13 +2511,140 @@ public class VGA extends VGA_header {
                 g = s1.readb(s + 1);
                 r = s1.readb(s + 2);
                 s1.writeb(d, PixelOps.rgb_to_pixel8(r, g, b));
+                s += 3;
+                d++;
+            } while (--w != 0);
+        }
+    }
+
+    private static final class vga_draw_line24_15 implements vga_draw_line_func {
+        @Override
+        public void call(VGACommonState s1, int d, int s, int width) {
+            int w;
+            int r, g, b;
+
+            w = width;
+            do {
+                b = s1.readb(s);
+                g = s1.readb(s + 1);
+                r = s1.readb(s + 2);
+                s1.writew(d, PixelOps.rgb_to_pixel15(r, g, b));
+                s += 3;
+                d += 2;
+            } while (--w != 0);
+        }
+    }
+
+    private static final class vga_draw_line24_15bgr implements vga_draw_line_func {
+        @Override
+        public void call(VGACommonState s1, int d, int s, int width) {
+            int w;
+            int r, g, b;
+
+            w = width;
+            do {
+                b = s1.readb(s);
+                g = s1.readb(s + 1);
+                r = s1.readb(s + 2);
+                s1.writew(d, PixelOps.rgb_to_pixel15bgr(r, g, b));
+                s += 3;
+                d += 2;
+            } while (--w != 0);
+        }
+    }
+
+    private static final class vga_draw_line24_16 implements vga_draw_line_func {
+        @Override
+        public void call(VGACommonState s1, int d, int s, int width) {
+            int w;
+            int r, g, b;
+
+            w = width;
+            do {
+                b = s1.readb(s);
+                g = s1.readb(s + 1);
+                r = s1.readb(s + 2);
+                s1.writew(d, PixelOps.rgb_to_pixel16(r, g, b));
+                s += 3;
+                d += 2;
+            } while (--w != 0);
+        }
+    }
+
+    private static final class vga_draw_line24_16bgr implements vga_draw_line_func {
+        @Override
+        public void call(VGACommonState s1, int d, int s, int width) {
+            int w;
+            int r, g, b;
+
+            w = width;
+            do {
+                b = s1.readb(s);
+                g = s1.readb(s + 1);
+                r = s1.readb(s + 2);
+                s1.writew(d, PixelOps.rgb_to_pixel16bgr(r, g, b));
+                s += 3;
+                d += 2;
+            } while (--w != 0);
+        }
+    }
+
+    private static final class vga_draw_line24_32 implements vga_draw_line_func {
+        @Override
+        public void call(VGACommonState s1, int d, int s, int width) {
+            int w;
+            int r, g, b;
+
+            w = width;
+            do {
+                b = s1.readb(s);
+                g = s1.readb(s + 1);
+                r = s1.readb(s + 2);
+                s1.writed(d, PixelOps.rgb_to_pixel32(r, g, b));
+                s += 3;
+                d += 4;
+            } while (--w != 0);
+        }
+    }
+
+    private static final class vga_draw_line24_32bgr implements vga_draw_line_func {
+        @Override
+        public void call(VGACommonState s1, int d, int s, int width) {
+            int w;
+            int r, g, b;
+
+            w = width;
+            do {
+                b = s1.readb(s);
+                g = s1.readb(s + 1);
+                r = s1.readb(s + 2);
+                s1.writed(d, PixelOps.rgb_to_pixel32bgr(r, g, b));
+                s += 3;
+                d += 4;
+            } while (--w != 0);
+        }
+    }
+
+    private static final class vga_draw_line32_8 implements vga_draw_line_func {
+        @Override
+        public void call(VGACommonState s1, int d, int s, int width) {
+            int w;
+            int r, g, b;
+
+            w = width;
+            do {
+                b = s1.readb(s);
+                g = s1.readb(s + 1);
+                r = s1.readb(s + 2);
+                s1.writeb(d, PixelOps.rgb_to_pixel8(r, g, b));
                 s += 4;
                 d++;
             } while (--w != 0);
         }
     }
 
-    static private final class vga_draw_line32_15 implements vga_draw_line_func {
+    private static final class vga_draw_line32_15 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int r, g, b;
@@ -2709,7 +2661,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line32_15bgr implements vga_draw_line_func {
+    private static final class vga_draw_line32_15bgr implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int r, g, b;
@@ -2726,7 +2679,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line32_16 implements vga_draw_line_func {
+    private static final class vga_draw_line32_16 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int r, g, b;
@@ -2743,7 +2697,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line32_16bgr implements vga_draw_line_func {
+    private static final class vga_draw_line32_16bgr implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int r, g, b;
@@ -2760,7 +2715,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line32_32 implements vga_draw_line_func {
+    private static final class vga_draw_line32_32 implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int r, g, b;
@@ -2777,7 +2733,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_draw_line32_32bgr implements vga_draw_line_func {
+    private static final class vga_draw_line32_32bgr implements vga_draw_line_func {
+        @Override
         public void call(VGACommonState s1, int d, int s, int width) {
             int w;
             int r, g, b;
@@ -2794,7 +2751,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class rgb_to_pixel8_dup implements VGACommonState.rgb_to_pixel_dup_func {
+    private static class rgb_to_pixel8_dup implements VGACommonState.rgb_to_pixel_dup_func {
+        @Override
         public int call(int r, int g, int b) {
             int col;
             col = PixelOps.rgb_to_pixel8(r, g, b);
@@ -2804,7 +2762,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class rgb_to_pixel15_dup implements VGACommonState.rgb_to_pixel_dup_func {
+    private static class rgb_to_pixel15_dup implements VGACommonState.rgb_to_pixel_dup_func {
+        @Override
         public int call(int r, int g, int b) {
             int col;
             col = PixelOps.rgb_to_pixel15(r, g, b);
@@ -2813,7 +2772,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class rgb_to_pixel15bgr_dup implements VGACommonState.rgb_to_pixel_dup_func {
+    private static class rgb_to_pixel15bgr_dup implements VGACommonState.rgb_to_pixel_dup_func {
+        @Override
         public int call(int r, int g, int b) {
             int col;
             col = PixelOps.rgb_to_pixel15bgr(r, g, b);
@@ -2822,7 +2782,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class rgb_to_pixel16_dup implements VGACommonState.rgb_to_pixel_dup_func {
+    private static class rgb_to_pixel16_dup implements VGACommonState.rgb_to_pixel_dup_func {
+        @Override
         public int call(int r, int g, int b) {
             int col;
             col = PixelOps.rgb_to_pixel16(r, g, b);
@@ -2831,7 +2792,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class rgb_to_pixel16bgr_dup implements VGACommonState.rgb_to_pixel_dup_func {
+    private static class rgb_to_pixel16bgr_dup implements VGACommonState.rgb_to_pixel_dup_func {
+        @Override
         public int call(int r, int g, int b) {
             int col;
             col = PixelOps.rgb_to_pixel16bgr(r, g, b);
@@ -2840,19 +2802,19 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class rgb_to_pixel32_dup implements VGACommonState.rgb_to_pixel_dup_func {
+    private static class rgb_to_pixel32_dup implements VGACommonState.rgb_to_pixel_dup_func {
+        @Override
         public int call(int r, int g, int b) {
             int col;
-            col = PixelOps.rgb_to_pixel32(r, g, b);
-            return col;
+            return PixelOps.rgb_to_pixel32(r, g, b);
         }
     }
 
-    static private class rgb_to_pixel32bgr_dup implements VGACommonState.rgb_to_pixel_dup_func {
+    private static class rgb_to_pixel32bgr_dup implements VGACommonState.rgb_to_pixel_dup_func {
+        @Override
         public int call(int r, int g, int b) {
             int col;
-            col = PixelOps.rgb_to_pixel32bgr(r, g, b);
-            return col;
+            return PixelOps.rgb_to_pixel32bgr(r, g, b);
         }
     }
 
@@ -3048,7 +3010,8 @@ public class VGA extends VGA_header {
 //        },
 //    };
 
-    static private class vga_get_line_offset implements VGACommonState.get_func {
+    private static class vga_get_line_offset implements VGACommonState.get_func {
+        @Override
         public int call(VGACommonState s) {
             if ((s.vbe_regs[VBE_DISPI_INDEX_ENABLE] & VBE_DISPI_ENABLED) != 0) {
                 return s.vbe_line_offset;
@@ -3061,27 +3024,31 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private class vga_get_start_address implements VGACommonState.get_func {
+    private static class vga_get_start_address implements VGACommonState.get_func {
+        @Override
         public int call(VGACommonState s) {
             if ((s.vbe_regs[VBE_DISPI_INDEX_ENABLE] & VBE_DISPI_ENABLED) != 0) {
                 return s.vbe_start_addr;
             } else {
-                return s.cr[VGA_CRTC_START_LO] | (s.cr[VGA_CRTC_START_HI] << 8);
+                return s.cr[VGA_CRTC_START_LO] | s.cr[VGA_CRTC_START_HI] << 8;
             }
         }
     }
 
-    static private class vga_get_line_compare implements VGACommonState.get_func {
+    private static class vga_get_line_compare implements VGACommonState.get_func {
+        @Override
         public int call(VGACommonState s) {
             if ((s.vbe_regs[VBE_DISPI_INDEX_ENABLE] & VBE_DISPI_ENABLED) != 0) {
                 return 65535;
             } else {
-                return s.cr[VGA_CRTC_LINE_COMPARE] | ((s.cr[VGA_CRTC_OVERFLOW] & 0x10) << 4) | ((s.cr[VGA_CRTC_MAX_SCAN] & 0x40) << 3);
+                return s.cr[VGA_CRTC_LINE_COMPARE] | (s.cr[VGA_CRTC_OVERFLOW] & 0x10) << 4
+                    | (s.cr[VGA_CRTC_MAX_SCAN] & 0x40) << 3;
             }
         }
     }
 
-    static private class vga_get_bpp implements VGACommonState.get_func {
+    private static class vga_get_bpp implements VGACommonState.get_func {
+        @Override
         public int call(VGACommonState s) {
             int ret;
             if ((s.vbe_regs[VBE_DISPI_INDEX_ENABLE] & VBE_DISPI_ENABLED) != 0) {
@@ -3093,7 +3060,8 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_get_resolutionCx implements VGACommonState.get_func {
+    private static final class vga_get_resolutionCx implements VGACommonState.get_func {
+        @Override
         public int call(VGACommonState s) {
             if ((s.vbe_regs[VBE_DISPI_INDEX_ENABLE] & VBE_DISPI_ENABLED) != 0) {
                 return s.vbe_regs[VBE_DISPI_INDEX_XRES];
@@ -3103,17 +3071,19 @@ public class VGA extends VGA_header {
         }
     }
 
-    static private final class vga_get_resolutionCy implements VGACommonState.get_func {
+    private static final class vga_get_resolutionCy implements VGACommonState.get_func {
+        @Override
         public int call(VGACommonState s) {
             if ((s.vbe_regs[VBE_DISPI_INDEX_ENABLE] & VBE_DISPI_ENABLED) != 0) {
                 return s.vbe_regs[VBE_DISPI_INDEX_YRES];
             } else {
-                return (s.cr[VGA_CRTC_V_DISP_END] | ((s.cr[VGA_CRTC_OVERFLOW] & 0x02) << 7) | ((s.cr[VGA_CRTC_OVERFLOW] & 0x40) << 3)) + 1;
+                return (s.cr[VGA_CRTC_V_DISP_END] | (s.cr[VGA_CRTC_OVERFLOW] & 0x02) << 7
+                    | (s.cr[VGA_CRTC_OVERFLOW] & 0x40) << 3) + 1;
             }
         }
     }
 
-    static private class Bochs_LFB_Handler extends Paging.PageHandler {
+    private static class Bochs_LFB_Handler extends Paging.PageHandler {
         VGACommonState s;
 
         public Bochs_LFB_Handler(VGACommonState s) {
@@ -3121,11 +3091,13 @@ public class VGA extends VGA_header {
             this.s = s;
         }
 
+        @Override
         public /*HostPt*/int GetHostReadPt( /*Bitu*/int phys_page) {
             phys_page -= 0xE0000;
             return s.vram_ptr + phys_page * 4096;
         }
 
+        @Override
         public /*HostPt*/int GetHostWritePt( /*Bitu*/int phys_page) {
             phys_page -= 0xE0000;
             return s.vram_ptr + phys_page * 4096;

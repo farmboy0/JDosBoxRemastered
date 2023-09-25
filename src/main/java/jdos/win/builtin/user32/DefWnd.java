@@ -9,7 +9,7 @@ import jdos.win.utils.StringUtil;
 
 public class DefWnd extends WinAPI {
     // LRESULT WINAPI DefWindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
-    static public int DefWindowProcA(int hWnd, int Msg, int wParam, int lParam) {
+    public static int DefWindowProcA(int hWnd, int Msg, int wParam, int lParam) {
         int result = 0;
 
         switch (Msg) {
@@ -31,7 +31,7 @@ public class DefWnd extends WinAPI {
                 if (window != null)
                     result = window.text.length();
             }
-            break;
+                break;
             case WM_GETTEXT:
                 if (wParam != 0) {
                     WinWindow window = WinWindow.get(hWnd);
@@ -48,7 +48,7 @@ public class DefWnd extends WinAPI {
                 }
                 result = 1; /* success. FIXME: check text length */
             }
-            break;
+                break;
             /* fall through */
             default:
                 result = DEFWND_DefWinProc(hWnd, Msg, wParam, lParam);
@@ -58,9 +58,8 @@ public class DefWnd extends WinAPI {
     }
 
     /***********************************************************************
-     *           DEFWND_DefWinProc
-     *
-     * Default window procedure for messages that are the same in Ansi and Unicode.
+     * DEFWND_DefWinProc Default window procedure for messages that are the same in
+     * Ansi and Unicode.
      */
     private static int DEFWND_DefWinProc(int hwnd, int msg, int wParam, int lParam) {
         switch (msg) {
@@ -241,7 +240,8 @@ public class DefWnd extends WinAPI {
                 /* The default action in Windows is to set the keyboard focus to
                  * the window, if it's being activated and not minimized */
                 if (LOWORD(wParam) != WA_INACTIVE) {
-                    if (WinPos.IsIconic(hwnd) == 0) Focus.SetFocus(hwnd);
+                    if (WinPos.IsIconic(hwnd) == 0)
+                        Focus.SetFocus(hwnd);
                 }
                 break;
 
@@ -257,7 +257,8 @@ public class DefWnd extends WinAPI {
                     return 0;
                 int hdc = wParam;
                 int hbr = WinClass.GetClassLongA(hwnd, GCLP_HBRBACKGROUND);
-                if (hbr == 0) return 0;
+                if (hbr == 0)
+                    return 0;
                 int rect = getTempBuffer(WinRect.SIZE);
                 if ((WinClass.GetClassLongA(hwnd, GCL_STYLE) & CS_PARENTDC) != 0) {
                     /* can't use GetClipBox with a parent DC or we fill the whole parent */
@@ -288,7 +289,7 @@ public class DefWnd extends WinAPI {
                 if ((WinWindow.GetWindowLongA(hwnd, GWL_STYLE) & WS_CHILD) != 0) {
                     /* with the exception of the border around a resizable wnd,
                      * give the parent first chance to set the cursor */
-                    if ((LOWORD(lParam) < HTSIZEFIRST) || (LOWORD(lParam) > HTSIZELAST)) {
+                    if (LOWORD(lParam) < HTSIZEFIRST || LOWORD(lParam) > HTSIZELAST) {
                         int parent = WinWindow.GetParent(hwnd);
                         if (parent != 0) {
                             if (Message.SendMessageA(parent, WM_SETCURSOR, wParam, lParam) != 0)
@@ -550,7 +551,7 @@ public class DefWnd extends WinAPI {
         return 0;
     }
 
-    static private int DEFWND_ControlColor(int hDC, int ctlType) {
+    private static int DEFWND_ControlColor(int hDC, int ctlType) {
         if (ctlType == CTLCOLOR_SCROLLBAR) {
             int hb = SysParams.GetSysColorBrush(COLOR_SCROLLBAR);
             int bk = SysParams.GetSysColor(COLOR_3DHILIGHT);
@@ -570,7 +571,7 @@ public class DefWnd extends WinAPI {
 
         WinDC.SetTextColor(hDC, SysParams.GetSysColor(COLOR_WINDOWTEXT));
 
-        if ((ctlType == CTLCOLOR_EDIT) || (ctlType == CTLCOLOR_LISTBOX)) {
+        if (ctlType == CTLCOLOR_EDIT || ctlType == CTLCOLOR_LISTBOX) {
             WinDC.SetBkColor(hDC, SysParams.GetSysColor(COLOR_WINDOW));
             return SysParams.GetSysColorBrush(COLOR_WINDOW);
         }

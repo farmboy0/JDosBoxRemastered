@@ -21,7 +21,7 @@ public class WinCriticalException {
 //        public int SpinCount;
 //    }
 
-    static public void initialize(int address, int spinCount) {
+    public static void initialize(int address, int spinCount) {
         WaitObject object = WaitObject.create();
         Memory.mem_writed(address, object.getHandle());
         address += 4;
@@ -37,7 +37,7 @@ public class WinCriticalException {
         address += 4;
     }
 
-    static public void enter(int address) {
+    public static void enter(int address) {
         WinThread thread = Scheduler.getCurrentThread();
         int handle = thread.handle;
 
@@ -61,7 +61,7 @@ public class WinCriticalException {
         }
     }
 
-    static public void leave(int address) {
+    public static void leave(int address) {
         int lockCount = Memory.mem_readd(address + 4);
         lockCount--;
         Memory.mem_writed(address + 4, lockCount);
@@ -85,7 +85,7 @@ public class WinCriticalException {
         }
     }
 
-    static public void delete(int address) {
+    public static void delete(int address) {
         WaitObject object = WaitObject.getWait(Memory.mem_readd(address));
         object.close();
     }

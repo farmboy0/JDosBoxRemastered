@@ -1,10 +1,10 @@
 package jdos.win.utils;
 
-import jdos.hardware.Memory;
-
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
+
+import jdos.hardware.Memory;
 
 public class SystemTime {
     public static void write(int lpSystemTime, TimeZone tz, long javaTime) {

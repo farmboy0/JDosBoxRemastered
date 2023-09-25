@@ -6,7 +6,7 @@ import jdos.win.utils.StringUtil;
 
 public class Property extends WinAPI {
     // HANDLE WINAPI GetProp(HWND hWnd, LPCTSTR lpString)
-    static public int GetPropA(int hWnd, int lpString) {
+    public static int GetPropA(int hWnd, int lpString) {
         WinWindow window = WinWindow.get(hWnd);
         if (window == null)
             return 0;
@@ -20,7 +20,7 @@ public class Property extends WinAPI {
     }
 
     // HANDLE WINAPI RemoveProp(HWND hWnd, LPCTSTR lpString)
-    static public int RemovePropA(int hWnd, int lpString) {
+    public static int RemovePropA(int hWnd, int lpString) {
         WinWindow window = WinWindow.get(hWnd);
         if (window == null)
             return 0;
@@ -34,7 +34,7 @@ public class Property extends WinAPI {
     }
 
     //BOOL WINAPI SetProp(HWND hWnd, LPCTSTR lpString, HANDLE hData)
-    static public int SetPropA(int hWnd, int lpString, int hData) {
+    public static int SetPropA(int hWnd, int lpString, int hData) {
         WinWindow window = WinWindow.get(hWnd);
         if (window == null)
             return FALSE;

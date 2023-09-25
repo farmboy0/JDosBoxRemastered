@@ -1,10 +1,10 @@
 package jdos.win.loader.winpe;
 
-import jdos.win.system.WinFile;
-import jdos.win.utils.LittleEndian;
-
 import java.io.IOException;
 import java.io.OutputStream;
+
+import jdos.win.system.WinFile;
+import jdos.win.utils.LittleEndian;
 
 public class HeaderImageSection {
     public static final int SIZE = 40;

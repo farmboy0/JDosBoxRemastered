@@ -1,19 +1,19 @@
 package jdos.win.system;
 
+import java.util.Hashtable;
+
 import jdos.win.builtin.kernel32.WinThread;
 import jdos.win.builtin.user32.Input;
-
-import java.util.Hashtable;
 
 public class Scheduler {
     // DirectX surface to force to the screen
     public static int monitor;
     private static SchedulerItem currentThread = null;
     private static SchedulerItem first;
-    private static final Hashtable<WinThread, SchedulerItem> threadMap = new Hashtable<WinThread, SchedulerItem>();
+    private static final Hashtable<WinThread, SchedulerItem> threadMap = new Hashtable<>();
     private static final long start = System.currentTimeMillis();
 
-    static public void addThread(WinThread thread, boolean schedule) {
+    public static void addThread(WinThread thread, boolean schedule) {
         SchedulerItem item;
         item = threadMap.get(thread);
         if (item != null) {
@@ -37,11 +37,11 @@ public class Scheduler {
         }
     }
 
-    static private int currentTickCount() {
+    private static int currentTickCount() {
         return (int) (System.currentTimeMillis() - start);
     }
 
-    static public void sleep(WinThread thread, int ms) {
+    public static void sleep(WinThread thread, int ms) {
         SchedulerItem item = threadMap.get(thread);
         if (item != null) {
             item.sleepUntil = currentTickCount() + ms + 1;
@@ -49,7 +49,7 @@ public class Scheduler {
         }
     }
 
-    static public void wait(WinThread thread) {
+    public static void wait(WinThread thread) {
         if (thread.waitTime == -1)
             removeThread(thread);
         else {
@@ -61,7 +61,7 @@ public class Scheduler {
     }
 
     // After this call is make do not change any registers, the current process may have changed
-    static public void removeThread(WinThread thread) {
+    public static void removeThread(WinThread thread) {
         if (threadMap.remove(thread) == null)
             return;
         SchedulerItem item = first;
@@ -93,7 +93,7 @@ public class Scheduler {
         }
     }
 
-    static private void scheduleThread(SchedulerItem thread) {
+    private static void scheduleThread(SchedulerItem thread) {
         if (currentThread != null) {
             currentThread.thread.saveCPU();
         }
@@ -101,14 +101,14 @@ public class Scheduler {
         currentThread.thread.loadCPU();
     }
 
-    static public WinThread getCurrentThread() {
+    public static WinThread getCurrentThread() {
         if (currentThread == null)
             return null;
         return currentThread.thread;
     }
 
     // :TODO: run them in order of process to minimize page swapping
-    static public void tick() {
+    public static void tick() {
         if (threadMap.size() == 0) {
             return;
         }

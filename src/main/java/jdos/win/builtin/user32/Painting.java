@@ -1,22 +1,28 @@
 package jdos.win.builtin.user32;
 
-import jdos.gui.Main;
-import jdos.win.builtin.WinAPI;
-import jdos.win.builtin.gdi32.*;
-import jdos.win.system.StaticData;
-import jdos.win.system.WinRect;
-
-import java.awt.*;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.geom.Arc2D;
 import java.awt.geom.Ellipse2D;
 import java.util.Iterator;
 
+import jdos.gui.Main;
+import jdos.win.builtin.WinAPI;
+import jdos.win.builtin.gdi32.GdiObj;
+import jdos.win.builtin.gdi32.WinBrush;
+import jdos.win.builtin.gdi32.WinDC;
+import jdos.win.builtin.gdi32.WinPen;
+import jdos.win.builtin.gdi32.WinRegion;
+import jdos.win.system.StaticData;
+import jdos.win.system.WinRect;
+
 public class Painting extends WinAPI {
     // HDC WINAPI BeginPaint( HWND hwnd, PAINTSTRUCT *lps )
-    static public int BeginPaint(int hwnd, int lps) {
+    public static int BeginPaint(int hwnd, int lps) {
         WinWindow win = WinWindow.get(hwnd);
 
-        if (lps == 0) return 0;
+        if (lps == 0)
+            return 0;
 
         Caret.HideCaret(hwnd);
 
@@ -41,7 +47,7 @@ public class Painting extends WinAPI {
     }
 
     // BOOL Ellipse(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
-    static public int Ellipse(int hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect) {
+    public static int Ellipse(int hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return FALSE;
@@ -55,7 +61,8 @@ public class Painting extends WinAPI {
             return FALSE;
 
         Graphics2D graphics = dc.getGraphics();
-        Ellipse2D ellipse2D = new Ellipse2D.Float(dc.x + nLeftRect, dc.y + nTopRect, nRightRect - nLeftRect, nBottomRect - nTopRect);
+        Ellipse2D ellipse2D = new Ellipse2D.Float(dc.x + nLeftRect, dc.y + nTopRect, nRightRect - nLeftRect,
+            nBottomRect - nTopRect);
         // inside
         if (brush.setPaint(graphics))
             graphics.fill(ellipse2D);
@@ -68,7 +75,7 @@ public class Painting extends WinAPI {
     }
 
     // BOOL EndPaint(HWND hWnd, const PAINTSTRUCT *lpPaint)
-    static public int EndPaint(int hWnd, int lpPaint) {
+    public static int EndPaint(int hWnd, int lpPaint) {
         WinDC dc = WinDC.get(readd(lpPaint));
         if (dc != null)
             dc.close();
@@ -79,7 +86,7 @@ public class Painting extends WinAPI {
     }
 
     // HDC WINAPI GetDC(HWND hwnd)
-    static public int GetDC(int hwnd) {
+    public static int GetDC(int hwnd) {
         WinWindow win;
         if (hwnd == 0) {
             win = WinWindow.get(StaticData.desktopWindow);
@@ -93,7 +100,7 @@ public class Painting extends WinAPI {
     }
 
     // int GetUpdateRgn(HWND hWnd, HRGN hRgn, BOOL bErase)
-    static public int GetUpdateRgn(int hWnd, int hRgn, int bErase) {
+    public static int GetUpdateRgn(int hWnd, int hRgn, int bErase) {
         WinWindow win = WinWindow.get(hWnd);
         WinRegion rgn = WinRegion.get(hRgn);
         if (win == null || rgn == null)
@@ -115,7 +122,7 @@ public class Painting extends WinAPI {
     }
 
     // BOOL InvalidateRect(HWND hWnd, const RECT *lpRect, BOOL bErase)
-    static public int InvalidateRect(int hWnd, int lpRect, int bErase) {
+    public static int InvalidateRect(int hWnd, int lpRect, int bErase) {
         WinWindow window = WinWindow.get(hWnd);
         if (window == null)
             return FALSE; // :TODO: invalidate all windows
@@ -128,7 +135,8 @@ public class Painting extends WinAPI {
     }
 
     // BOOL Pie(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect, int nXRadial1, int nYRadial1, int nXRadial2, int nYRadial2)
-    static public int Pie(int hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect, int xstart, int ystart, int xend, int yend) {
+    public static int Pie(int hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect, int xstart, int ystart,
+        int xend, int yend) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return FALSE;
@@ -166,7 +174,7 @@ public class Painting extends WinAPI {
     }
 
     // BOOL Rectangle(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
-    static public int Rectangle(int hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect) {
+    public static int Rectangle(int hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return FALSE;
@@ -197,7 +205,7 @@ public class Painting extends WinAPI {
     }
 
     // int ReleaseDC(HWND hWnd, HDC hDC)
-    static public int ReleaseDC(int hWnd, int hDC) {
+    public static int ReleaseDC(int hWnd, int hDC) {
         WinDC dc = WinDC.get(hDC);
         if (dc == null)
             return 0;
@@ -209,7 +217,7 @@ public class Painting extends WinAPI {
     }
 
     // BOOL RedrawWindow(HWND hWnd, const RECT *lprcUpdate, HRGN hrgnUpdate, UINT flags)
-    static public int RedrawWindow(int hWnd, int lprcUpdate, int hrgnUpdate, int flags) {
+    public static int RedrawWindow(int hWnd, int lprcUpdate, int hrgnUpdate, int flags) {
         log("RedrawWindow faked");
         if (hWnd == 0)
             hWnd = WinWindow.GetDesktopWindow();
@@ -220,7 +228,7 @@ public class Painting extends WinAPI {
     }
 
     // BOOL UpdateWindow(HWND hWnd)
-    static public int UpdateWindow(int hWnd) {
+    public static int UpdateWindow(int hWnd) {
         WinWindow window = WinWindow.get(hWnd);
         if (window == null)
             return FALSE;
@@ -229,13 +237,13 @@ public class Painting extends WinAPI {
     }
 
     // BOOL ValidateRect(HWND hWnd, const RECT *lpRect)
-    static public int ValidateRect(int hWnd, int lpRect) {
+    public static int ValidateRect(int hWnd, int lpRect) {
         if (hWnd == 0)
             updateWindow(WinWindow.get(StaticData.desktopWindow));
         return TRUE;
     }
 
-    static private void updateWindow(WinWindow window) {
+    private static void updateWindow(WinWindow window) {
         Message.SendMessageA(window.handle, WM_PAINT, 0, 0);
         Iterator<WinWindow> children = window.getChildren();
         while (children.hasNext()) {

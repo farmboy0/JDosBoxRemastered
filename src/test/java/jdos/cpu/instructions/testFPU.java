@@ -5,12 +5,13 @@ import jdos.fpu.FPU;
 import jdos.hardware.Memory;
 
 public class testFPU extends InstructionsTestCase {
-    static private final int UNORDERED = 0x100 | 0x400 | 0x4000;
-    static private final int LESS = 0x100;
-    static private final int GREATER = 0x0;
-    static private final int EQUAL = 0x4000;
-    static private final int MASK = 0x100 | 0x200 | 0x400 | 0x4000;
+    private static final int UNORDERED = 0x100 | 0x400 | 0x4000;
+    private static final int LESS = 0x100;
+    private static final int GREATER = 0x0;
+    private static final int EQUAL = 0x4000;
+    private static final int MASK = 0x100 | 0x200 | 0x400 | 0x4000;
 
+    @Override
     protected void setUp() throws java.lang.Exception {
         super.setUp();
         //FPU.FPU_Init.call(null);
@@ -51,7 +52,7 @@ public class testFPU extends InstructionsTestCase {
     }
 
     private byte rm(boolean ea, int group, int sub) {
-        int result = (group & 7) << 3 | (sub & 7);
+        int result = (group & 7) << 3 | sub & 7;
         if (!ea)
             result |= 0xC0;
         return (byte) result;
@@ -76,7 +77,7 @@ public class testFPU extends InstructionsTestCase {
         pushId(MEM_BASE_DS);
         decoder.call();
         float result = getTopFloat();
-        assertTrue((Float.isNaN(result) && Float.isNaN(r)) || result == r);
+        assertTrue(Float.isNaN(result) && Float.isNaN(r) || result == r);
         assertTrue(getStackPos() == 7); // nothing was popped
 
         init();
@@ -87,7 +88,7 @@ public class testFPU extends InstructionsTestCase {
         pushIb(rm(false, group2, 1));
         decoder.call();
         result = getTopFloat();
-        assertTrue((Float.isNaN(result) && Float.isNaN(r)) || result == r);
+        assertTrue(Float.isNaN(result) && Float.isNaN(r) || result == r);
         assertTrue(getStackPos() == 6); // nothing was popped
     }
 
@@ -373,7 +374,7 @@ public class testFPU extends InstructionsTestCase {
         pushId(MEM_BASE_DS);
         decoder.call();
         assertTest(r);
-        assertTrue(getStackPos() == ((7 + popCount) & 7));
+        assertTrue(getStackPos() == (7 + popCount & 7));
 
         init();
 
@@ -383,7 +384,7 @@ public class testFPU extends InstructionsTestCase {
         pushIb(rm(false, group, 1));
         decoder.call();
         assertTest(r);
-        assertTrue(getStackPos() == ((6 + popCount) & 7));
+        assertTrue(getStackPos() == (6 + popCount & 7));
     }
 
     private void F32Com(float x, float y, int r) {
@@ -484,7 +485,7 @@ public class testFPU extends InstructionsTestCase {
         pushIb(rm(true, group, 0));
         decoder.call();
         float result = Float.intBitsToFloat(Memory.mem_readd(MEM_BASE_DS));
-        assertTrue(result == f || (Float.isNaN(result) && Float.isNaN(f)));
+        assertTrue(result == f || Float.isNaN(result) && Float.isNaN(f));
         assertTrue(getStackPos() == (pop ? 0 : 7));
     }
 

@@ -8,22 +8,29 @@ import jdos.types.SVGACards;
 public class Int10_video_state {
     public static /*Bitu*/int INT10_VideoState_GetSize(/*Bitu*/int state) {
         // state: bit0=hardware, bit1=bios data, bit2=color regs/dac state
-        if ((state & 7) == 0) return 0;
+        if ((state & 7) == 0)
+            return 0;
 
         /*Bitu*/
         int size = 0x20;
-        if ((state & 1) != 0) size += 0x46;
-        if ((state & 2) != 0) size += 0x3a;
-        if ((state & 4) != 0) size += 0x303;
-        if ((Dosbox.svgaCard == SVGACards.SVGA_S3Trio) && (state & 8) != 0) size += 0x43;
-        if (size != 0) size = (size - 1) / 64 + 1;
+        if ((state & 1) != 0)
+            size += 0x46;
+        if ((state & 2) != 0)
+            size += 0x3a;
+        if ((state & 4) != 0)
+            size += 0x303;
+        if (Dosbox.svgaCard == SVGACards.SVGA_S3Trio && (state & 8) != 0)
+            size += 0x43;
+        if (size != 0)
+            size = (size - 1) / 64 + 1;
         return size;
     }
 
-    public static boolean INT10_VideoState_Save(/*Bitu*/int state,/*RealPt*/int buffer) {
+    public static boolean INT10_VideoState_Save(/*Bitu*/int state, /*RealPt*/int buffer) {
         /*Bitu*/
         int ct;
-        if ((state & 7) == 0) return false;
+        if ((state & 7) == 0)
+            return false;
 
         /*Bitu*/
         int base_seg = Memory.RealSeg(buffer);
@@ -101,11 +108,11 @@ public class Int10_video_state {
             }
 
             // restore registers
-            IO.IO_WriteW(0x3ce, 0x0004 | (gfx_4 << 8));
-            IO.IO_WriteW(0x3ce, 0x0005 | (gfx_5 << 8));
-            IO.IO_WriteW(0x3ce, 0x0006 | (gfx_6 << 8));
-            IO.IO_WriteW(0x3c4, 0x0004 | (crtc_4 << 8));
-            IO.IO_WriteW(0x3c4, 0x0002 | (crtc_2 << 8));
+            IO.IO_WriteW(0x3ce, 0x0004 | gfx_4 << 8);
+            IO.IO_WriteW(0x3ce, 0x0005 | gfx_5 << 8);
+            IO.IO_WriteW(0x3ce, 0x0006 | gfx_6 << 8);
+            IO.IO_WriteW(0x3c4, 0x0004 | crtc_4 << 8);
+            IO.IO_WriteW(0x3c4, 0x0002 | crtc_2 << 8);
 
             for (ct = 0; ct < 0x10; ct++) {
                 IO.IO_ReadB(crt_reg + 6);
@@ -128,10 +135,10 @@ public class Int10_video_state {
                 Memory.real_writeb(base_seg, base_dest + 0x1f + ct, Memory.mem_readb(0x484 + ct));
             }
             Memory.real_writed(base_seg, base_dest + 0x26, Memory.mem_readd(0x48a));
-            Memory.real_writed(base_seg, base_dest + 0x2a, Memory.mem_readd(0x14));    // int 5
-            Memory.real_writed(base_seg, base_dest + 0x2e, Memory.mem_readd(0x74));    // int 1d
-            Memory.real_writed(base_seg, base_dest + 0x32, Memory.mem_readd(0x7c));    // int 1f
-            Memory.real_writed(base_seg, base_dest + 0x36, Memory.mem_readd(0x10c));    // int 43
+            Memory.real_writed(base_seg, base_dest + 0x2a, Memory.mem_readd(0x14)); // int 5
+            Memory.real_writed(base_seg, base_dest + 0x2e, Memory.mem_readd(0x74)); // int 1d
+            Memory.real_writed(base_seg, base_dest + 0x32, Memory.mem_readd(0x7c)); // int 1f
+            Memory.real_writed(base_seg, base_dest + 0x36, Memory.mem_readd(0x10c)); // int 43
 
             base_dest += 0x3a;
         }
@@ -150,7 +157,8 @@ public class Int10_video_state {
             int dac_state = IO.IO_ReadB(0x3c7) & 1;
             /*Bitu*/
             int dac_windex = IO.IO_ReadB(0x3c8);
-            if (dac_state != 0) dac_windex--;
+            if (dac_state != 0)
+                dac_windex--;
             Memory.real_writeb(base_seg, base_dest + 0x000, (short) dac_state);
             Memory.real_writeb(base_seg, base_dest + 0x001, (short) dac_windex);
             Memory.real_writeb(base_seg, base_dest + 0x002, (short) IO.IO_ReadB(0x3c6));
@@ -168,7 +176,7 @@ public class Int10_video_state {
             base_dest += 0x303;
         }
 
-        if ((Dosbox.svgaCard == SVGACards.SVGA_S3Trio) && (state & 8) != 0) {
+        if (Dosbox.svgaCard == SVGACards.SVGA_S3Trio && (state & 8) != 0) {
             Memory.real_writew(base_seg, Memory.RealOff(buffer) + 6, base_dest);
 
             /*Bit16u*/
@@ -178,7 +186,7 @@ public class Int10_video_state {
 //		/*Bitu*/int seq_8=IO.IO_ReadB(0x3c5);
             IO.IO_ReadB(0x3c5);
 //		Memory.real_writeb(base_seg,base_dest+0x00,IO.IO_ReadB(0x3c5));
-            IO.IO_WriteB(0x3c5, 0x06);    // unlock s3-specific registers
+            IO.IO_WriteB(0x3c5, 0x06); // unlock s3-specific registers
 
             // sequencer
             for (ct = 0; ct < 0x13; ct++) {
@@ -194,26 +202,27 @@ public class Int10_video_state {
             /*Bitu*/
             int ct_dest = 0x13;
             for (ct = 0; ct < 0x40; ct++) {
-                if ((ct == 0x4a - 0x30) || (ct == 0x4b - 0x30)) {
+                if (ct == 0x4a - 0x30 || ct == 0x4b - 0x30) {
                     IO.IO_WriteB(crt_reg, 0x45);
                     IO.IO_ReadB(crt_reg + 1);
                     IO.IO_WriteB(crt_reg, 0x30 + ct);
-                    Memory.real_writeb(base_seg, base_dest + (ct_dest++), (short) IO.IO_ReadB(crt_reg + 1));
-                    Memory.real_writeb(base_seg, base_dest + (ct_dest++), (short) IO.IO_ReadB(crt_reg + 1));
-                    Memory.real_writeb(base_seg, base_dest + (ct_dest++), (short) IO.IO_ReadB(crt_reg + 1));
+                    Memory.real_writeb(base_seg, base_dest + ct_dest++, (short) IO.IO_ReadB(crt_reg + 1));
+                    Memory.real_writeb(base_seg, base_dest + ct_dest++, (short) IO.IO_ReadB(crt_reg + 1));
+                    Memory.real_writeb(base_seg, base_dest + ct_dest++, (short) IO.IO_ReadB(crt_reg + 1));
                 } else {
                     IO.IO_WriteB(crt_reg, 0x30 + ct);
-                    Memory.real_writeb(base_seg, base_dest + (ct_dest++), (short) IO.IO_ReadB(crt_reg + 1));
+                    Memory.real_writeb(base_seg, base_dest + ct_dest++, (short) IO.IO_ReadB(crt_reg + 1));
                 }
             }
         }
         return true;
     }
 
-    public static boolean INT10_VideoState_Restore(/*Bitu*/int state,/*RealPt*/int buffer) {
+    public static boolean INT10_VideoState_Restore(/*Bitu*/int state, /*RealPt*/int buffer) {
         /*Bitu*/
         int ct;
-        if ((state & 7) == 0) return false;
+        if ((state & 7) == 0)
+            return false;
 
         /*Bit16u*/
         int base_seg = Memory.RealSeg(buffer);
@@ -288,7 +297,7 @@ public class Int10_video_state {
         if ((state & 2) != 0) {
             base_dest = Memory.real_readw(base_seg, Memory.RealOff(buffer) + 2);
 
-            Memory.mem_writeb(0x410, (Memory.mem_readb(0x410) & 0xcf) | Memory.real_readb(base_seg, base_dest + 0x00));
+            Memory.mem_writeb(0x410, Memory.mem_readb(0x410) & 0xcf | Memory.real_readb(base_seg, base_dest + 0x00));
             for (ct = 0; ct < 0x1e; ct++) {
                 Memory.mem_writeb(0x449 + ct, Memory.real_readb(base_seg, base_dest + 0x01 + ct));
             }
@@ -296,10 +305,10 @@ public class Int10_video_state {
                 Memory.mem_writeb(0x484 + ct, Memory.real_readb(base_seg, base_dest + 0x1f + ct));
             }
             Memory.mem_writed(0x48a, Memory.real_readd(base_seg, base_dest + 0x26));
-            Memory.mem_writed(0x14, Memory.real_readd(base_seg, base_dest + 0x2a));    // int 5
-            Memory.mem_writed(0x74, Memory.real_readd(base_seg, base_dest + 0x2e));    // int 1d
-            Memory.mem_writed(0x7c, Memory.real_readd(base_seg, base_dest + 0x32));    // int 1f
-            Memory.mem_writed(0x10c, Memory.real_readd(base_seg, base_dest + 0x36));    // int 43
+            Memory.mem_writed(0x14, Memory.real_readd(base_seg, base_dest + 0x2a)); // int 5
+            Memory.mem_writed(0x74, Memory.real_readd(base_seg, base_dest + 0x2e)); // int 1d
+            Memory.mem_writed(0x7c, Memory.real_readd(base_seg, base_dest + 0x32)); // int 1f
+            Memory.mem_writed(0x10c, Memory.real_readd(base_seg, base_dest + 0x36)); // int 43
         }
 
         if ((state & 4) != 0) {
@@ -330,7 +339,7 @@ public class Int10_video_state {
             }
         }
 
-        if ((Dosbox.svgaCard == SVGACards.SVGA_S3Trio) && (state & 8) != 0) {
+        if (Dosbox.svgaCard == SVGACards.SVGA_S3Trio && (state & 8) != 0) {
             base_dest = Memory.real_readw(base_seg, Memory.RealOff(buffer) + 6);
 
             /*Bit16u*/
@@ -342,11 +351,11 @@ public class Int10_video_state {
 //		/*Bitu*/int seq_8=IO.IO_ReadB(0x3c5);
             IO.IO_ReadB(0x3c5);
 //		Memory.real_writeb(base_seg,base_dest+0x00,IO.IO_ReadB(0x3c5));
-            IO.IO_WriteB(0x3c5, 0x06);    // unlock s3-specific registers
+            IO.IO_WriteB(0x3c5, 0x06); // unlock s3-specific registers
 
             // sequencer
             for (ct = 0; ct < 0x13; ct++) {
-                IO.IO_WriteW(0x3c4, (0x09 + ct) + (Memory.real_readb(base_seg, base_dest + 0x00 + ct) << 8));
+                IO.IO_WriteW(0x3c4, 0x09 + ct + (Memory.real_readb(base_seg, base_dest + 0x00 + ct) << 8));
             }
             IO.IO_WriteB(0x3c4, seq_idx);
 
@@ -360,31 +369,31 @@ public class Int10_video_state {
             /*Bitu*/
             int ct_dest = 0x13;
             for (ct = 0; ct < 0x40; ct++) {
-                if ((ct == 0x4a - 0x30) || (ct == 0x4b - 0x30)) {
+                if (ct == 0x4a - 0x30 || ct == 0x4b - 0x30) {
                     IO.IO_WriteB(crt_reg, 0x45);
                     IO.IO_ReadB(crt_reg + 1);
                     IO.IO_WriteB(crt_reg, 0x30 + ct);
-                    IO.IO_WriteB(crt_reg, Memory.real_readb(base_seg, base_dest + (ct_dest++)));
+                    IO.IO_WriteB(crt_reg, Memory.real_readb(base_seg, base_dest + ct_dest++));
                 } else {
-                    IO.IO_WriteW(crt_reg, (0x30 + ct) + (Memory.real_readb(base_seg, base_dest + (ct_dest++)) << 8));
+                    IO.IO_WriteW(crt_reg, 0x30 + ct + (Memory.real_readb(base_seg, base_dest + ct_dest++) << 8));
                 }
             }
 
             // mmio
-/*		IO.IO_WriteB(crt_reg,0x40);
-		Bitu sysval1=IO.IO_ReadB(crt_reg+1);
-		IO.IO_WriteB(crt_reg+1,sysval|1);
-		IO.IO_WriteB(crt_reg,0x53);
-		Bitu sysva2=IO.IO_ReadB(crt_reg+1);
-		IO.IO_WriteB(crt_reg+1,sysval2|0x10);
-
-		Memory.real_writew(0xa000,0x8128,0xffff);
-
-		IO.IO_WriteB(crt_reg,0x40);
-		IO.IO_WriteB(crt_reg,sysval1);
-		IO.IO_WriteB(crt_reg,0x53);
-		IO.IO_WriteB(crt_reg,sysval2);
-		IO.IO_WriteB(crt_reg,crtc_idx); */
+            /*		IO.IO_WriteB(crt_reg,0x40);
+            		Bitu sysval1=IO.IO_ReadB(crt_reg+1);
+            		IO.IO_WriteB(crt_reg+1,sysval|1);
+            		IO.IO_WriteB(crt_reg,0x53);
+            		Bitu sysva2=IO.IO_ReadB(crt_reg+1);
+            		IO.IO_WriteB(crt_reg+1,sysval2|0x10);
+            
+            		Memory.real_writew(0xa000,0x8128,0xffff);
+            
+            		IO.IO_WriteB(crt_reg,0x40);
+            		IO.IO_WriteB(crt_reg,sysval1);
+            		IO.IO_WriteB(crt_reg,0x53);
+            		IO.IO_WriteB(crt_reg,sysval2);
+            		IO.IO_WriteB(crt_reg,crtc_idx); */
         }
 
         return true;

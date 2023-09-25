@@ -37,192 +37,177 @@ import jdos.misc.setup.Section;
  */
 public class Cirrus extends VGA_header {
     /* force some bits to zero */
-    static final int[] sr_mask = new int[]{
-            0x03,
-            0x3d,
-            0x0f,
-            0x3f,
-            0x0e,
-            0x00,
-            0x00,
-            0xff,
+    static final int[] sr_mask = { 0x03, 0x3d, 0x0f, 0x3f, 0x0e, 0x00, 0x00, 0xff, };
+    static final int[] gr_mask = { 0x0f, /* 0x00 */
+        0x0f, /* 0x01 */
+        0x0f, /* 0x02 */
+        0x1f, /* 0x03 */
+        0x03, /* 0x04 */
+        0x7b, /* 0x05 */
+        0x0f, /* 0x06 */
+        0x0f, /* 0x07 */
+        0xff, /* 0x08 */
+        0x00, /* 0x09 */
+        0x00, /* 0x0a */
+        0x00, /* 0x0b */
+        0x00, /* 0x0c */
+        0x00, /* 0x0d */
+        0x00, /* 0x0e */
+        0x00, /* 0x0f */
     };
-    static final int[] gr_mask = new int[]{
-            0x0f, /* 0x00 */
-            0x0f, /* 0x01 */
-            0x0f, /* 0x02 */
-            0x1f, /* 0x03 */
-            0x03, /* 0x04 */
-            0x7b, /* 0x05 */
-            0x0f, /* 0x06 */
-            0x0f, /* 0x07 */
-            0xff, /* 0x08 */
-            0x00, /* 0x09 */
-            0x00, /* 0x0a */
-            0x00, /* 0x0b */
-            0x00, /* 0x0c */
-            0x00, /* 0x0d */
-            0x00, /* 0x0e */
-            0x00, /* 0x0f */
-    };
-    static private final boolean DEBUG = false;
-    static private final int VGA_PAGES = (128 / 4);
-    static private final int VGA_PAGE_A0 = (0xA0000 / 4096);
-    static private final int VGA_PAGE_B0 = (0xB0000 / 4096);
-    static private final int VGA_PAGE_B8 = (0xB8000 / 4096);
+    private static final boolean DEBUG = false;
+    private static final int VGA_PAGES = 128 / 4;
+    private static final int VGA_PAGE_A0 = 0xA0000 / 4096;
+    private static final int VGA_PAGE_B0 = 0xB0000 / 4096;
+    private static final int VGA_PAGE_B8 = 0xB8000 / 4096;
     /***************************************
-     *
-     *  definitions
-     *
+     * definitions
      ***************************************/
 
     // ID
-    static private final int CIRRUS_ID_CLGD5422 = (0x23 << 2);
-    static private final int CIRRUS_ID_CLGD5426 = (0x24 << 2);
-    static private final int CIRRUS_ID_CLGD5424 = (0x25 << 2);
-    static private final int CIRRUS_ID_CLGD5428 = (0x26 << 2);
-    static private final int CIRRUS_ID_CLGD5430 = (0x28 << 2);
-    static private final int CIRRUS_ID_CLGD5434 = (0x2A << 2);
-    static private final int CIRRUS_ID_CLGD5436 = (0x2B << 2);
-    static private final int CIRRUS_ID_CLGD5446 = (0x2E << 2);
+    private static final int CIRRUS_ID_CLGD5422 = 0x23 << 2;
+    private static final int CIRRUS_ID_CLGD5426 = 0x24 << 2;
+    private static final int CIRRUS_ID_CLGD5424 = 0x25 << 2;
+    private static final int CIRRUS_ID_CLGD5428 = 0x26 << 2;
+    private static final int CIRRUS_ID_CLGD5430 = 0x28 << 2;
+    private static final int CIRRUS_ID_CLGD5434 = 0x2A << 2;
+    private static final int CIRRUS_ID_CLGD5436 = 0x2B << 2;
+    private static final int CIRRUS_ID_CLGD5446 = 0x2E << 2;
 
     // sequencer 0x07
-    static private final int CIRRUS_SR7_BPP_VGA = 0x00;
-    static private final int CIRRUS_SR7_BPP_SVGA = 0x01;
-    static private final int CIRRUS_SR7_BPP_MASK = 0x0e;
-    static private final int CIRRUS_SR7_BPP_8 = 0x00;
-    static private final int CIRRUS_SR7_BPP_16_DOUBLEVCLK = 0x02;
-    static private final int CIRRUS_SR7_BPP_24 = 0x04;
-    static private final int CIRRUS_SR7_BPP_16 = 0x06;
-    static private final int CIRRUS_SR7_BPP_32 = 0x08;
-    static private final int CIRRUS_SR7_ISAADDR_MASK = 0xe0;
+    private static final int CIRRUS_SR7_BPP_VGA = 0x00;
+    private static final int CIRRUS_SR7_BPP_SVGA = 0x01;
+    private static final int CIRRUS_SR7_BPP_MASK = 0x0e;
+    private static final int CIRRUS_SR7_BPP_8 = 0x00;
+    private static final int CIRRUS_SR7_BPP_16_DOUBLEVCLK = 0x02;
+    private static final int CIRRUS_SR7_BPP_24 = 0x04;
+    private static final int CIRRUS_SR7_BPP_16 = 0x06;
+    private static final int CIRRUS_SR7_BPP_32 = 0x08;
+    private static final int CIRRUS_SR7_ISAADDR_MASK = 0xe0;
 
     // sequencer 0x0f
-    static private final int CIRRUS_MEMSIZE_512k = 0x08;
-    static private final int CIRRUS_MEMSIZE_1M = 0x10;
-    static private final int CIRRUS_MEMSIZE_2M = 0x18;
-    static private final int CIRRUS_MEMFLAGS_BANKSWITCH = 0x80;    // bank switching is enabled.
+    private static final int CIRRUS_MEMSIZE_512k = 0x08;
+    private static final int CIRRUS_MEMSIZE_1M = 0x10;
+    private static final int CIRRUS_MEMSIZE_2M = 0x18;
+    private static final int CIRRUS_MEMFLAGS_BANKSWITCH = 0x80; // bank switching is enabled.
 
     // sequencer 0x12
-    static private final int CIRRUS_CURSOR_SHOW = 0x01;
-    static private final int CIRRUS_CURSOR_HIDDENPEL = 0x02;
-    static private final int CIRRUS_CURSOR_LARGE = 0x04;    // 64x64 if set, 32x32 if clear
+    private static final int CIRRUS_CURSOR_SHOW = 0x01;
+    private static final int CIRRUS_CURSOR_HIDDENPEL = 0x02;
+    private static final int CIRRUS_CURSOR_LARGE = 0x04; // 64x64 if set, 32x32 if clear
 
     // sequencer 0x17
-    static private final int CIRRUS_BUSTYPE_VLBFAST = 0x10;
-    static private final int CIRRUS_BUSTYPE_PCI = 0x20;
-    static private final int CIRRUS_BUSTYPE_VLBSLOW = 0x30;
-    static private final int CIRRUS_BUSTYPE_ISA = 0x38;
-    static private final int CIRRUS_MMIO_ENABLE = 0x04;
-    static private final int CIRRUS_MMIO_USE_PCIADDR = 0x40;    // 0xb8000 if cleared.
-    static private final int CIRRUS_MEMSIZEEXT_DOUBLE = 0x80;
+    private static final int CIRRUS_BUSTYPE_VLBFAST = 0x10;
+    private static final int CIRRUS_BUSTYPE_PCI = 0x20;
+    private static final int CIRRUS_BUSTYPE_VLBSLOW = 0x30;
+    private static final int CIRRUS_BUSTYPE_ISA = 0x38;
+    private static final int CIRRUS_MMIO_ENABLE = 0x04;
+    private static final int CIRRUS_MMIO_USE_PCIADDR = 0x40; // 0xb8000 if cleared.
+    private static final int CIRRUS_MEMSIZEEXT_DOUBLE = 0x80;
 
     // control 0x0b
-    static private final int CIRRUS_BANKING_DUAL = 0x01;
-    static private final int CIRRUS_BANKING_GRANULARITY_16K = 0x20;    // set:16k, clear:4k
+    private static final int CIRRUS_BANKING_DUAL = 0x01;
+    private static final int CIRRUS_BANKING_GRANULARITY_16K = 0x20; // set:16k, clear:4k
 
     // control 0x30
-    static private final int CIRRUS_BLTMODE_BACKWARDS = 0x01;
-    static private final int CIRRUS_BLTMODE_MEMSYSDEST = 0x02;
-    static private final int CIRRUS_BLTMODE_MEMSYSSRC = 0x04;
-    static private final int CIRRUS_BLTMODE_TRANSPARENTCOMP = 0x08;
-    static private final int CIRRUS_BLTMODE_PATTERNCOPY = 0x40;
-    static private final int CIRRUS_BLTMODE_COLOREXPAND = 0x80;
-    static private final int CIRRUS_BLTMODE_PIXELWIDTHMASK = 0x30;
-    static private final int CIRRUS_BLTMODE_PIXELWIDTH8 = 0x00;
-    static private final int CIRRUS_BLTMODE_PIXELWIDTH16 = 0x10;
-    static private final int CIRRUS_BLTMODE_PIXELWIDTH24 = 0x20;
-    static private final int CIRRUS_BLTMODE_PIXELWIDTH32 = 0x30;
+    private static final int CIRRUS_BLTMODE_BACKWARDS = 0x01;
+    private static final int CIRRUS_BLTMODE_MEMSYSDEST = 0x02;
+    private static final int CIRRUS_BLTMODE_MEMSYSSRC = 0x04;
+    private static final int CIRRUS_BLTMODE_TRANSPARENTCOMP = 0x08;
+    private static final int CIRRUS_BLTMODE_PATTERNCOPY = 0x40;
+    private static final int CIRRUS_BLTMODE_COLOREXPAND = 0x80;
+    private static final int CIRRUS_BLTMODE_PIXELWIDTHMASK = 0x30;
+    private static final int CIRRUS_BLTMODE_PIXELWIDTH8 = 0x00;
+    private static final int CIRRUS_BLTMODE_PIXELWIDTH16 = 0x10;
+    private static final int CIRRUS_BLTMODE_PIXELWIDTH24 = 0x20;
+    private static final int CIRRUS_BLTMODE_PIXELWIDTH32 = 0x30;
 
     // control 0x31
-    static private final int CIRRUS_BLT_BUSY = 0x01;
-    static private final int CIRRUS_BLT_START = 0x02;
-    static private final int CIRRUS_BLT_RESET = 0x04;
-    static private final int CIRRUS_BLT_FIFOUSED = 0x10;
-    static private final int CIRRUS_BLT_AUTOSTART = 0x80;
+    private static final int CIRRUS_BLT_BUSY = 0x01;
+    private static final int CIRRUS_BLT_START = 0x02;
+    private static final int CIRRUS_BLT_RESET = 0x04;
+    private static final int CIRRUS_BLT_FIFOUSED = 0x10;
+    private static final int CIRRUS_BLT_AUTOSTART = 0x80;
 
     // control 0x32
-    static private final int CIRRUS_ROP_0 = 0x00;
-    static private final int CIRRUS_ROP_SRC_AND_DST = 0x05;
-    static private final int CIRRUS_ROP_NOP = 0x06;
-    static private final int CIRRUS_ROP_SRC_AND_NOTDST = 0x09;
-    static private final int CIRRUS_ROP_NOTDST = 0x0b;
-    static private final int CIRRUS_ROP_SRC = 0x0d;
-    static private final int CIRRUS_ROP_1 = 0x0e;
-    static private final int CIRRUS_ROP_NOTSRC_AND_DST = 0x50;
-    static private final int CIRRUS_ROP_SRC_XOR_DST = 0x59;
-    static private final int CIRRUS_ROP_SRC_OR_DST = 0x6d;
-    static private final int CIRRUS_ROP_NOTSRC_OR_NOTDST = 0x90;
-    static private final int CIRRUS_ROP_SRC_NOTXOR_DST = 0x95;
-    static private final int CIRRUS_ROP_SRC_OR_NOTDST = 0xad;
-    static private final int CIRRUS_ROP_NOTSRC = 0xd0;
-    static private final int CIRRUS_ROP_NOTSRC_OR_DST = 0xd6;
-    static private final int CIRRUS_ROP_NOTSRC_AND_NOTDST = 0xda;
+    private static final int CIRRUS_ROP_0 = 0x00;
+    private static final int CIRRUS_ROP_SRC_AND_DST = 0x05;
+    private static final int CIRRUS_ROP_NOP = 0x06;
+    private static final int CIRRUS_ROP_SRC_AND_NOTDST = 0x09;
+    private static final int CIRRUS_ROP_NOTDST = 0x0b;
+    private static final int CIRRUS_ROP_SRC = 0x0d;
+    private static final int CIRRUS_ROP_1 = 0x0e;
+    private static final int CIRRUS_ROP_NOTSRC_AND_DST = 0x50;
+    private static final int CIRRUS_ROP_SRC_XOR_DST = 0x59;
+    private static final int CIRRUS_ROP_SRC_OR_DST = 0x6d;
+    private static final int CIRRUS_ROP_NOTSRC_OR_NOTDST = 0x90;
+    private static final int CIRRUS_ROP_SRC_NOTXOR_DST = 0x95;
+    private static final int CIRRUS_ROP_SRC_OR_NOTDST = 0xad;
+    private static final int CIRRUS_ROP_NOTSRC = 0xd0;
+    private static final int CIRRUS_ROP_NOTSRC_OR_DST = 0xd6;
+    private static final int CIRRUS_ROP_NOTSRC_AND_NOTDST = 0xda;
 
-    static private final int CIRRUS_ROP_NOP_INDEX = 2;
-    static private final int CIRRUS_ROP_SRC_INDEX = 5;
+    private static final int CIRRUS_ROP_NOP_INDEX = 2;
+    private static final int CIRRUS_ROP_SRC_INDEX = 5;
 
     // control 0x33
-    static private final int CIRRUS_BLTMODEEXT_SOLIDFILL = 0x04;
-    static private final int CIRRUS_BLTMODEEXT_COLOREXPINV = 0x02;
-    static private final int CIRRUS_BLTMODEEXT_DWORDGRANULARITY = 0x01;
+    private static final int CIRRUS_BLTMODEEXT_SOLIDFILL = 0x04;
+    private static final int CIRRUS_BLTMODEEXT_COLOREXPINV = 0x02;
+    private static final int CIRRUS_BLTMODEEXT_DWORDGRANULARITY = 0x01;
 
     // memory-mapped IO
-    static private final int CIRRUS_MMIO_BLTBGCOLOR = 0x00;    // dword
-    static private final int CIRRUS_MMIO_BLTFGCOLOR = 0x04;    // dword
-    static private final int CIRRUS_MMIO_BLTWIDTH = 0x08;    // word
-    static private final int CIRRUS_MMIO_BLTHEIGHT = 0x0a;    // word
-    static private final int CIRRUS_MMIO_BLTDESTPITCH = 0x0c;    // word
-    static private final int CIRRUS_MMIO_BLTSRCPITCH = 0x0e;    // word
-    static private final int CIRRUS_MMIO_BLTDESTADDR = 0x10;    // dword
-    static private final int CIRRUS_MMIO_BLTSRCADDR = 0x14;    // dword
-    static private final int CIRRUS_MMIO_BLTWRITEMASK = 0x17;    // byte
-    static private final int CIRRUS_MMIO_BLTMODE = 0x18;    // byte
-    static private final int CIRRUS_MMIO_BLTROP = 0x1a;    // byte
-    static private final int CIRRUS_MMIO_BLTMODEEXT = 0x1b;    // byte
-    static private final int CIRRUS_MMIO_BLTTRANSPARENTCOLOR = 0x1c;    // word?
-    static private final int CIRRUS_MMIO_BLTTRANSPARENTCOLORMASK = 0x20;    // word?
-    static private final int CIRRUS_MMIO_LINEARDRAW_START_X = 0x24;    // word
-    static private final int CIRRUS_MMIO_LINEARDRAW_START_Y = 0x26;    // word
-    static private final int CIRRUS_MMIO_LINEARDRAW_END_X = 0x28;    // word
-    static private final int CIRRUS_MMIO_LINEARDRAW_END_Y = 0x2a;    // word
-    static private final int CIRRUS_MMIO_LINEARDRAW_LINESTYLE_INC = 0x2c;    // byte
-    static private final int CIRRUS_MMIO_LINEARDRAW_LINESTYLE_ROLLOVER = 0x2d;    // byte
-    static private final int CIRRUS_MMIO_LINEARDRAW_LINESTYLE_MASK = 0x2e;    // byte
-    static private final int CIRRUS_MMIO_LINEARDRAW_LINESTYLE_ACCUM = 0x2f;    // byte
-    static private final int CIRRUS_MMIO_BRESENHAM_K1 = 0x30;    // word
-    static private final int CIRRUS_MMIO_BRESENHAM_K3 = 0x32;    // word
-    static private final int CIRRUS_MMIO_BRESENHAM_ERROR = 0x34;    // word
-    static private final int CIRRUS_MMIO_BRESENHAM_DELTA_MAJOR = 0x36;    // word
-    static private final int CIRRUS_MMIO_BRESENHAM_DIRECTION = 0x38;    // byte
-    static private final int CIRRUS_MMIO_LINEDRAW_MODE = 0x39;    // byte
-    static private final int CIRRUS_MMIO_BLTSTATUS = 0x40;    // byte
+    private static final int CIRRUS_MMIO_BLTBGCOLOR = 0x00; // dword
+    private static final int CIRRUS_MMIO_BLTFGCOLOR = 0x04; // dword
+    private static final int CIRRUS_MMIO_BLTWIDTH = 0x08; // word
+    private static final int CIRRUS_MMIO_BLTHEIGHT = 0x0a; // word
+    private static final int CIRRUS_MMIO_BLTDESTPITCH = 0x0c; // word
+    private static final int CIRRUS_MMIO_BLTSRCPITCH = 0x0e; // word
+    private static final int CIRRUS_MMIO_BLTDESTADDR = 0x10; // dword
+    private static final int CIRRUS_MMIO_BLTSRCADDR = 0x14; // dword
+    private static final int CIRRUS_MMIO_BLTWRITEMASK = 0x17; // byte
+    private static final int CIRRUS_MMIO_BLTMODE = 0x18; // byte
+    private static final int CIRRUS_MMIO_BLTROP = 0x1a; // byte
+    private static final int CIRRUS_MMIO_BLTMODEEXT = 0x1b; // byte
+    private static final int CIRRUS_MMIO_BLTTRANSPARENTCOLOR = 0x1c; // word?
+    private static final int CIRRUS_MMIO_BLTTRANSPARENTCOLORMASK = 0x20; // word?
+    private static final int CIRRUS_MMIO_LINEARDRAW_START_X = 0x24; // word
+    private static final int CIRRUS_MMIO_LINEARDRAW_START_Y = 0x26; // word
+    private static final int CIRRUS_MMIO_LINEARDRAW_END_X = 0x28; // word
+    private static final int CIRRUS_MMIO_LINEARDRAW_END_Y = 0x2a; // word
+    private static final int CIRRUS_MMIO_LINEARDRAW_LINESTYLE_INC = 0x2c; // byte
+    private static final int CIRRUS_MMIO_LINEARDRAW_LINESTYLE_ROLLOVER = 0x2d; // byte
+    private static final int CIRRUS_MMIO_LINEARDRAW_LINESTYLE_MASK = 0x2e; // byte
+    private static final int CIRRUS_MMIO_LINEARDRAW_LINESTYLE_ACCUM = 0x2f; // byte
+    private static final int CIRRUS_MMIO_BRESENHAM_K1 = 0x30; // word
+    private static final int CIRRUS_MMIO_BRESENHAM_K3 = 0x32; // word
+    private static final int CIRRUS_MMIO_BRESENHAM_ERROR = 0x34; // word
+    private static final int CIRRUS_MMIO_BRESENHAM_DELTA_MAJOR = 0x36; // word
+    private static final int CIRRUS_MMIO_BRESENHAM_DIRECTION = 0x38; // byte
+    private static final int CIRRUS_MMIO_LINEDRAW_MODE = 0x39; // byte
+    private static final int CIRRUS_MMIO_BLTSTATUS = 0x40; // byte
 
-    static private final int CIRRUS_PNPMMIO_SIZE = 0x1000;
-    static private final byte[] rop_to_index = new byte[256];
+    private static final int CIRRUS_PNPMMIO_SIZE = 0x1000;
+    private static final byte[] rop_to_index = new byte[256];
     /***************************************
-     *
-     *  raster operations
-     *
+     * raster operations
      ***************************************/
 
-    static private final cirrus_bitblt_rop_t cirrus_bitblt_rop_nop = new cirrus_bitblt_rop_t() {
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
-        }
+    private static final cirrus_bitblt_rop_t cirrus_bitblt_rop_nop = (s, dstPos, srcPos, dstpitch, srcpitch, bltwidth, bltheight) -> {
+      };
+    private static final cirrus_fill_t cirrus_bitblt_fill_nop = (s, dstPos, dstpitch, bltwidth, bltheight) -> {
     };
-    static private final cirrus_fill_t cirrus_bitblt_fill_nop = new cirrus_fill_t() {
-        public void call(CirrusVGAState s, int dstPos, int dstpitch, int bltwidth, int bltheight) {
-        }
-    };
-    static private final ROP_OP zero = new ROP_OP() {
+    private static final ROP_OP zero = new ROP_OP() {
+        @Override
         public void call8(CirrusVGAState s, int dstPos, int srcColor) {
             s.writeb(dstPos, 0);
         }
 
+        @Override
         public void call16(CirrusVGAState s, int dstPos, int srcColor) {
             s.writew(dstPos, 0);
         }
 
+        @Override
         public void call32(CirrusVGAState s, int dstPos, int srcColor) {
             s.writed(dstPos, 0);
         }
@@ -237,375 +222,318 @@ public class Cirrus extends VGA_header {
 //        ISADevice dev;
 //        CirrusVGAState cirrus_vga;
 //    } ISACirrusVGAState;
-    static private final ROP_OP src_and_dst = new ROP_OP() {
+    private static final ROP_OP src_and_dst = new ROP_OP() {
+        @Override
         public void call8(CirrusVGAState s, int dstPos, int srcColor) {
             s.writeb(dstPos, s.readb(dstPos) & srcColor);
         }
 
+        @Override
         public void call16(CirrusVGAState s, int dstPos, int srcColor) {
             s.writew(dstPos, s.readw(dstPos) & srcColor);
         }
 
+        @Override
         public void call32(CirrusVGAState s, int dstPos, int srcColor) {
             s.writed(dstPos, s.readd(dstPos) & srcColor);
         }
     };
-    static private final ROP_OP src_and_notdst = new ROP_OP() {
+    private static final ROP_OP src_and_notdst = new ROP_OP() {
+        @Override
         public void call8(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writeb(dstPos, srcColor & (~s.readb(dstPos)));
+            s.writeb(dstPos, srcColor & ~s.readb(dstPos));
         }
 
+        @Override
         public void call16(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writew(dstPos, srcColor & (~s.readw(dstPos)));
+            s.writew(dstPos, srcColor & ~s.readw(dstPos));
         }
 
+        @Override
         public void call32(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writed(dstPos, srcColor & (~s.readd(dstPos)));
+            s.writed(dstPos, srcColor & ~s.readd(dstPos));
         }
     };
-    static private final ROP_OP notdst = new ROP_OP() {
+    private static final ROP_OP notdst = new ROP_OP() {
+        @Override
         public void call8(CirrusVGAState s, int dstPos, int srcColor) {
             s.writeb(dstPos, ~s.readb(dstPos));
         }
 
+        @Override
         public void call16(CirrusVGAState s, int dstPos, int srcColor) {
             s.writew(dstPos, ~s.readw(dstPos));
         }
 
+        @Override
         public void call32(CirrusVGAState s, int dstPos, int srcColor) {
             s.writed(dstPos, ~s.readd(dstPos));
         }
     };
-    static private final ROP_OP src = new ROP_OP() {
+    private static final ROP_OP src = new ROP_OP() {
+        @Override
         public void call8(CirrusVGAState s, int dstPos, int srcColor) {
             s.writeb(dstPos, srcColor);
         }
 
+        @Override
         public void call16(CirrusVGAState s, int dstPos, int srcColor) {
             s.writew(dstPos, srcColor);
         }
 
+        @Override
         public void call32(CirrusVGAState s, int dstPos, int srcColor) {
             s.writed(dstPos, srcColor);
         }
     };
-    static private final ROP_OP one = new ROP_OP() {
+    private static final ROP_OP one = new ROP_OP() {
+        @Override
         public void call8(CirrusVGAState s, int dstPos, int srcColor) {
             s.writeb(dstPos, 0xFF);
         }
 
+        @Override
         public void call16(CirrusVGAState s, int dstPos, int srcColor) {
             s.writew(dstPos, 0xFFFF);
         }
 
+        @Override
         public void call32(CirrusVGAState s, int dstPos, int srcColor) {
             s.writed(dstPos, 0xFFFFFFFF);
         }
     };
-    static private final ROP_OP notsrc_and_dst = new ROP_OP() {
+    private static final ROP_OP notsrc_and_dst = new ROP_OP() {
+        @Override
         public void call8(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writeb(dstPos, (~srcColor) & s.readb(dstPos));
+            s.writeb(dstPos, ~srcColor & s.readb(dstPos));
         }
 
+        @Override
         public void call16(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writew(dstPos, (~srcColor) & s.readw(dstPos));
+            s.writew(dstPos, ~srcColor & s.readw(dstPos));
         }
 
+        @Override
         public void call32(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writed(dstPos, (~srcColor) & s.readd(dstPos));
+            s.writed(dstPos, ~srcColor & s.readd(dstPos));
         }
     };
-    static private final ROP_OP src_xor_dst = new ROP_OP() {
+    private static final ROP_OP src_xor_dst = new ROP_OP() {
+        @Override
         public void call8(CirrusVGAState s, int dstPos, int srcColor) {
             s.writeb(dstPos, srcColor ^ s.readb(dstPos));
         }
 
+        @Override
         public void call16(CirrusVGAState s, int dstPos, int srcColor) {
             s.writew(dstPos, srcColor ^ s.readw(dstPos));
         }
 
+        @Override
         public void call32(CirrusVGAState s, int dstPos, int srcColor) {
             s.writed(dstPos, srcColor ^ s.readd(dstPos));
         }
     };
-    static private final ROP_OP src_or_dst = new ROP_OP() {
+    private static final ROP_OP src_or_dst = new ROP_OP() {
+        @Override
         public void call8(CirrusVGAState s, int dstPos, int srcColor) {
             s.writeb(dstPos, srcColor | s.readb(dstPos));
         }
 
+        @Override
         public void call16(CirrusVGAState s, int dstPos, int srcColor) {
             s.writew(dstPos, srcColor | s.readw(dstPos));
         }
 
+        @Override
         public void call32(CirrusVGAState s, int dstPos, int srcColor) {
             s.writed(dstPos, srcColor | s.readd(dstPos));
         }
     };
-    static private final ROP_OP notsrc_or_notdst = new ROP_OP() {
+    private static final ROP_OP notsrc_or_notdst = new ROP_OP() {
+        @Override
         public void call8(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writeb(dstPos, (~srcColor) | (~s.readb(dstPos)));
+            s.writeb(dstPos, ~srcColor | ~s.readb(dstPos));
         }
 
+        @Override
         public void call16(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writew(dstPos, (~srcColor) | (~s.readw(dstPos)));
+            s.writew(dstPos, ~srcColor | ~s.readw(dstPos));
         }
 
+        @Override
         public void call32(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writed(dstPos, (~srcColor) | (~s.readd(dstPos)));
+            s.writed(dstPos, ~srcColor | ~s.readd(dstPos));
         }
     };
-    static private final ROP_OP src_notxor_dst = new ROP_OP() {
+    private static final ROP_OP src_notxor_dst = new ROP_OP() {
+        @Override
         public void call8(CirrusVGAState s, int dstPos, int srcColor) {
             s.writeb(dstPos, ~(srcColor ^ s.readb(dstPos)));
         }
 
+        @Override
         public void call16(CirrusVGAState s, int dstPos, int srcColor) {
             s.writew(dstPos, ~(srcColor ^ s.readw(dstPos)));
         }
 
+        @Override
         public void call32(CirrusVGAState s, int dstPos, int srcColor) {
             s.writed(dstPos, ~(srcColor ^ s.readd(dstPos)));
         }
     };
-    static private final ROP_OP src_or_notdst = new ROP_OP() {
+    private static final ROP_OP src_or_notdst = new ROP_OP() {
+        @Override
         public void call8(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writeb(dstPos, srcColor | (~s.readb(dstPos)));
+            s.writeb(dstPos, srcColor | ~s.readb(dstPos));
         }
 
+        @Override
         public void call16(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writew(dstPos, srcColor | (~s.readw(dstPos)));
+            s.writew(dstPos, srcColor | ~s.readw(dstPos));
         }
 
+        @Override
         public void call32(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writed(dstPos, srcColor | (~s.readd(dstPos)));
+            s.writed(dstPos, srcColor | ~s.readd(dstPos));
         }
     };
-    static private final ROP_OP notsrc = new ROP_OP() {
+    private static final ROP_OP notsrc = new ROP_OP() {
+        @Override
         public void call8(CirrusVGAState s, int dstPos, int srcColor) {
             s.writeb(dstPos, ~srcColor);
         }
 
+        @Override
         public void call16(CirrusVGAState s, int dstPos, int srcColor) {
             s.writew(dstPos, ~srcColor);
         }
 
+        @Override
         public void call32(CirrusVGAState s, int dstPos, int srcColor) {
             s.writed(dstPos, ~srcColor);
         }
     };
-    static private final ROP_OP notsrc_or_dst = new ROP_OP() {
+    private static final ROP_OP notsrc_or_dst = new ROP_OP() {
+        @Override
         public void call8(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writeb(dstPos, (~srcColor) | s.readb(dstPos));
+            s.writeb(dstPos, ~srcColor | s.readb(dstPos));
         }
 
+        @Override
         public void call16(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writew(dstPos, (~srcColor) | s.readw(dstPos));
+            s.writew(dstPos, ~srcColor | s.readw(dstPos));
         }
 
+        @Override
         public void call32(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writed(dstPos, (~srcColor) | s.readd(dstPos));
+            s.writed(dstPos, ~srcColor | s.readd(dstPos));
         }
     };
-    static private final ROP_OP notsrc_and_notdst = new ROP_OP() {
+    private static final ROP_OP notsrc_and_notdst = new ROP_OP() {
+        @Override
         public void call8(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writeb(dstPos, (~srcColor) | (~s.readb(dstPos)));
+            s.writeb(dstPos, ~srcColor | ~s.readb(dstPos));
         }
 
+        @Override
         public void call16(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writew(dstPos, (~srcColor) | (~s.readw(dstPos)));
+            s.writew(dstPos, ~srcColor | ~s.readw(dstPos));
         }
 
+        @Override
         public void call32(CirrusVGAState s, int dstPos, int srcColor) {
-            s.writed(dstPos, (~srcColor) | (~s.readd(dstPos)));
+            s.writed(dstPos, ~srcColor | ~s.readd(dstPos));
         }
     };
-    static private final cirrus_bitblt_rop_t[] cirrus_fwd_rop = new cirrus_bitblt_rop_t[]{
-            new cirrus_bitblt_rop_fwd(zero),
-            new cirrus_bitblt_rop_fwd(src_and_dst),
-            cirrus_bitblt_rop_nop,
-            new cirrus_bitblt_rop_fwd(src_and_notdst),
-            new cirrus_bitblt_rop_fwd(notdst),
-            new cirrus_bitblt_rop_fwd(src),
-            new cirrus_bitblt_rop_fwd(one),
-            new cirrus_bitblt_rop_fwd(notsrc_and_dst),
-            new cirrus_bitblt_rop_fwd(src_xor_dst),
-            new cirrus_bitblt_rop_fwd(src_or_dst),
-            new cirrus_bitblt_rop_fwd(notsrc_or_notdst),
-            new cirrus_bitblt_rop_fwd(src_notxor_dst),
-            new cirrus_bitblt_rop_fwd(src_or_notdst),
-            new cirrus_bitblt_rop_fwd(notsrc),
-            new cirrus_bitblt_rop_fwd(notsrc_or_dst),
-            new cirrus_bitblt_rop_fwd(notsrc_and_notdst),
-    };
-    static private final cirrus_bitblt_rop_t[] cirrus_bkwd_rop = new cirrus_bitblt_rop_t[]{
-            new cirrus_bitblt_rop_bkwd(zero),
-            new cirrus_bitblt_rop_bkwd(src_and_dst),
-            cirrus_bitblt_rop_nop,
-            new cirrus_bitblt_rop_bkwd(src_and_notdst),
-            new cirrus_bitblt_rop_bkwd(notdst),
-            new cirrus_bitblt_rop_bkwd(src),
-            new cirrus_bitblt_rop_bkwd(one),
-            new cirrus_bitblt_rop_bkwd(notsrc_and_dst),
-            new cirrus_bitblt_rop_bkwd(src_xor_dst),
-            new cirrus_bitblt_rop_bkwd(src_or_dst),
-            new cirrus_bitblt_rop_bkwd(notsrc_or_notdst),
-            new cirrus_bitblt_rop_bkwd(src_notxor_dst),
-            new cirrus_bitblt_rop_bkwd(src_or_notdst),
-            new cirrus_bitblt_rop_bkwd(notsrc),
-            new cirrus_bitblt_rop_bkwd(notsrc_or_dst),
-            new cirrus_bitblt_rop_bkwd(notsrc_and_notdst),
-    };
-    static private final cirrus_bitblt_rop_t[][] cirrus_fwd_transp_rop = new cirrus_bitblt_rop_t[][]{
-            TRANSP_ROP_fwd_transp(zero),
-            TRANSP_ROP_fwd_transp(src_and_dst),
-            new cirrus_bitblt_rop_t[]{cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop},
-            TRANSP_ROP_fwd_transp(src_and_notdst),
-            TRANSP_ROP_fwd_transp(notdst),
-            TRANSP_ROP_fwd_transp(src),
-            TRANSP_ROP_fwd_transp(one),
-            TRANSP_ROP_fwd_transp(notsrc_and_dst),
-            TRANSP_ROP_fwd_transp(src_xor_dst),
-            TRANSP_ROP_fwd_transp(src_or_dst),
-            TRANSP_ROP_fwd_transp(notsrc_or_notdst),
-            TRANSP_ROP_fwd_transp(src_notxor_dst),
-            TRANSP_ROP_fwd_transp(src_or_notdst),
-            TRANSP_ROP_fwd_transp(notsrc),
-            TRANSP_ROP_fwd_transp(notsrc_or_dst),
-            TRANSP_ROP_fwd_transp(notsrc_and_notdst),
-    };
-    static private final cirrus_bitblt_rop_t[][] cirrus_bkwd_transp_rop = new cirrus_bitblt_rop_t[][]{
-            TRANSP_ROP_bkwd_transp(zero),
-            TRANSP_ROP_bkwd_transp(src_and_dst),
-            new cirrus_bitblt_rop_t[]{cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop},
-            TRANSP_ROP_bkwd_transp(src_and_notdst),
-            TRANSP_ROP_bkwd_transp(notdst),
-            TRANSP_ROP_bkwd_transp(src),
-            TRANSP_ROP_bkwd_transp(one),
-            TRANSP_ROP_bkwd_transp(notsrc_and_dst),
-            TRANSP_ROP_bkwd_transp(src_xor_dst),
-            TRANSP_ROP_bkwd_transp(src_or_dst),
-            TRANSP_ROP_bkwd_transp(notsrc_or_notdst),
-            TRANSP_ROP_bkwd_transp(src_notxor_dst),
-            TRANSP_ROP_bkwd_transp(src_or_notdst),
-            TRANSP_ROP_bkwd_transp(notsrc),
-            TRANSP_ROP_bkwd_transp(notsrc_or_dst),
-            TRANSP_ROP_bkwd_transp(notsrc_and_notdst),
-    };
-    static private final cirrus_bitblt_rop_t[][] cirrus_patternfill = new cirrus_bitblt_rop_t[][]{
-            ROP2patternfill(zero),
-            ROP2patternfill(src_and_dst),
-            new cirrus_bitblt_rop_t[]{cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop},
-            ROP2patternfill(src_and_notdst),
-            ROP2patternfill(notdst),
-            ROP2patternfill(src),
-            ROP2patternfill(zero),
-            ROP2patternfill(notsrc_and_dst),
-            ROP2patternfill(src_xor_dst),
-            ROP2patternfill(src_or_dst),
-            ROP2patternfill(notsrc_or_notdst),
-            ROP2patternfill(src_notxor_dst),
-            ROP2patternfill(src_or_notdst),
-            ROP2patternfill(notsrc),
-            ROP2patternfill(notsrc_or_dst),
-            ROP2patternfill(notsrc_and_notdst),
-    };
-    static private final cirrus_bitblt_rop_t[][] cirrus_colorexpand_transp = new cirrus_bitblt_rop_t[][]{
-            ROP2colorexpandtransp(zero),
-            ROP2colorexpandtransp(src_and_dst),
-            new cirrus_bitblt_rop_t[]{cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop},
-            ROP2colorexpandtransp(src_and_notdst),
-            ROP2colorexpandtransp(notdst),
-            ROP2colorexpandtransp(src),
-            ROP2colorexpandtransp(zero),
-            ROP2colorexpandtransp(notsrc_and_dst),
-            ROP2colorexpandtransp(src_xor_dst),
-            ROP2colorexpandtransp(src_or_dst),
-            ROP2colorexpandtransp(notsrc_or_notdst),
-            ROP2colorexpandtransp(src_notxor_dst),
-            ROP2colorexpandtransp(src_or_notdst),
-            ROP2colorexpandtransp(notsrc),
-            ROP2colorexpandtransp(notsrc_or_dst),
-            ROP2colorexpandtransp(notsrc_and_notdst),
-    };
-    static private final cirrus_bitblt_rop_t[][] cirrus_colorexpand = new cirrus_bitblt_rop_t[][]{
-            ROP2colorexpand(zero),
-            ROP2colorexpand(src_and_dst),
-            new cirrus_bitblt_rop_t[]{cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop},
-            ROP2colorexpand(src_and_notdst),
-            ROP2colorexpand(notdst),
-            ROP2colorexpand(src),
-            ROP2colorexpand(zero),
-            ROP2colorexpand(notsrc_and_dst),
-            ROP2colorexpand(src_xor_dst),
-            ROP2colorexpand(src_or_dst),
-            ROP2colorexpand(notsrc_or_notdst),
-            ROP2colorexpand(src_notxor_dst),
-            ROP2colorexpand(src_or_notdst),
-            ROP2colorexpand(notsrc),
-            ROP2colorexpand(notsrc_or_dst),
-            ROP2colorexpand(notsrc_and_notdst),
-    };
-    static private final cirrus_bitblt_rop_t[][] cirrus_colorexpand_pattern_transp = new cirrus_bitblt_rop_t[][]{
-            ROP2colorexpandpatterntransp(zero),
-            ROP2colorexpandpatterntransp(src_and_dst),
-            new cirrus_bitblt_rop_t[]{cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop},
-            ROP2colorexpandpatterntransp(src_and_notdst),
-            ROP2colorexpandpatterntransp(notdst),
-            ROP2colorexpandpatterntransp(src),
-            ROP2colorexpandpatterntransp(zero),
-            ROP2colorexpandpatterntransp(notsrc_and_dst),
-            ROP2colorexpandpatterntransp(src_xor_dst),
-            ROP2colorexpandpatterntransp(src_or_dst),
-            ROP2colorexpandpatterntransp(notsrc_or_notdst),
-            ROP2colorexpandpatterntransp(src_notxor_dst),
-            ROP2colorexpandpatterntransp(src_or_notdst),
-            ROP2colorexpandpatterntransp(notsrc),
-            ROP2colorexpandpatterntransp(notsrc_or_dst),
-            ROP2colorexpandpatterntransp(notsrc_and_notdst),
-    };
-    static private final cirrus_bitblt_rop_t[][] cirrus_colorexpand_pattern = new cirrus_bitblt_rop_t[][]{
-            ROP2colorexpandpatterntransp(zero),
-            ROP2colorexpandpatterntransp(src_and_dst),
-            new cirrus_bitblt_rop_t[]{cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop},
-            ROP2colorexpandpatterntransp(src_and_notdst),
-            ROP2colorexpandpatterntransp(notdst),
-            ROP2colorexpandpatterntransp(src),
-            ROP2colorexpandpatterntransp(zero),
-            ROP2colorexpandpatterntransp(notsrc_and_dst),
-            ROP2colorexpandpatterntransp(src_xor_dst),
-            ROP2colorexpandpatterntransp(src_or_dst),
-            ROP2colorexpandpatterntransp(notsrc_or_notdst),
-            ROP2colorexpandpatterntransp(src_notxor_dst),
-            ROP2colorexpandpatterntransp(src_or_notdst),
-            ROP2colorexpandpatterntransp(notsrc),
-            ROP2colorexpandpatterntransp(notsrc_or_dst),
-            ROP2colorexpandpatterntransp(notsrc_and_notdst),
-    };
-    static private final cirrus_fill_t[][] cirrus_fill = new cirrus_fill_t[][]{
-            ROP2fill(zero),
-            ROP2fill(src_and_dst),
-            new cirrus_fill_t[]{cirrus_bitblt_fill_nop, cirrus_bitblt_fill_nop, cirrus_bitblt_fill_nop, cirrus_bitblt_fill_nop},
-            ROP2fill(src_and_notdst),
-            ROP2fill(notdst),
-            ROP2fill(src),
-            ROP2fill(zero),
-            ROP2fill(notsrc_and_dst),
-            ROP2fill(src_xor_dst),
-            ROP2fill(src_or_dst),
-            ROP2fill(notsrc_or_notdst),
-            ROP2fill(src_notxor_dst),
-            ROP2fill(src_or_notdst),
-            ROP2fill(notsrc),
-            ROP2fill(notsrc_or_dst),
-            ROP2fill(notsrc_and_notdst),
-    };
-    static private boolean warning = false;
-    static private boolean inited = false;
-    static private final Paging.PageHandler low_mem = new cirrus_vga_mem();
+    private static final cirrus_bitblt_rop_t[] cirrus_fwd_rop = { new cirrus_bitblt_rop_fwd(zero),
+        new cirrus_bitblt_rop_fwd(src_and_dst), cirrus_bitblt_rop_nop, new cirrus_bitblt_rop_fwd(src_and_notdst),
+        new cirrus_bitblt_rop_fwd(notdst), new cirrus_bitblt_rop_fwd(src), new cirrus_bitblt_rop_fwd(one),
+        new cirrus_bitblt_rop_fwd(notsrc_and_dst), new cirrus_bitblt_rop_fwd(src_xor_dst),
+        new cirrus_bitblt_rop_fwd(src_or_dst), new cirrus_bitblt_rop_fwd(notsrc_or_notdst),
+        new cirrus_bitblt_rop_fwd(src_notxor_dst), new cirrus_bitblt_rop_fwd(src_or_notdst),
+        new cirrus_bitblt_rop_fwd(notsrc), new cirrus_bitblt_rop_fwd(notsrc_or_dst),
+        new cirrus_bitblt_rop_fwd(notsrc_and_notdst), };
+    private static final cirrus_bitblt_rop_t[] cirrus_bkwd_rop = { new cirrus_bitblt_rop_bkwd(zero),
+        new cirrus_bitblt_rop_bkwd(src_and_dst), cirrus_bitblt_rop_nop, new cirrus_bitblt_rop_bkwd(src_and_notdst),
+        new cirrus_bitblt_rop_bkwd(notdst), new cirrus_bitblt_rop_bkwd(src), new cirrus_bitblt_rop_bkwd(one),
+        new cirrus_bitblt_rop_bkwd(notsrc_and_dst), new cirrus_bitblt_rop_bkwd(src_xor_dst),
+        new cirrus_bitblt_rop_bkwd(src_or_dst), new cirrus_bitblt_rop_bkwd(notsrc_or_notdst),
+        new cirrus_bitblt_rop_bkwd(src_notxor_dst), new cirrus_bitblt_rop_bkwd(src_or_notdst),
+        new cirrus_bitblt_rop_bkwd(notsrc), new cirrus_bitblt_rop_bkwd(notsrc_or_dst),
+        new cirrus_bitblt_rop_bkwd(notsrc_and_notdst), };
+    private static final cirrus_bitblt_rop_t[][] cirrus_fwd_transp_rop = { TRANSP_ROP_fwd_transp(zero),
+        TRANSP_ROP_fwd_transp(src_and_dst), new cirrus_bitblt_rop_t[] { cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop },
+        TRANSP_ROP_fwd_transp(src_and_notdst), TRANSP_ROP_fwd_transp(notdst), TRANSP_ROP_fwd_transp(src),
+        TRANSP_ROP_fwd_transp(one), TRANSP_ROP_fwd_transp(notsrc_and_dst), TRANSP_ROP_fwd_transp(src_xor_dst),
+        TRANSP_ROP_fwd_transp(src_or_dst), TRANSP_ROP_fwd_transp(notsrc_or_notdst),
+        TRANSP_ROP_fwd_transp(src_notxor_dst), TRANSP_ROP_fwd_transp(src_or_notdst), TRANSP_ROP_fwd_transp(notsrc),
+        TRANSP_ROP_fwd_transp(notsrc_or_dst), TRANSP_ROP_fwd_transp(notsrc_and_notdst), };
+    private static final cirrus_bitblt_rop_t[][] cirrus_bkwd_transp_rop = { TRANSP_ROP_bkwd_transp(zero),
+        TRANSP_ROP_bkwd_transp(src_and_dst), new cirrus_bitblt_rop_t[] { cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop },
+        TRANSP_ROP_bkwd_transp(src_and_notdst), TRANSP_ROP_bkwd_transp(notdst), TRANSP_ROP_bkwd_transp(src),
+        TRANSP_ROP_bkwd_transp(one), TRANSP_ROP_bkwd_transp(notsrc_and_dst), TRANSP_ROP_bkwd_transp(src_xor_dst),
+        TRANSP_ROP_bkwd_transp(src_or_dst), TRANSP_ROP_bkwd_transp(notsrc_or_notdst),
+        TRANSP_ROP_bkwd_transp(src_notxor_dst), TRANSP_ROP_bkwd_transp(src_or_notdst), TRANSP_ROP_bkwd_transp(notsrc),
+        TRANSP_ROP_bkwd_transp(notsrc_or_dst), TRANSP_ROP_bkwd_transp(notsrc_and_notdst), };
+    private static final cirrus_bitblt_rop_t[][] cirrus_patternfill = { ROP2patternfill(zero),
+        ROP2patternfill(src_and_dst),
+        new cirrus_bitblt_rop_t[] { cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop,
+            cirrus_bitblt_rop_nop },
+        ROP2patternfill(src_and_notdst), ROP2patternfill(notdst), ROP2patternfill(src), ROP2patternfill(zero),
+        ROP2patternfill(notsrc_and_dst), ROP2patternfill(src_xor_dst), ROP2patternfill(src_or_dst),
+        ROP2patternfill(notsrc_or_notdst), ROP2patternfill(src_notxor_dst), ROP2patternfill(src_or_notdst),
+        ROP2patternfill(notsrc), ROP2patternfill(notsrc_or_dst), ROP2patternfill(notsrc_and_notdst), };
+    private static final cirrus_bitblt_rop_t[][] cirrus_colorexpand_transp = { ROP2colorexpandtransp(zero),
+        ROP2colorexpandtransp(src_and_dst),
+        new cirrus_bitblt_rop_t[] { cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop,
+            cirrus_bitblt_rop_nop },
+        ROP2colorexpandtransp(src_and_notdst), ROP2colorexpandtransp(notdst), ROP2colorexpandtransp(src),
+        ROP2colorexpandtransp(zero), ROP2colorexpandtransp(notsrc_and_dst), ROP2colorexpandtransp(src_xor_dst),
+        ROP2colorexpandtransp(src_or_dst), ROP2colorexpandtransp(notsrc_or_notdst),
+        ROP2colorexpandtransp(src_notxor_dst), ROP2colorexpandtransp(src_or_notdst), ROP2colorexpandtransp(notsrc),
+        ROP2colorexpandtransp(notsrc_or_dst), ROP2colorexpandtransp(notsrc_and_notdst), };
+    private static final cirrus_bitblt_rop_t[][] cirrus_colorexpand = { ROP2colorexpand(zero),
+        ROP2colorexpand(src_and_dst),
+        new cirrus_bitblt_rop_t[] { cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop,
+            cirrus_bitblt_rop_nop },
+        ROP2colorexpand(src_and_notdst), ROP2colorexpand(notdst), ROP2colorexpand(src), ROP2colorexpand(zero),
+        ROP2colorexpand(notsrc_and_dst), ROP2colorexpand(src_xor_dst), ROP2colorexpand(src_or_dst),
+        ROP2colorexpand(notsrc_or_notdst), ROP2colorexpand(src_notxor_dst), ROP2colorexpand(src_or_notdst),
+        ROP2colorexpand(notsrc), ROP2colorexpand(notsrc_or_dst), ROP2colorexpand(notsrc_and_notdst), };
+    private static final cirrus_bitblt_rop_t[][] cirrus_colorexpand_pattern_transp = {
+        ROP2colorexpandpatterntransp(zero), ROP2colorexpandpatterntransp(src_and_dst),
+        new cirrus_bitblt_rop_t[] { cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop,
+            cirrus_bitblt_rop_nop },
+        ROP2colorexpandpatterntransp(src_and_notdst), ROP2colorexpandpatterntransp(notdst),
+        ROP2colorexpandpatterntransp(src), ROP2colorexpandpatterntransp(zero),
+        ROP2colorexpandpatterntransp(notsrc_and_dst), ROP2colorexpandpatterntransp(src_xor_dst),
+        ROP2colorexpandpatterntransp(src_or_dst), ROP2colorexpandpatterntransp(notsrc_or_notdst),
+        ROP2colorexpandpatterntransp(src_notxor_dst), ROP2colorexpandpatterntransp(src_or_notdst),
+        ROP2colorexpandpatterntransp(notsrc), ROP2colorexpandpatterntransp(notsrc_or_dst),
+        ROP2colorexpandpatterntransp(notsrc_and_notdst), };
+    private static final cirrus_bitblt_rop_t[][] cirrus_colorexpand_pattern = { ROP2colorexpandpatterntransp(zero),
+        ROP2colorexpandpatterntransp(src_and_dst),
+        new cirrus_bitblt_rop_t[] { cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop, cirrus_bitblt_rop_nop,
+            cirrus_bitblt_rop_nop },
+        ROP2colorexpandpatterntransp(src_and_notdst), ROP2colorexpandpatterntransp(notdst),
+        ROP2colorexpandpatterntransp(src), ROP2colorexpandpatterntransp(zero),
+        ROP2colorexpandpatterntransp(notsrc_and_dst), ROP2colorexpandpatterntransp(src_xor_dst),
+        ROP2colorexpandpatterntransp(src_or_dst), ROP2colorexpandpatterntransp(notsrc_or_notdst),
+        ROP2colorexpandpatterntransp(src_notxor_dst), ROP2colorexpandpatterntransp(src_or_notdst),
+        ROP2colorexpandpatterntransp(notsrc), ROP2colorexpandpatterntransp(notsrc_or_dst),
+        ROP2colorexpandpatterntransp(notsrc_and_notdst), };
+    private static final cirrus_fill_t[][] cirrus_fill = { ROP2fill(zero), ROP2fill(src_and_dst),
+        new cirrus_fill_t[] { cirrus_bitblt_fill_nop, cirrus_bitblt_fill_nop, cirrus_bitblt_fill_nop,
+            cirrus_bitblt_fill_nop },
+        ROP2fill(src_and_notdst), ROP2fill(notdst), ROP2fill(src), ROP2fill(zero), ROP2fill(notsrc_and_dst),
+        ROP2fill(src_xor_dst), ROP2fill(src_or_dst), ROP2fill(notsrc_or_notdst), ROP2fill(src_notxor_dst),
+        ROP2fill(src_or_notdst), ROP2fill(notsrc), ROP2fill(notsrc_or_dst), ROP2fill(notsrc_and_notdst), };
+    private static boolean warning = false;
+    private static boolean inited = false;
+    private static final Paging.PageHandler low_mem = new cirrus_vga_mem();
     /***************************************
-     *
-     *  PCI bus support
-     *
+     * PCI bus support
      ***************************************/
 
 //    static int pci_cirrus_vga_initfn(PCIDevice *dev)
@@ -664,240 +592,236 @@ public class Cirrus extends VGA_header {
 //        dc.vmsd = &vmstate_pci_cirrus_vga;
 //    }
 
-    static private CirrusVGAState cirrusVGAState;
+    private static CirrusVGAState cirrusVGAState;
     /* I/O ports */
-    public static IoHandler.IO_ReadHandler cirrus_vga_ioport_read = new IoHandler.IO_ReadHandler() {
-        public /*Bitu*/int call(/*Bitu*/int addr, /*Bitu*/int len) {
-            CirrusVGAState s = cirrusVGAState;
-            int val, index;
+    public static IoHandler.IO_ReadHandler cirrus_vga_ioport_read = (addr, len) -> {
+        CirrusVGAState s = cirrusVGAState;
+        int val, index;
 
-            if (VGA.vga_ioport_invalid(s, addr)) {
-                val = 0xff;
-            } else {
-                switch (addr) {
-                    case 0x3c0:
-                        if (s.ar_flip_flop == 0) {
-                            val = s.ar_index;
-                        } else {
-                            val = 0;
-                        }
-                        break;
-                    case 0x3c1:
-                        index = s.ar_index & 0x1f;
-                        if (index < 21)
-                            val = s.ar[index];
-                        else
-                            val = 0;
-                        break;
-                    case 0x3c2:
-                        val = s.st00;
-                        break;
-                    case 0x3c4:
-                        val = s.sr_index;
-                        break;
-                    case 0x3c5:
-                        val = cirrus_vga_read_sr(s);
-                        break;
-                    case 0x3c6:
-                        val = cirrus_read_hidden_dac(s);
-                        break;
-                    case 0x3c7:
-                        val = s.dac_state;
-                        break;
-                    case 0x3c8:
-                        val = s.dac_write_index;
-                        s.cirrus_hidden_dac_lockindex = 0;
-                        break;
-                    case 0x3c9:
-                        val = cirrus_vga_read_palette(s);
-                        break;
-                    case 0x3ca:
-                        val = s.fcr;
-                        break;
-                    case 0x3cc:
-                        val = s.msr;
-                        break;
-                    case 0x3ce:
-                        val = s.gr_index;
-                        break;
-                    case 0x3cf:
-                        val = cirrus_vga_read_gr(s, s.gr_index);
+        if (VGA.vga_ioport_invalid(s, addr)) {
+            val = 0xff;
+        } else {
+            switch (addr) {
+                case 0x3c0:
+                    if (s.ar_flip_flop == 0) {
+                        val = s.ar_index;
+                    } else {
+                        val = 0;
+                    }
+                    break;
+                case 0x3c1:
+                    index = s.ar_index & 0x1f;
+                    if (index < 21)
+                        val = s.ar[index];
+                    else
+                        val = 0;
+                    break;
+                case 0x3c2:
+                    val = s.st00;
+                    break;
+                case 0x3c4:
+                    val = s.sr_index;
+                    break;
+                case 0x3c5:
+                    val = cirrus_vga_read_sr(s);
+                    break;
+                case 0x3c6:
+                    val = cirrus_read_hidden_dac(s);
+                    break;
+                case 0x3c7:
+                    val = s.dac_state;
+                    break;
+                case 0x3c8:
+                    val = s.dac_write_index;
+                    s.cirrus_hidden_dac_lockindex = 0;
+                    break;
+                case 0x3c9:
+                    val = cirrus_vga_read_palette(s);
+                    break;
+                case 0x3ca:
+                    val = s.fcr;
+                    break;
+                case 0x3cc:
+                    val = s.msr;
+                    break;
+                case 0x3ce:
+                    val = s.gr_index;
+                    break;
+                case 0x3cf:
+                    val = cirrus_vga_read_gr(s, s.gr_index);
 //        #ifdef DEBUG_VGA_REG
 //                printf("vga: read GR%x = 0x%02x\n", s.gr_index, val);
 //        #endif
-                        break;
-                    case 0x3b4:
-                    case 0x3d4:
-                        val = s.cr_index;
-                        break;
-                    case 0x3b5:
-                    case 0x3d5:
-                        val = cirrus_vga_read_cr(s, s.cr_index);
+                    break;
+                case 0x3b4:
+                case 0x3d4:
+                    val = s.cr_index;
+                    break;
+                case 0x3b5:
+                case 0x3d5:
+                    val = cirrus_vga_read_cr(s, s.cr_index);
 //        #ifdef DEBUG_VGA_REG
 //                printf("vga: read CR%x = 0x%02x\n", s.cr_index, val);
 //        #endif
-                        break;
-                    case 0x3ba:
-                    case 0x3da:
-                        /* just toggle to fool polling */
-                        val = s.st01 = s.retrace.call(s);
-                        s.ar_flip_flop = 0;
-                        break;
-                    default:
-                        val = 0x00;
-                        break;
-                }
+                    break;
+                case 0x3ba:
+                case 0x3da:
+                    /* just toggle to fool polling */
+                    val = s.st01 = s.retrace.call(s);
+                    s.ar_flip_flop = 0;
+                    break;
+                default:
+                    val = 0x00;
+                    break;
             }
+        }
 //        #if defined(DEBUG_VGA)
 //            printf("VGA: read addr=0x%04x data=0x%02x\n", addr, val);
 //        #endif
-            return val;
-        }
+        return val;
     };
-    public static IoHandler.IO_WriteHandler cirrus_vga_ioport_write = new IoHandler.IO_WriteHandler() {
-        public void call(/*Bitu*/int addr, /*Bitu*/int val, /*Bitu*/int len) {
-            CirrusVGAState s = cirrusVGAState;
-            int index;
+    public static IoHandler.IO_WriteHandler cirrus_vga_ioport_write = (addr, val, len) -> {
+        CirrusVGAState s = cirrusVGAState;
+        int index;
 
-            /* check port range access depending on color/monochrome mode */
-            if (VGA.vga_ioport_invalid(s, addr)) {
-                return;
-            }
+        /* check port range access depending on color/monochrome mode */
+        if (VGA.vga_ioport_invalid(s, addr)) {
+            return;
+        }
 //        #ifdef DEBUG_VGA
 //            printf("VGA: write addr=0x%04x data=0x%02x\n", addr, val);
 //        #endif
 
-            switch (addr) {
-                case 0x3c0:
-                    if (s.ar_flip_flop == 0) {
-                        val &= 0x3f;
-                        s.ar_index = val;
-                    } else {
-                        index = s.ar_index & 0x1f;
-                        switch (index) {
-                            case 0x00:
-                            case 0x01:
-                            case 0x02:
-                            case 0x03:
-                            case 0x04:
-                            case 0x05:
-                            case 0x06:
-                            case 0x07:
-                            case 0x08:
-                            case 0x09:
-                            case 0x0a:
-                            case 0x0b:
-                            case 0x0c:
-                            case 0x0d:
-                            case 0x0e:
-                            case 0x0f:
-                                s.ar[index] = val & 0x3f;
-                                break;
-                            case 0x10:
-                                s.ar[index] = val & ~0x10;
-                                break;
-                            case 0x11:
-                                s.ar[index] = val;
-                                break;
-                            case 0x12:
-                                s.ar[index] = val & ~0xc0;
-                                break;
-                            case 0x13:
-                                s.ar[index] = val & ~0xf0;
-                                break;
-                            case 0x14:
-                                s.ar[index] = val & ~0xf0;
-                                break;
-                            default:
-                                break;
-                        }
+        switch (addr) {
+            case 0x3c0:
+                if (s.ar_flip_flop == 0) {
+                    val &= 0x3f;
+                    s.ar_index = val;
+                } else {
+                    index = s.ar_index & 0x1f;
+                    switch (index) {
+                        case 0x00:
+                        case 0x01:
+                        case 0x02:
+                        case 0x03:
+                        case 0x04:
+                        case 0x05:
+                        case 0x06:
+                        case 0x07:
+                        case 0x08:
+                        case 0x09:
+                        case 0x0a:
+                        case 0x0b:
+                        case 0x0c:
+                        case 0x0d:
+                        case 0x0e:
+                        case 0x0f:
+                            s.ar[index] = val & 0x3f;
+                            break;
+                        case 0x10:
+                            s.ar[index] = val & ~0x10;
+                            break;
+                        case 0x11:
+                            s.ar[index] = val;
+                            break;
+                        case 0x12:
+                            s.ar[index] = val & ~0xc0;
+                            break;
+                        case 0x13:
+                            s.ar[index] = val & ~0xf0;
+                            break;
+                        case 0x14:
+                            s.ar[index] = val & ~0xf0;
+                            break;
+                        default:
+                            break;
                     }
-                    s.ar_flip_flop ^= 1;
-                    break;
-                case 0x3c2:
-                    s.msr = val & ~0x10;
-                    s.update_retrace_info.call(s);
-                    break;
-                case 0x3c4:
-                    s.sr_index = val;
-                    break;
-                case 0x3c5:
+                }
+                s.ar_flip_flop ^= 1;
+                break;
+            case 0x3c2:
+                s.msr = val & ~0x10;
+                s.update_retrace_info.call(s);
+                break;
+            case 0x3c4:
+                s.sr_index = val;
+                break;
+            case 0x3c5:
 //        #ifdef DEBUG_VGA_REG
 //            printf("vga: write SR%x = 0x%02x\n", s.sr_index, val);
 //        #endif
-                    cirrus_vga_write_sr(s, val);
-                    break;
-                case 0x3c6:
-                    cirrus_write_hidden_dac(s, val);
-                    break;
-                case 0x3c7:
-                    s.dac_read_index = val;
-                    s.dac_sub_index = 0;
-                    s.dac_state = 3;
-                    break;
-                case 0x3c8:
-                    s.dac_write_index = val;
-                    s.dac_sub_index = 0;
-                    s.dac_state = 0;
-                    break;
-                case 0x3c9:
-                    cirrus_vga_write_palette(s, val);
-                    break;
-                case 0x3ce:
-                    s.gr_index = val;
-                    break;
-                case 0x3cf:
+                cirrus_vga_write_sr(s, val);
+                break;
+            case 0x3c6:
+                cirrus_write_hidden_dac(s, val);
+                break;
+            case 0x3c7:
+                s.dac_read_index = val;
+                s.dac_sub_index = 0;
+                s.dac_state = 3;
+                break;
+            case 0x3c8:
+                s.dac_write_index = val;
+                s.dac_sub_index = 0;
+                s.dac_state = 0;
+                break;
+            case 0x3c9:
+                cirrus_vga_write_palette(s, val);
+                break;
+            case 0x3ce:
+                s.gr_index = val;
+                break;
+            case 0x3cf:
 //        #ifdef DEBUG_VGA_REG
 //            printf("vga: write GR%x = 0x%02x\n", s.gr_index, val);
 //        #endif
-                    cirrus_vga_write_gr(s, s.gr_index, val);
-                    break;
-                case 0x3b4:
-                case 0x3d4:
-                    s.cr_index = val;
-                    break;
-                case 0x3b5:
-                case 0x3d5:
+                cirrus_vga_write_gr(s, s.gr_index, val);
+                break;
+            case 0x3b4:
+            case 0x3d4:
+                s.cr_index = val;
+                break;
+            case 0x3b5:
+            case 0x3d5:
 //        #ifdef DEBUG_VGA_REG
 //            printf("vga: write CR%x = 0x%02x\n", s.cr_index, val);
 //        #endif
-                    cirrus_vga_write_cr(s, val);
-                    break;
-                case 0x3ba:
-                case 0x3da:
-                    s.fcr = val & 0x10;
-                    break;
-            }
+                cirrus_vga_write_cr(s, val);
+                break;
+            case 0x3ba:
+            case 0x3da:
+                s.fcr = val & 0x10;
+                break;
         }
     };
-    public static Section.SectionFunction Cirrus_Init = new Section.SectionFunction() {
-        public void call(Section sec) {
-            cirrusVGAState = new CirrusVGAState();
-            cirrusVGAState.cirrus_bltbufPos = jdos.hardware.VGA.vga.vmemsize;
-            vga_initfn();
-        }
+    public static Section.SectionFunction Cirrus_Init = sec -> {
+        cirrusVGAState = new CirrusVGAState();
+        cirrusVGAState.cirrus_bltbufPos = jdos.hardware.VGA.vga.vmemsize;
+        vga_initfn();
     };
 
-    static private boolean BLTUNSAFE(CirrusVGAState s) {
-        return (s.cirrus_blt_height * Math.abs(s.cirrus_blt_dstpitch) + (s.cirrus_blt_dstaddr & s.cirrus_addr_mask) > s.vram_size) ||
-                (s.cirrus_blt_height * Math.abs(s.cirrus_blt_srcpitch) + (s.cirrus_blt_srcaddr & s.cirrus_addr_mask) > s.vram_size);
+    private static boolean BLTUNSAFE(CirrusVGAState s) {
+        return s.cirrus_blt_height * Math.abs(s.cirrus_blt_dstpitch)
+            + (s.cirrus_blt_dstaddr & s.cirrus_addr_mask) > s.vram_size
+            || s.cirrus_blt_height * Math.abs(s.cirrus_blt_srcpitch)
+                + (s.cirrus_blt_srcaddr & s.cirrus_addr_mask) > s.vram_size;
     }
 
-    static private cirrus_bitblt_rop_t[] TRANSP_ROP_fwd_transp(ROP_OP op) {
+    private static cirrus_bitblt_rop_t[] TRANSP_ROP_fwd_transp(ROP_OP op) {
         cirrus_bitblt_rop_t[] result = new cirrus_bitblt_rop_t[2];
         result[0] = new cirrus_bitblt_rop_fwd_transp_8(op);
         result[0] = new cirrus_bitblt_rop_fwd_transp_16(op);
         return result;
     }
 
-    static private cirrus_bitblt_rop_t[] TRANSP_ROP_bkwd_transp(ROP_OP op) {
+    private static cirrus_bitblt_rop_t[] TRANSP_ROP_bkwd_transp(ROP_OP op) {
         cirrus_bitblt_rop_t[] result = new cirrus_bitblt_rop_t[2];
         result[0] = new cirrus_bitblt_rop_fwd_transp_8(op);
         result[0] = new cirrus_bitblt_rop_fwd_transp_16(op);
         return result;
     }
 
-    static private cirrus_bitblt_rop_t[] ROP2patternfill(ROP_OP op) {
+    private static cirrus_bitblt_rop_t[] ROP2patternfill(ROP_OP op) {
         cirrus_bitblt_rop_t[] result = new cirrus_bitblt_rop_t[4];
         result[0] = new cirrus_patternfill_8(op);
         result[1] = new cirrus_patternfill_16(op);
@@ -906,7 +830,7 @@ public class Cirrus extends VGA_header {
         return result;
     }
 
-    static private cirrus_bitblt_rop_t[] ROP2colorexpandtransp(ROP_OP op) {
+    private static cirrus_bitblt_rop_t[] ROP2colorexpandtransp(ROP_OP op) {
         cirrus_bitblt_rop_t[] result = new cirrus_bitblt_rop_t[4];
         result[0] = new cirrus_colorexpand_transp_8(op);
         result[1] = new cirrus_colorexpand_transp_16(op);
@@ -915,7 +839,7 @@ public class Cirrus extends VGA_header {
         return result;
     }
 
-    static private cirrus_bitblt_rop_t[] ROP2colorexpand(ROP_OP op) {
+    private static cirrus_bitblt_rop_t[] ROP2colorexpand(ROP_OP op) {
         cirrus_bitblt_rop_t[] result = new cirrus_bitblt_rop_t[4];
         result[0] = new cirrus_colorexpand_8(op);
         result[1] = new cirrus_colorexpand_16(op);
@@ -924,7 +848,7 @@ public class Cirrus extends VGA_header {
         return result;
     }
 
-    static private cirrus_bitblt_rop_t[] ROP2colorexpandpatterntransp(ROP_OP op) {
+    private static cirrus_bitblt_rop_t[] ROP2colorexpandpatterntransp(ROP_OP op) {
         cirrus_bitblt_rop_t[] result = new cirrus_bitblt_rop_t[4];
         result[0] = new cirrus_colorexpand_pattern_transp_8(op);
         result[1] = new cirrus_colorexpand_pattern_transp_16(op);
@@ -933,7 +857,7 @@ public class Cirrus extends VGA_header {
         return result;
     }
 
-    static private cirrus_bitblt_rop_t[] ROP2colorexpandpattern(ROP_OP op) {
+    private static cirrus_bitblt_rop_t[] ROP2colorexpandpattern(ROP_OP op) {
         cirrus_bitblt_rop_t[] result = new cirrus_bitblt_rop_t[4];
         result[0] = new cirrus_colorexpand_pattern_8(op);
         result[1] = new cirrus_colorexpand_pattern_16(op);
@@ -942,7 +866,7 @@ public class Cirrus extends VGA_header {
         return result;
     }
 
-    static private cirrus_fill_t[] ROP2fill(ROP_OP op) {
+    private static cirrus_fill_t[] ROP2fill(ROP_OP op) {
         cirrus_fill_t[] result = new cirrus_fill_t[4];
         result[0] = new cirrus_fill_8(op);
         result[1] = new cirrus_fill_16(op);
@@ -951,43 +875,44 @@ public class Cirrus extends VGA_header {
         return result;
     }
 
-    static private void cirrus_bitblt_fgcol(CirrusVGAState s) {
+    private static void cirrus_bitblt_fgcol(CirrusVGAState s) {
         switch (s.cirrus_blt_pixelwidth) {
             case 1:
                 s.cirrus_blt_fgcol = s.cirrus_shadow_gr1;
                 break;
             case 2:
-                s.cirrus_blt_fgcol = s.cirrus_shadow_gr1 | (s.gr[0x11] << 8);
+                s.cirrus_blt_fgcol = s.cirrus_shadow_gr1 | s.gr[0x11] << 8;
                 break;
             case 3:
-                s.cirrus_blt_fgcol = s.cirrus_shadow_gr1 | (s.gr[0x11] << 8) | (s.gr[0x13] << 16);
+                s.cirrus_blt_fgcol = s.cirrus_shadow_gr1 | s.gr[0x11] << 8 | s.gr[0x13] << 16;
                 break;
             default:
             case 4:
-                s.cirrus_blt_fgcol = s.cirrus_shadow_gr1 | (s.gr[0x11] << 8) | (s.gr[0x13] << 16) | (s.gr[0x15] << 24);
+                s.cirrus_blt_fgcol = s.cirrus_shadow_gr1 | s.gr[0x11] << 8 | s.gr[0x13] << 16 | s.gr[0x15] << 24;
                 break;
         }
     }
 
-    static private void cirrus_bitblt_bgcol(CirrusVGAState s) {
+    private static void cirrus_bitblt_bgcol(CirrusVGAState s) {
         switch (s.cirrus_blt_pixelwidth) {
             case 1:
                 s.cirrus_blt_bgcol = s.cirrus_shadow_gr0;
                 break;
             case 2:
-                s.cirrus_blt_bgcol = s.cirrus_shadow_gr0 | (s.gr[0x10] << 8);
+                s.cirrus_blt_bgcol = s.cirrus_shadow_gr0 | s.gr[0x10] << 8;
                 break;
             case 3:
-                s.cirrus_blt_bgcol = s.cirrus_shadow_gr0 | (s.gr[0x10] << 8) | (s.gr[0x12] << 16);
+                s.cirrus_blt_bgcol = s.cirrus_shadow_gr0 | s.gr[0x10] << 8 | s.gr[0x12] << 16;
                 break;
             default:
             case 4:
-                s.cirrus_blt_bgcol = s.cirrus_shadow_gr0 | (s.gr[0x10] << 8) | (s.gr[0x12] << 16) | (s.gr[0x14] << 24);
+                s.cirrus_blt_bgcol = s.cirrus_shadow_gr0 | s.gr[0x10] << 8 | s.gr[0x12] << 16 | s.gr[0x14] << 24;
                 break;
         }
     }
 
-    static private void cirrus_invalidate_region(CirrusVGAState s, int off_begin, int off_pitch, int bytesperline, int lines) {
+    private static void cirrus_invalidate_region(CirrusVGAState s, int off_begin, int off_pitch, int bytesperline,
+        int lines) {
 //        int y;
 //        int off_cur;
 //        int off_cur_end;
@@ -999,7 +924,7 @@ public class Cirrus extends VGA_header {
 //    	off_begin += off_pitch;
     }
 
-    static private boolean cirrus_bitblt_common_patterncopy(CirrusVGAState s, int srcPos) {
+    private static boolean cirrus_bitblt_common_patterncopy(CirrusVGAState s, int srcPos) {
         int dstPos;
 
         dstPos = s.vram_ptr + (s.cirrus_blt_dstaddr & s.cirrus_addr_mask);
@@ -1008,33 +933,34 @@ public class Cirrus extends VGA_header {
             return false;
 
         s.cirrus_rop.call(s, dstPos, srcPos, s.cirrus_blt_dstpitch, 0, s.cirrus_blt_width, s.cirrus_blt_height);
-        cirrus_invalidate_region(s, s.cirrus_blt_dstaddr, s.cirrus_blt_dstpitch, s.cirrus_blt_width, s.cirrus_blt_height);
+        cirrus_invalidate_region(s, s.cirrus_blt_dstaddr, s.cirrus_blt_dstpitch, s.cirrus_blt_width,
+            s.cirrus_blt_height);
         return true;
     }
 
-    static private int cirrus_bitblt_solidfill(CirrusVGAState s, int blt_rop) {
+    private static int cirrus_bitblt_solidfill(CirrusVGAState s, int blt_rop) {
         cirrus_fill_t rop_func;
 
         if (BLTUNSAFE(s))
             return 0;
         rop_func = cirrus_fill[rop_to_index[blt_rop]][s.cirrus_blt_pixelwidth - 1];
-        rop_func.call(s, s.vram_ptr + (s.cirrus_blt_dstaddr & s.cirrus_addr_mask), s.cirrus_blt_dstpitch, s.cirrus_blt_width, s.cirrus_blt_height);
-        cirrus_invalidate_region(s, s.cirrus_blt_dstaddr, s.cirrus_blt_dstpitch, s.cirrus_blt_width, s.cirrus_blt_height);
+        rop_func.call(s, s.vram_ptr + (s.cirrus_blt_dstaddr & s.cirrus_addr_mask), s.cirrus_blt_dstpitch,
+            s.cirrus_blt_width, s.cirrus_blt_height);
+        cirrus_invalidate_region(s, s.cirrus_blt_dstaddr, s.cirrus_blt_dstpitch, s.cirrus_blt_width,
+            s.cirrus_blt_height);
         cirrus_bitblt_reset(s);
         return 1;
     }
 
     /***************************************
-     *
-     *  bitblt (video-to-video)
-     *
+     * bitblt (video-to-video)
      ***************************************/
 
-    static private boolean cirrus_bitblt_videotovideo_patterncopy(CirrusVGAState s) {
-        return cirrus_bitblt_common_patterncopy(s, s.vram_ptr + ((s.cirrus_blt_srcaddr & ~7) & s.cirrus_addr_mask));
+    private static boolean cirrus_bitblt_videotovideo_patterncopy(CirrusVGAState s) {
+        return cirrus_bitblt_common_patterncopy(s, s.vram_ptr + (s.cirrus_blt_srcaddr & ~7 & s.cirrus_addr_mask));
     }
 
-    static private void cirrus_do_copy(CirrusVGAState s, int dst, int src, int w, int h) {
+    private static void cirrus_do_copy(CirrusVGAState s, int dst, int src, int w, int h) {
 //        int sx = 0, sy = 0;
 //        int dx = 0, dy = 0;
 //        int depth = 0;
@@ -1080,7 +1006,9 @@ public class Cirrus extends VGA_header {
 //        if (notify)
 //    	vga_hw_update();
 
-        s.cirrus_rop.call(s, s.vram_ptr + (s.cirrus_blt_dstaddr & s.cirrus_addr_mask), s.vram_ptr + (s.cirrus_blt_srcaddr & s.cirrus_addr_mask), s.cirrus_blt_dstpitch, s.cirrus_blt_srcpitch, s.cirrus_blt_width, s.cirrus_blt_height);
+        s.cirrus_rop.call(s, s.vram_ptr + (s.cirrus_blt_dstaddr & s.cirrus_addr_mask),
+            s.vram_ptr + (s.cirrus_blt_srcaddr & s.cirrus_addr_mask), s.cirrus_blt_dstpitch, s.cirrus_blt_srcpitch,
+            s.cirrus_blt_width, s.cirrus_blt_height);
 
 //        if (notify)
 //    	    qemu_console_copy(s.ds, sx, sy, dx, dy, s.cirrus_blt_width / depth, s.cirrus_blt_height);
@@ -1088,25 +1016,25 @@ public class Cirrus extends VGA_header {
         /* we don't have to notify the display that this portion has
            changed since qemu_console_copy implies this */
 
-        cirrus_invalidate_region(s, s.cirrus_blt_dstaddr, s.cirrus_blt_dstpitch, s.cirrus_blt_width, s.cirrus_blt_height);
+        cirrus_invalidate_region(s, s.cirrus_blt_dstaddr, s.cirrus_blt_dstpitch, s.cirrus_blt_width,
+            s.cirrus_blt_height);
     }
 
-    static private boolean cirrus_bitblt_videotovideo_copy(CirrusVGAState s) {
+    private static boolean cirrus_bitblt_videotovideo_copy(CirrusVGAState s) {
         if (BLTUNSAFE(s))
             return false;
 
-        cirrus_do_copy(s, s.cirrus_blt_dstaddr - s.start_addr, s.cirrus_blt_srcaddr - s.start_addr, s.cirrus_blt_width, s.cirrus_blt_height);
+        cirrus_do_copy(s, s.cirrus_blt_dstaddr - s.start_addr, s.cirrus_blt_srcaddr - s.start_addr, s.cirrus_blt_width,
+            s.cirrus_blt_height);
 
         return true;
     }
 
     /***************************************
-     *
-     *  bitblt (cpu-to-video)
-     *
+     * bitblt (cpu-to-video)
      ***************************************/
 
-    static private void cirrus_bitblt_cputovideo_next(CirrusVGAState s) {
+    private static void cirrus_bitblt_cputovideo_next(CirrusVGAState s) {
         int copy_count;
 
         if (s.cirrus_srccounter > 0) {
@@ -1117,7 +1045,8 @@ public class Cirrus extends VGA_header {
             } else {
                 /* at least one scan line */
                 do {
-                    s.cirrus_rop.call(s, s.vram_ptr + (s.cirrus_blt_dstaddr & s.cirrus_addr_mask), s.cirrus_bltbufPos, 0, 0, s.cirrus_blt_width, 1);
+                    s.cirrus_rop.call(s, s.vram_ptr + (s.cirrus_blt_dstaddr & s.cirrus_addr_mask), s.cirrus_bltbufPos,
+                        0, 0, s.cirrus_blt_width, 1);
                     cirrus_invalidate_region(s, s.cirrus_blt_dstaddr, 0, s.cirrus_blt_width, 1);
                     s.cirrus_blt_dstaddr += s.cirrus_blt_dstpitch;
                     s.cirrus_srccounter -= s.cirrus_blt_srcpitch;
@@ -1140,12 +1069,10 @@ public class Cirrus extends VGA_header {
     }
 
     /***************************************
-     *
-     *  bitblt wrapper
-     *
+     * bitblt wrapper
      ***************************************/
 
-    static private void cirrus_bitblt_reset(CirrusVGAState s) {
+    private static void cirrus_bitblt_reset(CirrusVGAState s) {
         boolean need_update;
 
         s.gr[0x31] &= ~(CIRRUS_BLT_START | CIRRUS_BLT_BUSY | CIRRUS_BLT_FIFOUSED);
@@ -1158,7 +1085,7 @@ public class Cirrus extends VGA_header {
         cirrus_update_memory_access(s);
     }
 
-    static private boolean cirrus_bitblt_cputovideo(CirrusVGAState s) {
+    private static boolean cirrus_bitblt_cputovideo(CirrusVGAState s) {
         int w;
 
         s.cirrus_blt_mode &= ~CIRRUS_BLTMODE_MEMSYSSRC;
@@ -1177,12 +1104,12 @@ public class Cirrus extends VGA_header {
             if ((s.cirrus_blt_mode & CIRRUS_BLTMODE_COLOREXPAND) != 0) {
                 w = s.cirrus_blt_width / s.cirrus_blt_pixelwidth;
                 if ((s.cirrus_blt_modeext & CIRRUS_BLTMODEEXT_DWORDGRANULARITY) != 0)
-                    s.cirrus_blt_srcpitch = ((w + 31) >> 5);
+                    s.cirrus_blt_srcpitch = w + 31 >> 5;
                 else
-                    s.cirrus_blt_srcpitch = ((w + 7) >> 3);
+                    s.cirrus_blt_srcpitch = w + 7 >> 3;
             } else {
                 /* always align input size to 32 bits */
-                s.cirrus_blt_srcpitch = (s.cirrus_blt_width + 3) & ~3;
+                s.cirrus_blt_srcpitch = s.cirrus_blt_width + 3 & ~3;
             }
             s.cirrus_srccounter = s.cirrus_blt_srcpitch * s.cirrus_blt_height;
         }
@@ -1192,7 +1119,7 @@ public class Cirrus extends VGA_header {
         return true;
     }
 
-    static private boolean cirrus_bitblt_videotocpu(CirrusVGAState s) {
+    private static boolean cirrus_bitblt_videotocpu(CirrusVGAState s) {
         if (!warning) {
             System.out.println("cirrus: bitblt (video to cpu) is not implemented yet");
             warning = true;
@@ -1213,19 +1140,17 @@ public class Cirrus extends VGA_header {
         return ret;
     }
 
-    static private void cirrus_bitblt_start(CirrusVGAState s) {
+    private static void cirrus_bitblt_start(CirrusVGAState s) {
         int blt_rop;
 
         s.gr[0x31] |= CIRRUS_BLT_BUSY;
 
-        s.cirrus_blt_width = (s.gr[0x20] | (s.gr[0x21] << 8)) + 1;
-        s.cirrus_blt_height = (s.gr[0x22] | (s.gr[0x23] << 8)) + 1;
-        s.cirrus_blt_dstpitch = (s.gr[0x24] | (s.gr[0x25] << 8));
-        s.cirrus_blt_srcpitch = (s.gr[0x26] | (s.gr[0x27] << 8));
-        s.cirrus_blt_dstaddr =
-                (s.gr[0x28] | (s.gr[0x29] << 8) | (s.gr[0x2a] << 16));
-        s.cirrus_blt_srcaddr =
-                (s.gr[0x2c] | (s.gr[0x2d] << 8) | (s.gr[0x2e] << 16));
+        s.cirrus_blt_width = (s.gr[0x20] | s.gr[0x21] << 8) + 1;
+        s.cirrus_blt_height = (s.gr[0x22] | s.gr[0x23] << 8) + 1;
+        s.cirrus_blt_dstpitch = s.gr[0x24] | s.gr[0x25] << 8;
+        s.cirrus_blt_srcpitch = s.gr[0x26] | s.gr[0x27] << 8;
+        s.cirrus_blt_dstaddr = s.gr[0x28] | s.gr[0x29] << 8 | s.gr[0x2a] << 16;
+        s.cirrus_blt_srcaddr = s.gr[0x2c] | s.gr[0x2d] << 8 | s.gr[0x2e] << 16;
         s.cirrus_blt_mode = s.gr[0x30];
         s.cirrus_blt_modeext = s.gr[0x33];
         blt_rop = s.gr[0x32];
@@ -1264,17 +1189,21 @@ public class Cirrus extends VGA_header {
         }
         s.cirrus_blt_mode &= ~CIRRUS_BLTMODE_PIXELWIDTHMASK;
 
-        if ((s.cirrus_blt_mode & (CIRRUS_BLTMODE_MEMSYSSRC | CIRRUS_BLTMODE_MEMSYSDEST)) == (CIRRUS_BLTMODE_MEMSYSSRC | CIRRUS_BLTMODE_MEMSYSDEST)) {
+        if ((s.cirrus_blt_mode & (CIRRUS_BLTMODE_MEMSYSSRC | CIRRUS_BLTMODE_MEMSYSDEST)) == (CIRRUS_BLTMODE_MEMSYSSRC
+            | CIRRUS_BLTMODE_MEMSYSDEST)) {
             // printf("cirrus: bitblt - memory-to-memory copy is requested\n");
             cirrus_bitblt_reset(s);
             return;
         }
 
-        if ((s.cirrus_blt_modeext & CIRRUS_BLTMODEEXT_SOLIDFILL) != 0 && (s.cirrus_blt_mode & (CIRRUS_BLTMODE_MEMSYSDEST | CIRRUS_BLTMODE_TRANSPARENTCOMP | CIRRUS_BLTMODE_PATTERNCOPY | CIRRUS_BLTMODE_COLOREXPAND)) == (CIRRUS_BLTMODE_PATTERNCOPY | CIRRUS_BLTMODE_COLOREXPAND)) {
+        if ((s.cirrus_blt_modeext & CIRRUS_BLTMODEEXT_SOLIDFILL) != 0 && (s.cirrus_blt_mode
+            & (CIRRUS_BLTMODE_MEMSYSDEST | CIRRUS_BLTMODE_TRANSPARENTCOMP | CIRRUS_BLTMODE_PATTERNCOPY
+                | CIRRUS_BLTMODE_COLOREXPAND)) == (CIRRUS_BLTMODE_PATTERNCOPY | CIRRUS_BLTMODE_COLOREXPAND)) {
             cirrus_bitblt_fgcol(s);
             cirrus_bitblt_solidfill(s, blt_rop);
         } else {
-            if ((s.cirrus_blt_mode & (CIRRUS_BLTMODE_COLOREXPAND | CIRRUS_BLTMODE_PATTERNCOPY)) == CIRRUS_BLTMODE_COLOREXPAND) {
+            if ((s.cirrus_blt_mode
+                & (CIRRUS_BLTMODE_COLOREXPAND | CIRRUS_BLTMODE_PATTERNCOPY)) == CIRRUS_BLTMODE_COLOREXPAND) {
                 if ((s.cirrus_blt_mode & CIRRUS_BLTMODE_TRANSPARENTCOMP) != 0) {
                     if ((s.cirrus_blt_modeext & CIRRUS_BLTMODEEXT_COLOREXPINV) != 0)
                         cirrus_bitblt_bgcol(s);
@@ -1293,7 +1222,8 @@ public class Cirrus extends VGA_header {
                             cirrus_bitblt_bgcol(s);
                         else
                             cirrus_bitblt_fgcol(s);
-                        s.cirrus_rop = cirrus_colorexpand_pattern_transp[rop_to_index[blt_rop]][s.cirrus_blt_pixelwidth - 1];
+                        s.cirrus_rop = cirrus_colorexpand_pattern_transp[rop_to_index[blt_rop]][s.cirrus_blt_pixelwidth
+                            - 1];
                     } else {
                         cirrus_bitblt_fgcol(s);
                         cirrus_bitblt_bgcol(s);
@@ -1343,26 +1273,24 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private void cirrus_write_bitblt(CirrusVGAState s, int reg_value) {
+    private static void cirrus_write_bitblt(CirrusVGAState s, int reg_value) {
         int old_value;
 
         old_value = s.gr[0x31];
         s.gr[0x31] = reg_value;
 
-        if (((old_value & CIRRUS_BLT_RESET) != 0) && ((reg_value & CIRRUS_BLT_RESET) == 0)) {
+        if ((old_value & CIRRUS_BLT_RESET) != 0 && (reg_value & CIRRUS_BLT_RESET) == 0) {
             cirrus_bitblt_reset(s);
-        } else if (((old_value & CIRRUS_BLT_START) == 0) && ((reg_value & CIRRUS_BLT_START) != 0)) {
+        } else if ((old_value & CIRRUS_BLT_START) == 0 && (reg_value & CIRRUS_BLT_START) != 0) {
             cirrus_bitblt_start(s);
         }
     }
 
     /***************************************
-     *
-     *  basic parameters
-     *
+     * basic parameters
      ***************************************/
 
-//    static private void cirrus_get_offsets(VGACommonState s1,
+//    private static void cirrus_get_offsets(VGACommonState s1,
 //                                   uint32_t *pline_offset,
 //                                   uint32_t *pstart_addr,
 //                                   uint32_t *pline_compare)
@@ -1387,38 +1315,36 @@ public class Cirrus extends VGA_header {
 //            ((s.cr[0x09] & 0x40) << 3);
 //        *pline_compare = line_compare;
 //    }
-    static private int cirrus_get_bpp16_depth(CirrusVGAState s) {
+    private static int cirrus_get_bpp16_depth(CirrusVGAState s) {
         int ret = 16;
 
         switch (s.cirrus_hidden_dac_data & 0xf) {
             case 0:
                 ret = 15;
-                break;            /* Sierra HiColor */
+                break; /* Sierra HiColor */
             case 1:
                 ret = 16;
-                break;            /* XGA HiColor */
+                break; /* XGA HiColor */
             default:
                 if (DEBUG)
                     System.out.println("cirrus: invalid DAC value " + (s.cirrus_hidden_dac_data & 0xf) + " in 16bpp");
-                ret = 15;        /* XXX */
+                ret = 15; /* XXX */
                 break;
         }
         return ret;
     }
 
     /***************************************
-     *
      * bank memory
-     *
      ***************************************/
 
     static void cirrus_update_bank_ptr(CirrusVGAState s, int bank_index) {
         int offset;
         int limit;
 
-        if ((s.gr[0x0b] & 0x01) != 0)    /* dual bank */
+        if ((s.gr[0x0b] & 0x01) != 0) /* dual bank */
             offset = s.gr[0x09 + bank_index];
-        else            /* single bank */
+        else /* single bank */
             offset = s.gr[0x09];
 
         if ((s.gr[0x0b] & 0x20) != 0)
@@ -1431,7 +1357,7 @@ public class Cirrus extends VGA_header {
         else
             limit = s.real_vram_size - offset;
 
-        if (((s.gr[0x0b] & 0x01) == 0) && (bank_index != 0)) {
+        if ((s.gr[0x0b] & 0x01) == 0 && bank_index != 0) {
             if (limit > 0x8000) {
                 offset += 0x8000;
                 limit -= 0x8000;
@@ -1450,63 +1376,61 @@ public class Cirrus extends VGA_header {
     }
 
     /***************************************
-     *
-     *  I/O access between 0x3c4-0x3c5
-     *
+     * I/O access between 0x3c4-0x3c5
      ***************************************/
 
-    static private int cirrus_vga_read_sr(CirrusVGAState s) {
+    private static int cirrus_vga_read_sr(CirrusVGAState s) {
         switch (s.sr_index) {
-            case 0x00:            // Standard VGA
-            case 0x01:            // Standard VGA
-            case 0x02:            // Standard VGA
-            case 0x03:            // Standard VGA
-            case 0x04:            // Standard VGA
+            case 0x00: // Standard VGA
+            case 0x01: // Standard VGA
+            case 0x02: // Standard VGA
+            case 0x03: // Standard VGA
+            case 0x04: // Standard VGA
                 return s.sr[s.sr_index];
-            case 0x06:            // Unlock Cirrus extensions
+            case 0x06: // Unlock Cirrus extensions
                 return s.sr[s.sr_index];
             case 0x10:
             case 0x30:
             case 0x50:
-            case 0x70:            // Graphics Cursor X
+            case 0x70: // Graphics Cursor X
             case 0x90:
             case 0xb0:
             case 0xd0:
-            case 0xf0:            // Graphics Cursor X
+            case 0xf0: // Graphics Cursor X
                 return s.sr[0x10];
             case 0x11:
             case 0x31:
             case 0x51:
-            case 0x71:            // Graphics Cursor Y
+            case 0x71: // Graphics Cursor Y
             case 0x91:
             case 0xb1:
             case 0xd1:
-            case 0xf1:            // Graphics Cursor Y
+            case 0xf1: // Graphics Cursor Y
                 return s.sr[0x11];
-            case 0x05:            // ???
-            case 0x07:            // Extended Sequencer Mode
-            case 0x08:            // EEPROM Control
-            case 0x09:            // Scratch Register 0
-            case 0x0a:            // Scratch Register 1
-            case 0x0b:            // VCLK 0
-            case 0x0c:            // VCLK 1
-            case 0x0d:            // VCLK 2
-            case 0x0e:            // VCLK 3
-            case 0x0f:            // DRAM Control
-            case 0x12:            // Graphics Cursor Attribute
-            case 0x13:            // Graphics Cursor Pattern Address
-            case 0x14:            // Scratch Register 2
-            case 0x15:            // Scratch Register 3
-            case 0x16:            // Performance Tuning Register
-            case 0x17:            // Configuration Readback and Extended Control
-            case 0x18:            // Signature Generator Control
-            case 0x19:            // Signal Generator Result
-            case 0x1a:            // Signal Generator Result
-            case 0x1b:            // VCLK 0 Denominator & Post
-            case 0x1c:            // VCLK 1 Denominator & Post
-            case 0x1d:            // VCLK 2 Denominator & Post
-            case 0x1e:            // VCLK 3 Denominator & Post
-            case 0x1f:            // BIOS Write Enable and MCLK select
+            case 0x05: // ???
+            case 0x07: // Extended Sequencer Mode
+            case 0x08: // EEPROM Control
+            case 0x09: // Scratch Register 0
+            case 0x0a: // Scratch Register 1
+            case 0x0b: // VCLK 0
+            case 0x0c: // VCLK 1
+            case 0x0d: // VCLK 2
+            case 0x0e: // VCLK 3
+            case 0x0f: // DRAM Control
+            case 0x12: // Graphics Cursor Attribute
+            case 0x13: // Graphics Cursor Pattern Address
+            case 0x14: // Scratch Register 2
+            case 0x15: // Scratch Register 3
+            case 0x16: // Performance Tuning Register
+            case 0x17: // Configuration Readback and Extended Control
+            case 0x18: // Signature Generator Control
+            case 0x19: // Signal Generator Result
+            case 0x1a: // Signal Generator Result
+            case 0x1b: // VCLK 0 Denominator & Post
+            case 0x1c: // VCLK 1 Denominator & Post
+            case 0x1d: // VCLK 2 Denominator & Post
+            case 0x1e: // VCLK 3 Denominator & Post
+            case 0x1f: // BIOS Write Enable and MCLK select
                 if (DEBUG)
                     System.out.println("cirrus: handled inport sr_index " + Integer.toHexString(s.sr_index));
                 return s.sr[s.sr_index];
@@ -1517,18 +1441,18 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private void cirrus_vga_write_sr(CirrusVGAState s, int val) {
+    private static void cirrus_vga_write_sr(CirrusVGAState s, int val) {
         switch (s.sr_index) {
-            case 0x00:            // Standard VGA
-            case 0x01:            // Standard VGA
-            case 0x02:            // Standard VGA
-            case 0x03:            // Standard VGA
-            case 0x04:            // Standard VGA
+            case 0x00: // Standard VGA
+            case 0x01: // Standard VGA
+            case 0x02: // Standard VGA
+            case 0x03: // Standard VGA
+            case 0x04: // Standard VGA
                 s.sr[s.sr_index] = val & sr_mask[s.sr_index];
                 if (s.sr_index == 1)
                     s.update_retrace_info.call(s);
                 break;
-            case 0x06:            // Unlock Cirrus extensions
+            case 0x06: // Unlock Cirrus extensions
                 val &= 0x17;
                 if (val == 0x12) {
                     s.sr[s.sr_index] = 0x12;
@@ -1539,70 +1463,70 @@ public class Cirrus extends VGA_header {
             case 0x10:
             case 0x30:
             case 0x50:
-            case 0x70:            // Graphics Cursor X
+            case 0x70: // Graphics Cursor X
             case 0x90:
             case 0xb0:
             case 0xd0:
-            case 0xf0:            // Graphics Cursor X
+            case 0xf0: // Graphics Cursor X
                 s.sr[0x10] = val;
-                s.hw_cursor_x = (val << 3) | (s.sr_index >> 5);
+                s.hw_cursor_x = val << 3 | s.sr_index >> 5;
                 break;
             case 0x11:
             case 0x31:
             case 0x51:
-            case 0x71:            // Graphics Cursor Y
+            case 0x71: // Graphics Cursor Y
             case 0x91:
             case 0xb1:
             case 0xd1:
-            case 0xf1:            // Graphics Cursor Y
+            case 0xf1: // Graphics Cursor Y
                 s.sr[0x11] = val;
-                s.hw_cursor_y = (val << 3) | (s.sr_index >> 5);
+                s.hw_cursor_y = val << 3 | s.sr_index >> 5;
                 break;
-            case 0x07:            // Extended Sequencer Mode
+            case 0x07: // Extended Sequencer Mode
                 cirrus_update_memory_access(s);
-            case 0x08:            // EEPROM Control
-            case 0x09:            // Scratch Register 0
-            case 0x0a:            // Scratch Register 1
-            case 0x0b:            // VCLK 0
-            case 0x0c:            // VCLK 1
-            case 0x0d:            // VCLK 2
-            case 0x0e:            // VCLK 3
-            case 0x0f:            // DRAM Control
-            case 0x12:            // Graphics Cursor Attribute
-            case 0x13:            // Graphics Cursor Pattern Address
-            case 0x14:            // Scratch Register 2
-            case 0x15:            // Scratch Register 3
-            case 0x16:            // Performance Tuning Register
-            case 0x18:            // Signature Generator Control
-            case 0x19:            // Signature Generator Result
-            case 0x1a:            // Signature Generator Result
-            case 0x1b:            // VCLK 0 Denominator & Post
-            case 0x1c:            // VCLK 1 Denominator & Post
-            case 0x1d:            // VCLK 2 Denominator & Post
-            case 0x1e:            // VCLK 3 Denominator & Post
-            case 0x1f:            // BIOS Write Enable and MCLK select
+            case 0x08: // EEPROM Control
+            case 0x09: // Scratch Register 0
+            case 0x0a: // Scratch Register 1
+            case 0x0b: // VCLK 0
+            case 0x0c: // VCLK 1
+            case 0x0d: // VCLK 2
+            case 0x0e: // VCLK 3
+            case 0x0f: // DRAM Control
+            case 0x12: // Graphics Cursor Attribute
+            case 0x13: // Graphics Cursor Pattern Address
+            case 0x14: // Scratch Register 2
+            case 0x15: // Scratch Register 3
+            case 0x16: // Performance Tuning Register
+            case 0x18: // Signature Generator Control
+            case 0x19: // Signature Generator Result
+            case 0x1a: // Signature Generator Result
+            case 0x1b: // VCLK 0 Denominator & Post
+            case 0x1c: // VCLK 1 Denominator & Post
+            case 0x1d: // VCLK 2 Denominator & Post
+            case 0x1e: // VCLK 3 Denominator & Post
+            case 0x1f: // BIOS Write Enable and MCLK select
                 s.sr[s.sr_index] = val;
                 if (DEBUG)
-                    System.out.println("cirrus: handled outport sr_index " + Integer.toHexString(s.sr_index) + ", sr_value " + Integer.toHexString(val));
+                    System.out.println("cirrus: handled outport sr_index " + Integer.toHexString(s.sr_index)
+                        + ", sr_value " + Integer.toHexString(val));
                 break;
-            case 0x17:            // Configuration Readback and Extended Control
-                s.sr[s.sr_index] = (s.sr[s.sr_index] & 0x38) | (val & 0xc7);
+            case 0x17: // Configuration Readback and Extended Control
+                s.sr[s.sr_index] = s.sr[s.sr_index] & 0x38 | val & 0xc7;
                 cirrus_update_memory_access(s);
                 break;
             default:
                 if (DEBUG)
-                    System.out.println("cirrus: outport sr_index " + Integer.toHexString(s.sr_index) + ", sr_value " + Integer.toHexString(val));
+                    System.out.println("cirrus: outport sr_index " + Integer.toHexString(s.sr_index) + ", sr_value "
+                        + Integer.toHexString(val));
                 break;
         }
     }
 
     /***************************************
-     *
-     *  I/O access at 0x3c6
-     *
+     * I/O access at 0x3c6
      ***************************************/
 
-    static private int cirrus_read_hidden_dac(CirrusVGAState s) {
+    private static int cirrus_read_hidden_dac(CirrusVGAState s) {
         if (++s.cirrus_hidden_dac_lockindex == 5) {
             s.cirrus_hidden_dac_lockindex = 0;
             return s.cirrus_hidden_dac_data;
@@ -1610,7 +1534,7 @@ public class Cirrus extends VGA_header {
         return 0xff;
     }
 
-    static private void cirrus_write_hidden_dac(CirrusVGAState s, int reg_value) {
+    private static void cirrus_write_hidden_dac(CirrusVGAState s, int reg_value) {
         if (s.cirrus_hidden_dac_lockindex == 4) {
             s.cirrus_hidden_dac_data = reg_value;
             if (DEBUG)
@@ -1620,17 +1544,14 @@ public class Cirrus extends VGA_header {
     }
 
     /***************************************
-     *
-     *  I/O access at 0x3c9
-     *
+     * I/O access at 0x3c9
      ***************************************/
 
-    static private int cirrus_vga_read_palette(CirrusVGAState s) {
+    private static int cirrus_vga_read_palette(CirrusVGAState s) {
         int val;
 
         if ((s.sr[0x12] & CIRRUS_CURSOR_HIDDENPEL) != 0) {
-            val = s.cirrus_hidden_palette[(s.dac_read_index & 0x0f) * 3 +
-                    s.dac_sub_index];
+            val = s.cirrus_hidden_palette[(s.dac_read_index & 0x0f) * 3 + s.dac_sub_index];
         } else {
             val = s.palette[s.dac_read_index * 3 + s.dac_sub_index];
         }
@@ -1641,7 +1562,7 @@ public class Cirrus extends VGA_header {
         return val;
     }
 
-    static private void cirrus_vga_write_palette(CirrusVGAState s, int reg_value) {
+    private static void cirrus_vga_write_palette(CirrusVGAState s, int reg_value) {
         s.dac_cache[s.dac_sub_index] = reg_value;
         if (++s.dac_sub_index == 3) {
             if ((s.sr[0x12] & CIRRUS_CURSOR_HIDDENPEL) != 0) {
@@ -1656,25 +1577,23 @@ public class Cirrus extends VGA_header {
     }
 
     /***************************************
-     *
-     *  I/O access between 0x3ce-0x3cf
-     *
+     * I/O access between 0x3ce-0x3cf
      ***************************************/
 
-    static private int cirrus_vga_read_gr(CirrusVGAState s, int reg_index) {
+    private static int cirrus_vga_read_gr(CirrusVGAState s, int reg_index) {
         switch (reg_index) {
             case 0x00: // Standard VGA, BGCOLOR 0x000000ff
                 return s.cirrus_shadow_gr0;
             case 0x01: // Standard VGA, FGCOLOR 0x000000ff
                 return s.cirrus_shadow_gr1;
-            case 0x02:            // Standard VGA
-            case 0x03:            // Standard VGA
-            case 0x04:            // Standard VGA
-            case 0x06:            // Standard VGA
-            case 0x07:            // Standard VGA
-            case 0x08:            // Standard VGA
+            case 0x02: // Standard VGA
+            case 0x03: // Standard VGA
+            case 0x04: // Standard VGA
+            case 0x06: // Standard VGA
+            case 0x07: // Standard VGA
+            case 0x08: // Standard VGA
                 return s.gr[s.gr_index];
-            case 0x05:            // Standard VGA, Cirrus extended mode
+            case 0x05: // Standard VGA, Cirrus extended mode
             default:
                 break;
         }
@@ -1688,30 +1607,30 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private void cirrus_vga_write_gr(CirrusVGAState s, int reg_index, int reg_value) {
+    private static void cirrus_vga_write_gr(CirrusVGAState s, int reg_index, int reg_value) {
         switch (reg_index) {
-            case 0x00:            // Standard VGA, BGCOLOR 0x000000ff
+            case 0x00: // Standard VGA, BGCOLOR 0x000000ff
                 s.gr[reg_index] = reg_value & gr_mask[reg_index];
                 s.cirrus_shadow_gr0 = reg_value;
                 break;
-            case 0x01:            // Standard VGA, FGCOLOR 0x000000ff
+            case 0x01: // Standard VGA, FGCOLOR 0x000000ff
                 s.gr[reg_index] = reg_value & gr_mask[reg_index];
                 s.cirrus_shadow_gr1 = reg_value;
                 break;
-            case 0x02:            // Standard VGA
-            case 0x03:            // Standard VGA
-            case 0x04:            // Standard VGA
-            case 0x06:            // Standard VGA
-            case 0x07:            // Standard VGA
-            case 0x08:            // Standard VGA
+            case 0x02: // Standard VGA
+            case 0x03: // Standard VGA
+            case 0x04: // Standard VGA
+            case 0x06: // Standard VGA
+            case 0x07: // Standard VGA
+            case 0x08: // Standard VGA
                 s.gr[reg_index] = reg_value & gr_mask[reg_index];
                 break;
-            case 0x05:            // Standard VGA, Cirrus extended mode
+            case 0x05: // Standard VGA, Cirrus extended mode
                 s.gr[reg_index] = reg_value & 0x7f;
                 cirrus_update_memory_access(s);
                 break;
-            case 0x09:            // bank offset #0
-            case 0x0A:            // bank offset #1
+            case 0x09: // bank offset #0
+            case 0x0A: // bank offset #1
                 s.gr[reg_index] = reg_value;
                 cirrus_update_bank_ptr(s, 0);
                 cirrus_update_bank_ptr(s, 1);
@@ -1723,102 +1642,101 @@ public class Cirrus extends VGA_header {
                 cirrus_update_bank_ptr(s, 1);
                 cirrus_update_memory_access(s);
                 break;
-            case 0x10:            // BGCOLOR 0x0000ff00
-            case 0x11:            // FGCOLOR 0x0000ff00
-            case 0x12:            // BGCOLOR 0x00ff0000
-            case 0x13:            // FGCOLOR 0x00ff0000
-            case 0x14:            // BGCOLOR 0xff000000
-            case 0x15:            // FGCOLOR 0xff000000
-            case 0x20:            // BLT WIDTH 0x0000ff
-            case 0x22:            // BLT HEIGHT 0x0000ff
-            case 0x24:            // BLT DEST PITCH 0x0000ff
-            case 0x26:            // BLT SRC PITCH 0x0000ff
-            case 0x28:            // BLT DEST ADDR 0x0000ff
-            case 0x29:            // BLT DEST ADDR 0x00ff00
-            case 0x2c:            // BLT SRC ADDR 0x0000ff
-            case 0x2d:            // BLT SRC ADDR 0x00ff00
-            case 0x2f:                  // BLT WRITEMASK
-            case 0x30:            // BLT MODE
-            case 0x32:            // RASTER OP
-            case 0x33:            // BLT MODEEXT
-            case 0x34:            // BLT TRANSPARENT COLOR 0x00ff
-            case 0x35:            // BLT TRANSPARENT COLOR 0xff00
-            case 0x38:            // BLT TRANSPARENT COLOR MASK 0x00ff
-            case 0x39:            // BLT TRANSPARENT COLOR MASK 0xff00
+            case 0x10: // BGCOLOR 0x0000ff00
+            case 0x11: // FGCOLOR 0x0000ff00
+            case 0x12: // BGCOLOR 0x00ff0000
+            case 0x13: // FGCOLOR 0x00ff0000
+            case 0x14: // BGCOLOR 0xff000000
+            case 0x15: // FGCOLOR 0xff000000
+            case 0x20: // BLT WIDTH 0x0000ff
+            case 0x22: // BLT HEIGHT 0x0000ff
+            case 0x24: // BLT DEST PITCH 0x0000ff
+            case 0x26: // BLT SRC PITCH 0x0000ff
+            case 0x28: // BLT DEST ADDR 0x0000ff
+            case 0x29: // BLT DEST ADDR 0x00ff00
+            case 0x2c: // BLT SRC ADDR 0x0000ff
+            case 0x2d: // BLT SRC ADDR 0x00ff00
+            case 0x2f: // BLT WRITEMASK
+            case 0x30: // BLT MODE
+            case 0x32: // RASTER OP
+            case 0x33: // BLT MODEEXT
+            case 0x34: // BLT TRANSPARENT COLOR 0x00ff
+            case 0x35: // BLT TRANSPARENT COLOR 0xff00
+            case 0x38: // BLT TRANSPARENT COLOR MASK 0x00ff
+            case 0x39: // BLT TRANSPARENT COLOR MASK 0xff00
                 s.gr[reg_index] = reg_value;
                 break;
-            case 0x21:            // BLT WIDTH 0x001f00
-            case 0x23:            // BLT HEIGHT 0x001f00
-            case 0x25:            // BLT DEST PITCH 0x001f00
-            case 0x27:            // BLT SRC PITCH 0x001f00
+            case 0x21: // BLT WIDTH 0x001f00
+            case 0x23: // BLT HEIGHT 0x001f00
+            case 0x25: // BLT DEST PITCH 0x001f00
+            case 0x27: // BLT SRC PITCH 0x001f00
                 s.gr[reg_index] = reg_value & 0x1f;
                 break;
-            case 0x2a:            // BLT DEST ADDR 0x3f0000
+            case 0x2a: // BLT DEST ADDR 0x3f0000
                 s.gr[reg_index] = reg_value & 0x3f;
                 /* if auto start mode, starts bit blt now */
                 if ((s.gr[0x31] & CIRRUS_BLT_AUTOSTART) != 0) {
                     cirrus_bitblt_start(s);
                 }
                 break;
-            case 0x2e:            // BLT SRC ADDR 0x3f0000
+            case 0x2e: // BLT SRC ADDR 0x3f0000
                 s.gr[reg_index] = reg_value & 0x3f;
                 break;
-            case 0x31:            // BLT STATUS/START
+            case 0x31: // BLT STATUS/START
                 cirrus_write_bitblt(s, reg_value);
                 break;
             default:
                 if (DEBUG)
-                    System.out.println("cirrus: outport gr_index " + Integer.toHexString(reg_index) + ", gr_value " + Integer.toHexString(reg_value));
+                    System.out.println("cirrus: outport gr_index " + Integer.toHexString(reg_index) + ", gr_value "
+                        + Integer.toHexString(reg_value));
                 break;
         }
     }
 
     /***************************************
-     *
-     *  I/O access between 0x3d4-0x3d5
-     *
+     * I/O access between 0x3d4-0x3d5
      ***************************************/
 
-    static private int cirrus_vga_read_cr(CirrusVGAState s, int reg_index) {
+    private static int cirrus_vga_read_cr(CirrusVGAState s, int reg_index) {
         switch (reg_index) {
-            case 0x00:            // Standard VGA
-            case 0x01:            // Standard VGA
-            case 0x02:            // Standard VGA
-            case 0x03:            // Standard VGA
-            case 0x04:            // Standard VGA
-            case 0x05:            // Standard VGA
-            case 0x06:            // Standard VGA
-            case 0x07:            // Standard VGA
-            case 0x08:            // Standard VGA
-            case 0x09:            // Standard VGA
-            case 0x0a:            // Standard VGA
-            case 0x0b:            // Standard VGA
-            case 0x0c:            // Standard VGA
-            case 0x0d:            // Standard VGA
-            case 0x0e:            // Standard VGA
-            case 0x0f:            // Standard VGA
-            case 0x10:            // Standard VGA
-            case 0x11:            // Standard VGA
-            case 0x12:            // Standard VGA
-            case 0x13:            // Standard VGA
-            case 0x14:            // Standard VGA
-            case 0x15:            // Standard VGA
-            case 0x16:            // Standard VGA
-            case 0x17:            // Standard VGA
-            case 0x18:            // Standard VGA
+            case 0x00: // Standard VGA
+            case 0x01: // Standard VGA
+            case 0x02: // Standard VGA
+            case 0x03: // Standard VGA
+            case 0x04: // Standard VGA
+            case 0x05: // Standard VGA
+            case 0x06: // Standard VGA
+            case 0x07: // Standard VGA
+            case 0x08: // Standard VGA
+            case 0x09: // Standard VGA
+            case 0x0a: // Standard VGA
+            case 0x0b: // Standard VGA
+            case 0x0c: // Standard VGA
+            case 0x0d: // Standard VGA
+            case 0x0e: // Standard VGA
+            case 0x0f: // Standard VGA
+            case 0x10: // Standard VGA
+            case 0x11: // Standard VGA
+            case 0x12: // Standard VGA
+            case 0x13: // Standard VGA
+            case 0x14: // Standard VGA
+            case 0x15: // Standard VGA
+            case 0x16: // Standard VGA
+            case 0x17: // Standard VGA
+            case 0x18: // Standard VGA
                 return s.cr[s.cr_index];
-            case 0x24:            // Attribute Controller Toggle Readback (R)
-                return (s.ar_flip_flop << 7);
-            case 0x19:            // Interlace End
-            case 0x1a:            // Miscellaneous Control
-            case 0x1b:            // Extended Display Control
-            case 0x1c:            // Sync Adjust and Genlock
-            case 0x1d:            // Overlay Extended Control
-            case 0x22:            // Graphics Data Latches Readback (R)
-            case 0x25:            // Part Status
-            case 0x27:            // Part ID (R)
+            case 0x24: // Attribute Controller Toggle Readback (R)
+                return s.ar_flip_flop << 7;
+            case 0x19: // Interlace End
+            case 0x1a: // Miscellaneous Control
+            case 0x1b: // Extended Display Control
+            case 0x1c: // Sync Adjust and Genlock
+            case 0x1d: // Overlay Extended Control
+            case 0x22: // Graphics Data Latches Readback (R)
+            case 0x25: // Part Status
+            case 0x27: // Part ID (R)
                 return s.cr[s.cr_index];
-            case 0x26:            // Attribute Controller Index Readback (R)
+            case 0x26: // Attribute Controller Index Readback (R)
                 return s.ar_index & 0x3f;
             default:
                 if (DEBUG)
@@ -1827,38 +1745,38 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private void cirrus_vga_write_cr(CirrusVGAState s, int reg_value) {
+    private static void cirrus_vga_write_cr(CirrusVGAState s, int reg_value) {
         switch (s.cr_index) {
-            case 0x00:            // Standard VGA
-            case 0x01:            // Standard VGA
-            case 0x02:            // Standard VGA
-            case 0x03:            // Standard VGA
-            case 0x04:            // Standard VGA
-            case 0x05:            // Standard VGA
-            case 0x06:            // Standard VGA
-            case 0x07:            // Standard VGA
-            case 0x08:            // Standard VGA
-            case 0x09:            // Standard VGA
-            case 0x0a:            // Standard VGA
-            case 0x0b:            // Standard VGA
-            case 0x0c:            // Standard VGA
-            case 0x0d:            // Standard VGA
-            case 0x0e:            // Standard VGA
-            case 0x0f:            // Standard VGA
-            case 0x10:            // Standard VGA
-            case 0x11:            // Standard VGA
-            case 0x12:            // Standard VGA
-            case 0x13:            // Standard VGA
-            case 0x14:            // Standard VGA
-            case 0x15:            // Standard VGA
-            case 0x16:            // Standard VGA
-            case 0x17:            // Standard VGA
-            case 0x18:            // Standard VGA
+            case 0x00: // Standard VGA
+            case 0x01: // Standard VGA
+            case 0x02: // Standard VGA
+            case 0x03: // Standard VGA
+            case 0x04: // Standard VGA
+            case 0x05: // Standard VGA
+            case 0x06: // Standard VGA
+            case 0x07: // Standard VGA
+            case 0x08: // Standard VGA
+            case 0x09: // Standard VGA
+            case 0x0a: // Standard VGA
+            case 0x0b: // Standard VGA
+            case 0x0c: // Standard VGA
+            case 0x0d: // Standard VGA
+            case 0x0e: // Standard VGA
+            case 0x0f: // Standard VGA
+            case 0x10: // Standard VGA
+            case 0x11: // Standard VGA
+            case 0x12: // Standard VGA
+            case 0x13: // Standard VGA
+            case 0x14: // Standard VGA
+            case 0x15: // Standard VGA
+            case 0x16: // Standard VGA
+            case 0x17: // Standard VGA
+            case 0x18: // Standard VGA
                 /* handle CR0-7 protection */
                 if ((s.cr[0x11] & 0x80) != 0 && s.cr_index <= 7) {
                     /* can always write bit 4 of CR7 */
                     if (s.cr_index == 7)
-                        s.cr[7] = (s.cr[7] & ~0x10) | (reg_value & 0x10);
+                        s.cr[7] = s.cr[7] & ~0x10 | reg_value & 0x10;
                     return;
                 }
                 s.cr[s.cr_index] = reg_value;
@@ -1874,102 +1792,102 @@ public class Cirrus extends VGA_header {
                         break;
                 }
                 break;
-            case 0x19:            // Interlace End
-            case 0x1a:            // Miscellaneous Control
-            case 0x1b:            // Extended Display Control
-            case 0x1c:            // Sync Adjust and Genlock
-            case 0x1d:            // Overlay Extended Control
+            case 0x19: // Interlace End
+            case 0x1a: // Miscellaneous Control
+            case 0x1b: // Extended Display Control
+            case 0x1c: // Sync Adjust and Genlock
+            case 0x1d: // Overlay Extended Control
                 s.cr[s.cr_index] = reg_value;
                 if (DEBUG)
-                    System.out.println("cirrus: handled outport cr_index " + Integer.toHexString(s.cr_index) + ", cr_value " + Integer.toHexString(reg_value));
+                    System.out.println("cirrus: handled outport cr_index " + Integer.toHexString(s.cr_index)
+                        + ", cr_value " + Integer.toHexString(reg_value));
                 break;
-            case 0x22:            // Graphics Data Latches Readback (R)
-            case 0x24:            // Attribute Controller Toggle Readback (R)
-            case 0x26:            // Attribute Controller Index Readback (R)
-            case 0x27:            // Part ID (R)
+            case 0x22: // Graphics Data Latches Readback (R)
+            case 0x24: // Attribute Controller Toggle Readback (R)
+            case 0x26: // Attribute Controller Index Readback (R)
+            case 0x27: // Part ID (R)
                 break;
-            case 0x25:            // Part Status
+            case 0x25: // Part Status
             default:
                 if (DEBUG)
-                    System.out.println("cirrus: outport cr_index " + Integer.toHexString(s.cr_index) + ", cr_value " + Integer.toHexString(reg_value));
+                    System.out.println("cirrus: outport cr_index " + Integer.toHexString(s.cr_index) + ", cr_value "
+                        + Integer.toHexString(reg_value));
                 break;
         }
     }
 
     /***************************************
-     *
-     *  memory-mapped I/O (bitblt)
-     *
+     * memory-mapped I/O (bitblt)
      ***************************************/
 
-    static private int cirrus_mmio_blt_read(CirrusVGAState s, int address) {
+    private static int cirrus_mmio_blt_read(CirrusVGAState s, int address) {
         int value = 0xff;
 
         switch (address) {
-            case (CIRRUS_MMIO_BLTBGCOLOR + 0):
+            case CIRRUS_MMIO_BLTBGCOLOR + 0:
                 value = cirrus_vga_read_gr(s, 0x00);
                 break;
-            case (CIRRUS_MMIO_BLTBGCOLOR + 1):
+            case CIRRUS_MMIO_BLTBGCOLOR + 1:
                 value = cirrus_vga_read_gr(s, 0x10);
                 break;
-            case (CIRRUS_MMIO_BLTBGCOLOR + 2):
+            case CIRRUS_MMIO_BLTBGCOLOR + 2:
                 value = cirrus_vga_read_gr(s, 0x12);
                 break;
-            case (CIRRUS_MMIO_BLTBGCOLOR + 3):
+            case CIRRUS_MMIO_BLTBGCOLOR + 3:
                 value = cirrus_vga_read_gr(s, 0x14);
                 break;
-            case (CIRRUS_MMIO_BLTFGCOLOR + 0):
+            case CIRRUS_MMIO_BLTFGCOLOR + 0:
                 value = cirrus_vga_read_gr(s, 0x01);
                 break;
-            case (CIRRUS_MMIO_BLTFGCOLOR + 1):
+            case CIRRUS_MMIO_BLTFGCOLOR + 1:
                 value = cirrus_vga_read_gr(s, 0x11);
                 break;
-            case (CIRRUS_MMIO_BLTFGCOLOR + 2):
+            case CIRRUS_MMIO_BLTFGCOLOR + 2:
                 value = cirrus_vga_read_gr(s, 0x13);
                 break;
-            case (CIRRUS_MMIO_BLTFGCOLOR + 3):
+            case CIRRUS_MMIO_BLTFGCOLOR + 3:
                 value = cirrus_vga_read_gr(s, 0x15);
                 break;
-            case (CIRRUS_MMIO_BLTWIDTH + 0):
+            case CIRRUS_MMIO_BLTWIDTH + 0:
                 value = cirrus_vga_read_gr(s, 0x20);
                 break;
-            case (CIRRUS_MMIO_BLTWIDTH + 1):
+            case CIRRUS_MMIO_BLTWIDTH + 1:
                 value = cirrus_vga_read_gr(s, 0x21);
                 break;
-            case (CIRRUS_MMIO_BLTHEIGHT + 0):
+            case CIRRUS_MMIO_BLTHEIGHT + 0:
                 value = cirrus_vga_read_gr(s, 0x22);
                 break;
-            case (CIRRUS_MMIO_BLTHEIGHT + 1):
+            case CIRRUS_MMIO_BLTHEIGHT + 1:
                 value = cirrus_vga_read_gr(s, 0x23);
                 break;
-            case (CIRRUS_MMIO_BLTDESTPITCH + 0):
+            case CIRRUS_MMIO_BLTDESTPITCH + 0:
                 value = cirrus_vga_read_gr(s, 0x24);
                 break;
-            case (CIRRUS_MMIO_BLTDESTPITCH + 1):
+            case CIRRUS_MMIO_BLTDESTPITCH + 1:
                 value = cirrus_vga_read_gr(s, 0x25);
                 break;
-            case (CIRRUS_MMIO_BLTSRCPITCH + 0):
+            case CIRRUS_MMIO_BLTSRCPITCH + 0:
                 value = cirrus_vga_read_gr(s, 0x26);
                 break;
-            case (CIRRUS_MMIO_BLTSRCPITCH + 1):
+            case CIRRUS_MMIO_BLTSRCPITCH + 1:
                 value = cirrus_vga_read_gr(s, 0x27);
                 break;
-            case (CIRRUS_MMIO_BLTDESTADDR + 0):
+            case CIRRUS_MMIO_BLTDESTADDR + 0:
                 value = cirrus_vga_read_gr(s, 0x28);
                 break;
-            case (CIRRUS_MMIO_BLTDESTADDR + 1):
+            case CIRRUS_MMIO_BLTDESTADDR + 1:
                 value = cirrus_vga_read_gr(s, 0x29);
                 break;
-            case (CIRRUS_MMIO_BLTDESTADDR + 2):
+            case CIRRUS_MMIO_BLTDESTADDR + 2:
                 value = cirrus_vga_read_gr(s, 0x2a);
                 break;
-            case (CIRRUS_MMIO_BLTSRCADDR + 0):
+            case CIRRUS_MMIO_BLTSRCADDR + 0:
                 value = cirrus_vga_read_gr(s, 0x2c);
                 break;
-            case (CIRRUS_MMIO_BLTSRCADDR + 1):
+            case CIRRUS_MMIO_BLTSRCADDR + 1:
                 value = cirrus_vga_read_gr(s, 0x2d);
                 break;
-            case (CIRRUS_MMIO_BLTSRCADDR + 2):
+            case CIRRUS_MMIO_BLTSRCADDR + 2:
                 value = cirrus_vga_read_gr(s, 0x2e);
                 break;
             case CIRRUS_MMIO_BLTWRITEMASK:
@@ -1984,16 +1902,16 @@ public class Cirrus extends VGA_header {
             case CIRRUS_MMIO_BLTMODEEXT:
                 value = cirrus_vga_read_gr(s, 0x33);
                 break;
-            case (CIRRUS_MMIO_BLTTRANSPARENTCOLOR + 0):
+            case CIRRUS_MMIO_BLTTRANSPARENTCOLOR + 0:
                 value = cirrus_vga_read_gr(s, 0x34);
                 break;
-            case (CIRRUS_MMIO_BLTTRANSPARENTCOLOR + 1):
+            case CIRRUS_MMIO_BLTTRANSPARENTCOLOR + 1:
                 value = cirrus_vga_read_gr(s, 0x35);
                 break;
-            case (CIRRUS_MMIO_BLTTRANSPARENTCOLORMASK + 0):
+            case CIRRUS_MMIO_BLTTRANSPARENTCOLORMASK + 0:
                 value = cirrus_vga_read_gr(s, 0x38);
                 break;
-            case (CIRRUS_MMIO_BLTTRANSPARENTCOLORMASK + 1):
+            case CIRRUS_MMIO_BLTTRANSPARENTCOLORMASK + 1:
                 value = cirrus_vga_read_gr(s, 0x39);
                 break;
             case CIRRUS_MMIO_BLTSTATUS:
@@ -2010,73 +1928,73 @@ public class Cirrus extends VGA_header {
 
     static void cirrus_mmio_blt_write(CirrusVGAState s, int address, int value) {
         switch (address) {
-            case (CIRRUS_MMIO_BLTBGCOLOR + 0):
+            case CIRRUS_MMIO_BLTBGCOLOR + 0:
                 cirrus_vga_write_gr(s, 0x00, value);
                 break;
-            case (CIRRUS_MMIO_BLTBGCOLOR + 1):
+            case CIRRUS_MMIO_BLTBGCOLOR + 1:
                 cirrus_vga_write_gr(s, 0x10, value);
                 break;
-            case (CIRRUS_MMIO_BLTBGCOLOR + 2):
+            case CIRRUS_MMIO_BLTBGCOLOR + 2:
                 cirrus_vga_write_gr(s, 0x12, value);
                 break;
-            case (CIRRUS_MMIO_BLTBGCOLOR + 3):
+            case CIRRUS_MMIO_BLTBGCOLOR + 3:
                 cirrus_vga_write_gr(s, 0x14, value);
                 break;
-            case (CIRRUS_MMIO_BLTFGCOLOR + 0):
+            case CIRRUS_MMIO_BLTFGCOLOR + 0:
                 cirrus_vga_write_gr(s, 0x01, value);
                 break;
-            case (CIRRUS_MMIO_BLTFGCOLOR + 1):
+            case CIRRUS_MMIO_BLTFGCOLOR + 1:
                 cirrus_vga_write_gr(s, 0x11, value);
                 break;
-            case (CIRRUS_MMIO_BLTFGCOLOR + 2):
+            case CIRRUS_MMIO_BLTFGCOLOR + 2:
                 cirrus_vga_write_gr(s, 0x13, value);
                 break;
-            case (CIRRUS_MMIO_BLTFGCOLOR + 3):
+            case CIRRUS_MMIO_BLTFGCOLOR + 3:
                 cirrus_vga_write_gr(s, 0x15, value);
                 break;
-            case (CIRRUS_MMIO_BLTWIDTH + 0):
+            case CIRRUS_MMIO_BLTWIDTH + 0:
                 cirrus_vga_write_gr(s, 0x20, value);
                 break;
-            case (CIRRUS_MMIO_BLTWIDTH + 1):
+            case CIRRUS_MMIO_BLTWIDTH + 1:
                 cirrus_vga_write_gr(s, 0x21, value);
                 break;
-            case (CIRRUS_MMIO_BLTHEIGHT + 0):
+            case CIRRUS_MMIO_BLTHEIGHT + 0:
                 cirrus_vga_write_gr(s, 0x22, value);
                 break;
-            case (CIRRUS_MMIO_BLTHEIGHT + 1):
+            case CIRRUS_MMIO_BLTHEIGHT + 1:
                 cirrus_vga_write_gr(s, 0x23, value);
                 break;
-            case (CIRRUS_MMIO_BLTDESTPITCH + 0):
+            case CIRRUS_MMIO_BLTDESTPITCH + 0:
                 cirrus_vga_write_gr(s, 0x24, value);
                 break;
-            case (CIRRUS_MMIO_BLTDESTPITCH + 1):
+            case CIRRUS_MMIO_BLTDESTPITCH + 1:
                 cirrus_vga_write_gr(s, 0x25, value);
                 break;
-            case (CIRRUS_MMIO_BLTSRCPITCH + 0):
+            case CIRRUS_MMIO_BLTSRCPITCH + 0:
                 cirrus_vga_write_gr(s, 0x26, value);
                 break;
-            case (CIRRUS_MMIO_BLTSRCPITCH + 1):
+            case CIRRUS_MMIO_BLTSRCPITCH + 1:
                 cirrus_vga_write_gr(s, 0x27, value);
                 break;
-            case (CIRRUS_MMIO_BLTDESTADDR + 0):
+            case CIRRUS_MMIO_BLTDESTADDR + 0:
                 cirrus_vga_write_gr(s, 0x28, value);
                 break;
-            case (CIRRUS_MMIO_BLTDESTADDR + 1):
+            case CIRRUS_MMIO_BLTDESTADDR + 1:
                 cirrus_vga_write_gr(s, 0x29, value);
                 break;
-            case (CIRRUS_MMIO_BLTDESTADDR + 2):
+            case CIRRUS_MMIO_BLTDESTADDR + 2:
                 cirrus_vga_write_gr(s, 0x2a, value);
                 break;
-            case (CIRRUS_MMIO_BLTDESTADDR + 3):
+            case CIRRUS_MMIO_BLTDESTADDR + 3:
                 /* ignored */
                 break;
-            case (CIRRUS_MMIO_BLTSRCADDR + 0):
+            case CIRRUS_MMIO_BLTSRCADDR + 0:
                 cirrus_vga_write_gr(s, 0x2c, value);
                 break;
-            case (CIRRUS_MMIO_BLTSRCADDR + 1):
+            case CIRRUS_MMIO_BLTSRCADDR + 1:
                 cirrus_vga_write_gr(s, 0x2d, value);
                 break;
-            case (CIRRUS_MMIO_BLTSRCADDR + 2):
+            case CIRRUS_MMIO_BLTSRCADDR + 2:
                 cirrus_vga_write_gr(s, 0x2e, value);
                 break;
             case CIRRUS_MMIO_BLTWRITEMASK:
@@ -2091,16 +2009,16 @@ public class Cirrus extends VGA_header {
             case CIRRUS_MMIO_BLTMODEEXT:
                 cirrus_vga_write_gr(s, 0x33, value);
                 break;
-            case (CIRRUS_MMIO_BLTTRANSPARENTCOLOR + 0):
+            case CIRRUS_MMIO_BLTTRANSPARENTCOLOR + 0:
                 cirrus_vga_write_gr(s, 0x34, value);
                 break;
-            case (CIRRUS_MMIO_BLTTRANSPARENTCOLOR + 1):
+            case CIRRUS_MMIO_BLTTRANSPARENTCOLOR + 1:
                 cirrus_vga_write_gr(s, 0x35, value);
                 break;
-            case (CIRRUS_MMIO_BLTTRANSPARENTCOLORMASK + 0):
+            case CIRRUS_MMIO_BLTTRANSPARENTCOLORMASK + 0:
                 cirrus_vga_write_gr(s, 0x38, value);
                 break;
-            case (CIRRUS_MMIO_BLTTRANSPARENTCOLORMASK + 1):
+            case CIRRUS_MMIO_BLTTRANSPARENTCOLORMASK + 1:
                 cirrus_vga_write_gr(s, 0x39, value);
                 break;
             case CIRRUS_MMIO_BLTSTATUS:
@@ -2108,15 +2026,14 @@ public class Cirrus extends VGA_header {
                 break;
             default:
                 if (DEBUG)
-                    System.out.println("cirrus: mmio write - addr 0x" + Integer.toHexString(address) + " val 0x" + Integer.toHexString(value) + " (ignored)");
+                    System.out.println("cirrus: mmio write - addr 0x" + Integer.toHexString(address) + " val 0x"
+                        + Integer.toHexString(value) + " (ignored)");
                 break;
         }
     }
 
     /***************************************
-     *
-     *  write mode 4/5
-     *
+     * write mode 4/5
      ***************************************/
 
     static void cirrus_mem_writeb_mode4and5_8bpp(CirrusVGAState s, int mode, int offset, int mem_value) {
@@ -2158,18 +2075,16 @@ public class Cirrus extends VGA_header {
     }
 
     /***************************************
-     *
-     *  hardware cursor
-     *
+     * hardware cursor
      ***************************************/
 
-    static private void invalidate_cursor1(CirrusVGAState s) {
+    private static void invalidate_cursor1(CirrusVGAState s) {
 //        if (s.last_hw_cursor_size) {
 //            vga_invalidate_scanlines(&s.vga, s.last_hw_cursor_y + s.last_hw_cursor_y_start, s.last_hw_cursor_y + s.last_hw_cursor_y_end);
 //        }
     }
 
-    static private void cirrus_cursor_compute_yrange(CirrusVGAState s) {
+    private static void cirrus_cursor_compute_yrange(CirrusVGAState s) {
         int src;
         int content;
         int y, y_min, y_max;
@@ -2217,7 +2132,7 @@ public class Cirrus extends VGA_header {
 
     /* NOTE: we do not currently handle the cursor bitmap change, so we
        update the cursor only if it moves. */
-    static private void cirrus_cursor_invalidate(CirrusVGAState s) {
+    private static void cirrus_cursor_invalidate(CirrusVGAState s) {
         int size;
 
         if ((s.sr[0x12] & CIRRUS_CURSOR_SHOW) == 0) {
@@ -2229,9 +2144,8 @@ public class Cirrus extends VGA_header {
                 size = 32;
         }
         /* invalidate last cursor and new cursor if any change */
-        if (s.last_hw_cursor_size != size ||
-                s.last_hw_cursor_x != s.hw_cursor_x ||
-                s.last_hw_cursor_y != s.hw_cursor_y) {
+        if (s.last_hw_cursor_size != size || s.last_hw_cursor_x != s.hw_cursor_x
+            || s.last_hw_cursor_y != s.hw_cursor_y) {
 
             invalidate_cursor1(s);
 
@@ -2244,7 +2158,8 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private void vga_draw_cursor_line_8(CirrusVGAState s, int d1, int src1, int poffset, int w, int color0, int color1, int color_xor) {
+    private static void vga_draw_cursor_line_8(CirrusVGAState s, int d1, int src1, int poffset, int w, int color0,
+        int color1, int color_xor) {
         int plane0, plane1;
         int x, b0, b1;
         int d;
@@ -2253,9 +2168,9 @@ public class Cirrus extends VGA_header {
         plane0 = src1;
         plane1 = src1 + poffset;
         for (x = 0; x < w; x++) {
-            b0 = (s.readb(plane0 + (x >> 3)) >> (7 - (x & 7))) & 1;
-            b1 = (s.readb(plane1 + (x >> 3)) >> (7 - (x & 7))) & 1;
-            switch (b0 | (b1 << 1)) {
+            b0 = s.readb(plane0 + (x >> 3)) >> 7 - (x & 7) & 1;
+            b1 = s.readb(plane1 + (x >> 3)) >> 7 - (x & 7) & 1;
+            switch (b0 | b1 << 1) {
                 case 0:
                     break;
                 case 1:
@@ -2272,7 +2187,8 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private void vga_draw_cursor_line_16(CirrusVGAState s, int d1, int src1, int poffset, int w, int color0, int color1, int color_xor) {
+    private static void vga_draw_cursor_line_16(CirrusVGAState s, int d1, int src1, int poffset, int w, int color0,
+        int color1, int color_xor) {
         int plane0, plane1;
         int x, b0, b1;
         int d;
@@ -2281,9 +2197,9 @@ public class Cirrus extends VGA_header {
         plane0 = src1;
         plane1 = src1 + poffset;
         for (x = 0; x < w; x++) {
-            b0 = (s.readb(plane0 + (x >> 3)) >> (7 - (x & 7))) & 1;
-            b1 = (s.readb(plane1 + (x >> 3)) >> (7 - (x & 7))) & 1;
-            switch (b0 | (b1 << 1)) {
+            b0 = s.readb(plane0 + (x >> 3)) >> 7 - (x & 7) & 1;
+            b1 = s.readb(plane1 + (x >> 3)) >> 7 - (x & 7) & 1;
+            switch (b0 | b1 << 1) {
                 case 0:
                     break;
                 case 1:
@@ -2300,7 +2216,8 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private void vga_draw_cursor_line_32(CirrusVGAState s, int d1, int src1, int poffset, int w, int color0, int color1, int color_xor) {
+    private static void vga_draw_cursor_line_32(CirrusVGAState s, int d1, int src1, int poffset, int w, int color0,
+        int color1, int color_xor) {
         int plane0, plane1;
         int x, b0, b1;
         int d;
@@ -2309,9 +2226,9 @@ public class Cirrus extends VGA_header {
         plane0 = src1;
         plane1 = src1 + poffset;
         for (x = 0; x < w; x++) {
-            b0 = (s.readb(plane0 + (x >> 3)) >> (7 - (x & 7))) & 1;
-            b1 = (s.readb(plane1 + (x >> 3)) >> (7 - (x & 7))) & 1;
-            switch (b0 | (b1 << 1)) {
+            b0 = s.readb(plane0 + (x >> 3)) >> 7 - (x & 7) & 1;
+            b1 = s.readb(plane1 + (x >> 3)) >> 7 - (x & 7) & 1;
+            switch (b0 | b1 << 1) {
                 case 0:
                     break;
                 case 1:
@@ -2328,8 +2245,9 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private void map_linear_vram_bank(CirrusVGAState s, int bank) {
-        boolean enabled = !(s.cirrus_srcptr != s.cirrus_srcptr_end) && (s.sr[0x07] & 0x01) != 0 && (s.gr[0x0B] & 0x14) != 0x14 && (s.gr[0x0B] & 0x02) == 0;
+    private static void map_linear_vram_bank(CirrusVGAState s, int bank) {
+        boolean enabled = !(s.cirrus_srcptr != s.cirrus_srcptr_end) && (s.sr[0x07] & 0x01) != 0
+            && (s.gr[0x0B] & 0x14) != 0x14 && (s.gr[0x0B] & 0x02) == 0;
         if (enabled) {
             Memory.MEM_SetPageHandler(VGA_PAGE_A0, 16, low_mem);
             Memory.MEM_SetPageHandler(VGA_PAGE_B0, 16, low_mem);
@@ -2340,7 +2258,7 @@ public class Cirrus extends VGA_header {
         //memory_region_set_alias_offset(mr, s.cirrus_bank_base[bank]);
     }
 
-    static private void map_linear_vram(CirrusVGAState s) {
+    private static void map_linear_vram(CirrusVGAState s) {
 //        if (s.bustype == CIRRUS_BUSTYPE_PCI && !s.linear_vram) {
 //            s.linear_vram = true;
 //            memory_region_add_subregion_overlap(&s.pci_bar, 0, &s.vram, 1);
@@ -2350,7 +2268,7 @@ public class Cirrus extends VGA_header {
         map_linear_vram_bank(s, 1);
     }
 
-    static private void unmap_linear_vram(CirrusVGAState s) {
+    private static void unmap_linear_vram(CirrusVGAState s) {
 //        if (s.bustype == CIRRUS_BUSTYPE_PCI && s.linear_vram) {
 //            s.linear_vram = false;
 //            memory_region_del_subregion(&s.pci_bar, &s.vram);
@@ -2360,7 +2278,7 @@ public class Cirrus extends VGA_header {
     }
 
     /* Compute the memory access functions */
-    static private void cirrus_update_memory_access(CirrusVGAState s) {
+    private static void cirrus_update_memory_access(CirrusVGAState s) {
         int mode;
 
 //        memory_region_transaction_begin();
@@ -2375,7 +2293,7 @@ public class Cirrus extends VGA_header {
                 unmap_linear_vram(s);
             } else {
                 mode = s.gr[0x05] & 0x7;
-                if (mode < 4 || mode > 5 || ((s.gr[0x0B] & 0x4) == 0)) {
+                if (mode < 4 || mode > 5 || (s.gr[0x0B] & 0x4) == 0) {
                     map_linear_vram(s);
                 } else {
                     unmap_linear_vram(s);
@@ -2386,24 +2304,22 @@ public class Cirrus extends VGA_header {
     }
 
     /***************************************
-     *
-     *  initialize
-     *
+     * initialize
      ***************************************/
 
-    static private void cirrus_reset(CirrusVGAState s) {
+    private static void cirrus_reset(CirrusVGAState s) {
         VGA.vga_common_reset(s);
         unmap_linear_vram(s);
         s.sr[0x06] = 0x0f;
         if (s.device_id == CIRRUS_ID_CLGD5446) {
             /* 4MB 64 bit memory config, always PCI */
-            s.sr[0x1F] = 0x2d;        // MemClock
-            s.gr[0x18] = 0x0f;             // fastest memory configuration
+            s.sr[0x1F] = 0x2d; // MemClock
+            s.gr[0x18] = 0x0f; // fastest memory configuration
             s.sr[0x0f] = 0x98;
             s.sr[0x17] = 0x20;
             s.sr[0x15] = 0x04; /* memory size, 3=2MB, 4=4MB */
         } else {
-            s.sr[0x1F] = 0x22;        // MemClock
+            s.sr[0x1F] = 0x22; // MemClock
             s.sr[0x0F] = CIRRUS_MEMSIZE_2M;
             s.sr[0x17] = s.bustype;
             /* memory size, 3=2MB, 4=4MB */
@@ -2420,7 +2336,7 @@ public class Cirrus extends VGA_header {
         s.cirrus_hidden_dac_data = 0;
     }
 
-    static private void cirrus_init_common(CirrusVGAState s, int device_id, boolean is_pci) {
+    private static void cirrus_init_common(CirrusVGAState s, int device_id, boolean is_pci) {
         int i;
 
         if (!inited) {
@@ -2486,9 +2402,7 @@ public class Cirrus extends VGA_header {
     }
 
     /***************************************
-     *
-     *  ISA bus support
-     *
+     * ISA bus support
      ***************************************/
 
     static int vga_initfn() {
@@ -2508,7 +2422,6 @@ public class Cirrus extends VGA_header {
         void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight);
     }
 
-
     private interface cirrus_fill_t {
         void call(CirrusVGAState s, int dstPos, int dst_pitch, int width, int height);
     }
@@ -2521,12 +2434,12 @@ public class Cirrus extends VGA_header {
         void call32(CirrusVGAState s, int dstPos, int srcColor);
     }
 
-    static private final class CirrusVGAState extends VGACommonState {
+    private static final class CirrusVGAState extends VGACommonState {
         //MemoryRegion cirrus_linear_io;
         //MemoryRegion cirrus_linear_bitblt_io;
         //MemoryRegion cirrus_mmio_io;
         //MemoryRegion pci_bar;
-        boolean linear_vram;  /* vga.vram mapped over cirrus_linear_io */
+        boolean linear_vram; /* vga.vram mapped over cirrus_linear_io */
         //MemoryRegion low_mem_container; /* container for 0xa0000-0xc0000 */
         //MemoryRegion low_mem;           /* always mapped, overridden by: */
         //MemoryRegion cirrus_bank[2];    /*   aliases at 0xa0000-0xb0000  */
@@ -2607,8 +2520,8 @@ public class Cirrus extends VGA_header {
         }
 
         int get_resolutionCy() {
-            int height = cr[0x12] | ((cr[0x07] & 0x02) << 7) | ((cr[0x07] & 0x40) << 3);
-            height = (height + 1);
+            int height = cr[0x12] | (cr[0x07] & 0x02) << 7 | (cr[0x07] & 0x40) << 3;
+            height = height + 1;
             /* interlace support */
             if ((cr[0x1a] & 0x01) != 0)
                 height = height * 2;
@@ -2616,7 +2529,7 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private abstract class cirrus_bitblt_rop implements cirrus_bitblt_rop_t {
+    private static abstract class cirrus_bitblt_rop implements cirrus_bitblt_rop_t {
         public ROP_OP op;
 
         public cirrus_bitblt_rop(ROP_OP op) {
@@ -2624,7 +2537,7 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private abstract class cirrus_fill implements cirrus_fill_t {
+    private static abstract class cirrus_fill implements cirrus_fill_t {
         public ROP_OP op;
 
         public cirrus_fill(ROP_OP op) {
@@ -2632,12 +2545,14 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_bitblt_rop_fwd extends cirrus_bitblt_rop {
+    private static final class cirrus_bitblt_rop_fwd extends cirrus_bitblt_rop {
         public cirrus_bitblt_rop_fwd(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int x, y;
             dstpitch -= bltwidth;
             srcpitch -= bltwidth;
@@ -2659,12 +2574,14 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_bitblt_rop_bkwd extends cirrus_bitblt_rop {
+    private static final class cirrus_bitblt_rop_bkwd extends cirrus_bitblt_rop {
         public cirrus_bitblt_rop_bkwd(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int x, y;
             dstpitch += bltwidth;
             srcpitch += bltwidth;
@@ -2680,12 +2597,14 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_bitblt_rop_fwd_transp_8 extends cirrus_bitblt_rop {
+    private static final class cirrus_bitblt_rop_fwd_transp_8 extends cirrus_bitblt_rop {
         public cirrus_bitblt_rop_fwd_transp_8(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int x, y;
             int p;
             dstpitch -= bltwidth;
@@ -2694,7 +2613,8 @@ public class Cirrus extends VGA_header {
                 for (x = 0; x < bltwidth; x++) {
                     p = s.readb(dstPos);
                     op.call8(s, dstPos, s.readb(srcPos));
-                    if (s.readb(dstPos) == s.gr[0x34]) s.writeb(dstPos, p);
+                    if (s.readb(dstPos) == s.gr[0x34])
+                        s.writeb(dstPos, p);
                     dstPos++;
                     srcPos++;
                 }
@@ -2704,21 +2624,24 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_bitblt_rop_fwd_transp_16 extends cirrus_bitblt_rop {
+    private static final class cirrus_bitblt_rop_fwd_transp_16 extends cirrus_bitblt_rop {
         public cirrus_bitblt_rop_fwd_transp_16(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int x, y;
-            int gr = s.gr[0x34] | (s.gr[0x35] << 8);
+            int gr = s.gr[0x34] | s.gr[0x35] << 8;
             dstpitch -= bltwidth;
             srcpitch -= bltwidth;
             for (y = 0; y < bltheight; y++) {
                 for (x = 0; x < bltwidth; x += 2) {
                     int p = s.readw(dstPos);
                     op.call16(s, dstPos, s.readw(srcPos));
-                    if (s.readw(dstPos) == gr) s.writew(dstPos, p);
+                    if (s.readw(dstPos) == gr)
+                        s.writew(dstPos, p);
                     dstPos += 2;
                     srcPos += 2;
                 }
@@ -2728,12 +2651,14 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_bitblt_rop_bkwd_transp_8 extends cirrus_bitblt_rop {
+    private static final class cirrus_bitblt_rop_bkwd_transp_8 extends cirrus_bitblt_rop {
         public cirrus_bitblt_rop_bkwd_transp_8(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int x, y;
             int p;
             dstpitch += bltwidth;
@@ -2742,7 +2667,8 @@ public class Cirrus extends VGA_header {
                 for (x = 0; x < bltwidth; x++) {
                     p = s.readb(dstPos);
                     p = s.readb(dstPos);
-                    if (s.readb(dstPos) == s.gr[0x34]) s.writeb(dstPos, p);
+                    if (s.readb(dstPos) == s.gr[0x34])
+                        s.writeb(dstPos, p);
                     dstPos--;
                     srcPos--;
                 }
@@ -2752,21 +2678,24 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_bitblt_rop_bkwd_transp_16 extends cirrus_bitblt_rop {
+    private static final class cirrus_bitblt_rop_bkwd_transp_16 extends cirrus_bitblt_rop {
         public cirrus_bitblt_rop_bkwd_transp_16(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int x, y;
-            int gr = s.gr[0x34] | (s.gr[0x35] << 8);
+            int gr = s.gr[0x34] | s.gr[0x35] << 8;
             dstpitch += bltwidth;
             srcpitch += bltwidth;
             for (y = 0; y < bltheight; y++) {
                 for (x = 0; x < bltwidth; x += 2) {
                     int p = s.readw(dstPos);
                     op.call16(s, dstPos, s.readw(srcPos));
-                    if (s.readw(dstPos) == gr) s.writew(dstPos, p);
+                    if (s.readw(dstPos) == gr)
+                        s.writew(dstPos, p);
                     dstPos -= 2;
                     srcPos -= 2;
                 }
@@ -2776,16 +2705,18 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_patternfill_8 extends cirrus_bitblt_rop {
+    private static final class cirrus_patternfill_8 extends cirrus_bitblt_rop {
         public cirrus_patternfill_8(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y, pattern_y, pattern_pitch, pattern_x;
             int src1Pos;
-            int skipleft = (s.gr[0x2f] & 0x07);
+            int skipleft = s.gr[0x2f] & 0x07;
 
             pattern_pitch = 8;
             pattern_y = s.cirrus_blt_srcaddr & 7;
@@ -2795,21 +2726,23 @@ public class Cirrus extends VGA_header {
                 src1Pos = srcPos + pattern_y * pattern_pitch;
                 for (x = skipleft; x < bltwidth; x += 1) {
                     op.call8(s, dPos, s.readb(src1Pos + pattern_x));
-                    pattern_x = (pattern_x + 1) & 7;
+                    pattern_x = pattern_x + 1 & 7;
                     dPos += 1;
                 }
-                pattern_y = (pattern_y + 1) & 7;
+                pattern_y = pattern_y + 1 & 7;
                 dstPos += dstpitch;
             }
         }
     }
 
-    static private final class cirrus_patternfill_16 extends cirrus_bitblt_rop {
+    private static final class cirrus_patternfill_16 extends cirrus_bitblt_rop {
         public cirrus_patternfill_16(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y, pattern_y, pattern_pitch, pattern_x;
             int src1Pos;
@@ -2823,21 +2756,23 @@ public class Cirrus extends VGA_header {
                 src1Pos = srcPos + pattern_y * pattern_pitch;
                 for (x = skipleft; x < bltwidth; x += 2) {
                     op.call16(s, dPos, s.readw(src1Pos + pattern_x));
-                    pattern_x = (pattern_x + 2) & 15;
+                    pattern_x = pattern_x + 2 & 15;
                     dPos += 2;
                 }
-                pattern_y = (pattern_y + 1) & 7;
+                pattern_y = pattern_y + 1 & 7;
                 dstPos += dstpitch;
             }
         }
     }
 
-    static private final class cirrus_patternfill_24 extends cirrus_bitblt_rop {
+    private static final class cirrus_patternfill_24 extends cirrus_bitblt_rop {
         public cirrus_patternfill_24(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y, pattern_y, pattern_pitch, pattern_x;
             int src1Pos;
@@ -2851,24 +2786,26 @@ public class Cirrus extends VGA_header {
                 src1Pos = srcPos + pattern_y * pattern_pitch;
                 for (x = skipleft; x < bltwidth; x += 3) {
                     int src2 = src1Pos + pattern_x * 3;
-                    pattern_x = (pattern_x + 1) & 7;
+                    pattern_x = pattern_x + 1 & 7;
                     op.call8(s, dPos, s.readb(src2));
                     op.call8(s, dPos + 1, s.readb(src2 + 1));
                     op.call8(s, dPos + 2, s.readb(src2 + 2));
                     dPos += 3;
                 }
-                pattern_y = (pattern_y + 1) & 7;
+                pattern_y = pattern_y + 1 & 7;
                 dstPos += dstpitch;
             }
         }
     }
 
-    static private final class cirrus_patternfill_32 extends cirrus_bitblt_rop {
+    private static final class cirrus_patternfill_32 extends cirrus_bitblt_rop {
         public cirrus_patternfill_32(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y, pattern_y, pattern_pitch, pattern_x;
             int src1Pos;
@@ -2882,21 +2819,23 @@ public class Cirrus extends VGA_header {
                 src1Pos = srcPos + pattern_y * pattern_pitch;
                 for (x = skipleft; x < bltwidth; x += 4) {
                     op.call32(s, dPos, s.readw(src1Pos + pattern_x));
-                    pattern_x = (pattern_x + 4) & 31;
+                    pattern_x = pattern_x + 4 & 31;
                     dPos += 4;
                 }
-                pattern_y = (pattern_y + 1) & 7;
+                pattern_y = pattern_y + 1 & 7;
                 dstPos += dstpitch;
             }
         }
     }
 
-    static private final class cirrus_colorexpand_transp_8 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_transp_8 extends cirrus_bitblt_rop {
         public cirrus_colorexpand_transp_8(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y;
             int bits, bits_xor;
@@ -2923,7 +2862,7 @@ public class Cirrus extends VGA_header {
                         bitmask = 0x80;
                         bits = s.readb(srcPos++) ^ bits_xor;
                     }
-                    index = (bits & bitmask);
+                    index = bits & bitmask;
                     if (index != 0) {
                         op.call8(s, dPos, col);
                     }
@@ -2935,12 +2874,14 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_colorexpand_transp_16 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_transp_16 extends cirrus_bitblt_rop {
         public cirrus_colorexpand_transp_16(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y;
             int bits, bits_xor;
@@ -2967,7 +2908,7 @@ public class Cirrus extends VGA_header {
                         bitmask = 0x80;
                         bits = s.readb(srcPos++) ^ bits_xor;
                     }
-                    index = (bits & bitmask);
+                    index = bits & bitmask;
                     if (index != 0) {
                         op.call16(s, dPos, col);
                     }
@@ -2979,12 +2920,14 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_colorexpand_transp_24 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_transp_24 extends cirrus_bitblt_rop {
         public cirrus_colorexpand_transp_24(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y;
             int bits, bits_xor;
@@ -3011,11 +2954,11 @@ public class Cirrus extends VGA_header {
                         bitmask = 0x80;
                         bits = s.readb(srcPos++) ^ bits_xor;
                     }
-                    index = (bits & bitmask);
+                    index = bits & bitmask;
                     if (index != 0) {
                         op.call8(s, dPos, col & 0xFF);
-                        op.call8(s, dPos + 1, (col >> 8) & 0xFF);
-                        op.call8(s, dPos + 2, (col >> 16) & 0xFF);
+                        op.call8(s, dPos + 1, col >> 8 & 0xFF);
+                        op.call8(s, dPos + 2, col >> 16 & 0xFF);
                     }
                     dPos += 3;
                     bitmask >>= 1;
@@ -3025,12 +2968,14 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_colorexpand_transp_32 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_transp_32 extends cirrus_bitblt_rop {
         public cirrus_colorexpand_transp_32(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y;
             int bits, bits_xor;
@@ -3057,7 +3002,7 @@ public class Cirrus extends VGA_header {
                         bitmask = 0x80;
                         bits = s.readb(srcPos++) ^ bits_xor;
                     }
-                    index = (bits & bitmask);
+                    index = bits & bitmask;
                     if (index != 0) {
                         op.call32(s, dPos, col);
                     }
@@ -3069,14 +3014,16 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_colorexpand_8 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_8 extends cirrus_bitblt_rop {
         int[] colors = new int[2];
 
         public cirrus_colorexpand_8(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y;
             int bits;
@@ -3116,14 +3063,16 @@ public class Cirrus extends VGA_header {
 //        },
 //    };
 
-    static private final class cirrus_colorexpand_16 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_16 extends cirrus_bitblt_rop {
         int[] colors = new int[2];
 
         public cirrus_colorexpand_16(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y;
             int bits;
@@ -3153,14 +3102,16 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_colorexpand_24 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_24 extends cirrus_bitblt_rop {
         int[] colors = new int[2];
 
         public cirrus_colorexpand_24(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y;
             int bits;
@@ -3182,8 +3133,8 @@ public class Cirrus extends VGA_header {
                     }
                     col = colors[(bits & bitmask) == 0 ? 0 : 1];
                     op.call8(s, dPos, col & 0xFF);
-                    op.call8(s, dPos + 1, (col >> 8) & 0xFF);
-                    op.call8(s, dPos + 2, (col >> 16) & 0xFF);
+                    op.call8(s, dPos + 1, col >> 8 & 0xFF);
+                    op.call8(s, dPos + 2, col >> 16 & 0xFF);
                     dPos += 3;
                     bitmask >>= 1;
                 }
@@ -3192,14 +3143,16 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_colorexpand_32 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_32 extends cirrus_bitblt_rop {
         int[] colors = new int[2];
 
         public cirrus_colorexpand_32(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y;
             int bits;
@@ -3229,12 +3182,14 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_colorexpand_pattern_transp_8 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_pattern_transp_8 extends cirrus_bitblt_rop {
         public cirrus_colorexpand_pattern_transp_8(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y, bitpos, pattern_y;
             int bits, bits_xor;
@@ -3256,24 +3211,26 @@ public class Cirrus extends VGA_header {
                 bitpos = 7 - srcskipleft;
                 dPos = dstPos + dstskipleft;
                 for (x = dstskipleft; x < bltwidth; x++) {
-                    if (((bits >> bitpos) & 1) != 0) {
+                    if ((bits >> bitpos & 1) != 0) {
                         op.call8(s, dPos, col);
                     }
                     dPos++;
-                    bitpos = (bitpos - 1) & 7;
+                    bitpos = bitpos - 1 & 7;
                 }
-                pattern_y = (pattern_y + 1) & 7;
+                pattern_y = pattern_y + 1 & 7;
                 dstPos += dstpitch;
             }
         }
     }
 
-    static private final class cirrus_colorexpand_pattern_transp_16 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_pattern_transp_16 extends cirrus_bitblt_rop {
         public cirrus_colorexpand_pattern_transp_16(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y, bitpos, pattern_y;
             int bits, bits_xor;
@@ -3295,24 +3252,26 @@ public class Cirrus extends VGA_header {
                 bitpos = 7 - srcskipleft;
                 dPos = dstPos + dstskipleft;
                 for (x = dstskipleft; x < bltwidth; x += 2) {
-                    if (((bits >> bitpos) & 1) != 0) {
+                    if ((bits >> bitpos & 1) != 0) {
                         op.call16(s, dPos, col);
                     }
                     dPos += 2;
-                    bitpos = (bitpos - 1) & 7;
+                    bitpos = bitpos - 1 & 7;
                 }
-                pattern_y = (pattern_y + 1) & 7;
+                pattern_y = pattern_y + 1 & 7;
                 dstPos += dstpitch;
             }
         }
     }
 
-    static private final class cirrus_colorexpand_pattern_transp_24 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_pattern_transp_24 extends cirrus_bitblt_rop {
         public cirrus_colorexpand_pattern_transp_24(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y, bitpos, pattern_y;
             int bits, bits_xor;
@@ -3334,26 +3293,28 @@ public class Cirrus extends VGA_header {
                 bitpos = 7 - srcskipleft;
                 dPos = dstPos + dstskipleft;
                 for (x = dstskipleft; x < bltwidth; x += 3) {
-                    if (((bits >> bitpos) & 1) != 0) {
+                    if ((bits >> bitpos & 1) != 0) {
                         op.call8(s, dPos, col & 0xFF);
-                        op.call8(s, dPos + 1, (col >> 8) & 0xFF);
-                        op.call8(s, dPos + 2, (col >> 16) & 0xFF);
+                        op.call8(s, dPos + 1, col >> 8 & 0xFF);
+                        op.call8(s, dPos + 2, col >> 16 & 0xFF);
                     }
                     dPos += 3;
-                    bitpos = (bitpos - 1) & 7;
+                    bitpos = bitpos - 1 & 7;
                 }
-                pattern_y = (pattern_y + 1) & 7;
+                pattern_y = pattern_y + 1 & 7;
                 dstPos += dstpitch;
             }
         }
     }
 
-    static private final class cirrus_colorexpand_pattern_transp_32 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_pattern_transp_32 extends cirrus_bitblt_rop {
         public cirrus_colorexpand_pattern_transp_32(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y, bitpos, pattern_y;
             int bits, bits_xor;
@@ -3375,26 +3336,28 @@ public class Cirrus extends VGA_header {
                 bitpos = 7 - srcskipleft;
                 dPos = dstPos + dstskipleft;
                 for (x = dstskipleft; x < bltwidth; x += 4) {
-                    if (((bits >> bitpos) & 1) != 0) {
+                    if ((bits >> bitpos & 1) != 0) {
                         op.call32(s, dPos, col);
                     }
                     dPos += 4;
-                    bitpos = (bitpos - 1) & 7;
+                    bitpos = bitpos - 1 & 7;
                 }
-                pattern_y = (pattern_y + 1) & 7;
+                pattern_y = pattern_y + 1 & 7;
                 dstPos += dstpitch;
             }
         }
     }
 
-    static private final class cirrus_colorexpand_pattern_8 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_pattern_8 extends cirrus_bitblt_rop {
         int[] colors = new int[2];
 
         public cirrus_colorexpand_pattern_8(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y, bitpos, pattern_y;
             int bits;
@@ -3411,25 +3374,27 @@ public class Cirrus extends VGA_header {
                 bitpos = 7 - srcskipleft;
                 dPos = dstPos + dstskipleft;
                 for (x = dstskipleft; x < bltwidth; x++) {
-                    col = colors[(bits >> bitpos) & 1];
+                    col = colors[bits >> bitpos & 1];
                     op.call8(s, dPos, col);
                     dPos++;
-                    bitpos = (bitpos - 1) & 7;
+                    bitpos = bitpos - 1 & 7;
                 }
-                pattern_y = (pattern_y + 1) & 7;
+                pattern_y = pattern_y + 1 & 7;
                 dstPos += dstpitch;
             }
         }
     }
 
-    static private final class cirrus_colorexpand_pattern_16 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_pattern_16 extends cirrus_bitblt_rop {
         int[] colors = new int[2];
 
         public cirrus_colorexpand_pattern_16(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y, bitpos, pattern_y;
             int bits;
@@ -3446,25 +3411,27 @@ public class Cirrus extends VGA_header {
                 bitpos = 7 - srcskipleft;
                 dPos = dstPos + dstskipleft;
                 for (x = dstskipleft; x < bltwidth; x += 2) {
-                    col = colors[(bits >> bitpos) & 1];
+                    col = colors[bits >> bitpos & 1];
                     op.call16(s, dPos, col);
                     dPos += 2;
-                    bitpos = (bitpos - 1) & 7;
+                    bitpos = bitpos - 1 & 7;
                 }
-                pattern_y = (pattern_y + 1) & 7;
+                pattern_y = pattern_y + 1 & 7;
                 dstPos += dstpitch;
             }
         }
     }
 
-    static private final class cirrus_colorexpand_pattern_24 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_pattern_24 extends cirrus_bitblt_rop {
         int[] colors = new int[2];
 
         public cirrus_colorexpand_pattern_24(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y, bitpos, pattern_y;
             int bits;
@@ -3481,27 +3448,29 @@ public class Cirrus extends VGA_header {
                 bitpos = 7 - srcskipleft;
                 dPos = dstPos + dstskipleft;
                 for (x = dstskipleft; x < bltwidth; x += 3) {
-                    col = colors[(bits >> bitpos) & 1];
+                    col = colors[bits >> bitpos & 1];
                     op.call8(s, dPos, col & 0xFF);
-                    op.call8(s, dPos + 1, (col >> 8) & 0xFF);
-                    op.call8(s, dPos + 2, (col >> 16) & 0xFF);
+                    op.call8(s, dPos + 1, col >> 8 & 0xFF);
+                    op.call8(s, dPos + 2, col >> 16 & 0xFF);
                     dPos += 3;
-                    bitpos = (bitpos - 1) & 7;
+                    bitpos = bitpos - 1 & 7;
                 }
-                pattern_y = (pattern_y + 1) & 7;
+                pattern_y = pattern_y + 1 & 7;
                 dstPos += dstpitch;
             }
         }
     }
 
-    static private final class cirrus_colorexpand_pattern_32 extends cirrus_bitblt_rop {
+    private static final class cirrus_colorexpand_pattern_32 extends cirrus_bitblt_rop {
         int[] colors = new int[2];
 
         public cirrus_colorexpand_pattern_32(ROP_OP op) {
             super(op);
         }
 
-        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth, int bltheight) {
+        @Override
+        public void call(CirrusVGAState s, int dstPos, int srcPos, int dstpitch, int srcpitch, int bltwidth,
+            int bltheight) {
             int dPos;
             int x, y, bitpos, pattern_y;
             int bits;
@@ -3518,22 +3487,23 @@ public class Cirrus extends VGA_header {
                 bitpos = 7 - srcskipleft;
                 dPos = dstPos + dstskipleft;
                 for (x = dstskipleft; x < bltwidth; x += 4) {
-                    col = colors[(bits >> bitpos) & 1];
+                    col = colors[bits >> bitpos & 1];
                     op.call32(s, dPos, col);
                     dPos += 4;
-                    bitpos = (bitpos - 1) & 7;
+                    bitpos = bitpos - 1 & 7;
                 }
-                pattern_y = (pattern_y + 1) & 7;
+                pattern_y = pattern_y + 1 & 7;
                 dstPos += dstpitch;
             }
         }
     }
 
-    static private final class cirrus_fill_8 extends cirrus_fill {
+    private static final class cirrus_fill_8 extends cirrus_fill {
         public cirrus_fill_8(ROP_OP op) {
             super(op);
         }
 
+        @Override
         public void call(CirrusVGAState s, int dstPos, int dst_pitch, int width, int height) {
             int dPos, d1Pos;
             int col;
@@ -3552,11 +3522,12 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_fill_16 extends cirrus_fill {
+    private static final class cirrus_fill_16 extends cirrus_fill {
         public cirrus_fill_16(ROP_OP op) {
             super(op);
         }
 
+        @Override
         public void call(CirrusVGAState s, int dstPos, int dst_pitch, int width, int height) {
             int dPos, d1Pos;
             int col;
@@ -3575,11 +3546,12 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_fill_24 extends cirrus_fill {
+    private static final class cirrus_fill_24 extends cirrus_fill {
         public cirrus_fill_24(ROP_OP op) {
             super(op);
         }
 
+        @Override
         public void call(CirrusVGAState s, int dstPos, int dst_pitch, int width, int height) {
             int dPos, d1Pos;
             int col;
@@ -3591,8 +3563,8 @@ public class Cirrus extends VGA_header {
                 dPos = d1Pos;
                 for (x = 0; x < width; x += 3) {
                     op.call8(s, dPos, col & 0xFF);
-                    op.call8(s, dPos + 1, (col >> 8) & 0xFF);
-                    op.call8(s, dPos + 2, (col >> 16) & 0xFF);
+                    op.call8(s, dPos + 1, col >> 8 & 0xFF);
+                    op.call8(s, dPos + 2, col >> 16 & 0xFF);
                     dPos += 3;
                 }
                 d1Pos += dst_pitch;
@@ -3600,11 +3572,12 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private final class cirrus_fill_32 extends cirrus_fill {
+    private static final class cirrus_fill_32 extends cirrus_fill {
         public cirrus_fill_32(ROP_OP op) {
             super(op);
         }
 
+        @Override
         public void call(CirrusVGAState s, int dstPos, int dst_pitch, int width, int height) {
             int dPos, d1Pos;
             int col;
@@ -3623,7 +3596,8 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private class cirrus_get_bpp implements VGACommonState.get_func {
+    private static class cirrus_get_bpp implements VGACommonState.get_func {
+        @Override
         public int call(VGACommonState c) {
             CirrusVGAState s = (CirrusVGAState) c;
             int ret = 8;
@@ -3662,10 +3636,11 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private class cirrus_get_resolutionCy implements VGACommonState.get_func {
+    private static class cirrus_get_resolutionCy implements VGACommonState.get_func {
+        @Override
         public int call(VGACommonState s) {
-            int height = s.cr[0x12] | ((s.cr[0x07] & 0x02) << 7) | ((s.cr[0x07] & 0x40) << 3);
-            height = (height + 1);
+            int height = s.cr[0x12] | (s.cr[0x07] & 0x02) << 7 | (s.cr[0x07] & 0x40) << 3;
+            height = height + 1;
             /* interlace support */
             if ((s.cr[0x1a] & 0x01) != 0)
                 height = height * 2;
@@ -3673,23 +3648,23 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static private class cirrus_get_resolutionCx implements VGACommonState.get_func {
+    private static class cirrus_get_resolutionCx implements VGACommonState.get_func {
+        @Override
         public int call(VGACommonState s) {
             return (s.cr[0x01] + 1) * 8;
         }
     }
 
     /***************************************
-     *
-     *  memory access between 0xa0000-0xbffff
-     *
+     * memory access between 0xa0000-0xbffff
      ***************************************/
-    static private class cirrus_vga_mem extends Paging.PageHandler {
+    private static class cirrus_vga_mem extends Paging.PageHandler {
         public cirrus_vga_mem() {
             flags = Paging.PFLAG_READABLE | Paging.PFLAG_WRITEABLE | Paging.PFLAG_NOCODE;
         }
 
-        public void writeb(/*PhysPt*/int addr,/*Bitu*/int val) {
+        @Override
+        public void writeb(/*PhysPt*/int addr, /*Bitu*/int val) {
             CirrusVGAState s = cirrusVGAState;
             int bank_index;
             int bank_offset;
@@ -3720,7 +3695,7 @@ public class Cirrus extends VGA_header {
                         }
                         bank_offset &= s.cirrus_addr_mask;
                         mode = s.gr[0x05] & 0x7;
-                        if (mode < 4 || mode > 5 || ((s.gr[0x0B] & 0x4) == 0)) {
+                        if (mode < 4 || mode > 5 || (s.gr[0x0B] & 0x4) == 0) {
                             s.writeb(s.vram_ptr + bank_offset, val);
                             // memory_region_set_dirty(&s.vram, bank_offset, sizeof(mem_value));
                         } else {
@@ -3739,10 +3714,12 @@ public class Cirrus extends VGA_header {
                 }
             } else {
                 if (DEBUG)
-                    System.out.println("cirrus: mem_writeb " + Integer.toHexString(addr) + " value " + Integer.toHexString(val));
+                    System.out.println(
+                        "cirrus: mem_writeb " + Integer.toHexString(addr) + " value " + Integer.toHexString(val));
             }
         }
 
+        @Override
         public /*Bitu*/int readb(/*PhysPt*/int addr) {
             CirrusVGAState s = cirrusVGAState;
             int bank_index;
@@ -3784,7 +3761,8 @@ public class Cirrus extends VGA_header {
         }
     }
 
-    static final private class cirrus_cursor_draw_line implements VGACommonState.cursor_draw_line_func {
+    private static final class cirrus_cursor_draw_line implements VGACommonState.cursor_draw_line_func {
+        @Override
         public void call(VGACommonState c, int d1, int scr_y) {
             CirrusVGAState s = (CirrusVGAState) c;
             int w, h, bpp, x1, x2, poffset;
@@ -3801,8 +3779,7 @@ public class Cirrus extends VGA_header {
             } else {
                 h = 32;
             }
-            if (scr_y < s.hw_cursor_y ||
-                    scr_y >= (s.hw_cursor_y + h))
+            if (scr_y < s.hw_cursor_y || scr_y >= s.hw_cursor_y + h)
                 return;
 
             src = s.vram_ptr + s.real_vram_size - 16 * 1024;
@@ -3830,9 +3807,11 @@ public class Cirrus extends VGA_header {
                 x2 = s.last_scr_width;
             w = x2 - x1;
             palette = s.cirrus_hidden_palette;
-            color0 = s.rgb_to_pixel.call(c6_to_8(palette[0x0 * 3]), c6_to_8(palette[0x0 * 3 + 1]), c6_to_8(palette[0x0 * 3 + 2]));
-            color1 = s.rgb_to_pixel.call(c6_to_8(palette[0xf * 3]), c6_to_8(palette[0xf * 3 + 1]), c6_to_8(palette[0xf * 3 + 2]));
-            bpp = ((s.ds.ds_get_bits_per_pixel() + 7) >> 3);
+            color0 = s.rgb_to_pixel.call(c6_to_8(palette[0x0 * 3]), c6_to_8(palette[0x0 * 3 + 1]),
+                c6_to_8(palette[0x0 * 3 + 2]));
+            color1 = s.rgb_to_pixel.call(c6_to_8(palette[0xf * 3]), c6_to_8(palette[0xf * 3 + 1]),
+                c6_to_8(palette[0xf * 3 + 2]));
+            bpp = s.ds.ds_get_bits_per_pixel() + 7 >> 3;
             d1 += x1 * bpp;
             switch (s.ds.ds_get_bits_per_pixel()) {
                 default:
@@ -3854,23 +3833,22 @@ public class Cirrus extends VGA_header {
     }
 
     /***************************************
-     *
-     *  LFB memory access
-     *
+     * LFB memory access
      ***************************************/
 
-    static private class cirrus_linear extends Paging.PageHandler {
+    private static class cirrus_linear extends Paging.PageHandler {
         public cirrus_linear() {
             flags = Paging.PFLAG_READABLE | Paging.PFLAG_WRITEABLE | Paging.PFLAG_NOCODE;
         }
 
-        public void writeb(/*PhysPt*/int addr,/*Bitu*/int val) {
+        @Override
+        public void writeb(/*PhysPt*/int addr, /*Bitu*/int val) {
             CirrusVGAState s = cirrusVGAState;
             int mode;
 
             addr &= s.cirrus_addr_mask;
 
-            if (((s.sr[0x17] & 0x44) == 0x44) && ((addr & s.linear_mmio_mask) == s.linear_mmio_mask)) {
+            if ((s.sr[0x17] & 0x44) == 0x44 && (addr & s.linear_mmio_mask) == s.linear_mmio_mask) {
                 /* memory-mapped I/O */
                 cirrus_mmio_blt_write(s, addr & 0xff, val);
             } else if (s.cirrus_srcptr != s.cirrus_srcptr_end) {
@@ -3889,7 +3867,7 @@ public class Cirrus extends VGA_header {
                 addr &= s.cirrus_addr_mask;
 
                 mode = s.gr[0x05] & 0x7;
-                if (mode < 4 || mode > 5 || ((s.gr[0x0B] & 0x4) == 0)) {
+                if (mode < 4 || mode > 5 || (s.gr[0x0B] & 0x4) == 0) {
                     s.writeb(addr, val);
                     //memory_region_set_dirty( & s.vram, addr, 1);
                 } else {
@@ -3902,14 +3880,14 @@ public class Cirrus extends VGA_header {
             }
         }
 
+        @Override
         public /*Bitu*/int readb(/*PhysPt*/int addr) {
             CirrusVGAState s = cirrusVGAState;
             int ret;
 
             addr &= s.cirrus_addr_mask;
 
-            if (((s.sr[0x17] & 0x44) == 0x44) &&
-                    ((addr & s.linear_mmio_mask) == s.linear_mmio_mask)) {
+            if ((s.sr[0x17] & 0x44) == 0x44 && (addr & s.linear_mmio_mask) == s.linear_mmio_mask) {
                 /* memory-mapped I/O */
                 ret = cirrus_mmio_blt_read(s, addr & 0xff);
             } else if (false) {
@@ -3948,17 +3926,16 @@ public class Cirrus extends VGA_header {
 //
 
     /***************************************
-     *
-     *  system to screen memory access
-     *
+     * system to screen memory access
      ***************************************/
 
-    static private class cirrus_linear_bitblt extends Paging.PageHandler {
+    private static class cirrus_linear_bitblt extends Paging.PageHandler {
         public cirrus_linear_bitblt() {
             flags = Paging.PFLAG_READABLE | Paging.PFLAG_WRITEABLE | Paging.PFLAG_NOCODE;
         }
 
-        public void writeb(/*PhysPt*/int addr,/*Bitu*/int val) {
+        @Override
+        public void writeb(/*PhysPt*/int addr, /*Bitu*/int val) {
             CirrusVGAState s = cirrusVGAState;
 
             if (s.cirrus_srcptr != s.cirrus_srcptr_end) {
@@ -3970,22 +3947,22 @@ public class Cirrus extends VGA_header {
             }
         }
 
+        @Override
         public /*Bitu*/int readb(/*PhysPt*/int addr) {
             return 0xff;
         }
     }
 
     /***************************************
-     *
-     *  memory-mapped I/O access
-     *
+     * memory-mapped I/O access
      ***************************************/
-    static private class cirrus_mmio extends Paging.PageHandler {
+    private static class cirrus_mmio extends Paging.PageHandler {
         public cirrus_mmio() {
             flags = Paging.PFLAG_READABLE | Paging.PFLAG_WRITEABLE | Paging.PFLAG_NOCODE;
         }
 
-        public void writeb(/*PhysPt*/int addr,/*Bitu*/int val) {
+        @Override
+        public void writeb(/*PhysPt*/int addr, /*Bitu*/int val) {
             if (addr >= 0x100) {
                 cirrus_mmio_blt_write(cirrusVGAState, addr - 0x100, val);
             } else {
@@ -3993,6 +3970,7 @@ public class Cirrus extends VGA_header {
             }
         }
 
+        @Override
         public /*Bitu*/int readb(/*PhysPt*/int addr) {
             if (addr >= 0x100) {
                 return cirrus_mmio_blt_read(cirrusVGAState, addr - 0x100);

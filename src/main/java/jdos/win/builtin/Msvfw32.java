@@ -9,10 +9,12 @@ import jdos.win.loader.Loader;
 public class Msvfw32 extends BuiltinModule {
     // BOOL ICInfo(DWORD fccType, DWORD fccHandler, ICINFO  *lpicinfo)
     private final Callback.Handler ICInfo = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "Msvfw32.ICInfo";
         }
 
+        @Override
         public void onCall() {
             int fccType = CPU.CPU_Pop32();
             int fccHandler = CPU.CPU_Pop32();

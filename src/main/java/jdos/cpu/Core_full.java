@@ -3,11 +3,7 @@ package jdos.cpu;
 import java.util.Vector;
 
 public class Core_full {
-    public static CPU.CPU_Decoder CPU_Core_Full_Run = new CPU.CPU_Decoder() {
-        public /*Bits*/int call() {
-            return Core_normal.CPU_Core_Normal_Run.call();
-        }
-    };
+    public static CPU.CPU_Decoder CPU_Core_Full_Run = () -> Core_normal.CPU_Core_Normal_Run.call();
     static Vector state = new Vector();
 
     public static void pushState() {

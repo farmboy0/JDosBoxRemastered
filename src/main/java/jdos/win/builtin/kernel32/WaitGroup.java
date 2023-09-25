@@ -1,11 +1,11 @@
 package jdos.win.builtin.kernel32;
 
-import jdos.win.system.Scheduler;
-
 import java.util.Vector;
 
+import jdos.win.system.Scheduler;
+
 public class WaitGroup {
-    public Vector<WaitObject> objects = new Vector<WaitObject>();
+    public Vector<WaitObject> objects = new Vector<>();
     public WinThread thread;
 
     public WaitGroup(WinThread thread) {
@@ -18,12 +18,12 @@ public class WaitGroup {
     }
 
     public boolean released() {
-        for (int i = 0; i < objects.size(); i++) {
-            if (!objects.get(i).isReady())
+        for (WaitObject object : objects) {
+            if (!object.isReady())
                 return false;
         }
-        for (int i = 0; i < objects.size(); i++) {
-            objects.get(i).get(this);
+        for (WaitObject object : objects) {
+            object.get(this);
         }
         Scheduler.addThread(thread, false);
         return true;

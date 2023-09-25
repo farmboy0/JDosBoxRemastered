@@ -7,11 +7,11 @@ public class WinMutex extends WaitObject {
         super(handle, name);
     }
 
-    static public WinMutex create(String name) {
+    public static WinMutex create(String name) {
         return new WinMutex(nextObjectId(), name);
     }
 
-    static public WinMutex get(int handle) {
+    public static WinMutex get(int handle) {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinMutex))
             return null;

@@ -11,10 +11,12 @@ import jdos.win.system.Scheduler;
 public class Imm32 extends BuiltinModule {
     // HIMC ImmAssociateContext(HWND hWnd, HIMC hIMC)
     private final Callback.Handler ImmAssociateContext = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "Imm32.ImmAssociateContext";
         }
 
+        @Override
         public void onCall() {
             int hWnd = CPU.CPU_Pop32();
             int hIMC = CPU.CPU_Pop32();

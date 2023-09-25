@@ -3,7 +3,7 @@ package jdos.util;
 import java.util.Vector;
 
 public class StringHelper {
-    static public String StripWord(StringRef line) {
+    public static String StripWord(StringRef line) {
         String scan = line.value;
         scan = scan.trim();
         if (scan.startsWith("\"")) {
@@ -26,7 +26,7 @@ public class StringHelper {
     public static String sprintf(String format, Object[] args) {
         int pos = format.indexOf('%');
         if (pos >= 0) {
-            StringBuffer buffer = new StringBuffer();
+            StringBuilder buffer = new StringBuilder();
             int argIndex = 0;
             while (pos >= 0) {
                 buffer.append(format, 0, pos);
@@ -326,11 +326,11 @@ public class StringHelper {
     }
 
     public static boolean isalpha(char c) {
-        return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
+        return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z';
     }
 
     public static boolean isdigit(char c) {
-        return ((c >= '0' && c <= '9'));
+        return c >= '0' && c <= '9';
     }
 
     public static String toString(byte[] b) {
@@ -424,7 +424,7 @@ public class StringHelper {
             throw new IllegalArgumentException("Old pattern must have content.");
         }
 
-        final StringBuffer result = new StringBuffer();
+        final StringBuilder result = new StringBuilder();
         //startIdx and idxOld delimit various chunks of aInput; these
         //chunks always end where aOldPattern begins
         int startIdx = 0;
@@ -467,7 +467,7 @@ public class StringHelper {
 
     public static String[] splitWithQuotes(final String input, char delimiter) {
         if (input != null && input.length() > 0) {
-            StringBuffer part = new StringBuffer();
+            StringBuilder part = new StringBuilder();
             boolean quote = false;
             Vector result = new Vector();
 
@@ -483,7 +483,7 @@ public class StringHelper {
                     quote = true;
                 } else if (c == delimiter) {
                     result.add(part.toString());
-                    part = new StringBuffer();
+                    part = new StringBuilder();
                 } else {
                     part.append(c);
                 }

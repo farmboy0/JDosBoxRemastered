@@ -7,5 +7,5 @@ public class EXTLOGPEN {
     public int elpColor;
     public int elpHatch;
     public int elpNumEntries;
-    public int[] elpStyleEntry = new int[0];
+    public int[] elpStyleEntry = {};
 }

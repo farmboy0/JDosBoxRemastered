@@ -94,9 +94,10 @@ public class Unicode {
         if ((javaType & Character.SPACE_SEPARATOR) != 0) {
             winType |= C1_SPACE;
         }
-        if ((javaType & Character.DASH_PUNCTUATION) != 0 || (javaType & Character.CONNECTOR_PUNCTUATION) != 0 || (javaType & Character.OTHER_PUNCTUATION) != 0
-                || (javaType & Character.END_PUNCTUATION) != 0 || (javaType & Character.FINAL_QUOTE_PUNCTUATION) != 0 || (javaType & Character.INITIAL_QUOTE_PUNCTUATION) != 0
-                || (javaType & Character.START_PUNCTUATION) != 0) {
+        if ((javaType & Character.DASH_PUNCTUATION) != 0 || (javaType & Character.CONNECTOR_PUNCTUATION) != 0
+            || (javaType & Character.OTHER_PUNCTUATION) != 0 || (javaType & Character.END_PUNCTUATION) != 0
+            || (javaType & Character.FINAL_QUOTE_PUNCTUATION) != 0
+            || (javaType & Character.INITIAL_QUOTE_PUNCTUATION) != 0 || (javaType & Character.START_PUNCTUATION) != 0) {
             winType |= C1_PUNCT;
         }
         if ((javaType & Character.SPACE_SEPARATOR) != 0) {

@@ -20,8 +20,10 @@ public class MMIOINFO extends WinAPI {
     public int dwReserved1;
     public int dwReserved2;
     public int hmmio;
+
     public MMIOINFO() {
     }
+
     public MMIOINFO(int address) {
         read(address);
     }

@@ -10,80 +10,71 @@ import jdos.util.Ptr;
 import jdos.util.ShortPtr;
 
 public class Mixer extends Program {
-    static public final int MAX_AUDIO = ((1 << (16 - 1)) - 1);
-    static public final int MIN_AUDIO = -(1 << (16 - 1));
-    final static public Object audioMutex = new Object();
-    static private final int MIXER_BUFSIZE = (16 * 1024);
-    static private final int MIXER_BUFMASK = (MIXER_BUFSIZE - 1);
+    public static final int MAX_AUDIO = (1 << 16 - 1) - 1;
+    public static final int MIN_AUDIO = -(1 << 16 - 1);
+    public static final Object audioMutex = new Object();
+    private static final int MIXER_BUFSIZE = 16 * 1024;
+    private static final int MIXER_BUFMASK = MIXER_BUFSIZE - 1;
     private static final int MIXER_SSIZE = 4;
     private static final int MIXER_SHIFT = 14;
-    private static final int MIXER_REMAIN = ((1 << MIXER_SHIFT) - 1);
+    private static final int MIXER_REMAIN = (1 << MIXER_SHIFT) - 1;
     private static final int MIXER_VOLSHIFT = 13;
-    static public /*Bit8u*/ byte[] MixTemp8 = new byte[MIXER_BUFSIZE];
-    static public short[] MixTemp16 = new short[MIXER_BUFSIZE >> 1];
-    static public int[] MixTemp32 = new int[MIXER_BUFSIZE >> 2];
-    static private _Mixer mixer;
-    public static Section.SectionFunction MIXER_Stop = new Section.SectionFunction() {
-        public void call(Section section) {
-            AudioLayer.stop();
-            mixer = null;
-        }
+    public static /*Bit8u*/ byte[] MixTemp8 = new byte[MIXER_BUFSIZE];
+    public static short[] MixTemp16 = new short[MIXER_BUFSIZE >> 1];
+    public static int[] MixTemp32 = new int[MIXER_BUFSIZE >> 2];
+    private static _Mixer mixer;
+    public static Section.SectionFunction MIXER_Stop = section -> {
+        AudioLayer.stop();
+        mixer = null;
     };
-    static private final Timer.TIMER_TickHandler MIXER_Mix = new Timer.TIMER_TickHandler() {
-        public void call() {
-            synchronized (audioMutex) {
-                MIXER_MixData(mixer.needed);
-                mixer.tick_remain += mixer.tick_add;
-                mixer.needed += (mixer.tick_remain >> MIXER_SHIFT);
-                mixer.tick_remain &= MIXER_REMAIN;
-            }
-        }
-    };
-    static private final Timer.TIMER_TickHandler MIXER_Mix_NoSound = new Timer.TIMER_TickHandler() {
-        public void call() {
+    private static final Timer.TIMER_TickHandler MIXER_Mix = () -> {
+        synchronized (audioMutex) {
             MIXER_MixData(mixer.needed);
-            /* Clear piece we've just generated */
-            for (/*Bitu*/int i = 0; i < mixer.needed; i++) {
-                mixer.work[mixer.pos][0] = 0;
-                mixer.work[mixer.pos][1] = 0;
-                mixer.pos = (mixer.pos + 1) & MIXER_BUFMASK;
-            }
-            /* Reduce count in channels */
-            for (MixerChannel chan = mixer.channels; chan != null; chan = chan.next) {
-                if (chan.done > mixer.needed) chan.done -= mixer.needed;
-                else chan.done = 0;
-            }
-            /* Set values for next tick */
             mixer.tick_remain += mixer.tick_add;
-            mixer.needed = (int) (mixer.tick_remain >> MIXER_SHIFT);
+            mixer.needed += mixer.tick_remain >> MIXER_SHIFT;
             mixer.tick_remain &= MIXER_REMAIN;
-            mixer.done = 0;
         }
     };
-    private static final PROGRAMS_Main MIXER_ProgramStart = new PROGRAMS_Main() {
-        public Program call() {
-            return new Mixer();
+    private static final Timer.TIMER_TickHandler MIXER_Mix_NoSound = () -> {
+        MIXER_MixData(mixer.needed);
+        /* Clear piece we've just generated */
+        for (/*Bitu*/int i = 0; i < mixer.needed; i++) {
+            mixer.work[mixer.pos][0] = 0;
+            mixer.work[mixer.pos][1] = 0;
+            mixer.pos = mixer.pos + 1 & MIXER_BUFMASK;
         }
+        /* Reduce count in channels */
+        for (MixerChannel chan = mixer.channels; chan != null; chan = chan.next) {
+            if (chan.done > mixer.needed)
+                chan.done -= mixer.needed;
+            else
+                chan.done = 0;
+        }
+        /* Set values for next tick */
+        mixer.tick_remain += mixer.tick_add;
+        mixer.needed = (int) (mixer.tick_remain >> MIXER_SHIFT);
+        mixer.tick_remain &= MIXER_REMAIN;
+        mixer.done = 0;
     };
-    public static Section.SectionFunction MIXER_Init = new Section.SectionFunction() {
-        public void call(Section sec) {
-            mixer = new _Mixer();
-            sec.AddDestroyFunction(MIXER_Stop);
+    private static final PROGRAMS_Main MIXER_ProgramStart = () -> new Mixer();
+    public static Section.SectionFunction MIXER_Init = sec -> {
+        mixer = new _Mixer();
+        sec.AddDestroyFunction(MIXER_Stop);
 
-            Section_prop section = (Section_prop) sec;
-            /* Read out config section */
-            mixer.freq = section.Get_int("rate");
-            mixer.nosound = section.Get_bool("nosound");
-            mixer.blocksize = section.Get_int("blocksize");
+        Section_prop section = (Section_prop) sec;
+        /* Read out config section */
+        mixer.freq = section.Get_int("rate");
+        mixer.nosound = section.Get_bool("nosound");
+        mixer.blocksize = section.Get_int("blocksize");
 
-            /* Initialize the internal stuff */
-            mixer.channels = null;
-            mixer.pos = 0;
-            mixer.done = 0;
-            mixer.mastervol[0].value = 1.0f;
-            mixer.mastervol[1].value = 1.0f;
+        /* Initialize the internal stuff */
+        mixer.channels = null;
+        mixer.pos = 0;
+        mixer.done = 0;
+        mixer.mastervol[0].value = 1.0f;
+        mixer.mastervol[1].value = 1.0f;
 
-            /* Start the Mixer using SDL Sound at 22 khz */
+        /* Start the Mixer using SDL Sound at 22 khz */
 //            SDL_AudioSpec spec;
 //            SDL_AudioSpec obtained;
 //
@@ -94,38 +85,38 @@ public class Mixer extends Program {
 //            spec.userdata=NULL;
 //            spec.samples=(Uint16)mixer.blocksize;
 
-            mixer.tick_remain = 0;
-            mixer.min_needed = section.Get_int("prebuffer");
-            if (mixer.min_needed > 100) mixer.min_needed = 100;
-            mixer.min_needed = (mixer.freq * mixer.min_needed) / 1000;
-            mixer.max_needed = mixer.blocksize * 2 + 2 * mixer.min_needed;
-            mixer.needed = mixer.min_needed + 1;
+        mixer.tick_remain = 0;
+        mixer.min_needed = section.Get_int("prebuffer");
+        if (mixer.min_needed > 100)
+            mixer.min_needed = 100;
+        mixer.min_needed = mixer.freq * mixer.min_needed / 1000;
+        mixer.max_needed = mixer.blocksize * 2 + 2 * mixer.min_needed;
+        mixer.needed = mixer.min_needed + 1;
 
-            if (mixer.nosound) {
-                Log.log_msg("MIXER:No Sound Mode Selected.");
-                mixer.tick_add = ((mixer.freq) << MIXER_SHIFT) / 1000;
-                Timer.TIMER_AddTickHandler(MIXER_Mix_NoSound);
-            } else if (!AudioLayer.open(section.Get_int("javabuffer"), mixer.freq)) {
+        if (mixer.nosound) {
+            Log.log_msg("MIXER:No Sound Mode Selected.");
+            mixer.tick_add = (mixer.freq << MIXER_SHIFT) / 1000;
+            Timer.TIMER_AddTickHandler(MIXER_Mix_NoSound);
+        } else if (!AudioLayer.open(section.Get_int("javabuffer"), mixer.freq)) {
 //            else if (SDL_OpenAudio(&spec, &obtained) <0 ) {
 //                mixer.nosound = true;
 //                Log.log_msg("MIXER:Can't open audio: %s , running in nosound mode.",SDL_GetError());
 //                mixer.tick_add=((mixer.freq) << MIXER_SHIFT)/1000;
 //                Timer.TIMER_AddTickHandler(MIXER_Mix_NoSound);
-            } else {
+        } else {
 //                if((mixer.freq != obtained.freq) || (mixer.blocksize != obtained.samples))
 //                    Log.log_msg("MIXER:Got different values from SDL: freq %d, blocksize %d",obtained.freq,obtained.samples);
 //                mixer.freq=obtained.freq;
 //                mixer.blocksize=obtained.samples;
-                mixer.tick_add = (mixer.freq << MIXER_SHIFT) / 1000;
-                Timer.TIMER_AddTickHandler(MIXER_Mix);
+            mixer.tick_add = (mixer.freq << MIXER_SHIFT) / 1000;
+            Timer.TIMER_AddTickHandler(MIXER_Mix);
 //                SDL_PauseAudio(0);
-            }
-            PROGRAMS_MakeFile("MIXER.COM", MIXER_ProgramStart);
         }
+        PROGRAMS_MakeFile("MIXER.COM", MIXER_ProgramStart);
     };
 
     /* PC Speakers functions, tightly related to the timer functions */
-    public static void PCSPEAKER_SetCounter(/*Bitu*/int cntr,/*Bitu*/int mode) {
+    public static void PCSPEAKER_SetCounter(/*Bitu*/int cntr, /*Bitu*/int mode) {
     }
 
     public static void PCSPEAKER_SetType(/*Bitu*/int mode) {
@@ -135,11 +126,13 @@ public class Mixer extends Program {
         if (SAMP < MAX_AUDIO) {
             if (SAMP > MIN_AUDIO)
                 return (short) SAMP;
-            else return MIN_AUDIO;
-        } else return MAX_AUDIO;
+            else
+                return MIN_AUDIO;
+        } else
+            return MAX_AUDIO;
     }
 
-    public static MixerChannel MIXER_AddChannel(MIXER_Handler handler,/*Bitu*/int freq, String name) {
+    public static MixerChannel MIXER_AddChannel(MIXER_Handler handler, /*Bitu*/int freq, String name) {
         MixerChannel chan = new MixerChannel();
         chan.scale = 1.0f;
         chan.handler = handler;
@@ -155,7 +148,8 @@ public class Mixer extends Program {
     public static MixerChannel MIXER_FindChannel(String name) {
         MixerChannel chan = mixer.channels;
         while (chan != null) {
-            if (chan.name.equalsIgnoreCase(name)) break;
+            if (chan.name.equalsIgnoreCase(name))
+                break;
             chan = chan.next;
         }
         return chan;
@@ -175,14 +169,14 @@ public class Mixer extends Program {
         }
     }
 
-    static private boolean Mixer_irq_important() {
+    private static boolean Mixer_irq_important() {
         /* In some states correct timing of the irqs is more important then
          * non stuttering audo */
-        return (Dosbox.ticksLocked || (Hardware.CaptureState & (Hardware.CAPTURE_WAVE | Hardware.CAPTURE_VIDEO)) != 0);
+        return Dosbox.ticksLocked || (Hardware.CaptureState & (Hardware.CAPTURE_WAVE | Hardware.CAPTURE_VIDEO)) != 0;
     }
 
     /* Mix a certain amount of new samples */
-    static private void MIXER_MixData(/*Bitu*/int needed) {
+    private static void MIXER_MixData(/*Bitu*/int needed) {
         MixerChannel chan = mixer.channels;
         while (chan != null) {
             chan.Mix(needed);
@@ -196,20 +190,20 @@ public class Mixer extends Program {
             if (added > 1024)
                 added = 1024;
             /*Bitu*/
-            int readpos = (mixer.pos + mixer.done) & MIXER_BUFMASK;
+            int readpos = mixer.pos + mixer.done & MIXER_BUFMASK;
             for (/*Bitu*/int i = 0; i < added; i++) {
                 /*Bits*/
                 int sample = mixer.work[readpos][0] >> MIXER_VOLSHIFT;
                 convert[i * 2] = MIXER_CLIP(sample);
                 sample = mixer.work[readpos][1] >> MIXER_VOLSHIFT;
                 convert[i * 2 + 1] = MIXER_CLIP(sample);
-                readpos = (readpos + 1) & MIXER_BUFMASK;
+                readpos = readpos + 1 & MIXER_BUFMASK;
             }
             Hardware.CAPTURE_AddWave(mixer.freq, added, convert);
         }
         //Reset the the tick_add for constant speed
         if (Mixer_irq_important())
-            mixer.tick_add = ((mixer.freq) << MIXER_SHIFT) / 1000;
+            mixer.tick_add = (mixer.freq << MIXER_SHIFT) / 1000;
         mixer.done = needed;
     }
 
@@ -228,11 +222,11 @@ public class Mixer extends Program {
         /* Enough room in the buffer ? */
         if (mixer.done < need) {
             //		LOG_MSG("Full underrun need %d, have %d, min %d", need, mixer.done, mixer.min_needed);
-            if ((need - mixer.done) > (need >> 7)) //Max 1 procent stretch.
+            if (need - mixer.done > need >> 7) //Max 1 procent stretch.
                 return false;
             reduce = mixer.done;
             index_add = (reduce << MIXER_SHIFT) / need;
-            mixer.tick_add = ((mixer.freq + mixer.min_needed) << MIXER_SHIFT) / 1000;
+            mixer.tick_add = (mixer.freq + mixer.min_needed << MIXER_SHIFT) / 1000;
         } else if (mixer.done < mixer.max_needed) {
             /*Bitu*/
             int left = mixer.done - need;
@@ -242,18 +236,18 @@ public class Mixer extends Program {
                     int needed = mixer.needed - need;
                     /*Bitu*/
                     int diff = (mixer.min_needed > needed ? mixer.min_needed : needed) - left;
-                    mixer.tick_add = ((mixer.freq + (diff * 3)) << MIXER_SHIFT) / 1000;
+                    mixer.tick_add = (mixer.freq + diff * 3 << MIXER_SHIFT) / 1000;
                     left = 0; //No stretching as we compensate with the tick_add value
                 } else {
-                    left = (mixer.min_needed - left);
-                    left = 1 + (2 * left) / mixer.min_needed; //left=1,2,3
+                    left = mixer.min_needed - left;
+                    left = 1 + 2 * left / mixer.min_needed; //left=1,2,3
                 }
                 //			LOG_MSG("needed underrun need %d, have %d, min %d, left %d", need, mixer.done, mixer.min_needed, left);
                 reduce = need - left;
                 index_add = (reduce << MIXER_SHIFT) / need;
             } else {
                 reduce = need;
-                index_add = (1 << MIXER_SHIFT);
+                index_add = 1 << MIXER_SHIFT;
                 //			LOG_MSG("regular run need %d, have %d, min %d, left %d", need, mixer.done, mixer.min_needed, left);
 
                 /* Mixer tick value being updated:
@@ -264,11 +258,12 @@ public class Mixer extends Program {
                  */
                 /*Bitu*/
                 int diff = left - mixer.min_needed;
-                if (diff > (mixer.min_needed << 1)) diff = mixer.min_needed << 1;
-                if (diff > (mixer.min_needed >> 1))
-                    mixer.tick_add = ((mixer.freq - (diff / 5)) << MIXER_SHIFT) / 1000;
-                else if (diff > (mixer.min_needed >> 4))
-                    mixer.tick_add = ((mixer.freq - (diff >> 3)) << MIXER_SHIFT) / 1000;
+                if (diff > mixer.min_needed << 1)
+                    diff = mixer.min_needed << 1;
+                if (diff > mixer.min_needed >> 1)
+                    mixer.tick_add = (mixer.freq - diff / 5 << MIXER_SHIFT) / 1000;
+                else if (diff > mixer.min_needed >> 4)
+                    mixer.tick_add = (mixer.freq - (diff >> 3) << MIXER_SHIFT) / 1000;
                 else
                     mixer.tick_add = (mixer.freq << MIXER_SHIFT) / 1000;
             }
@@ -281,12 +276,14 @@ public class Mixer extends Program {
                 index_add = mixer.done - 2 * mixer.min_needed;
             index_add = (index_add << MIXER_SHIFT) / need;
             reduce = mixer.done - 2 * mixer.min_needed;
-            mixer.tick_add = ((mixer.freq - (mixer.min_needed / 5)) << MIXER_SHIFT) / 1000;
+            mixer.tick_add = (mixer.freq - mixer.min_needed / 5 << MIXER_SHIFT) / 1000;
         }
         /* Reduce done count in all channels */
         for (MixerChannel chan = mixer.channels; chan != null; chan = chan.next) {
-            if (chan.done > reduce) chan.done -= reduce;
-            else chan.done = 0;
+            if (chan.done > reduce)
+                chan.done -= reduce;
+            else
+                chan.done = 0;
         }
 
         // Reset mixer.tick_add when irqs are important
@@ -296,12 +293,12 @@ public class Mixer extends Program {
         mixer.done -= reduce;
         mixer.needed -= reduce;
         pos = mixer.pos;
-        mixer.pos = (mixer.pos + reduce) & MIXER_BUFMASK;
+        mixer.pos = mixer.pos + reduce & MIXER_BUFMASK;
         index = 0;
         if (need != reduce) {
-            while ((need--) != 0) {
+            while (need-- != 0) {
                 /*Bitu*/
-                int i = (pos + (index >> MIXER_SHIFT)) & MIXER_BUFMASK;
+                int i = pos + (index >> MIXER_SHIFT) & MIXER_BUFMASK;
                 index += index_add;
                 sample = mixer.work[i][0] >> MIXER_VOLSHIFT;
                 output.setInc(MIXER_CLIP(sample));
@@ -309,14 +306,14 @@ public class Mixer extends Program {
                 output.setInc(MIXER_CLIP(sample));
             }
             /* Clean the used buffer */
-            while ((reduce--) != 0) {
+            while (reduce-- != 0) {
                 pos &= MIXER_BUFMASK;
                 mixer.work[pos][0] = 0;
                 mixer.work[pos][1] = 0;
                 pos++;
             }
         } else {
-            while ((reduce--) != 0) {
+            while (reduce-- != 0) {
                 pos &= MIXER_BUFMASK;
                 sample = mixer.work[pos][0] >> MIXER_VOLSHIFT;
                 output.setInc(MIXER_CLIP(sample));
@@ -333,8 +330,9 @@ public class Mixer extends Program {
     public void MakeVolume(String scan, FloatRef vol0, FloatRef vol1) {
         /*Bitu*/
         int w = 0;
-        boolean db = (scan.toUpperCase().charAt(0) == 'D');
-        if (db) scan = scan.substring(1);
+        boolean db = scan.toUpperCase().charAt(0) == 'D';
+        if (db)
+            scan = scan.substring(1);
         while (scan.length() > 0) {
             if (scan.charAt(0) == ':') {
                 scan = scan;
@@ -352,18 +350,23 @@ public class Mixer extends Program {
                 scan = scan.substring(1);
             }
 
-            if (!db) val /= 100;
-            else val = (float) Math.pow(10.0f, val / 20.0f);
-            if (val < 0) val = 1.0f;
+            if (!db)
+                val /= 100;
+            else
+                val = (float) Math.pow(10.0f, val / 20.0f);
+            if (val < 0)
+                val = 1.0f;
             if (w == 0) {
                 vol0.value = val;
             } else {
                 vol1.value = val;
             }
         }
-        if (w == 0) vol1.value = vol0.value;
+        if (w == 0)
+            vol1.value = vol0.value;
     }
 
+    @Override
     public void Run() {
         if (cmd.FindExist("/LISTMIDI")) {
             ListMidi();
@@ -380,7 +383,8 @@ public class Mixer extends Program {
             chan.UpdateVolume();
             chan = chan.next;
         }
-        if (cmd.FindExist("/NOSHOW")) return;
+        if (cmd.FindExist("/NOSHOW"))
+            return;
         chan = mixer.channels;
         WriteOut("Channel  Main    Main(dB)\n");
         ShowVolume("MASTER", mixer.mastervol[0], mixer.mastervol[1]);
@@ -389,10 +393,10 @@ public class Mixer extends Program {
     }
 
     private void ShowVolume(String name, FloatRef vol0, FloatRef vol1) {
-        WriteOut("%-8s %3.0f:%-3.0f  %+3.2f:%-+3.2f \n", new Object[]{name,
-                new Float(vol0.value * 100), new Float(vol1.value * 100),
-                new Float(20 * Math.log(vol0.value) / Math.log(10.0f)), new Float(20 * Math.log(vol1.value) / Math.log(10.0f))}
-        );
+        WriteOut("%-8s %3.0f:%-3.0f  %+3.2f:%-+3.2f \n",
+            new Object[] { name, Float.valueOf(vol0.value * 100), Float.valueOf(vol1.value * 100),
+                Float.valueOf((float) (20 * Math.log(vol0.value) / Math.log(10.0f))),
+                Float.valueOf((float) (20 * Math.log(vol1.value) / Math.log(10.0f))) });
     }
 
     private void ListMidi() {
@@ -407,18 +411,18 @@ public class Mixer extends Program {
         void call(/*Bitu*/int len);
     }
 
-    static private final class BlahModes {
-        static public final int MIXER_8MONO = 0;
-        static public final int MIXER_8STEREO = 1;
-        static public final int MIXER_16MONO = 2;
-        static public final int MIXER_16STEREO = 3;
+    private static final class BlahModes {
+        public static final int MIXER_8MONO = 0;
+        public static final int MIXER_8STEREO = 1;
+        public static final int MIXER_16MONO = 2;
+        public static final int MIXER_16STEREO = 3;
     }
 
-    static private final class MixerModes {
-        static public final int M_8M = 0;
-        static public final int M_8S = 1;
-        static public final int M_16M = 2;
-        static public final int M_16S = 3;
+    private static final class MixerModes {
+        public static final int M_8M = 0;
+        public static final int M_8S = 1;
+        public static final int M_16M = 2;
+        public static final int M_16S = 3;
     }
 
     public static class MixerChannel {
@@ -490,25 +494,27 @@ public class Mixer extends Program {
             int new_pos = 0;
 
             boolean starting = true;
-            for (; ; ) {
+            for (;;) {
                 if (!starting)
                     new_pos = freq_index >> MIXER_SHIFT;
                 if (starting || pos < new_pos) {
                     if (!starting) {
                         last[0] += diff[0];
-                        if (stereo) last[1] += diff[1];
+                        if (stereo)
+                            last[1] += diff[1];
                         pos = new_pos;
                     } else {
                         starting = false;
                     }
-                    if (pos >= len) return;
+                    if (pos >= len)
+                        return;
                     if (data.dataWidth() == 1) {
                         if (!signeddata) {
                             if (stereo) {
-                                diff[0] = (((/*Bit8s*/byte) (data.get(pos * 2 + 0) ^ 0x80)) << 8) - last[0];
-                                diff[1] = (((/*Bit8s*/byte) (data.get(pos * 2 + 1) ^ 0x80)) << 8) - last[1];
+                                diff[0] = ((/*Bit8s*/byte) (data.get(pos * 2 + 0) ^ 0x80) << 8) - last[0];
+                                diff[1] = ((/*Bit8s*/byte) (data.get(pos * 2 + 1) ^ 0x80) << 8) - last[1];
                             } else {
-                                diff[0] = (((/*Bit8s*/byte) (data.get(pos) ^ 0x80)) << 8) - last[0];
+                                diff[0] = ((/*Bit8s*/byte) (data.get(pos) ^ 0x80) << 8) - last[0];
                             }
                         } else {
                             if (stereo) {
@@ -564,9 +570,10 @@ public class Mixer extends Program {
                 freq_index += freq_add;
                 mixpos &= MIXER_BUFMASK;
                 /*Bits*/
-                int sample = last[0] + ((diff[0] * diff_mul) >> MIXER_SHIFT);
+                int sample = last[0] + (diff[0] * diff_mul >> MIXER_SHIFT);
                 mixer.work[mixpos][0] += sample * volmul[0];
-                if (stereo) sample = last[1] + ((diff[1] * diff_mul) >> MIXER_SHIFT);
+                if (stereo)
+                    sample = last[1] + (diff[1] * diff_mul >> MIXER_SHIFT);
                 mixer.work[mixpos][1] += sample * volmul[1];
                 mixpos++;
                 done++;
@@ -584,18 +591,20 @@ public class Mixer extends Program {
             int new_pos = 0;
 
             boolean starting = true;
-            for (; ; ) {
+            for (;;) {
                 if (!starting)
                     new_pos = freq_index >> MIXER_SHIFT;
                 if (starting || pos < new_pos) {
                     if (!starting) {
                         last[0] += diff[0];
-                        if (stereo) last[1] += diff[1];
+                        if (stereo)
+                            last[1] += diff[1];
                         pos = new_pos;
                     } else {
                         starting = false;
                     }
-                    if (pos >= len) return;
+                    if (pos >= len)
+                        return;
                     if (signeddata) {
                         if (stereo) {
                             diff[0] = data[pos * 2 + 0] - last[0];
@@ -617,9 +626,10 @@ public class Mixer extends Program {
                 freq_index += freq_add;
                 mixpos &= MIXER_BUFMASK;
                 /*Bits*/
-                int sample = last[0] + ((diff[0] * diff_mul) >> MIXER_SHIFT);
+                int sample = last[0] + (diff[0] * diff_mul >> MIXER_SHIFT);
                 mixer.work[mixpos][0] += sample * volmul[0];
-                if (stereo) sample = last[1] + ((diff[1] * diff_mul) >> MIXER_SHIFT);
+                if (stereo)
+                    sample = last[1] + (diff[1] * diff_mul >> MIXER_SHIFT);
                 mixer.work[mixpos][1] += sample * volmul[1];
                 mixpos++;
                 done++;
@@ -637,18 +647,20 @@ public class Mixer extends Program {
             int new_pos = 0;
 
             boolean starting = true;
-            for (; ; ) {
+            for (;;) {
                 if (!starting)
                     new_pos = freq_index >> MIXER_SHIFT;
                 if (starting || pos < new_pos) {
                     if (!starting) {
                         last[0] += diff[0];
-                        if (stereo) last[1] += diff[1];
+                        if (stereo)
+                            last[1] += diff[1];
                         pos = new_pos;
                     } else {
                         starting = false;
                     }
-                    if (pos >= len) return;
+                    if (pos >= len)
+                        return;
                     if (signeddata) {
                         if (stereo) {
                             diff[0] = data[pos * 2 + 0] - last[0];
@@ -670,9 +682,10 @@ public class Mixer extends Program {
                 freq_index += freq_add;
                 mixpos &= MIXER_BUFMASK;
                 /*Bits*/
-                int sample = last[0] + ((diff[0] * diff_mul) >> MIXER_SHIFT);
+                int sample = last[0] + (diff[0] * diff_mul >> MIXER_SHIFT);
                 mixer.work[mixpos][0] += sample * volmul[0];
-                if (stereo) sample = last[1] + ((diff[1] * diff_mul) >> MIXER_SHIFT);
+                if (stereo)
+                    sample = last[1] + (diff[1] * diff_mul >> MIXER_SHIFT);
                 mixer.work[mixpos][1] += sample * volmul[1];
                 mixpos++;
                 done++;
@@ -690,24 +703,26 @@ public class Mixer extends Program {
             int new_pos = 0;
 
             boolean starting = true;
-            for (; ; ) {
+            for (;;) {
                 if (!starting)
                     new_pos = freq_index >> MIXER_SHIFT;
                 if (starting || pos < new_pos) {
                     if (!starting) {
                         last[0] += diff[0];
-                        if (stereo) last[1] += diff[1];
+                        if (stereo)
+                            last[1] += diff[1];
                         pos = new_pos;
                     } else {
                         starting = false;
                     }
-                    if (pos >= len) return;
+                    if (pos >= len)
+                        return;
                     if (!signeddata) {
                         if (stereo) {
-                            diff[0] = (((/*Bit8s*/byte) (data[pos * 2 + 0] ^ 0x80)) << 8) - last[0];
-                            diff[1] = (((/*Bit8s*/byte) (data[pos * 2 + 1] ^ 0x80)) << 8) - last[1];
+                            diff[0] = ((/*Bit8s*/byte) (data[pos * 2 + 0] ^ 0x80) << 8) - last[0];
+                            diff[1] = ((/*Bit8s*/byte) (data[pos * 2 + 1] ^ 0x80) << 8) - last[1];
                         } else {
-                            diff[0] = (((/*Bit8s*/byte) (data[pos] ^ 0x80)) << 8) - last[0];
+                            diff[0] = ((/*Bit8s*/byte) (data[pos] ^ 0x80) << 8) - last[0];
                         }
                     } else {
                         if (stereo) {
@@ -723,9 +738,10 @@ public class Mixer extends Program {
                 freq_index += freq_add;
                 mixpos &= MIXER_BUFMASK;
                 /*Bits*/
-                int sample = last[0] + ((diff[0] * diff_mul) >> MIXER_SHIFT);
+                int sample = last[0] + (diff[0] * diff_mul >> MIXER_SHIFT);
                 mixer.work[mixpos][0] += sample * volmul[0];
-                if (stereo) sample = last[1] + ((diff[1] * diff_mul) >> MIXER_SHIFT);
+                if (stereo)
+                    sample = last[1] + (diff[1] * diff_mul >> MIXER_SHIFT);
                 mixer.work[mixpos][1] += sample * volmul[1];
                 mixpos++;
                 done++;
@@ -808,7 +824,7 @@ public class Mixer extends Program {
             /*Bitu*/
             int pos = 0;
             diff = data[0] - last[0];
-            while ((outlen--) != 0) {
+            while (outlen-- != 0) {
                 /*Bitu*/
                 int new_pos = freq_index >> MIXER_SHIFT;
                 if (pos < new_pos) {
@@ -821,7 +837,7 @@ public class Mixer extends Program {
                 freq_index += temp_add;
                 mixpos &= MIXER_BUFMASK;
                 /*Bits*/
-                int sample = last[0] + ((diff * diff_mul) >> MIXER_SHIFT);
+                int sample = last[0] + (diff * diff_mul >> MIXER_SHIFT);
                 mixer.work[mixpos][0] += sample * volmul[0];
                 mixer.work[mixpos][1] += sample * volmul[1];
                 mixpos++;
@@ -839,21 +855,24 @@ public class Mixer extends Program {
         }
 
         public void Enable(boolean _yesno) {
-            if (_yesno == enabled) return;
+            if (_yesno == enabled)
+                return;
             enabled = _yesno;
             if (enabled) {
                 freq_index = MIXER_REMAIN;
                 synchronized (audioMutex) {
-                    if (done < mixer.done) done = mixer.done;
+                    if (done < mixer.done)
+                        done = mixer.done;
                 }
             }
         }
+
         private interface getSample {
             int call(int pos);
 
         }
 
-        static public class Type {
+        public static class Type {
         }
     }
 
@@ -863,9 +882,10 @@ public class Mixer extends Program {
         private boolean installed = false;
         private String m_name;
 
-        public MixerChannel Install(MIXER_Handler handler,/*Bitu*/int freq, String name) {
+        public MixerChannel Install(MIXER_Handler handler, /*Bitu*/int freq, String name) {
             if (!installed) {
-                if (name.length() > 31) Log.exit("Too long mixer channel name");
+                if (name.length() > 31)
+                    Log.exit("Too long mixer channel name");
                 m_name = name;
                 installed = true;
                 return MIXER_AddChannel(handler, freq, name);
@@ -876,7 +896,8 @@ public class Mixer extends Program {
         }
 
         public void destroy() {
-            if (!installed) return;
+            if (!installed)
+                return;
             MIXER_DelChannel(MIXER_FindChannel(m_name));
         }
     }
@@ -891,6 +912,7 @@ public class Mixer extends Program {
         boolean nosound;
         /*Bit32u*/ int freq;
         /*Bit32u*/ int blocksize;
+
         public _Mixer() {
             for (int i = 0; i < mastervol.length; i++) {
                 mastervol[i] = new FloatRef();

@@ -1,7 +1,7 @@
 package jdos.host.router;
 
 public class ARP extends EtherUtil {
-    static public final int LEN = 28;
+    public static final int LEN = 28;
     int hardware;
     int protocol;
     int hlen;

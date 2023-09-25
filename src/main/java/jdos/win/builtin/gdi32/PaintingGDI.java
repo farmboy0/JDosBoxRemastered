@@ -1,16 +1,17 @@
 package jdos.win.builtin.gdi32;
 
+import java.awt.Graphics2D;
+import java.awt.Polygon;
+import java.awt.geom.Line2D;
+
 import jdos.gui.Main;
 import jdos.win.builtin.WinAPI;
 import jdos.win.system.StaticData;
 import jdos.win.system.WinPoint;
 
-import java.awt.*;
-import java.awt.geom.Line2D;
-
 public class PaintingGDI extends WinAPI {
     // BOOL LineTo(HDC hdc, int nXEnd, int nYEnd)
-    static public int LineTo(int hdc, int nXEnd, int nYEnd) {
+    public static int LineTo(int hdc, int nXEnd, int nYEnd) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null) {
             return FALSE;
@@ -29,7 +30,7 @@ public class PaintingGDI extends WinAPI {
     }
 
     // BOOL MoveToEx(HDC hdc, int X, int Y, LPPOINT lpPoint)
-    static public int MoveToEx(int hdc, int X, int Y, int lpPoint) {
+    public static int MoveToEx(int hdc, int X, int Y, int lpPoint) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null) {
             return FALSE;
@@ -44,7 +45,7 @@ public class PaintingGDI extends WinAPI {
     }
 
     // BOOL Polygon(HDC hdc, const POINT* lpPoints, int nCount)
-    static public int Polygon(int hdc, int lpPoints, int nCount) {
+    public static int Polygon(int hdc, int lpPoints, int nCount) {
         WinDC dc = WinDC.get(hdc);
         WinBrush brush = WinBrush.get(dc.hBrush);
         WinPen pen = WinPen.get(dc.hPen);

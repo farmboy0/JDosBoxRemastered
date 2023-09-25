@@ -1,25 +1,25 @@
 package jdos.win.system;
 
+import java.util.Hashtable;
+
 import jdos.hardware.Memory;
 import jdos.win.Win;
 import jdos.win.loader.winpe.LittleEndianFile;
 import jdos.win.utils.Error;
 import jdos.win.utils.StringUtil;
 
-import java.util.Hashtable;
-
 public class WinRegistry {
-    static public final int REG_NONE = 0;   // No value type
-    static public final int REG_SZ = 1;   // Unicode nul terminated string
-    static public final int REG_EXPAND_SZ = 2;   // Unicode nul terminated string
-    static public final int REG_BINARY = 3;   // Free form binary
-    static public final int REG_DWORD = 4;   // 32-bit number
-    static public final int REG_DWORD_LITTLE_ENDIAN = 4;   // 32-bit number (same as REG_DWORD)
-    static public final int REG_DWORD_BIG_ENDIAN = 5;   // 32-bit number
-    static public final int REG_LINK = 6;   // Symbolic Link (unicode)
-    static public final int REG_MULTI_SZ = 7;   // Multiple Unicode strings
-    static public final int REG_RESOURCE_LIST = 8;   // Resource list in the resource map
-    static public final int REG_FULL_RESOURCE_DESCRIPTOR = 9;  // Resource list in the hardware description
+    public static final int REG_NONE = 0; // No value type
+    public static final int REG_SZ = 1; // Unicode nul terminated string
+    public static final int REG_EXPAND_SZ = 2; // Unicode nul terminated string
+    public static final int REG_BINARY = 3; // Free form binary
+    public static final int REG_DWORD = 4; // 32-bit number
+    public static final int REG_DWORD_LITTLE_ENDIAN = 4; // 32-bit number (same as REG_DWORD)
+    public static final int REG_DWORD_BIG_ENDIAN = 5; // 32-bit number
+    public static final int REG_LINK = 6; // Symbolic Link (unicode)
+    public static final int REG_MULTI_SZ = 7; // Multiple Unicode strings
+    public static final int REG_RESOURCE_LIST = 8; // Resource list in the resource map
+    public static final int REG_FULL_RESOURCE_DESCRIPTOR = 9; // Resource list in the hardware description
 
     public static final int HKEY_CLASSES_ROOT = 0x80000000;
     public static final int HKEY_CURRENT_USER = 0x80000001;
@@ -46,7 +46,7 @@ public class WinRegistry {
                     return null;
             }
         } else {
-            return (HKey) hKeys.get(new Integer(hKey));
+            return (HKey) hKeys.get(Integer.valueOf(hKey));
         }
     }
 
@@ -56,8 +56,8 @@ public class WinRegistry {
 
     private Directory getDirectory(HKey hKey) {
         Directory current = root;
-        for (int i = 0; i < hKey.parts.length; i++) {
-            current = (Directory) current.children.get(hKey.parts[i]);
+        for (String part : hKey.parts) {
+            current = (Directory) current.children.get(part);
             if (current == null)
                 break;
         }
@@ -73,17 +73,17 @@ public class WinRegistry {
             if (lpdwDisposition != 0)
                 Memory.mem_writed(lpdwDisposition, 0x00000001); // REG_CREATED_NEW_KEY
             Directory current = root;
-            for (int i = 0; i < key.parts.length; i++) {
+            for (String part : key.parts) {
                 Directory parent = current;
-                current = (Directory) current.children.get(key.parts[i]);
+                current = (Directory) current.children.get(part);
                 if (current == null) {
-                    current = new Directory(key.parts[i]);
+                    current = new Directory(part);
                     parent.children.put(current.name, current);
                 }
             }
         }
         int result = nextKey();
-        hKeys.put(new Integer(result), key);
+        hKeys.put(Integer.valueOf(result), key);
         if (phkResult != 0) {
             Memory.mem_writed(phkResult, result);
         }
@@ -94,7 +94,7 @@ public class WinRegistry {
         HKey key = new HKey(getHKey(hKey), new LittleEndianFile(lpSubKey).readCString());
         if (getDirectory(key) != null) {
             int result = nextKey();
-            hKeys.put(new Integer(result), key);
+            hKeys.put(Integer.valueOf(result), key);
             return Error.ERROR_SUCCESS;
         } else {
             return Error.ERROR_BAD_PATHNAME;
@@ -141,7 +141,7 @@ public class WinRegistry {
             String name = new LittleEndianFile(lpValue).readCString();
             value = (Value) directory.values.get(name);
             if (value == null && name.equals("Game File Number")) {
-                value = new Value(4, new byte[]{1, 0, 0, 0});
+                value = new Value(4, new byte[] { 1, 0, 0, 0 });
                 directory.values.put("Game File Number", value);
             }
 
@@ -166,6 +166,7 @@ public class WinRegistry {
         public Hashtable children = new Hashtable();
         public Hashtable values = new Hashtable();
         public Value defaultValue;
+
         public Directory(String name) {
             this.name = name;
         }

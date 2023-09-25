@@ -3,31 +3,31 @@ package jdos.win.builtin.directx.ddraw;
 import jdos.hardware.Memory;
 
 public class DDBltFx {
-    public int size;                    // size of structure
-    public int dwDDFX;                  // FX operations
-    public int dwROP;                   // Win32 raster operations
-    public int dwDDROP;                 // Raster operations new for DirectDraw
-    public int dwRotationAngle;         // Rotation angle for blt
-    public int dwZBufferOpCode;         // ZBuffer compares
-    public int dwZBufferLow;            // Low limit of Z buffer
-    public int dwZBufferHigh;           // High limit of Z buffer
-    public int dwZBufferBaseDest;       // Destination base value
-    public int dwZDestConstBitDepth;    // Bit depth used to specify Z constant for destination
-    public int dwZDestConst;            // Constant to use as Z buffer for dest
+    public int size; // size of structure
+    public int dwDDFX; // FX operations
+    public int dwROP; // Win32 raster operations
+    public int dwDDROP; // Raster operations new for DirectDraw
+    public int dwRotationAngle; // Rotation angle for blt
+    public int dwZBufferOpCode; // ZBuffer compares
+    public int dwZBufferLow; // Low limit of Z buffer
+    public int dwZBufferHigh; // High limit of Z buffer
+    public int dwZBufferBaseDest; // Destination base value
+    public int dwZDestConstBitDepth; // Bit depth used to specify Z constant for destination
+    public int dwZDestConst; // Constant to use as Z buffer for dest
     // Surface to use as Z buffer for dest
-    public int dwZSrcConstBitDepth;     // Bit depth used to specify Z constant for source
-    public int dwZSrcConst;             // Constant to use as Z buffer for src
+    public int dwZSrcConstBitDepth; // Bit depth used to specify Z constant for source
+    public int dwZSrcConst; // Constant to use as Z buffer for src
     // Surface to use as Z buffer for src
     public int dwAlphaEdgeBlendBitDepth;// Bit depth used to specify constant for alpha edge blend
-    public int dwAlphaEdgeBlend;        // Alpha for edge blending
+    public int dwAlphaEdgeBlend; // Alpha for edge blending
     public int dwReserved;
     public int dwAlphaDestConstBitDepth;// Bit depth used to specify alpha constant for destination
-    public int dwAlphaDestConst;        // Constant to use as Alpha Channel
+    public int dwAlphaDestConst; // Constant to use as Alpha Channel
     // Surface to use as Alpha Channel
     public int dwAlphaSrcConstBitDepth; // Bit depth used to specify alpha constant for source
-    public int dwAlphaSrcConst;         // Constant to use as Alpha Channel
+    public int dwAlphaSrcConst; // Constant to use as Alpha Channel
     // Surface to use as Alpha Channel
-    public int dwFillColor;             // color in RGB or Palettized
+    public int dwFillColor; // color in RGB or Palettized
     // depth value for z-buffer
     // pixel val for RGBA or RGBZ
     // Surface to use as pattern

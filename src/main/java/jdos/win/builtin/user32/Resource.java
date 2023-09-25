@@ -1,5 +1,7 @@
 package jdos.win.builtin.user32;
 
+import java.io.InputStream;
+
 import jdos.hardware.Memory;
 import jdos.win.Console;
 import jdos.win.Win;
@@ -12,8 +14,6 @@ import jdos.win.utils.Ptr;
 import jdos.win.utils.StreamHelper;
 import jdos.win.utils.StringUtil;
 
-import java.io.InputStream;
-
 public class Resource extends WinAPI {
     // HACCEL WINAPI LoadAccelerators(HINSTANCE hInstance, LPCTSTR lpTableName)
     public static int LoadAcceleratorsA(int hInstance, int lpTableName) {
@@ -22,7 +22,7 @@ public class Resource extends WinAPI {
     }
 
     // HANDLE WINAPI LoadImage(HINSTANCE hinst, LPCTSTR lpszName, UINT uType, int cxDesired, int cyDesired, UINT fuLoad)
-    static public int LoadImageA(int hinst, int lpszName, int uType, int cxDesired, int cyDesired, int fuLoad) {
+    public static int LoadImageA(int hinst, int lpszName, int uType, int cxDesired, int cyDesired, int fuLoad) {
         if (fuLoad != 0 && fuLoad != 0x2000) {
             Win.panic("LoadImage fuLoad flags are not currently supported: fuLoad = 0x" + Ptr.toString(fuLoad));
         }
@@ -65,7 +65,7 @@ public class Resource extends WinAPI {
     }
 
     // int WINAPI LoadString(HINSTANCE hInstance, UINT uID, LPTSTR lpBuffer, int nBufferMax)
-    static public int LoadStringA(int hInstance, int uID, int lpBuffer, int nBufferMax) {
+    public static int LoadStringA(int hInstance, int uID, int lpBuffer, int nBufferMax) {
         Module m = WinSystem.getCurrentProcess().loader.getModuleByHandle(hInstance);
         if (m instanceof NativeModule) {
             NativeModule module = (NativeModule) m;

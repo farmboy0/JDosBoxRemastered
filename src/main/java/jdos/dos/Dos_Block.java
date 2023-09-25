@@ -9,7 +9,7 @@ public class Dos_Block {
     public /*RealPt*/ int cpmentry;
     public /*Bit8u*/ short return_code, return_mode;
     public /*Bit8u*/ byte current_drive;
-    public boolean echo;          // if set to true dev_con::read will echo input
+    public boolean echo; // if set to true dev_con::read will echo input
     public Tables tables = new Tables();
     boolean verify;
     boolean breakcheck;
@@ -39,7 +39,8 @@ public class Dos_Block {
         /*RealPt*/ int filenamechar;
         /*RealPt*/ int collatingseq;
         /*RealPt*/ int upcase;
-        /*Bit8u*/ byte[] country;//Will be copied to dos memory. resides in real mem
+        /*Bit8u*/ byte[] country;
+        //Will be copied to dos memory. resides in real mem
         /*Bit16u*/ int dpb; //Fake Disk parameter system using only the first entry so the drive letter matches
     }
 }

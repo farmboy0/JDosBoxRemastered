@@ -48,19 +48,19 @@ public class Ptr {
         this.size = p.size;
     }
 
-    static public void memcpy(Ptr dest, Ptr source, int len) {
+    public static void memcpy(Ptr dest, Ptr source, int len) {
         System.arraycopy(source.p, source.off, dest.p, dest.off, len);
     }
 
-    static public void memcpy(Ptr dest, byte[] source, int len) {
+    public static void memcpy(Ptr dest, byte[] source, int len) {
         System.arraycopy(source, 0, dest.p, dest.off, len);
     }
 
-    static public void memcpy(byte[] dest, byte[] source, int len) {
+    public static void memcpy(byte[] dest, byte[] source, int len) {
         System.arraycopy(source, 0, dest, 0, len);
     }
 
-    static public int memcmp(Ptr b1, byte[] b2, int len) {
+    public static int memcmp(Ptr b1, byte[] b2, int len) {
         for (int i = 0; i < len; i++) {
             if (b1.p[i + b1.off] > b2[i])
                 return 1;
@@ -141,22 +141,22 @@ public class Ptr {
         off += dataWidth();
     }
 
-    public void writeb(/*HostPt*/int off,/*Bit8u*/ short val) {
-        p[off * dataWidth() + this.off] = (byte) (val);
+    public void writeb(/*HostPt*/int off, /*Bit8u*/ short val) {
+        p[off * dataWidth() + this.off] = (byte) val;
     }
 
-    public void writew(/*HostPt*/int off,/*Bit16u*/int val) {
+    public void writew(/*HostPt*/int off, /*Bit16u*/int val) {
         off = off * dataWidth() + this.off;
-        p[off] = (byte) (val);
-        p[off + 1] = (byte) ((val >> 8));
+        p[off] = (byte) val;
+        p[off + 1] = (byte) (val >> 8);
     }
 
-    public void writed(/*HostPt*/int off,/*Bit32u*/long val) {
+    public void writed(/*HostPt*/int off, /*Bit32u*/long val) {
         off = off * dataWidth() + this.off;
-        p[off] = (byte) (val);
-        p[off + 1] = (byte) ((val >> 8));
-        p[off + 2] = (byte) ((val >> 16));
-        p[off + 3] = (byte) ((val >> 24));
+        p[off] = (byte) val;
+        p[off + 1] = (byte) (val >> 8);
+        p[off + 2] = (byte) (val >> 16);
+        p[off + 3] = (byte) (val >> 24);
     }
 
     public /*Bit8u*/short readb(/*HostPt*/int off) {
@@ -165,12 +165,12 @@ public class Ptr {
 
     public /*Bit16u*/int readw(/*HostPt*/int off) {
         off = off * dataWidth() + this.off;
-        return (p[off] & 0xFF) | ((p[off + 1] & 0xFF) << 8);
+        return p[off] & 0xFF | (p[off + 1] & 0xFF) << 8;
     }
 
     public /*Bit32u*/int readd(/*HostPt*/int off) {
         off = off * dataWidth() + this.off;
-        return (p[off] & 0xFF) | ((p[off + 1] & 0xFF) << 8) | ((p[off + 2] & 0xFF) << 16) | ((p[off + 3] & 0xFF) << 24);
+        return p[off] & 0xFF | (p[off + 1] & 0xFF) << 8 | (p[off + 2] & 0xFF) << 16 | (p[off + 3] & 0xFF) << 24;
     }
 
     public void read(byte[] b) {

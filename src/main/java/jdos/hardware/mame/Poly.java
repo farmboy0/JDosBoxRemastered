@@ -5,22 +5,22 @@ import java.util.LinkedList;
 
 public class Poly {
     /***************************************************************************
-     CONSTANTS
+     * CONSTANTS
      ***************************************************************************/
-    static public final int WORK_MAX_THREADS = Math.max(1, Runtime.getRuntime().availableProcessors());
+    public static final int WORK_MAX_THREADS = Math.max(1, Runtime.getRuntime().availableProcessors());
 
-    static public final int SCANLINES_PER_BUCKET = 8;
-    static public final int CACHE_LINE_SIZE = 64;          /* this is a general guess */
-    static public final int TOTAL_BUCKETS = (512 / SCANLINES_PER_BUCKET);
-    static public final int UNITS_PER_POLY = (100 / SCANLINES_PER_BUCKET);
+    public static final int SCANLINES_PER_BUCKET = 8;
+    public static final int CACHE_LINE_SIZE = 64; /* this is a general guess */
+    public static final int TOTAL_BUCKETS = 512 / SCANLINES_PER_BUCKET;
+    public static final int UNITS_PER_POLY = 100 / SCANLINES_PER_BUCKET;
 
-    static public final int MAX_VERTEX_PARAMS = 6;
-    static public final int MAX_POLYGON_VERTS = 32;
+    public static final int MAX_VERTEX_PARAMS = 6;
+    public static final int MAX_POLYGON_VERTS = 32;
 
-    static public final int POLYFLAG_INCLUDE_BOTTOM_EDGE = 0x01;
-    static public final int POLYFLAG_INCLUDE_RIGHT_EDGE = 0x02;
-    static public final int POLYFLAG_NO_WORK_QUEUE = 0x04;
-    static public final int POLYFLAG_ALLOW_QUADS = 0x08;
+    public static final int POLYFLAG_INCLUDE_BOTTOM_EDGE = 0x01;
+    public static final int POLYFLAG_INCLUDE_RIGHT_EDGE = 0x02;
+    public static final int POLYFLAG_NO_WORK_QUEUE = 0x04;
+    public static final int POLYFLAG_ALLOW_QUADS = 0x08;
     static Thread[] threads;
     static poly_extent[] tmpextents = poly_extent.create(WORK_MAX_THREADS);
 
@@ -33,7 +33,7 @@ public class Poly {
     }
 
     /***************************************************************************
-     INLINE FUNCTIONS
+     * INLINE FUNCTIONS
      ***************************************************************************/
 
     /*-------------------------------------------------
@@ -41,24 +41,27 @@ public class Poly {
         an integer, following rules that 0.5 rounds
         down
     -------------------------------------------------*/
-    static private int round_coordinate(float value) {
+    private static int round_coordinate(float value) {
         int result = (int) Math.floor(value);
-        return result + ((value - (float) result > 0.5f) ? 1 : 0);
+        return result + (value - result > 0.5f ? 1 : 0);
     }
 
-    static private void convert_tri_extent_to_poly_extent(poly_extent dstextent, tri_extent srcextent, polygon_info polygon, int y) {
+    private static void convert_tri_extent_to_poly_extent(poly_extent dstextent, tri_extent srcextent,
+        polygon_info polygon, int y) {
         /* copy start/stop always */
         dstextent.startx = srcextent.startx;
         dstextent.stopx = srcextent.stopx;
 
         /* if we have parameters, process them as well */
         for (int paramnum = 0; paramnum < polygon.numparams; paramnum++) {
-            dstextent.param[paramnum].start = polygon.param[paramnum].start + srcextent.startx * polygon.param[paramnum].dpdx + y * polygon.param[paramnum].dpdy;
+            dstextent.param[paramnum].start = polygon.param[paramnum].start
+                + srcextent.startx * polygon.param[paramnum].dpdx + y * polygon.param[paramnum].dpdy;
             dstextent.param[paramnum].dpdx = polygon.param[paramnum].dpdx;
         }
     }
 
-    static private void interpolate_vertex(poly_vertex outv, poly_vertex v1, poly_vertex v2, int paramcount, float clipval) {
+    private static void interpolate_vertex(poly_vertex outv, poly_vertex v1, poly_vertex v2, int paramcount,
+        float clipval) {
         float frac = (clipval - v1.p[0]) / (v2.p[0] - v1.p[0]);
         int paramnum;
 
@@ -69,7 +72,7 @@ public class Poly {
             outv.p[paramnum] = v1.p[paramnum] + frac * (v2.p[paramnum] - v1.p[paramnum]);
     }
 
-    static private void copy_vertex(poly_vertex outv, poly_vertex v, int paramcount) {
+    private static void copy_vertex(poly_vertex outv, poly_vertex v, int paramcount) {
         int paramnum;
 
         outv.x = v.x;
@@ -78,7 +81,7 @@ public class Poly {
             outv.p[paramnum] = v.p[paramnum];
     }
 
-    static private polygon_info allocate_polygon(poly_manager poly, int miny, int maxy) {
+    private static polygon_info allocate_polygon(poly_manager poly, int miny, int maxy) {
         /* wait for a work item if we have to */
         if (poly.polygon_next + 1 > poly.polygon_count) {
             poly_wait(poly, "Out of polygons");
@@ -91,7 +94,7 @@ public class Poly {
         return poly.polygon[poly.polygon_next++];
     }
 
-    static public poly_extra_data allocate_poly_extra_data(poly_manager poly) {
+    public static poly_extra_data allocate_poly_extra_data(poly_manager poly) {
         if (poly.extra_next + 1 > poly.extra_count) {
             poly_wait(poly, "Out of extra data");
             poly.polygon_waits++;
@@ -100,7 +103,7 @@ public class Poly {
     }
 
     /***************************************************************************
-     INITIALIZATION/TEARDOWN
+     * INITIALIZATION/TEARDOWN
      ***************************************************************************/
 
     /*-------------------------------------------------
@@ -126,17 +129,16 @@ public class Poly {
         /* allocate triangle work units */
         poly.unit_count = Math.min(poly.polygon_count * UNITS_PER_POLY, 65535);
         poly.unit_next = 0;
-        poly.unit = (flags & POLYFLAG_ALLOW_QUADS) != 0 ? quad_work_unit.create(poly.unit_count) : tri_work_unit.create(poly.unit_count);
-
+        poly.unit = (flags & POLYFLAG_ALLOW_QUADS) != 0 ? quad_work_unit.create(poly.unit_count) : tri_work_unit
+            .create(poly.unit_count);
 
         /* create the work queue */
         if ((flags & POLYFLAG_NO_WORK_QUEUE) == 0)
-            poly.queue = new LinkedList<work_unit>();
+            poly.queue = new LinkedList<>();
 
         return poly;
     }
-    
-    
+
     /*-------------------------------------------------
         convert_tri_extent_to_poly_extent - convert
         a simple tri_extent to a full poly_extent
@@ -168,15 +170,14 @@ public class Poly {
 //    	if (poly.queue != null)
 //    		osd_work_queue_free(poly.queue);
     }
-    
-    
+
     /*-------------------------------------------------
         interpolate_vertex - interpolate values in
         a vertex based on p[0] crossing the clipval
     -------------------------------------------------*/
 
     /***************************************************************************
-     COMMON FUNCTIONS
+     * COMMON FUNCTIONS
      ***************************************************************************/
 
     /*-------------------------------------------------
@@ -205,22 +206,23 @@ public class Poly {
         poly.polygon_next = poly.unit_next = poly.extra_next = 0;
         Arrays.fill(poly.unit_bucket, 0xffff);
     }
-    
-    
+
     /*-------------------------------------------------
         copy_vertex - copy vertex data from one to
         another
     -------------------------------------------------*/
 
     /***************************************************************************
-     CORE TRIANGLE RENDERING
+     * CORE TRIANGLE RENDERING
      ***************************************************************************/
 
     /*-------------------------------------------------
         poly_render_triangle - render a single
         triangle given 3 vertexes
     -------------------------------------------------*/
-    static int poly_render_triangle(poly_manager poly, short[] dest, int destOffset, VoodooCommon.rectangle cliprect, poly_draw_scanline_func callback, int paramcount, poly_vertex v1, poly_vertex v2, poly_vertex v3, poly_extra_data extra) {
+    static int poly_render_triangle(poly_manager poly, short[] dest, int destOffset, VoodooCommon.rectangle cliprect,
+        poly_draw_scanline_func callback, int paramcount, poly_vertex v1, poly_vertex v2, poly_vertex v3,
+        poly_extra_data extra) {
         float dxdy_v1v2, dxdy_v1v3, dxdy_v2v3;
         poly_vertex tv;
         int curscan, scaninc;
@@ -277,20 +279,20 @@ public class Poly {
         polygon.yorigin = v1y;
 
         /* compute the slopes for each portion of the triangle */
-        dxdy_v1v2 = (v2.y == v1.y) ? 0.0f : (v2.x - v1.x) / (v2.y - v1.y);
-        dxdy_v1v3 = (v3.y == v1.y) ? 0.0f : (v3.x - v1.x) / (v3.y - v1.y);
-        dxdy_v2v3 = (v3.y == v2.y) ? 0.0f : (v3.x - v2.x) / (v3.y - v2.y);
+        dxdy_v1v2 = v2.y == v1.y ? 0.0f : (v2.x - v1.x) / (v2.y - v1.y);
+        dxdy_v1v3 = v3.y == v1.y ? 0.0f : (v3.x - v1.x) / (v3.y - v1.y);
+        dxdy_v2v3 = v3.y == v2.y ? 0.0f : (v3.x - v2.x) / (v3.y - v2.y);
 
         /* compute the X extents for each scanline */
         startunit = poly.unit_next;
         for (curscan = v1yclip; curscan < v3yclip; curscan += scaninc) {
-            int bucketnum = (Math.abs(curscan) / SCANLINES_PER_BUCKET) % TOTAL_BUCKETS;
+            int bucketnum = Math.abs(curscan) / SCANLINES_PER_BUCKET % TOTAL_BUCKETS;
             int unit_index = poly.unit_next++;
             tri_work_unit unit = (tri_work_unit) poly.unit[unit_index];
             int extnum;
 
             /* determine how much to advance to hit the next bucket */
-            scaninc = SCANLINES_PER_BUCKET - (Math.abs(curscan) % SCANLINES_PER_BUCKET);
+            scaninc = SCANLINES_PER_BUCKET - Math.abs(curscan) % SCANLINES_PER_BUCKET;
 
             /* fill in the work unit basics */
             unit.polygon = polygon;
@@ -301,7 +303,7 @@ public class Poly {
 
             /* iterate over extents */
             for (extnum = 0; extnum < unit.count_next; extnum++) {
-                float fully = (float) (curscan + extnum) + 0.5f;
+                float fully = curscan + extnum + 0.5f;
                 float startx = v1.x + (fully - v1.y) * dxdy_v1v3;
                 float stopx;
                 int istartx, istopx;
@@ -384,8 +386,7 @@ public class Poly {
         poly.pixels += pixels;
         return pixels;
     }
-    
-    
+
     /*-------------------------------------------------
         allocate_polygon - allocate a new polygon
         object, blocking if we run out
@@ -397,7 +398,9 @@ public class Poly {
         }
     }
 
-    static int poly_render_triangle_custom(poly_manager poly, short[] dest, int destOffset, final VoodooCommon.rectangle cliprect, poly_draw_scanline_func callback, int startscanline, int numscanlines, poly_extent[] extents, poly_extra_data extra) {
+    static int poly_render_triangle_custom(poly_manager poly, short[] dest, int destOffset,
+        final VoodooCommon.rectangle cliprect, poly_draw_scanline_func callback, int startscanline, int numscanlines,
+        poly_extent[] extents, poly_extra_data extra) {
         int curscan, scaninc;
         polygon_info polygon;
         int v1yclip, v3yclip;
@@ -425,7 +428,7 @@ public class Poly {
         /* compute the X extents for each scanline */
         startunit = poly.unit_next;
         for (curscan = v1yclip; curscan < v3yclip; curscan += scaninc) {
-            int bucketnum = (curscan / SCANLINES_PER_BUCKET) % TOTAL_BUCKETS;
+            int bucketnum = curscan / SCANLINES_PER_BUCKET % TOTAL_BUCKETS;
             int unit_index = poly.unit_next++;
             tri_work_unit unit = (tri_work_unit) poly.unit[unit_index];
             int extnum;
@@ -442,7 +445,7 @@ public class Poly {
 
             /* iterate over extents */
             for (extnum = 0; extnum < unit.count_next; extnum++) {
-                poly_extent extent = extents[(curscan + extnum) - startscanline];
+                poly_extent extent = extents[curscan + extnum - startscanline];
                 int istartx = extent.startx, istopx = extent.stopx;
 
                 /* force start < stop */
@@ -508,10 +511,13 @@ public class Poly {
             for (curscan = 0; curscan < count; curscan++) {
                 if (polygon.numverts == 3) {
                     poly_extent tmpextent = tmpextents[threadid];
-                    convert_tri_extent_to_poly_extent(tmpextent, ((tri_work_unit) unit).extent[curscan], polygon, unit.scanline + curscan);
-                    polygon.callback.call(polygon.dest, polygon.destOffset, unit.scanline + curscan, tmpextent, polygon.extra, threadid);
+                    convert_tri_extent_to_poly_extent(tmpextent, ((tri_work_unit) unit).extent[curscan], polygon,
+                        unit.scanline + curscan);
+                    polygon.callback.call(polygon.dest, polygon.destOffset, unit.scanline + curscan, tmpextent,
+                        polygon.extra, threadid);
                 } else {
-                    polygon.callback.call(polygon.dest, polygon.destOffset, unit.scanline + curscan, ((quad_work_unit) unit).extent[curscan], polygon.extra, threadid);
+                    polygon.callback.call(polygon.dest, polygon.destOffset, unit.scanline + curscan,
+                        ((quad_work_unit) unit).extent[curscan], polygon.extra, threadid);
                 }
             }
 
@@ -525,23 +531,22 @@ public class Poly {
             unit = polygon.poly.unit[orig_count_next];
         }
     }
-    
-    
+
     /*-------------------------------------------------
         poly_free - free a polygon manager
     -------------------------------------------------*/
 
     /***************************************************************************
-     TYPE DEFINITIONS
+     * TYPE DEFINITIONS
      ***************************************************************************/
 
     /* input vertex data */
     static final class poly_vertex {
-        float x;                          /* X coordinate */
-        float y;                          /* Y coordinate */
-        float[] p = new float[MAX_VERTEX_PARAMS];       /* interpolated parameter values */
+        float x; /* X coordinate */
+        float y; /* Y coordinate */
+        float[] p = new float[MAX_VERTEX_PARAMS]; /* interpolated parameter values */
 
-        static public poly_vertex[] create(int count) {
+        public static poly_vertex[] create(int count) {
             poly_vertex[] result = new poly_vertex[count];
             for (int i = 0; i < result.length; i++)
                 result[i] = new poly_vertex();
@@ -551,29 +556,29 @@ public class Poly {
 
     /* poly_param_extent describes information for a single parameter in an extent */
     static final class poly_param_extent {
-        float start;                      /* parameter value at starting X,Y */
-        float dpdx;                       /* dp/dx relative to starting X */
+        float start; /* parameter value at starting X,Y */
+        float dpdx; /* dp/dx relative to starting X */
     }
 
     /* tri_extent describes start/end points for a scanline */
     static final class tri_extent {
-        int startx;                     /* starting X coordinate (inclusive) */
-        int stopx;                      /* ending X coordinate (exclusive) */
+        int startx; /* starting X coordinate (inclusive) */
+        int stopx; /* ending X coordinate (exclusive) */
     }
 
     /* single set of polygon per-parameter data */
     static final class poly_param {
-        float start;                      /* parameter value at starting X,Y */
-        float dpdx;                       /* dp/dx relative to starting X */
-        float dpdy;                       /* dp/dy relative to starting Y */
+        float start; /* parameter value at starting X,Y */
+        float dpdx; /* dp/dx relative to starting X */
+        float dpdy; /* dp/dy relative to starting Y */
     }
 
     /* work_unit_shared is a common set of data shared between tris and quads */
     static class work_unit {
-        polygon_info polygon;                /* pointer to polygon */
-        int count_next;             /* number of scanlines and index of next item to process */
-        int scanline;               /* starting scanline and count */
-        int previtem;               /* index of previous item in the same bucket */
+        polygon_info polygon; /* pointer to polygon */
+        int count_next; /* number of scanlines and index of next item to process */
+        int scanline; /* starting scanline and count */
+        int previtem; /* index of previous item in the same bucket */
         int index;
 
         int setCountNext(int value) {
@@ -603,7 +608,7 @@ public class Poly {
             }
         }
 
-        static public tri_work_unit[] create(int count) {
+        public static tri_work_unit[] create(int count) {
             tri_work_unit[] result = new tri_work_unit[count];
             for (int i = 0; i < result.length; i++) {
                 result[i] = new tri_work_unit();
@@ -623,7 +628,7 @@ public class Poly {
             }
         }
 
-        static public quad_work_unit[] create(int count) {
+        public static quad_work_unit[] create(int count) {
             quad_work_unit[] result = new quad_work_unit[count];
             for (int i = 0; i < result.length; i++) {
                 result[i] = new quad_work_unit();
@@ -640,16 +645,17 @@ public class Poly {
 
     /* polygon_info describes a single polygon, which includes the poly_params */
     static final class polygon_info {
-        poly_manager poly;                   /* pointer back to the poly manager */
-        short[] dest;                   /* pointer to the destination we are rendering to */
+        poly_manager poly; /* pointer back to the poly manager */
+        short[] dest; /* pointer to the destination we are rendering to */
         int destOffset;
-        poly_extra_data extra;                  /* extra data pointer */
-        int numparams;              /* number of parameters for this polygon  */
-        int numverts;               /* number of vertices in this polygon */
-        poly_draw_scanline_func callback;               /* callback to handle a scanline's worth of work */
-        int xorigin;                /* X origin for all parameters */
-        int yorigin;                /* Y origin for all parameters */
+        poly_extra_data extra; /* extra data pointer */
+        int numparams; /* number of parameters for this polygon  */
+        int numverts; /* number of vertices in this polygon */
+        poly_draw_scanline_func callback; /* callback to handle a scanline's worth of work */
+        int xorigin; /* X origin for all parameters */
+        int yorigin; /* Y origin for all parameters */
         poly_param[] param = new poly_param[MAX_VERTEX_PARAMS];/* array of parameter data */
+
         public polygon_info() {
             for (int i = 0; i < param.length; i++) {
                 param[i] = new poly_param();
@@ -663,7 +669,7 @@ public class Poly {
             return result;
         }
     }
-    
+
     /*-------------------------------------------------
         poly_item_callback - callback for each poly
         item
@@ -675,49 +681,49 @@ public class Poly {
         LinkedList<work_unit> queue = null;
 
         /* triangle work units */
-        work_unit[] unit;                   /* array of work unit pointers */
-        int unit_next;              /* index of next unit to allocate */
-        int unit_count;             /* number of work units available */
+        work_unit[] unit; /* array of work unit pointers */
+        int unit_next; /* index of next unit to allocate */
+        int unit_count; /* number of work units available */
 
         /* quad work units */
-        int quadunit_next;          /* index of next unit to allocate */
-        int quadunit_count;         /* number of work units available */
-        int quadunit_size;          /* size of each work unit, in bytes */
+        int quadunit_next; /* index of next unit to allocate */
+        int quadunit_count; /* number of work units available */
+        int quadunit_size; /* size of each work unit, in bytes */
 
         /* poly data */
-        polygon_info[] polygon;                /* array of polygon pointers */
-        int polygon_next;           /* index of next polygon to allocate */
-        int polygon_count;          /* number of polygon items available */
+        polygon_info[] polygon; /* array of polygon pointers */
+        int polygon_next; /* index of next polygon to allocate */
+        int polygon_count; /* number of polygon items available */
 
         /* extra data */
-        poly_extra_data[] extra;                  /* array of extra data pointers */
-        int extra_next;             /* index of next extra data to allocate */
-        int extra_count;            /* number of extra data items available */
+        poly_extra_data[] extra; /* array of extra data pointers */
+        int extra_next; /* index of next extra data to allocate */
+        int extra_count; /* number of extra data items available */
 
         /* misc data */
-        int flags;                  /* flags */
+        int flags; /* flags */
 
         /* buckets */
         int[] unit_bucket = new int[TOTAL_BUCKETS]; /* buckets for tracking unit usage */
 
         /* statistics */
-        int triangles;              /* number of triangles queued */
-        int quads;                  /* number of quads queued */
-        long pixels;                 /* number of pixels rendered */
-        int unit_waits;             /* number of times we waited for a unit */
-        int unit_max;               /* maximum units used */
-        int polygon_waits;          /* number of times we waited for a polygon */
-        int polygon_max;            /* maximum polygons used */
-        int extra_waits;            /* number of times we waited for an extra data */
-        int extra_max;              /* maximum extra data used */
+        int triangles; /* number of triangles queued */
+        int quads; /* number of quads queued */
+        long pixels; /* number of pixels rendered */
+        int unit_waits; /* number of times we waited for a unit */
+        int unit_max; /* maximum units used */
+        int polygon_waits; /* number of times we waited for a polygon */
+        int polygon_max; /* maximum polygons used */
+        int extra_waits; /* number of times we waited for an extra data */
+        int extra_max; /* maximum extra data used */
         int[] conflicts = new int[WORK_MAX_THREADS]; /* number of conflicts found, per thread */
         int[] resolved = new int[WORK_MAX_THREADS]; /* number of conflicts resolved, per thread */
     }
 
-    static private final class PolyThread extends Thread {
-        static final LinkedList<work_unit> queue = new LinkedList<work_unit>();
+    private static final class PolyThread extends Thread {
+        static final LinkedList<work_unit> queue = new LinkedList<>();
         static final Object busyNotifier = new Object();
-        static public int count;
+        public static int count;
         static int active = WORK_MAX_THREADS;
         public int id;
 
@@ -725,7 +731,7 @@ public class Poly {
             this.id = id;
         }
 
-        static public void addUnit(work_unit unit) {
+        public static void addUnit(work_unit unit) {
             synchronized (queue) {
                 synchronized (busyNotifier) {
                     count++;
@@ -735,7 +741,7 @@ public class Poly {
             }
         }
 
-        static public void waitUntilDone() {
+        public static void waitUntilDone() {
             synchronized (busyNotifier) {
                 if (count > 0) {
                     try {
@@ -746,6 +752,7 @@ public class Poly {
             }
         }
 
+        @Override
         public void run() {
             try {
                 while (true) {
@@ -768,8 +775,6 @@ public class Poly {
                         count--;
                     }
                 }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
             } catch (Exception e) {
                 e.printStackTrace();
             }

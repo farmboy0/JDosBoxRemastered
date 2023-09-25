@@ -4,7 +4,7 @@ import jdos.win.builtin.WinAPI;
 
 public class Clipping extends WinAPI {
     // int GetClipRgn(HDC hdc, HRGN hrgn)
-    static public int GetClipRgn(int hdc, int hrgn) {
+    public static int GetClipRgn(int hdc, int hrgn) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return -1;
@@ -17,7 +17,7 @@ public class Clipping extends WinAPI {
     }
 
     // int IntersectClipRect(HDC hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect)
-    static public int IntersectClipRect(int hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect) {
+    public static int IntersectClipRect(int hdc, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect) {
         WinDC dc = WinDC.get(hdc);
         if (dc == null)
             return ERROR;

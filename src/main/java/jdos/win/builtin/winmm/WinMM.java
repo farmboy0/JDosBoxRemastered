@@ -20,35 +20,37 @@ public class WinMM extends BuiltinModule {
     // :TODO: This code can use a lot of work
     // MCIERROR mciSendCommand(MCIDEVICEID IDDevice, UINT uMsg, DWORD_PTR fdwCommand, DWORD_PTR dwParam)
     private final Callback.Handler mciSendCommandA = new HandlerBase() {
-        static final private int MCI_OPEN_SHAREABLE = 0x00000100;
-        static final private int MCI_OPEN_ELEMENT = 0x00000200;
-        static final private int MCI_OPEN_ALIAS = 0x00000400;
-        static final private int MCI_OPEN_ELEMENT_ID = 0x00000800;
-        static final private int MCI_OPEN_TYPE_ID = 0x00001000;
-        static final private int MCI_OPEN_TYPE = 0x00002000;
+        private static final int MCI_OPEN_SHAREABLE = 0x00000100;
+        private static final int MCI_OPEN_ELEMENT = 0x00000200;
+        private static final int MCI_OPEN_ALIAS = 0x00000400;
+        private static final int MCI_OPEN_ELEMENT_ID = 0x00000800;
+        private static final int MCI_OPEN_TYPE_ID = 0x00001000;
+        private static final int MCI_OPEN_TYPE = 0x00002000;
 
-        static final private int MCI_DEVTYPE_VCR = 513;
-        static final private int MCI_DEVTYPE_VIDEODISC = 514;
-        static final private int MCI_DEVTYPE_OVERLAY = 515;
-        static final private int MCI_DEVTYPE_CD_AUDIO = 516;
-        static final private int MCI_DEVTYPE_DAT = 517;
-        static final private int MCI_DEVTYPE_SCANNER = 518;
-        static final private int MCI_DEVTYPE_ANIMATION = 519;
-        static final private int MCI_DEVTYPE_DIGITAL_VIDEO = 520;
-        static final private int MCI_DEVTYPE_OTHER = 521;
-        static final private int MCI_DEVTYPE_WAVEFORM_AUDIO = 522;
-        static final private int MCI_DEVTYPE_SEQUENCER = 523;
+        private static final int MCI_DEVTYPE_VCR = 513;
+        private static final int MCI_DEVTYPE_VIDEODISC = 514;
+        private static final int MCI_DEVTYPE_OVERLAY = 515;
+        private static final int MCI_DEVTYPE_CD_AUDIO = 516;
+        private static final int MCI_DEVTYPE_DAT = 517;
+        private static final int MCI_DEVTYPE_SCANNER = 518;
+        private static final int MCI_DEVTYPE_ANIMATION = 519;
+        private static final int MCI_DEVTYPE_DIGITAL_VIDEO = 520;
+        private static final int MCI_DEVTYPE_OTHER = 521;
+        private static final int MCI_DEVTYPE_WAVEFORM_AUDIO = 522;
+        private static final int MCI_DEVTYPE_SEQUENCER = 523;
 
-        static final private int MCI_NOTIFY = 0x00000001;
-        static final private int MCI_WAIT = 0x00000002;
-        static final private int MCI_FROM = 0x00000004;
-        static final private int MCI_TO = 0x00000008;
-        static final private int MCI_TRACK = 0x00000010;
+        private static final int MCI_NOTIFY = 0x00000001;
+        private static final int MCI_WAIT = 0x00000002;
+        private static final int MCI_FROM = 0x00000004;
+        private static final int MCI_TO = 0x00000008;
+        private static final int MCI_TRACK = 0x00000010;
 
+        @Override
         public java.lang.String getName() {
             return "WinMM.mciSendCommandA";
         }
 
+        @Override
         public void onCall() {
             int IDDevice = CPU.CPU_Pop32();
             int uMsg = CPU.CPU_Pop32();
@@ -100,7 +102,7 @@ public class WinMM extends BuiltinModule {
                         }
                     }
                 }
-                break;
+                    break;
                 case 0x804: // MCI_CLOSE
                 {
                     WinMCI mci = WinMCI.getMCI(IDDevice);
@@ -116,7 +118,7 @@ public class WinMM extends BuiltinModule {
                         return;
                     }
                 }
-                break;
+                    break;
                 case 0x806: // MCI_PLAY
                 {
                     WinMCI mci = WinMCI.getMCI(IDDevice);
@@ -138,7 +140,7 @@ public class WinMM extends BuiltinModule {
                         return;
                     }
                 }
-                break;
+                    break;
                 case 0x808: // MCI_STOP
                 {
                     WinMCI mci = WinMCI.getMCI(IDDevice);
@@ -153,23 +155,26 @@ public class WinMM extends BuiltinModule {
                         return;
                     }
                 }
-                break;
+                    break;
                 case 0x814: // MCI_STATUS
                     log("mciSendCommand status not implemented yet");
                     CPU_Regs.reg_eax.dword = 1; // error
                     return;
 
             }
-            Win.panic(getName() + " unhanded uMsg=0x" + Ptr.toString(uMsg) + " fdwCommand=0x" + Ptr.toString(fdwCommand));
+            Win.panic(
+                getName() + " unhanded uMsg=0x" + Ptr.toString(uMsg) + " fdwCommand=0x" + Ptr.toString(fdwCommand));
             CPU_Regs.reg_eax.dword = 1; // error
         }
     };
     // UINT mixerGetNumDevs(void)
     private final Callback.Handler mixerGetNumDevs = new HandlerBase() {
+        @Override
         public java.lang.String getName() {
             return "WinMM.mixerGetNumDevs";
         }
 
+        @Override
         public void onCall() {
             // :TODO:
             System.out.println(getName() + " faked");
@@ -181,31 +186,37 @@ public class WinMM extends BuiltinModule {
         super(loader, "WinMM.dll", handle);
         add(WinJoystick.class, "joyGetNumDevs", LOG_MM ? new String[0] : null);
         add(mciSendCommandA);
-        add(Mci.class, "mciSendStringA", LOG_MM ? new String[]{"(STRING)lpszCommand", "(HEX)lpszReturnString", "cchReturn", "hwndCallback", "result", "01(STRING)lpszReturnString"} : null);
+        add(Mci.class, "mciSendStringA", LOG_MM ? new String[] { "(STRING)lpszCommand", "(HEX)lpszReturnString",
+            "cchReturn", "hwndCallback", "result", "01(STRING)lpszReturnString" } : null);
         add(mixerGetNumDevs);
-        add(Mmio.class, "mmioAdvance", LOG_MM ? new String[]{"hmmio", "(HEX)lpmmioinfo", "(HEX)wFlags"} : null);
-        add(Mmio.class, "mmioAscend", LOG_MM ? new String[]{"hmmio", "(HEX)lpck", "(HEX)wFlags"} : null);
-        add(Mmio.class, "mmioClose", LOG_MM ? new String[]{"hmmio", "(HEX)wFlags"} : null);
-        add(Mmio.class, "mmioDescend", LOG_MM ? new String[]{"hmmio", "(HEX)lpck", "(HEX)lpckParent", "(HEX)wFlags"} : null);
-        add(Mmio.class, "mmioGetInfo", LOG_MM ? new String[]{"hmmio", "(HEX)lpmmioinfo", "(HEX)wFlags"} : null);
-        add(Mmio.class, "mmioOpenA", LOG_MM ? new String[]{"(STRING)szFilename", "(HEX)lpmmioinfo", "(HEX)dwOpenFlags"} : null);
-        add(Mmio.class, "mmioRead", LOG_MM ? new String[]{"hmmio", "(HEX)pch", "cch"} : null);
-        add(Mmio.class, "mmioSeek", LOG_MM ? new String[]{"hmmio", "lOffset", "iOrigin"} : null);
-        add(Mmio.class, "mmioSetInfo", LOG_MM ? new String[]{"hmmio", "(HEX)lpmmioinfo", "(HEX)wFlags"} : null);
-        add(PlaySound.class, "PlaySoundA", LOG_MM ? new String[]{"(STRING)pszSound", "hmod", "(HEX)fdwSound", "(BOOL)result"} : null, 2);
-        add(MMTime.class, "timeBeginPeriod", LOG_MM ? new String[]{"uPeriod"} : null);
-        add(MMTime.class, "timeGetDevCaps", LOG_MM ? new String[]{"lpCaps", "wSize"} : null);
+        add(Mmio.class, "mmioAdvance", LOG_MM ? new String[] { "hmmio", "(HEX)lpmmioinfo", "(HEX)wFlags" } : null);
+        add(Mmio.class, "mmioAscend", LOG_MM ? new String[] { "hmmio", "(HEX)lpck", "(HEX)wFlags" } : null);
+        add(Mmio.class, "mmioClose", LOG_MM ? new String[] { "hmmio", "(HEX)wFlags" } : null);
+        add(Mmio.class, "mmioDescend",
+            LOG_MM ? new String[] { "hmmio", "(HEX)lpck", "(HEX)lpckParent", "(HEX)wFlags" } : null);
+        add(Mmio.class, "mmioGetInfo", LOG_MM ? new String[] { "hmmio", "(HEX)lpmmioinfo", "(HEX)wFlags" } : null);
+        add(Mmio.class, "mmioOpenA",
+            LOG_MM ? new String[] { "(STRING)szFilename", "(HEX)lpmmioinfo", "(HEX)dwOpenFlags" } : null);
+        add(Mmio.class, "mmioRead", LOG_MM ? new String[] { "hmmio", "(HEX)pch", "cch" } : null);
+        add(Mmio.class, "mmioSeek", LOG_MM ? new String[] { "hmmio", "lOffset", "iOrigin" } : null);
+        add(Mmio.class, "mmioSetInfo", LOG_MM ? new String[] { "hmmio", "(HEX)lpmmioinfo", "(HEX)wFlags" } : null);
+        add(PlaySound.class, "PlaySoundA",
+            LOG_MM ? new String[] { "(STRING)pszSound", "hmod", "(HEX)fdwSound", "(BOOL)result" } : null, 2);
+        add(MMTime.class, "timeBeginPeriod", LOG_MM ? new String[] { "uPeriod" } : null);
+        add(MMTime.class, "timeGetDevCaps", LOG_MM ? new String[] { "lpCaps", "wSize" } : null);
         add(MMTime.class, "timeGetTime", LOG_MM ? new String[0] : null);
-        add(MMTime.class, "timeEndPeriod", LOG_MM ? new String[]{"uPeriod"} : null);
-        add(MMTime.class, "timeKillEvent", LOG_MM ? new String[]{"uTimerID"} : null);
-        add(MMTime.class, "timeSetEvent", LOG_MM ? new String[]{"uDelay", "uResolution", "(HEX)lpTimeProc", "dwUser", "(HEX)fuEvent"} : null);
-        add(Waveform.class, "waveOutClose", LOG_MM ? new String[]{"(HEX)hwo"} : null);
-        add(Waveform.class, "waveOutGetDevCapsA", LOG_MM ? new String[]{"uDeviceID", "(HEX)pwoc", "cbwoc"} : null);
-        add(Waveform.class, "waveOutOpen", LOG_MM ? new String[]{"(HEX)lphWaveOut", "uDeviceID", "(HEX)pwfx", "(HEX)dwCallback", "dwCallbackInstance", "(HEX)fdwOpen"} : null);
-        add(Waveform.class, "waveOutPrepareHeader", LOG_MM ? new String[]{"(HEX)hwo", "(HEX)pwh", "cbwh"} : null);
-        add(Waveform.class, "waveOutReset", LOG_MM ? new String[]{"(HEX)hwo"} : null);
-        add(Waveform.class, "waveOutUnprepareHeader", LOG_MM ? new String[]{"(HEX)hwo", "(HEX)pwh", "cbwh"} : null);
-        add(Waveform.class, "waveOutWrite", LOG_MM ? new String[]{"(HEX)hwo", "(HEX)pwh", "cbwh"} : null);
+        add(MMTime.class, "timeEndPeriod", LOG_MM ? new String[] { "uPeriod" } : null);
+        add(MMTime.class, "timeKillEvent", LOG_MM ? new String[] { "uTimerID" } : null);
+        add(MMTime.class, "timeSetEvent",
+            LOG_MM ? new String[] { "uDelay", "uResolution", "(HEX)lpTimeProc", "dwUser", "(HEX)fuEvent" } : null);
+        add(Waveform.class, "waveOutClose", LOG_MM ? new String[] { "(HEX)hwo" } : null);
+        add(Waveform.class, "waveOutGetDevCapsA", LOG_MM ? new String[] { "uDeviceID", "(HEX)pwoc", "cbwoc" } : null);
+        add(Waveform.class, "waveOutOpen", LOG_MM ? new String[] { "(HEX)lphWaveOut", "uDeviceID", "(HEX)pwfx",
+            "(HEX)dwCallback", "dwCallbackInstance", "(HEX)fdwOpen" } : null);
+        add(Waveform.class, "waveOutPrepareHeader", LOG_MM ? new String[] { "(HEX)hwo", "(HEX)pwh", "cbwh" } : null);
+        add(Waveform.class, "waveOutReset", LOG_MM ? new String[] { "(HEX)hwo" } : null);
+        add(Waveform.class, "waveOutUnprepareHeader", LOG_MM ? new String[] { "(HEX)hwo", "(HEX)pwh", "cbwh" } : null);
+        add(Waveform.class, "waveOutWrite", LOG_MM ? new String[] { "(HEX)hwo", "(HEX)pwh", "cbwh" } : null);
     }
 
     public static int unknown() {
@@ -215,7 +226,7 @@ public class WinMM extends BuiltinModule {
 
     public static int WINMM_CheckCallback(int dwCallback, int fdwOpen, boolean mixer) {
         switch (fdwOpen & CALLBACK_TYPEMASK) {
-            case CALLBACK_NULL:     /* dwCallback need not be NULL */
+            case CALLBACK_NULL: /* dwCallback need not be NULL */
                 break;
             case CALLBACK_WINDOW:
                 if (dwCallback != 0 && WinWindow.IsWindow(dwCallback) == 0)

@@ -1,5 +1,8 @@
 package jdos.win.loader;
 
+import java.io.ByteArrayOutputStream;
+import java.util.Vector;
+
 import jdos.Dosbox;
 import jdos.cpu.CPU;
 import jdos.cpu.CPU_Regs;
@@ -13,34 +16,38 @@ import jdos.win.builtin.WinAPI;
 import jdos.win.builtin.kernel32.WinProcess;
 import jdos.win.kernel.KernelHeap;
 import jdos.win.kernel.WinCallback;
-import jdos.win.loader.winpe.*;
+import jdos.win.loader.winpe.HeaderImageExportDirectory;
+import jdos.win.loader.winpe.HeaderImageImportDescriptor;
+import jdos.win.loader.winpe.HeaderImageOptional;
+import jdos.win.loader.winpe.HeaderImageSection;
+import jdos.win.loader.winpe.HeaderPE;
+import jdos.win.loader.winpe.LittleEndianFile;
 import jdos.win.system.WinFile;
 import jdos.win.system.WinSystem;
 import jdos.win.utils.Path;
 import jdos.win.utils.Ptr;
 
-import java.io.ByteArrayOutputStream;
-import java.util.Vector;
-
 public class NativeModule extends Module {
-    static public final int RT_CURSOR = 1;
-    static public final int RT_BITMAP = 2;
-    static public final int RT_ICON = 3;
-    static public final int RT_MENU = 4;
-    static public final int RT_DIALOG = 5;
-    static public final int RT_STRING = 6;
-    static public final int RT_FONTDIR = 7;
-    static public final int RT_FONT = 8;
-    static public final int RT_ACCELERATOR = 9;
-    static public final int RT_RCDATA = 10;
-    static public final int RT_MESSAGETABLE = 11;
-    static public final int RT_GROUP_CURSOR = 12;
-    static public final int RT_VERSION = 16;
+    public static final int RT_CURSOR = 1;
+    public static final int RT_BITMAP = 2;
+    public static final int RT_ICON = 3;
+    public static final int RT_MENU = 4;
+    public static final int RT_DIALOG = 5;
+    public static final int RT_STRING = 6;
+    public static final int RT_FONTDIR = 7;
+    public static final int RT_FONT = 8;
+    public static final int RT_ACCELERATOR = 9;
+    public static final int RT_RCDATA = 10;
+    public static final int RT_MESSAGETABLE = 11;
+    public static final int RT_GROUP_CURSOR = 12;
+    public static final int RT_VERSION = 16;
     static Callback.Handler DllMainReturn = new Callback.Handler() {
+        @Override
         public String getName() {
             return "DllMainReturn";
         }
 
+        @Override
         public int call() {
             return 1; // return from DOSBOX_RunMachine
         }
@@ -53,17 +60,20 @@ public class NativeModule extends Module {
     private int resourceStartAddress;
     private int returnEip = 0;
     private HeaderImageExportDirectory exports = null;
+
     public NativeModule(Loader loader, int handle) {
         super(handle);
         this.loader = loader;
     }
 
+    @Override
     public String getFileName(boolean fullPath) {
         if (fullPath)
             return path.winPath + name;
         return name;
     }
 
+    @Override
     public void callDllMain(int dwReason) {
         if (header.imageOptional.AddressOfEntryPoint == 0) {
             if (WinAPI.LOG)
@@ -87,7 +97,8 @@ public class NativeModule extends Module {
             CPU_Regs.reg_eip = (int) getEntryPoint();
             try {
                 if (WinAPI.LOG) {
-                    System.out.println(name + " calling DllMain@" + Ptr.toString(CPU_Regs.reg_eip) + " dwReason=" + dwReason);
+                    System.out
+                        .println(name + " calling DllMain@" + Ptr.toString(CPU_Regs.reg_eip) + " dwReason=" + dwReason);
                 }
                 Dosbox.DOSBOX_RunMachine();
                 CPU_Regs.reg_esp.dword = esp;
@@ -100,6 +111,7 @@ public class NativeModule extends Module {
         }
     }
 
+    @Override
     public int getProcAddress(String name, boolean loadFake) {
         LongRef exportAddress = new LongRef(0);
         LongRef exportSize = new LongRef(0);
@@ -121,8 +133,9 @@ public class NativeModule extends Module {
             baseAddress = (int) header.imageOptional.ImageBase;
             byte[] headerImage = os.toByteArray();
             int allocated = headerImage.length;
-            allocated = (allocated + 0xFFF) & ~0xFFF;
-            long imageSize = header.imageSections[header.imageSections.length - 1].VirtualAddress + header.imageSections[header.imageSections.length - 1].SizeOfRawData;
+            allocated = allocated + 0xFFF & ~0xFFF;
+            long imageSize = header.imageSections[header.imageSections.length - 1].VirtualAddress
+                + header.imageSections[header.imageSections.length - 1].SizeOfRawData;
             long reserved = process.addressSpace.alloc(baseAddress, imageSize);
             int oldbase = 0;
             if (reserved != baseAddress) {
@@ -133,35 +146,40 @@ public class NativeModule extends Module {
                     Win.panic("NativeModule.load wasn't expecting this");
                 }
                 System.out.println();
-                System.out.println("Relocating " + name + " from 0x" + Integer.toString(oldbase, 16) + " to 0x" + Integer.toString(baseAddress, 16));
+                System.out.println("Relocating " + name + " from 0x" + Integer.toString(oldbase, 16) + " to 0x"
+                    + Integer.toString(baseAddress, 16));
             }
-            heap = new KernelHeap(WinSystem.memory, page_directory, baseAddress, baseAddress + allocated, baseAddress + 0x1000000, false, false);
+            heap = new KernelHeap(WinSystem.memory, page_directory, baseAddress, baseAddress + allocated,
+                baseAddress + 0x1000000, false, false);
             heap.alloc(allocated, false);
             Memory.mem_memcpy(baseAddress, headerImage, 0, headerImage.length);
-            System.out.println("Loaded " + name + " at 0x" + Integer.toHexString(baseAddress) + " - 0x" + Integer.toHexString(baseAddress + headerImage.length));
+            System.out.println("Loaded " + name + " at 0x" + Integer.toHexString(baseAddress) + " - 0x"
+                + Integer.toHexString(baseAddress + headerImage.length));
             // Load code, data, import, etc sections
-            for (int i = 0; i < header.imageSections.length; i++) {
-                int address = (int) header.imageSections[i].VirtualAddress + baseAddress;
-                byte[] buffer = new byte[0];
-                if (header.imageSections[i].PointerToRawData > 0) {
-                    fis.seek(header.imageSections[i].PointerToRawData, SEEK_SET);
-                    buffer = new byte[(int) header.imageSections[i].SizeOfRawData];
+            for (HeaderImageSection imageSection : header.imageSections) {
+                int address = (int) imageSection.VirtualAddress + baseAddress;
+                byte[] buffer = {};
+                if (imageSection.PointerToRawData > 0) {
+                    fis.seek(imageSection.PointerToRawData, SEEK_SET);
+                    buffer = new byte[(int) imageSection.SizeOfRawData];
                 }
-                String segmentName = new String(header.imageSections[i].Name);
+                String segmentName = new String(imageSection.Name);
                 if (segmentName.startsWith(".rsrc")) {
                     resourceStartAddress = address;
                 }
-                System.out.println("   " + segmentName + " segment at 0x" + Integer.toHexString(address) + " - 0x" + Long.toHexString(address + header.imageSections[i].PhysicalAddress_or_VirtualSize) + "(" + Long.toHexString(address + buffer.length) + ")");
+                System.out.println("   " + segmentName + " segment at 0x" + Integer.toHexString(address) + " - 0x"
+                    + Long.toHexString(address + imageSection.PhysicalAddress_or_VirtualSize) + "("
+                    + Long.toHexString(address + buffer.length) + ")");
                 if (buffer.length > 0)
                     fis.read(buffer);
                 int size = buffer.length;
-                if (header.imageSections[i].PhysicalAddress_or_VirtualSize > size)
-                    size = (int) header.imageSections[i].PhysicalAddress_or_VirtualSize;
+                if (imageSection.PhysicalAddress_or_VirtualSize > size)
+                    size = (int) imageSection.PhysicalAddress_or_VirtualSize;
                 if (size == 0)
-                    size = (int) header.imageSections[i].SizeOfRawData;
+                    size = (int) imageSection.SizeOfRawData;
                 if (address - baseAddress + size > allocated) {
                     int add = address - baseAddress + size - allocated;
-                    add = (add + 0xFFF) & ~0xFFF;
+                    add = add + 0xFFF & ~0xFFF;
                     allocated += add;
                     heap.alloc(add, false);
                 }
@@ -172,11 +190,13 @@ public class NativeModule extends Module {
             if (oldbase != 0) {
                 LongRef relocAddress = new LongRef(0);
                 LongRef relocSize = new LongRef(0);
-                if (!RtlImageDirectoryEntryToData(HeaderImageOptional.IMAGE_DIRECTORY_ENTRY_BASERELOC, relocAddress, relocSize)) {
+                if (!RtlImageDirectoryEntryToData(HeaderImageOptional.IMAGE_DIRECTORY_ENTRY_BASERELOC, relocAddress,
+                    relocSize)) {
                     Win.panic("Dll needed to be relocated but could not find .reloc section");
                 }
                 int delta = baseAddress - oldbase;
-                LittleEndianFile is = new LittleEndianFile((int) relocAddress.value + baseAddress, (int) relocSize.value);
+                LittleEndianFile is = new LittleEndianFile((int) relocAddress.value + baseAddress,
+                    (int) relocSize.value);
                 while (is.available() > 0) {
                     int page = baseAddress + is.readInt();
                     int count = (is.readInt() - 8) / 2; // 8 is the size of the IMAGE_BASE_RELOCATION header and 2 is for the size of an USHORT
@@ -196,21 +216,21 @@ public class NativeModule extends Module {
                                 s += delta >>> 16;
                                 Memory.mem_writew(page + offset, s);
                             }
-                            break;
+                                break;
                             case 2: // IMAGE_REL_BASED_LOW
                             {
                                 int s = Memory.mem_readw(page + offset);
                                 s += delta & 0xFFFF;
                                 Memory.mem_writew(page + offset, s);
                             }
-                            break;
+                                break;
                             case 3: // IMAGE_REL_BASED_HIGHLOW
                             {
                                 int s = Memory.mem_readd(page + offset);
                                 s += delta;
                                 Memory.mem_writed(page + offset, s);
                             }
-                            break;
+                                break;
                             default:
                                 Win.panic(name + "Unknown relocation type: " + type);
                         }
@@ -220,10 +240,11 @@ public class NativeModule extends Module {
             return true;
         } catch (Exception e) {
         } finally {
-            if (fis != null) try {
-                fis.close();
-            } catch (Exception e) {
-            }
+            if (fis != null)
+                try {
+                    fis.close();
+                } catch (Exception e) {
+                }
         }
         return false;
     }
@@ -280,7 +301,8 @@ public class NativeModule extends Module {
 
     private String getResourceName(int address) {
         int name = Memory.mem_readd(address);
-        return new LittleEndianFile(resourceStartAddress + (name & 0x7FFFFFFF) + 2).readCStringW(Memory.mem_readw(resourceStartAddress + (name & 0x7FFFFFFF)));
+        return new LittleEndianFile(resourceStartAddress + (name & 0x7FFFFFFF) + 2)
+            .readCStringW(Memory.mem_readw(resourceStartAddress + (name & 0x7FFFFFFF)));
     }
 
     private int getResourceById(int resourceAddress, int id, IntRef size) {
@@ -342,16 +364,16 @@ public class NativeModule extends Module {
         return baseAddress + header.imageOptional.AddressOfEntryPoint;
     }
 
+    @Override
     public boolean RtlImageDirectoryEntryToData(int dir, LongRef address, LongRef size) {
-        if (dir >= header.imageOptional.NumberOfRvaAndSizes)
-            return false;
-        if (header.imageOptional.DataDirectory[dir].VirtualAddress == 0)
+        if ((dir >= header.imageOptional.NumberOfRvaAndSizes) || (header.imageOptional.DataDirectory[dir].VirtualAddress == 0))
             return false;
         address.value = header.imageOptional.DataDirectory[dir].VirtualAddress;
         size.value = header.imageOptional.DataDirectory[dir].Size;
         return true;
     }
 
+    @Override
     public Vector getImportDescriptors(long address) {
         Vector importDescriptors = new Vector();
         try {
@@ -370,19 +392,23 @@ public class NativeModule extends Module {
         return importDescriptors;
     }
 
+    @Override
     public String getVirtualString(long address) {
         LittleEndianFile file = new LittleEndianFile(baseAddress + (int) address);
         return file.readCString();
     }
 
+    @Override
     public void writeThunk(HeaderImageImportDescriptor desc, int index, long value) {
         Memory.mem_writed((int) (baseAddress + desc.FirstThunk) + 4 * index, (int) value);
     }
 
+    @Override
     public void unload() {
 
     }
 
+    @Override
     public long[] getImportList(HeaderImageImportDescriptor desc) {
         try {
             long import_list = desc.FirstThunk;
@@ -396,7 +422,7 @@ public class NativeModule extends Module {
                 if (ord == 0) {
                     break;
                 }
-                importOrdinals.addElement(new Long(ord));
+                importOrdinals.addElement(Long.valueOf(ord));
             }
             long[] result = new long[importOrdinals.size()];
             for (int i = 0; i < result.length; i++) {
@@ -422,6 +448,7 @@ public class NativeModule extends Module {
         }
     }
 
+    @Override
     public long findNameExport(long exportAddress, long exportsSize, String name, int hint) {
         loadExports(exportAddress);
         if (hint >= 0 && hint < exports.NumberOfFunctions) {
@@ -459,10 +486,12 @@ public class NativeModule extends Module {
 
     }
 
+    @Override
     public long findOrdinalExport(long exportAddress, long exportsSize, int ordinal) {
         loadExports(exportAddress);
         if (ordinal >= exports.NumberOfFunctions + exports.Base) {
-            System.out.println("Error: tried to look up ordinal " + ordinal + " in " + name + " but only " + exports.NumberOfFunctions + " functions are available.");
+            System.out.println("Error: tried to look up ordinal " + ordinal + " in " + name + " but only "
+                + exports.NumberOfFunctions + " functions are available.");
             return 0;
         }
         long proc = Memory.mem_readd((int) (baseAddress + exports.AddressOfFunctions + 4 * (ordinal - exports.Base)));
@@ -472,6 +501,7 @@ public class NativeModule extends Module {
         return proc + baseAddress;
     }
 
+    @Override
     public void getImportFunctionName(long address, StringRef name, IntRef hint) {
         try {
             LittleEndianFile file = new LittleEndianFile(baseAddress + (int) address);
@@ -482,7 +512,7 @@ public class NativeModule extends Module {
         }
     }
 
-    static public class ResourceDirectory {
+    public static class ResourceDirectory {
         public static final int SIZE = 16;
         public int Characteristics;
         public int TimeDateStamp;
@@ -490,6 +520,7 @@ public class NativeModule extends Module {
         public int MinorVersion;
         public int NumberOfNamedEntries;
         public int NumberOfIdEntries;
+
         public ResourceDirectory(int address) {
             LittleEndianFile is = new LittleEndianFile(address);
             Characteristics = is.readInt();

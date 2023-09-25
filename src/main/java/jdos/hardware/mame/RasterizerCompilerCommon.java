@@ -1,14 +1,14 @@
 package jdos.hardware.mame;
 
-import jdos.Dosbox;
-
 import java.io.DataInputStream;
 import java.io.InputStream;
+
+import jdos.Dosbox;
 
 public class RasterizerCompilerCommon {
     public static boolean saveClasses = false;
 
-    static public void load() {
+    public static void load() {
         InputStream is = Dosbox.class.getResourceAsStream("Rasterizer.index");
         if (is != null) {
             DataInputStream dis = new DataInputStream(is);

@@ -10,24 +10,26 @@ import jdos.win.system.WinSystem;
 import jdos.win.utils.Error;
 
 public class IDirectDrawPalette extends IUnknown {
-    static final public int OFFSET_COLOR_DATA = 0;
-    static final private int DDPCAPS_4BIT = 0x00000001;
-    static final private int DDPCAPS_8BITENTRIES = 0x00000002;
-    static final private int DDPCAPS_8BIT = 0x00000004;
-    static final private int DDPCAPS_INITIALIZE = 0x00000008;
-    static final private int DDPCAPS_PRIMARYSURFACE = 0x00000010;
-    static final private int DDPCAPS_PRIMARYSURFACELEFT = 0x00000020;
-    static final private int DDPCAPS_ALLOW256 = 0x00000040;
-    static final private int DDPCAPS_VSYNC = 0x00000080;
-    static final private int DDPCAPS_1BIT = 0x00000100;
-    static final private int DDPCAPS_2BIT = 0x00000200;
-    static final private int DDPCAPS_ALPHA = 0x00000400;
+    public static final int OFFSET_COLOR_DATA = 0;
+    private static final int DDPCAPS_4BIT = 0x00000001;
+    private static final int DDPCAPS_8BITENTRIES = 0x00000002;
+    private static final int DDPCAPS_8BIT = 0x00000004;
+    private static final int DDPCAPS_INITIALIZE = 0x00000008;
+    private static final int DDPCAPS_PRIMARYSURFACE = 0x00000010;
+    private static final int DDPCAPS_PRIMARYSURFACELEFT = 0x00000020;
+    private static final int DDPCAPS_ALLOW256 = 0x00000040;
+    private static final int DDPCAPS_VSYNC = 0x00000080;
+    private static final int DDPCAPS_1BIT = 0x00000100;
+    private static final int DDPCAPS_2BIT = 0x00000200;
+    private static final int DDPCAPS_ALPHA = 0x00000400;
     // HRESULT GetCaps(this, LPDWORD lpdwCaps)
-    static private final Callback.Handler GetCaps = new HandlerBase() {
+    private static final Callback.Handler GetCaps = new HandlerBase() {
+        @Override
         public String getName() {
             return "IDirectDrawPalette.GetCaps";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lpdwCaps = CPU.CPU_Pop32();
@@ -40,11 +42,13 @@ public class IDirectDrawPalette extends IUnknown {
         }
     };
     // HRESULT GetEntries(this, DWORD dwFlags, DWORD dwBase, DWORD dwNumEntries, LPPALETTEENTRY lpEntries)
-    static private final Callback.Handler GetEntries = new HandlerBase() {
+    private static final Callback.Handler GetEntries = new HandlerBase() {
+        @Override
         public String getName() {
             return "IDirectDrawPalette.GetEntries";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int dwFlags = CPU.CPU_Pop32();
@@ -58,11 +62,13 @@ public class IDirectDrawPalette extends IUnknown {
         }
     };
     // HRESULT Initialize(this, LPDIRECTDRAW lpDD, DWORD dwFlags, LPPALETTEENTRY lpDDColorTable)
-    static private final Callback.Handler Initialize = new HandlerBase() {
+    private static final Callback.Handler Initialize = new HandlerBase() {
+        @Override
         public String getName() {
             return "IDirectDrawPalette.Initialize";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int lpDD = CPU.CPU_Pop32();
@@ -72,11 +78,13 @@ public class IDirectDrawPalette extends IUnknown {
         }
     };
     // HRESULT SetEntries(this, DWORD dwFlags, DWORD dwStartingEntry, DWORD dwCount, LPPALETTEENTRY lpEntries)
-    static private final Callback.Handler SetEntries = new HandlerBase() {
+    private static final Callback.Handler SetEntries = new HandlerBase() {
+        @Override
         public String getName() {
             return "IDirectDrawPalette.SetEntries";
         }
 
+        @Override
         public void onCall() {
             int This = CPU.CPU_Pop32();
             int dwFlags = CPU.CPU_Pop32();
@@ -118,7 +126,7 @@ public class IDirectDrawPalette extends IUnknown {
         for (int r = 0; r < 256; r += 51) {
             for (int g = 0; r < 256; r += 51) {
                 for (int b = 0; r < 256; r += 51) {
-                    table[pos++] = (r << 16) | (g << 8) | b;
+                    table[pos++] = r << 16 | g << 8 | b;
                 }
             }
         }
@@ -151,7 +159,7 @@ public class IDirectDrawPalette extends IUnknown {
         return result;
     }
 
-    static private int createVTable() {
+    private static int createVTable() {
         int address = allocateVTable("IDirectDrawPalette", 4);
         int result = address;
         address = addIUnknown(address);

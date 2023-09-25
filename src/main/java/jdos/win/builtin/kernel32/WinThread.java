@@ -1,5 +1,11 @@
 package jdos.win.builtin.kernel32;
 
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Collections;
+import java.util.List;
+import java.util.Vector;
+
 import jdos.cpu.CPU_Regs;
 import jdos.cpu.Callback;
 import jdos.hardware.Memory;
@@ -11,22 +17,27 @@ import jdos.win.builtin.user32.Input;
 import jdos.win.builtin.user32.WinWindow;
 import jdos.win.kernel.KernelHeap;
 import jdos.win.kernel.WinCallback;
-import jdos.win.system.*;
+import jdos.win.system.Scheduler;
+import jdos.win.system.StaticData;
+import jdos.win.system.WinKeyboard;
+import jdos.win.system.WinMsg;
+import jdos.win.system.WinObject;
+import jdos.win.system.WinRect;
+import jdos.win.system.WinSystem;
+import jdos.win.system.WinTimer;
 import jdos.win.utils.Error;
 
-import java.util.*;
-
 public class WinThread extends WaitObject {
-    static public final int THREAD_PRIORITY_IDLE = -15;
-    static public final int THREAD_PRIORITY_LOWEST = -2;
-    static public final int THREAD_PRIORITY_BELOW_NORMAL = -1;
-    static public final int THREAD_PRIORITY_NORMAL = 0;
-    static public final int THREAD_PRIORITY_ABOVE_NORMAL = 1;
-    static public final int THREAD_PRIORITY_HIGHEST = 2;
-    static public final int THREAD_PRIORITY_TIME_CRITICAL = 15;
+    public static final int THREAD_PRIORITY_IDLE = -15;
+    public static final int THREAD_PRIORITY_LOWEST = -2;
+    public static final int THREAD_PRIORITY_BELOW_NORMAL = -1;
+    public static final int THREAD_PRIORITY_NORMAL = 0;
+    public static final int THREAD_PRIORITY_ABOVE_NORMAL = 1;
+    public static final int THREAD_PRIORITY_HIGHEST = 2;
+    public static final int THREAD_PRIORITY_TIME_CRITICAL = 15;
     final private WinEvent msgReady = WinEvent.create(null, true, true);
     public CpuState cpuState = new CpuState();
-    public Vector<WinWindow> windows = new Vector<WinWindow>();
+    public Vector<WinWindow> windows = new Vector<>();
     public int priority = THREAD_PRIORITY_NORMAL;
     public BitSet keyState;
     public int msg_window;
@@ -40,17 +51,19 @@ public class WinThread extends WaitObject {
     private final KernelHeap stack;
     private final int stackAddress;
     private final int startAddress;
-    private final List<WinMsg> msgQueue = Collections.synchronizedList(new ArrayList<WinMsg>()); // synchronized since the keyboard will post message from another thread
+    private final List<WinMsg> msgQueue = Collections.synchronizedList(new ArrayList<>()); // synchronized since the keyboard will post message from another thread
     private final List sendMsgQueue = new ArrayList();
-    private final Vector<Integer> paintList = new Vector<Integer>();
+    private final Vector<Integer> paintList = new Vector<>();
     private final boolean quit = false;
     private final WinTimer timer = new WinTimer(0);
     private final GuiThreadInfo guiInfo = new GuiThreadInfo();
     private final Callback.Handler startUp = new HandlerBase() {
+        @Override
         public String getName() {
             return "WinThread.start";
         }
 
+        @Override
         public void onCall() {
             process.loader.attachThread();
             CPU_Regs.reg_esp.dword = cpuState.esp;
@@ -58,7 +71,9 @@ public class WinThread extends WaitObject {
         }
     };
     private int threadStarup = 0;
-    public WinThread(int handle, WinProcess process, long startAddress, int stackSizeCommit, int stackSizeReserve, boolean primary) {
+
+    public WinThread(int handle, WinProcess process, long startAddress, int stackSizeCommit, int stackSizeReserve,
+        boolean primary) {
         super(handle);
         final int guard = 0x1000;
 
@@ -73,7 +88,7 @@ public class WinThread extends WaitObject {
         if (stackSizeReserve < stackSizeCommit)
             stackSizeReserve = stackSizeCommit;
         // :TODO: remove this line once we have a stack that can grow
-        stackSizeReserve = (stackSizeReserve + 0xFFF) & ~0xFFF;
+        stackSizeReserve = stackSizeReserve + 0xFFF & ~0xFFF;
         stackSizeCommit = stackSizeReserve;
         stackAddress = process.reserveStackAddress(stackSizeReserve + guard * 2);
         int start = stackAddress;
@@ -81,7 +96,8 @@ public class WinThread extends WaitObject {
 
         this.cpuState.esp = end - guard;
         start = end - stackSizeCommit - guard * 2;
-        System.out.println("Creating Thread: stack size: " + stackSizeCommit + " (" + Integer.toHexString(start) + "-" + Integer.toHexString(end) + ")");
+        System.out.println("Creating Thread: stack size: " + stackSizeCommit + " (" + Integer.toHexString(start) + "-"
+            + Integer.toHexString(end) + ")");
         // :TODO: implement a page fault handler to grow stack as necessary
         // :TODO: need a stack heap that grows down
         this.stack = new KernelHeap(process.kernelMemory, process.page_directory, start, end, end, false, false);
@@ -101,11 +117,12 @@ public class WinThread extends WaitObject {
         Scheduler.addThread(this, false);
     }
 
-    static public WinThread create(WinProcess process, long startAddress, int stackSizeCommit, int stackSizeReserve, boolean primary) {
+    public static WinThread create(WinProcess process, long startAddress, int stackSizeCommit, int stackSizeReserve,
+        boolean primary) {
         return new WinThread(nextObjectId(), process, startAddress, stackSizeCommit, stackSizeReserve, primary);
     }
 
-    static public WinThread get(int handle) {
+    public static WinThread get(int handle) {
         WinObject object = getObject(handle);
         if (object == null || !(object instanceof WinThread))
             return null;
@@ -113,25 +130,26 @@ public class WinThread extends WaitObject {
     }
 
     // HANDLE WINAPI GetCurrentThread(void);
-    static public int GetCurrentThread() {
+    public static int GetCurrentThread() {
         return Scheduler.getCurrentThread().handle;
     }
 
     // DWORD WINAPI GetCurrentThreadId(void)
-    static public int GetCurrentThreadId() {
+    public static int GetCurrentThreadId() {
         return Scheduler.getCurrentThread().handle;
     }
 
     // DWORD WINAPI GetLastError(void)
-    static public int GetLastError() {
+    public static int GetLastError() {
         return Scheduler.getCurrentThread().getLastError();
     }
 
-    static public WinThread current() {
+    public static WinThread current() {
         return Scheduler.getCurrentThread();
     }
 
-    static public void setMessage(int address, int hWnd, int message, int wParam, int lParam, int time, int curX, int curY) {
+    public static void setMessage(int address, int hWnd, int message, int wParam, int lParam, int time, int curX,
+        int curY) {
         Memory.mem_writed(address, hWnd);
         Memory.mem_writed(address + 4, message);
         Memory.mem_writed(address + 8, wParam);
@@ -171,7 +189,7 @@ public class WinThread extends WaitObject {
             keyState = msg.keyState;
         setMessage(msgAddress, msg.hwnd, msg.message, msg.wParam, msg.lParam, msg.time, msg.x, msg.y);
         currentGetMessageTime = msg.time;
-        currentGetMessagePos = msg.x | (msg.y << 16);
+        currentGetMessagePos = msg.x | msg.y << 16;
         return WinAPI.TRUE;
     }
 
@@ -238,16 +256,15 @@ public class WinThread extends WaitObject {
     public int peekMessage(int msgAddress, int hWnd, int minMsg, int maxMsg, int wRemoveMsg) {
         Input.processInput();
         if (quit) {
-            setMessage(msgAddress, 0, WinWindow.WM_QUIT, 0, 0, WinSystem.getTickCount(), StaticData.currentPos.x, StaticData.currentPos.y);
+            setMessage(msgAddress, 0, WinAPI.WM_QUIT, 0, 0, WinSystem.getTickCount(), StaticData.currentPos.x,
+                StaticData.currentPos.y);
             return WinAPI.TRUE;
         }
         boolean remove = (wRemoveMsg & 0x0001) != 0;
         for (int i = 0; i < msgQueue.size(); i++) {
             WinMsg msg = msgQueue.get(i);
             if (hWnd == 0 || msg.hwnd == hWnd) {
-                if (minMsg == 0 && maxMsg == 0)
-                    return getMessage(msgAddress, i, remove);
-                if (msg.message >= minMsg && msg.message <= maxMsg)
+                if ((minMsg == 0 && maxMsg == 0) || (msg.message >= minMsg && msg.message <= maxMsg))
                     return getMessage(msgAddress, i, remove);
             }
         }
@@ -262,7 +279,8 @@ public class WinThread extends WaitObject {
                 if (remove) {
                     window.validate();
                 }
-                setMessage(msgAddress, window.getHandle(), WinWindow.WM_PAINT, 0, 0, WinSystem.getTickCount(), StaticData.currentPos.x, StaticData.currentPos.y);
+                setMessage(msgAddress, window.getHandle(), WinAPI.WM_PAINT, 0, 0, WinSystem.getTickCount(),
+                    StaticData.currentPos.x, StaticData.currentPos.y);
                 return WinAPI.TRUE;
             }
         }
@@ -278,7 +296,8 @@ public class WinThread extends WaitObject {
                 if (remove) {
                     buildBackToFrontWindowList(window, paintList);
                 }
-                setMessage(msgAddress, window.getHandle(), WinWindow.WM_PAINT, 0, 0, WinSystem.getTickCount(), StaticData.currentPos.x, StaticData.currentPos.y);
+                setMessage(msgAddress, window.getHandle(), WinAPI.WM_PAINT, 0, 0, WinSystem.getTickCount(),
+                    StaticData.currentPos.x, StaticData.currentPos.y);
                 return WinAPI.TRUE;
             }
         }

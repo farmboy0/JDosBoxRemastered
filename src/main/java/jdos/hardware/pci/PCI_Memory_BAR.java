@@ -11,14 +11,16 @@ public class PCI_Memory_BAR extends PCI_BAR {
         Memory.MEM_AddPCIPageHandler(this.handler);
     }
 
+    @Override
     public int getBAR(int currentValue) {
         if (currentValue == -1)
             return 0xFF000000;
         return handler.start_page << 12;
     }
 
+    @Override
     public void setBAR(int newValue) {
-        if (handler.start_page != (newValue >>> 12)) {
+        if (handler.start_page != newValue >>> 12) {
             handler.start_page = newValue >>> 12;
             Paging.PAGING_ClearTLB();
         }

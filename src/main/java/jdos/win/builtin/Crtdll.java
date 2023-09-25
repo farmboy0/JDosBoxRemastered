@@ -1,5 +1,7 @@
 package jdos.win.builtin;
 
+import java.util.Random;
+
 import jdos.cpu.CPU_Regs;
 import jdos.fpu.FPU;
 import jdos.hardware.Memory;
@@ -7,8 +9,6 @@ import jdos.win.loader.BuiltinModule;
 import jdos.win.loader.Loader;
 import jdos.win.system.WinSystem;
 import jdos.win.utils.StringUtil;
-
-import java.util.Random;
 
 public class Crtdll extends BuiltinModule {
     private static final Random random = new Random();
@@ -18,11 +18,12 @@ public class Crtdll extends BuiltinModule {
         super(loader, "Crtdll.dll", handle);
         add_cdecl(Crtdll.class, "_CIpow", new String[0]);
         add_cdecl(Crtdll.class, "_ftol", new String[0]);
-        add_cdecl(Crtdll.class, "__GetMainArgs", new String[]{"(HEX)argc", "(HEX)argv", "(HEX)envp", "expand_wildcards"});
-        add_cdecl(Crtdll.class, "_initterm", new String[]{"(HEX)start", "(HEX)end"});
+        add_cdecl(Crtdll.class, "__GetMainArgs",
+            new String[] { "(HEX)argc", "(HEX)argv", "(HEX)envp", "expand_wildcards" });
+        add_cdecl(Crtdll.class, "_initterm", new String[] { "(HEX)start", "(HEX)end" });
         add_cdecl(Crtdll.class, "rand", new String[0]);
-        add_cdecl(Crtdll.class, "_strupr", new String[]{"(STRING)str", "(STRING)result"});
-        add_cdecl(Crtdll.class, "toupper", new String[]{"c"});
+        add_cdecl(Crtdll.class, "_strupr", new String[] { "(STRING)str", "(STRING)result" });
+        add_cdecl(Crtdll.class, "toupper", new String[] { "c" });
         _acmdln_dll = addData("_acmdln_dll", 4);
         Memory.mem_writed(_acmdln_dll, WinSystem.getCurrentProcess().getCommandLine());
     }
@@ -53,7 +54,7 @@ public class Crtdll extends BuiltinModule {
     // void __GetMainArgs(int * argc, char *** argv, char *** envp, int expand_wildcards)
     public static void __GetMainArgs(int argc, int argv, int envp, int expand_wildcards) {
         Memory.mem_writed(argc, 1);
-        int tmp_argv = WinSystem.getCurrentProcess().heap.alloc(4, false);  // :TODO: this will leak
+        int tmp_argv = WinSystem.getCurrentProcess().heap.alloc(4, false); // :TODO: this will leak
         Memory.mem_writed(tmp_argv, WinSystem.getCurrentProcess().getCommandLine());
         Memory.mem_writed(argv, tmp_argv);
         Memory.mem_writed(envp, 0);

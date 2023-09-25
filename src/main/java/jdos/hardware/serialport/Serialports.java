@@ -2,28 +2,28 @@ package jdos.hardware.serialport;
 
 import jdos.ints.Bios;
 import jdos.misc.Log;
-import jdos.misc.setup.*;
+import jdos.misc.setup.CommandLine;
+import jdos.misc.setup.Module_base;
+import jdos.misc.setup.Prop_multival;
+import jdos.misc.setup.Section;
+import jdos.misc.setup.Section_prop;
 
 public class Serialports extends Module_base {
-    static final private int[] serial_baseaddr = {0x3f8, 0x2f8, 0x3e8, 0x2e8};
-    static public Serial[] serialports = new Serial[4];
+    private static final int[] serial_baseaddr = { 0x3f8, 0x2f8, 0x3e8, 0x2e8 };
+    public static Serial[] serialports = new Serial[4];
     static Serialports testSerialPortsBaseclass;
 
-    public static Section.SectionFunction SERIAL_Destroy = new Section.SectionFunction() {
-        public void call(Section section) {
-            for (/*Bitu*/int i = 0; i < 4; i++)
-                if (serialports[i] != null) {
-                    serialports[i] = null;
-                }
-            testSerialPortsBaseclass = null;
-        }
+    public static Section.SectionFunction SERIAL_Destroy = section -> {
+        for (/*Bitu*/int i = 0; i < 4; i++)
+            if (serialports[i] != null) {
+                serialports[i] = null;
+            }
+        testSerialPortsBaseclass = null;
     };
-    public static Section.SectionFunction SERIAL_Init = new Section.SectionFunction() {
-        public void call(Section section) {
-            // should never happen
-            testSerialPortsBaseclass = new Serialports(section);
-            section.AddDestroyFunction(SERIAL_Destroy, true);
-        }
+    public static Section.SectionFunction SERIAL_Init = section -> {
+        // should never happen
+        testSerialPortsBaseclass = new Serialports(section);
+        section.AddDestroyFunction(SERIAL_Destroy, true);
     };
 
     public Serialports(Section configuration) {
@@ -34,7 +34,7 @@ public class Serialports extends Module_base {
 
         for (/*Bitu*/int i = 0; i < 4; i++) {
             // get the configuration property
-            String s_property = "serial" + (char) ((int) '1' + i);
+            String s_property = "serial" + (char) ('1' + i);
             Prop_multival p = section.Get_multival(s_property);
             String type = p.GetSection().Get_string("type");
             CommandLine cmd = new CommandLine(null, p.GetSection().Get_string("parameters"));
@@ -65,7 +65,8 @@ public class Serialports extends Module_base {
                 serialports[i] = null;
                 Log.log_msg("Invalid type for serial" + (i + 1));
             }
-            if (serialports[i] != null) biosParameter[i] = serial_baseaddr[i];
+            if (serialports[i] != null)
+                biosParameter[i] = serial_baseaddr[i];
         } // for 1-4
         Bios.BIOS_SetComPorts(biosParameter);
     }

@@ -2,11 +2,11 @@ package jdos.util;
 
 public class LongHelper {
     public static boolean isLessThanUnsigned(long n1, long n2) {
-        return (n1 < n2) ^ ((n1 < 0) != (n2 < 0));
+        return n1 < n2 ^ n1 < 0 != n2 < 0;
     }
 
     public static boolean isLessThanOrEqualUnsigned(long n1, long n2) {
-        return n1 == n2 || ((n1 < n2) ^ ((n1 < 0) != (n2 < 0)));
+        return n1 == n2 || n1 < n2 ^ n1 < 0 != n2 < 0;
     }
 
     public static long unsignedDiv(long l1, long l2) {
@@ -14,7 +14,7 @@ public class LongHelper {
         if (l1 >= 0L) {
             if (l2 >= 0L)
                 unsignedRes = l1 / l2;
-        } else if (l2 >= 0L && (l1 -= (unsignedRes = ((l1 >>> 1) / l2) << 1) * l2) < 0L || l1 >= l2)
+        } else if (l2 >= 0L && (l1 -= (unsignedRes = (l1 >>> 1) / l2 << 1) * l2) < 0L || l1 >= l2)
             unsignedRes++;
         return unsignedRes;
     }
@@ -36,13 +36,14 @@ public class LongHelper {
      */
 
     /**
-     * Divides an unsigned long a by an unsigned int b. It is supposed that the
-     * most significant bit of b is set to 1, i.e. b < 0
+     * Divides an unsigned long a by an unsigned int b. It is supposed that the most
+     * significant bit of b is set to 1, i.e. b < 0
      *
      * @param a the dividend
      * @param b the divisor
-     * @return the long value containing the unsigned integer remainder in the
-     * left half and the unsigned integer quotient in the right half
+     *
+     * @return the long value containing the unsigned integer remainder in the left
+     *         half and the unsigned integer quotient in the right half
      */
     public static long divideLongByInt(long a, int b) {
         long quot;
@@ -50,8 +51,8 @@ public class LongHelper {
         long bLong = b & 0xffffffffL;
 
         if (a >= 0) {
-            quot = (a / bLong);
-            rem = (a % bLong);
+            quot = a / bLong;
+            rem = a % bLong;
         } else {
             /*
              * Make the dividend positive shifting it right by 1 bit then get the
@@ -77,9 +78,9 @@ public class LongHelper {
                 }
             }
         }
-        if (quot > 0xffffffffl) {
+        if (quot > 0xffffffffL) {
             throw new OverflowException();
         }
-        return (rem << 32) | (quot & 0xffffffffL);
+        return rem << 32 | quot & 0xffffffffL;
     }
 }

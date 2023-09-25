@@ -16,6 +16,7 @@ public class DescriptorTables {
     idt_ptr_t idt_ptr;
     tss_entry_t tss_entry;
     Interrupts interrupts;
+
     public DescriptorTables(Interrupts interrupts, KernelMemory memory) {
         gdt_entries = gdt_entry_t.alloc(6, memory);
         gdt_ptr = gdt_ptr_t.alloc(memory);
@@ -34,10 +35,10 @@ public class DescriptorTables {
     }
 
     private void init_gdt() {
-        gdt_ptr.limit((gdt_entry_t.SIZE * 6) - 1);
+        gdt_ptr.limit(gdt_entry_t.SIZE * 6 - 1);
         gdt_ptr.base(gdt_entries.ptr);
 
-        gdt_set_gate(0, 0, 0, 0, 0);                // Null segment
+        gdt_set_gate(0, 0, 0, 0, 0); // Null segment
         gdt_set_gate(1, 0, 0xFFFFFFFF, 0x9A, 0xCF); // Code segment
         gdt_set_gate(2, 0, 0xFFFFFFFF, 0x92, 0xCF); // Data segment
         gdt_set_gate(3, 0, 0xFFFFFFFF, 0xFA, 0xCF); // User mode code segment
@@ -49,7 +50,7 @@ public class DescriptorTables {
     }
 
     private void gdt_flush(int value) {
-        int v1 = (Memory.mem_readd(value + 2) & 0xFFFFFF);
+        int v1 = Memory.mem_readd(value + 2) & 0xFFFFFF;
         int v0 = Memory.mem_readw(value);
         CPU.CPU_LGDT(v0, v1);
         // 0x10 is the offset in the GDT to our data segment
@@ -76,12 +77,12 @@ public class DescriptorTables {
 
     // Set the value of one GDT entry.
     private void gdt_set_gate(int num, int base, int limit, int access, int gran) {
-        gdt_entries.base_low(num, (base & 0xFFFF));
-        gdt_entries.base_middle(num, (base >> 16) & 0xFF);
-        gdt_entries.base_high(num, (base >> 24) & 0xFF);
+        gdt_entries.base_low(num, base & 0xFFFF);
+        gdt_entries.base_middle(num, base >> 16 & 0xFF);
+        gdt_entries.base_high(num, base >> 24 & 0xFF);
 
-        gdt_entries.limit_low(num, (limit & 0xFFFF));
-        gdt_entries.granularity(num, ((limit >> 16) & 0x0F) | (gran & 0xF0));
+        gdt_entries.limit_low(num, limit & 0xFFFF);
+        gdt_entries.granularity(num, limit >> 16 & 0x0F | gran & 0xF0);
         gdt_entries.access(num, access);
     }
 
@@ -97,7 +98,7 @@ public class DescriptorTables {
         // Ensure the descriptor is initially zero.
         tss_entry.clear();
 
-        tss_entry.ss0(ss0);  // Set the kernel stack segment.
+        tss_entry.ss0(ss0); // Set the kernel stack segment.
         tss_entry.esp0(esp0); // Set the kernel stack pointer.
 
         // Here we set the cs, ss, ds, es, fs and gs entries in the TSS. These specify what
@@ -189,14 +190,14 @@ public class DescriptorTables {
     }
 
     private void idt_flush(int value) {
-        int v1 = (Memory.mem_readd(value + 2) & 0xFFFFFF);
+        int v1 = Memory.mem_readd(value + 2) & 0xFFFFFF;
         int v0 = Memory.mem_readw(value);
         CPU.CPU_LIDT(v0, v1);
     }
 
     private void idt_set_gate(int num, int base, int sel, int flags) {
         idt_entries.base_lo(num, base & 0xFFFF);
-        idt_entries.base_hi(num, (base >> 16) & 0xFFFF);
+        idt_entries.base_hi(num, base >> 16 & 0xFFFF);
 
         idt_entries.sel(num, sel);
         idt_entries.always0(num, 0);
@@ -214,9 +215,9 @@ public class DescriptorTables {
         //u8int  granularity;
         //u8int  base_high;           // The last 8 bits of the base.
 
-        final static public int SIZE = 8;
+        public static final int SIZE = 8;
 
-        static public gdt_entry_t alloc(int count, KernelMemory memory) {
+        public static gdt_entry_t alloc(int count, KernelMemory memory) {
             gdt_entry_t result = new gdt_entry_t();
             result.ptr = memory.kmalloc(SIZE * count);
             return result;
@@ -254,9 +255,9 @@ public class DescriptorTables {
         //u16int limit;               // The upper 16 bits of all selector limits.
         //u32int base;                // The address of the first gdt_entry_t struct.
 
-        final static public int SIZE = 6;
+        public static final int SIZE = 6;
 
-        static public gdt_ptr_t alloc(KernelMemory memory) {
+        public static gdt_ptr_t alloc(KernelMemory memory) {
             gdt_ptr_t result = new gdt_ptr_t();
             result.ptr = memory.kmalloc(SIZE);
             return result;
@@ -278,10 +279,10 @@ public class DescriptorTables {
         //u8int  always0;             // This must always be zero.
         //u8int  flags;               // More flags. See documentation.
         //u16int base_hi;             // The upper 16 bits of the address to jump to.
-        final static public int SIZE = 8;
+        public static final int SIZE = 8;
         private int count;
 
-        static public idt_entry_t alloc(int count, KernelMemory memory) {
+        public static idt_entry_t alloc(int count, KernelMemory memory) {
             idt_entry_t result = new idt_entry_t();
             result.ptr = memory.kmalloc(SIZE * count);
             result.count = count;
@@ -318,9 +319,9 @@ public class DescriptorTables {
     private static class idt_ptr_t extends Address {
         //u16int limit;
         //u32int base;                // The address of the first element in our idt_entry_t array.
-        final static public int SIZE = 6;
+        public static final int SIZE = 6;
 
-        static public idt_ptr_t alloc(KernelMemory memory) {
+        public static idt_ptr_t alloc(KernelMemory memory) {
             idt_ptr_t result = new idt_ptr_t();
             result.ptr = memory.kmalloc(SIZE);
             return result;
@@ -365,9 +366,9 @@ public class DescriptorTables {
         //u16int trap;
         //u16int iomap_base;
 
-        final static public int SIZE = 104;
+        public static final int SIZE = 104;
 
-        static public tss_entry_t alloc(KernelMemory memory) {
+        public static tss_entry_t alloc(KernelMemory memory) {
             tss_entry_t result = new tss_entry_t();
             result.ptr = memory.kmalloc(SIZE);
             return result;

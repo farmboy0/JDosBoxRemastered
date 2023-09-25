@@ -3,11 +3,11 @@ package jdos.dos;
 import jdos.util.IntRef;
 
 public class Dos_keyboard_layout {
-    static public final int KEYB_NOERROR = 0;
-    static public final int KEYB_FILENOTFOUND = 1;
-    static public final int KEYB_INVALIDFILE = 2;
-    static public final int KEYB_LAYOUTNOTFOUND = 3;
-    static public final int KEYB_INVALIDCPFILE = 4;
+    public static final int KEYB_NOERROR = 0;
+    public static final int KEYB_FILENOTFOUND = 1;
+    public static final int KEYB_INVALIDFILE = 2;
+    public static final int KEYB_LAYOUTNOTFOUND = 3;
+    public static final int KEYB_INVALIDCPFILE = 4;
     //
 //
 //    keyboard_layout::~keyboard_layout() {
@@ -928,7 +928,7 @@ public class Dos_keyboard_layout {
 //    }
 //
 //
-    static private final keyboard_layout loaded_layout = null;
+    private static final keyboard_layout loaded_layout = null;
 
     //
 //// CTRL-ALT-F2 switches between foreign and US-layout using this function
@@ -944,7 +944,7 @@ public class Dos_keyboard_layout {
 //        else return false;
 //    }
 //
-    static public /*Bitu*/int DOS_LoadKeyboardLayout(String layoutname, /*Bit32s*/int codepage, String codepagefile) {
+    public static /*Bitu*/int DOS_LoadKeyboardLayout(String layoutname, /*Bit32s*/int codepage, String codepagefile) {
 //        keyboard_layout * temp_layout=new keyboard_layout();
 //        // try to read the layout for the specified codepage
 //        Bitu kerrcode=temp_layout->read_keyboard_file(layoutname, codepage);
@@ -964,7 +964,7 @@ public class Dos_keyboard_layout {
     }
 
     //
-    static public /*Bitu*/int DOS_SwitchKeyboardLayout(String new_layout, /*Bit32s*/IntRef tried_cp) {
+    public static /*Bitu*/int DOS_SwitchKeyboardLayout(String new_layout, /*Bit32s*/IntRef tried_cp) {
         if (loaded_layout != null) {
 //            keyboard_layout* changed_layout=NULL;
 //            Bitu ret_code=loaded_layout->switch_keyboard_layout(new_layout, changed_layout, tried_cp);
@@ -975,19 +975,20 @@ public class Dos_keyboard_layout {
 //            }
 //            return ret_code;
             return 0xff; // :TODO: remove
-        } else return 0xff;
+        } else
+            return 0xff;
     }
 
     //
 // get currently loaded layout name (NULL if no layout is loaded)
-    static public String DOS_GetLoadedLayout() {
+    public static String DOS_GetLoadedLayout() {
 //        if (loaded_layout) {
 //            return loaded_layout->get_layout_name();
 //        }
         return null;
     }
 
-    //    static private RandomAccessFile OpenDosboxFile(String name) {
+    //    private static RandomAccessFile OpenDosboxFile(String name) {
 //        ShortRef drive = new ShortRef();
 //        StringRef fullname = new StringRef();
 //
@@ -1009,7 +1010,7 @@ public class Dos_keyboard_layout {
 //    }
 //
 //
-    static private class keyboard_layout {
+    private static class keyboard_layout {
 //    public:
 //        keyboard_layout() {
 //            this->reset();

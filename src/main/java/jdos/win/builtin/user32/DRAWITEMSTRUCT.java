@@ -5,15 +5,16 @@ import jdos.win.system.WinRect;
 
 public class DRAWITEMSTRUCT extends WinAPI {
     public static final int SIZE = 48;
-    public int CtlType;    /* Type of control (ODT_* flags from "winuser.h") */
-    public int CtlID;      /* Control ID */
-    public int itemID;     /* Menu item ID */
+    public int CtlType; /* Type of control (ODT_* flags from "winuser.h") */
+    public int CtlID; /* Control ID */
+    public int itemID; /* Menu item ID */
     public int itemAction; /* Action to perform (ODA_* flags from "winuser.h") */
-    public int itemState;  /* Item state (ODS_* flags from "winuser.h") */
-    public int hwndItem;   /* Control window */
-    public int hDC;        /* Device context to draw to */
-    public WinRect rcItem;     /* Position of the control in hDC */
-    public int itemData;   /* Extra data added by the application, if any */
+    public int itemState; /* Item state (ODS_* flags from "winuser.h") */
+    public int hwndItem; /* Control window */
+    public int hDC; /* Device context to draw to */
+    public WinRect rcItem; /* Position of the control in hDC */
+    public int itemData; /* Extra data added by the application, if any */
+
     public DRAWITEMSTRUCT() {
         rcItem = new WinRect();
     }

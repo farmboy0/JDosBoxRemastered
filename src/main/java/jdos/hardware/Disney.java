@@ -4,9 +4,7 @@ import jdos.misc.setup.Module_base;
 import jdos.misc.setup.Section;
 
 public class Disney extends Module_base {
-    public static Section.SectionFunction DISNEY_Init = new Section.SectionFunction() {
-        public void call(Section section) {
-        }
+    public static Section.SectionFunction DISNEY_Init = section -> {
     };
 
     public Disney(Section configuration) {
