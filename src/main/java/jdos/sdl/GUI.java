@@ -1,6 +1,8 @@
 package jdos.sdl;
 
 public interface GUI {
+    void setLocation();
+
     void setSize(int cx, int cy);
 
     void dopaint();

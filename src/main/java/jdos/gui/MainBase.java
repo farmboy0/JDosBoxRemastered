@@ -1,6 +1,5 @@
 package jdos.gui;
 
-import java.awt.Point;
 import java.io.File;
 import java.util.Vector;
 
@@ -134,8 +133,7 @@ public class MainBase {
 
         JavaMapper.MAPPER_AddHandler(KillSwitch, Mapper.MapKeys.MK_f9, Mapper.MMOD1, "shutdown", "ShutDown");
         JavaMapper.MAPPER_AddHandler(CaptureMouse, Mapper.MapKeys.MK_f10, Mapper.MMOD1, "capmouse", "Cap Mouse");
-        JavaMapper.MAPPER_AddHandler(SwitchFullScreen, Mapper.MapKeys.MK_return, Mapper.MMOD2, "fullscr",
-            "Fullscreen");
+        JavaMapper.MAPPER_AddHandler(SwitchFullScreen, Mapper.MapKeys.MK_return, Mapper.MMOD2, "fullscr", "Fullscreen");
         if (Config.C_DEBUG) {
             /* Pause binds with activate-debugger */
         } else {
@@ -429,7 +427,7 @@ public class MainBase {
         System.exit(0);
     }
 
-    static void main(GUI g, String[] args) {
+    public static void main(GUI g, String[] args) {
         gui = g;
         while (true) {
             CPU.initialize();
@@ -537,16 +535,15 @@ public class MainBase {
 
             Dosbox.control.ParseEnv();
             Dosbox.control.Init();
-            Section_prop sdl_sec = (Section_prop) Dosbox.control.GetSection("sdl");
-            if (Dosbox.control.cmdline.FindExist("-fullscreen") || sdl_sec.Get_bool("fullscreen")) {
+            gui.setLocation();
+            Section_prop sdlSection = (Section_prop) Dosbox.control.GetSection("sdl");
+            if (Dosbox.control.cmdline.FindExist("-fullscreen") || sdlSection.Get_bool("fullscreen")) {
                 gui.fullScreenToggle();
             }
             JavaMapper.MAPPER_Init();
             while ((path = Dosbox.control.cmdline.FindString("-mapper", true)) != null) {
                 JavaMapper.MAPPER_LoadBinds(path);
             }
-            MainFrame.frame.setLocation(new Point(((Section_prop) Dosbox.control.GetSection("sdl")).Get_int("posx"),
-                ((Section_prop) Dosbox.control.GetSection("sdl")).Get_int("posy")));
 
             /* Start up main machine */
             try {
