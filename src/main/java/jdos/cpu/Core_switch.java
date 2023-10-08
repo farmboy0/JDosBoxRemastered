@@ -55,7 +55,7 @@ public class Core_switch extends CPU_Regs {
             }
             // page doesn't contain code or is special
             if (chandler == null)
-                return Core_normal.CPU_Core_Normal_Run.call();
+                return Core_normal.cpu_core_normal_run();
 
             // find correct Dynamic Block to run
             CacheBlockDynRec block = chandler.FindCacheBlock(page_ip_point);
@@ -71,7 +71,7 @@ public class Core_switch extends CPU_Regs {
                     int old_cycles = CPU.CPU_Cycles;
                     CPU.CPU_Cycles = 1;
                     /*Bits*/
-                    int nc_retcode = Core_normal.CPU_Core_Normal_Run.call();
+                    int nc_retcode = Core_normal.cpu_core_normal_run();
                     if (nc_retcode == 0) {
                         CPU.CPU_Cycles = old_cycles - 1;
                         continue;
@@ -1374,8 +1374,7 @@ public class Core_switch extends CPU_Regs {
                         case CALL32_EP:
                             Flags.FillFlags();
                             eaa = eaSlow(b);
-                            CPU.CPU_CALL(false, Memory.mem_readw(eaa + 4), Memory.mem_readd(eaa),
-                                reg_eip + b.eipCount);
+                            CPU.CPU_CALL(false, Memory.mem_readw(eaa + 4), Memory.mem_readd(eaa), reg_eip + b.eipCount);
                             if (GETFLAG(TF) != 0) {
                                 CPU.cpudecoder = Core_switch.CPU_Core_Switch_Trap_Run;
                                 return Callback.CBRET_NONE;
@@ -2029,8 +2028,8 @@ public class Core_switch extends CPU_Regs {
                             reg_eip += b.eipCount;
                             continue;
                         case XLAT16:
-                            reg_eax.low(
-                                Memory.mem_readb(b.eaa_segPhys.dword + (reg_ebx.word() + reg_eax.low() & 0xFFFF)));
+                            reg_eax
+                                .low(Memory.mem_readb(b.eaa_segPhys.dword + (reg_ebx.word() + reg_eax.low() & 0xFFFF)));
                             reg_eip += b.eipCount;
                             continue;
                         case XLAT32:
@@ -2181,8 +2180,7 @@ public class Core_switch extends CPU_Regs {
                         case JMP16_EP:
                             Flags.FillFlags();
                             eaa = eaSlow(b);
-                            CPU.CPU_JMP(false, Memory.mem_readw(eaa + 2), Memory.mem_readw(eaa),
-                                reg_eip + b.eipCount);
+                            CPU.CPU_JMP(false, Memory.mem_readw(eaa + 2), Memory.mem_readw(eaa), reg_eip + b.eipCount);
                             if (GETFLAG(TF) != 0) {
                                 CPU.cpudecoder = Core_switch.CPU_Core_Switch_Trap_Run;
                                 return Callback.CBRET_NONE;
@@ -2192,8 +2190,7 @@ public class Core_switch extends CPU_Regs {
                         case JMP32_EP:
                             Flags.FillFlags();
                             eaa = eaSlow(b);
-                            CPU.CPU_JMP(false, Memory.mem_readw(eaa + 4), Memory.mem_readd(eaa),
-                                reg_eip + b.eipCount);
+                            CPU.CPU_JMP(false, Memory.mem_readw(eaa + 4), Memory.mem_readd(eaa), reg_eip + b.eipCount);
                             if (GETFLAG(TF) != 0) {
                                 CPU.cpudecoder = Core_switch.CPU_Core_Switch_Trap_Run;
                                 return Callback.CBRET_NONE;
@@ -2532,14 +2529,12 @@ public class Core_switch extends CPU_Regs {
                             break;
                         case CALL16_EP_E16:
                             eaa = eaSlow(b);
-                            CPU.CPU_CALL(false, Memory.mem_readw(eaa + 2), Memory.mem_readw(eaa),
-                                reg_eip + b.eipCount);
+                            CPU.CPU_CALL(false, Memory.mem_readw(eaa + 2), Memory.mem_readw(eaa), reg_eip + b.eipCount);
                             block = null;
                             break;
                         case CALL32_EP_E32:
                             eaa = eaSlow(b);
-                            CPU.CPU_CALL(true, Memory.mem_readw(eaa + 4), Memory.mem_readd(eaa),
-                                reg_eip + b.eipCount);
+                            CPU.CPU_CALL(true, Memory.mem_readw(eaa + 4), Memory.mem_readd(eaa), reg_eip + b.eipCount);
                             block = null;
                             break;
                         case JMP16_R16:
@@ -3217,7 +3212,7 @@ public class Core_switch extends CPU_Regs {
 
         // let the normal core execute the next (only one!) instruction
         /*Bits*/
-        int ret = Core_normal.CPU_Core_Normal_Run.call();
+        int ret = Core_normal.cpu_core_normal_run();
 
         // trap to int1 unless the last instruction deferred this
         // (allows hardware interrupts to be served without interaction)

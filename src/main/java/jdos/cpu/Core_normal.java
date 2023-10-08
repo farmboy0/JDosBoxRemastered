@@ -8,25 +8,14 @@ import jdos.types.LogSeverities;
 import jdos.types.LogTypes;
 
 public class Core_normal extends Prefix_66_0f {
-    public static final String[] desc = { "ADD", "ADD", "ADD", "ADD", "ADD", "ADD", "PUSH ES", "POP ES", "OR", "OR",
-        "OR", "OR", "OR", "OR", "PUSH CS", "2 byte", "ADC", "ADC", "ADC", "ADC", "ADC", "ADC", "PUSH SS", "POP SS",
-        "SBB", "SBB", "SBB", "SBB", "SBB", "SBB", "PUSH DS", "POP DS", "AND", "AND", "ABD", "ABD", "ABD", "ABD",
-        "SEG ES", "DAA", "SUB", "SUB", "SUB", "SUB", "SUB", "SUB", "SEG CS", "DAS", "XOR", "XOR", "XOR", "XOR", "XOR",
-        "XOR", "SEG SS", "AAA", "CMP", "CMP", "CMP", "CMP", "CMP", "CMP", "SEG DS", "AAS", "INC", "INC", "INC", "INC",
-        "INC", "INC", "INC", "INC", "DEC", "DEC", "DEC", "DEC", "DEC", "DEC", "DEC", "DEC", "PUSH", "PUSH", "PUSH",
-        "PUSH", "PUSH", "PUSH", "PUSH", "PUSH", "POP", "POP", "POP", "POP", "POP", "POP", "POP", "POP", "PUSHA", "POPA",
-        "BOUND", "ARPL", "SEG FS", "SEG GS", "SIZE PREF", "ADDR PREF", "PUSH", "IMUL", "PUSH", "IMUL", "INSB", "INSW",
-        "OUTSB", "OUTSW", "JO", "JNO", "JB", "JNB", "JZ", "JNZ", "JBE", "JNBE", "JS", "JNS", "JP", "JNP", "JL", "JNL",
-        "JLE", "JNLE", };
-    public static boolean log = false;
     public static int start = 0;
-    public static int count = 1;
-    public static CPU.CPU_Decoder CPU_Core_Normal_Run = () -> {
-        //System.out.println("CPU_Core_Normal_Run");
+
+    public static final CPU.CPU_Decoder CPU_Core_Normal_Run = Core_normal::cpu_core_normal_run;
+    public static final CPU.CPU_Decoder CPU_Core_Normal_Trap_Run = Core_normal::cpu_core_normal_trap_run;
+
+    static int cpu_core_normal_run() {
         while (CPU.CPU_Cycles-- > 0) {
-            // inlined
-            //LOADIP();
-            cseip = CPU_Regs.reg_csPhys.dword + CPU_Regs.reg_eip;
+            LOADIP();
             if (CPU.cpu.code.big) {
                 opcode_index = 0x200;
                 prefixes = 1;
@@ -39,97 +28,72 @@ public class Core_normal extends Prefix_66_0f {
             base_ds = CPU_Regs.reg_dsPhys.dword;
             base_ss = CPU_Regs.reg_ssPhys.dword;
             base_val_ds = ds;
-//                if (Config.C_DEBUG) {
-//                    if (Config.C_HEAVY_DEBUG) {
-//                        if (Debug.DEBUG_HeavyIsBreakpoint()) {
-//                            Flags.FillFlags();
-//                            return Debug.debugCallback;
-//                        }
-//                    }
-//                    Debug.cycle_count++;
-//                }
-            //restart_opcode:
-            while (true) {
+
+            int result;
+            do {
                 int c = opcode_index + Fetchb();
                 if ((prefixes & PREFIX_LOCK) != 0) {
                     if (Core.isInvalidLock(c & ~0x200)) {
                         CPU.CPU_Exception(6, 0);
                     }
-                    prefixes &= ~PREFIX_LOCK;// only check the prefix once
+                    prefixes &= ~PREFIX_LOCK; // only check the prefix once
                 }
-//                    last = c;
-//                    if (Config.DEBUG_LOG)
-//                        Debug.start(Debug.TYPE_CPU, c);
-//                    try {
-//                    Record.op(c);
-//                    if (count>0) {
-//                        System.out.println(String.format("%d %06x:%08x %3s %-8s EAX=%08x ECX=%08x EDX=%08x EBX=%08x ESP=%08x EBP=%08x ESI=%08x EDI=%08x FLAGS=%04x", count, CPU_Regs.reg_csVal.dword, CPU_Regs.reg_eip, Integer.toHexString(c), (desc.length > c ? " " + desc[c] : ""), CPU_Regs.reg_eax.dword, CPU_Regs.reg_ecx.dword, CPU_Regs.reg_edx.dword, CPU_Regs.reg_ebx.dword, CPU_Regs.reg_esp.dword, CPU_Regs.reg_ebp.dword, CPU_Regs.reg_esi.dword, CPU_Regs.reg_edi.dword, CPU_Regs.flags));
-//                        count++;
-//                        if (count % 5000 == 0) {
-//                            int ii = 0;
-//                        }
-//                    }
-                int result = ops[c].call();
-                if (result != HANDLED) {
-                    if (result == CONTINUE) {
+
+                result = ops[c].call();
+                switch (result) {
+                    case HANDLED:
+                        SAVEIP();
                         break;
-                    } else if (result == RETURN) {
+                    case RETURN:
                         return returnValue;
-                    } else if (result == RESTART) {
-                        continue;
-                    } else if (result == CBRET_NONE) {
+                    case CBRET_NONE:
                         return Callback.CBRET_NONE;
-                    } else if (result == DECODE_END) {
+                    case DECODE_END:
                         SAVEIP();
                         Flags.FillFlags();
                         return Callback.CBRET_NONE;
-                    } else if (result == NOT_HANDLED || result == ILLEGAL_OPCODE) {
+                    case NOT_HANDLED, ILLEGAL_OPCODE:
                         if (Config.C_DEBUG) {
-                            /*Bitu*/
-                            int len = GETIP() - reg_eip;
-                            LOADIP();
-                            if (len > 16)
-                                len = 16;
-                            StringBuilder tempcode = new StringBuilder();
-                            for (; len > 0; len--) {
-                                tempcode.append(Integer.toHexString(Memory.mem_readb(cseip++)));
-                            }
+                            printInstruction();
                         }
-                        if (Log.level <= LogSeverities.LOG_NORMAL)
-                            Log.log(LogTypes.LOG_CPU, LogSeverities.LOG_NORMAL,
-                                "Illegal/Unhandled opcode " + Integer.toHexString(c));
                         CPU.CPU_Exception(6, 0);
-                        break;
-                    }
                 }
-//                    } finally {
-//                        if (Config.DEBUG_LOG)
-//                            Debug.stop(Debug.TYPE_CPU, c);
-//                    }
-
-                // inlined
-                // SAVEIP();
-                CPU_Regs.reg_eip = cseip - CPU_Regs.reg_csPhys.dword;
-                break;
-            }
+            } while (result == RESTART);
         }
         Flags.FillFlags();
         return Callback.CBRET_NONE;
-    };
-    public static CPU.CPU_Decoder CPU_Core_Normal_Trap_Run = () -> {
+    }
+
+    static int cpu_core_normal_trap_run() {
         /*Bits*/
         int oldCycles = CPU.CPU_Cycles;
         CPU.CPU_Cycles = 1;
         CPU.cpu.trap_skip = false;
 
         /*Bits*/
-        int ret = CPU_Core_Normal_Run.call();
+        int ret = cpu_core_normal_run();
         if (!CPU.cpu.trap_skip)
             CPU.CPU_HW_Interrupt(1);
         CPU.CPU_Cycles = oldCycles - 1;
         CPU.cpudecoder = CPU_Core_Normal_Run;
         return ret;
-    };
+    }
+
+    private static void printInstruction() {
+        if (Log.level > LogSeverities.LOG_NORMAL)
+            return;
+
+        /*Bitu*/
+        int len = GETIP() - reg_eip;
+        LOADIP();
+        if (len > 16)
+            len = 16;
+        StringBuilder tempcode = new StringBuilder();
+        for (; len > 0; len--) {
+            tempcode.append(String.format("%02X", Memory.mem_readb(cseip++)));
+        }
+        Log.log(LogTypes.LOG_CPU, LogSeverities.LOG_NORMAL, "Illegal/Unhandled opcode " + tempcode.toString());
+    }
 
     public static void saveState(State state) {
         state.s_opcode_index = opcode_index;

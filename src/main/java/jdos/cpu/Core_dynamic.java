@@ -47,7 +47,7 @@ public class Core_dynamic {
             }
             // page doesn't contain code or is special
             if (chandler == null)
-                return Core_normal.CPU_Core_Normal_Run.call();
+                return Core_normal.cpu_core_normal_run();
 
             // find correct Dynamic Block to run
             CacheBlockDynRec block = chandler.FindCacheBlock(page_ip_point);
@@ -63,7 +63,7 @@ public class Core_dynamic {
                     int old_cycles = CPU.CPU_Cycles;
                     CPU.CPU_Cycles = 1;
                     /*Bits*/
-                    int nc_retcode = Core_normal.CPU_Core_Normal_Run.call();
+                    int nc_retcode = Core_normal.cpu_core_normal_run();
                     if (nc_retcode == 0) {
                         CPU.CPU_Cycles = old_cycles - 1;
                         continue;
@@ -83,8 +83,8 @@ public class Core_dynamic {
                                 + Integer.toString(CPU_Regs.reg_csPhys.dword, 16) + ":"
                                 + Integer.toString(CPU_Regs.reg_eip, 16) + "\n    index=" + i + "\n    "
                                 + Integer.toString(block.originalByteCode[i] & 0xFF, 16) + " cached value\n    "
-                                + Integer.toString(RAM.readb(offset), 16) + " memory value @ " + offset
-                                + "\n    block=" + block);
+                                + Integer.toString(RAM.readb(offset), 16) + " memory value @ " + offset + "\n    block="
+                                + block);
                         }
                     }
                 }
@@ -153,7 +153,7 @@ public class Core_dynamic {
 
         // let the normal core execute the next (only one!) instruction
         /*Bits*/
-        int ret = Core_normal.CPU_Core_Normal_Run.call();
+        int ret = Core_normal.cpu_core_normal_run();
 
         // trap to int1 unless the last instruction deferred this
         // (allows hardware interrupts to be served without interaction)
