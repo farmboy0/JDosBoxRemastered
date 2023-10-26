@@ -3,6 +3,7 @@ package jdos.dos;
 import jdos.cpu.CPU;
 import jdos.cpu.CPU_Regs;
 import jdos.cpu.Callback;
+import jdos.debug.Debug;
 import jdos.hardware.IO;
 import jdos.hardware.Memory;
 import jdos.hardware.Timer;
@@ -774,7 +775,8 @@ public class Dos extends Module_base {
                 }
                     break;
                 case 0x2b: /* Set System Date */
-                    if ((CPU_Regs.reg_ecx.word() < 1980) || CPU_Regs.reg_edx.high() > 12 || CPU_Regs.reg_edx.high() == 0 || (CPU_Regs.reg_edx.low() == 0)) {
+                    if ((CPU_Regs.reg_ecx.word() < 1980) || CPU_Regs.reg_edx.high() > 12 || CPU_Regs.reg_edx.high() == 0
+                        || (CPU_Regs.reg_edx.low() == 0)) {
                         CPU_Regs.reg_eax.low(0xff);
                         break;
                     }
@@ -1058,6 +1060,8 @@ public class Dos extends Module_base {
                     IntRef toread = new IntRef(CPU_Regs.reg_ecx.word());
                     dos.echo = true;
                     if (Dos_files.DOS_ReadFile(CPU_Regs.reg_ebx.word(), dos_copybuf, toread)) {
+                        Debug.listener.file_read((short) CPU_Regs.reg_ebx.word(), toread.value,
+                            CPU_Regs.reg_dsVal.dword, CPU_Regs.reg_edx.word());
                         Memory.MEM_BlockWrite(CPU_Regs.reg_dsPhys.dword + CPU_Regs.reg_edx.word(), dos_copybuf,
                             toread.value);
                         CPU_Regs.reg_eax.word(toread.value);
@@ -1100,6 +1104,7 @@ public class Dos extends Module_base {
                     LongRef pos = new LongRef(
                         ((long) CPU_Regs.reg_ecx.word() << 16) + CPU_Regs.reg_edx.word() & 0xFFFFFFFFL);
                     if (Dos_files.DOS_SeekFile(CPU_Regs.reg_ebx.word(), pos, CPU_Regs.reg_eax.low())) {
+                        Debug.listener.file_seek((short) CPU_Regs.reg_ebx.word(), pos.value);
                         CPU_Regs.reg_edx.word((/*Bit16u*/int) (pos.value >>> 16));
                         CPU_Regs.reg_eax.word((/*Bit16u*/int) (pos.value & 0xFFFF));
                         Callback.CALLBACK_SCF(false);

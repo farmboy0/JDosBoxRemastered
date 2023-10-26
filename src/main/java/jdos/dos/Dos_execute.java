@@ -7,6 +7,7 @@ import jdos.cpu.CPU;
 import jdos.cpu.CPU_Regs;
 import jdos.cpu.Callback;
 import jdos.cpu.Core_normal;
+import jdos.debug.Debug;
 import jdos.dos.drives.Drive_fat;
 import jdos.dos.drives.Drive_local;
 import jdos.dos.drives.Drive_zip;
@@ -337,21 +338,20 @@ public class Dos_execute {
             Dos.DOS_SetError(Dos.DOSERR_FILE_NOT_FOUND);
             return false;
         }
-        if (Dos_files.Files[Dos.RealHandle(fhandle.value)] instanceof Drive_local.localFile) {
-            String path = ((Drive_local.localFile) Dos_files.Files[Dos.RealHandle(fhandle.value)]).GetPath();
-            if (winRun(path)) {
-                return true;
-            }
-        } else if (Dos_files.Files[Dos.RealHandle(fhandle.value)] instanceof Drive_zip.Zip_File) {
-            String path = "" + (char) ('A' + Dos_files.Files[Dos.RealHandle(fhandle.value)].GetDrive());
-            if (winRun(path)) {
-                return true;
-            }
-        } else if (Dos_files.Files[Dos.RealHandle(fhandle.value)] instanceof Drive_fat.fatFile) {
+        String path = null;
+        if (Dos_files.Files[Dos.RealHandle(fhandle.value)] instanceof Drive_local.localFile local) {
+            path = local.GetPath();
+        } else if (Dos_files.Files[Dos.RealHandle(fhandle.value)] instanceof Drive_zip.Zip_File zip) {
+            path = "" + (char) ('A' + zip.GetDrive());
+        } else if (Dos_files.Files[Dos.RealHandle(fhandle.value)] instanceof Drive_fat.fatFile fat) {
             Drive_fat.fatFile file = (Drive_fat.fatFile) Dos_files.Files[Dos.RealHandle(fhandle.value)];
-            if (winRun(file.myDrive, file, "C:\\" + file.myDrive.curdir + file.name)) {
+            path = "C:\\" + file.myDrive.curdir + file.name;
+            if (winRun(file.myDrive, file, path)) {
                 return true;
             }
+        }
+        if (winRun(path)) {
+            return true;
         }
 
         IntRef len = new IntRef(EXE_Header.size);
@@ -523,17 +523,21 @@ public class Dos_execute {
             SetupCMDLine(pspseg.value, block);
         }
         Callback.CALLBACK_SCF(false); /* Carry flag cleared for caller if successfull */
-        if (flags == OVERLAY)
+        if (flags == OVERLAY) {
+            Debug.listener.overlay_loaded(path, loadseg);
             return true; /* Everything done for overlays */
+        }
         /*RealPt*/
         int csip, sssp;
         if (iscom) {
             csip = Memory.RealMake(pspseg.value, 0x100);
             sssp = Memory.RealMake(pspseg.value, 0xfffe);
+            Debug.listener.com_loaded(path, loadseg, flags == LOADNGO, pspseg.value, 0x100);
             Memory.mem_writew(Memory.PhysMake(pspseg.value, 0xfffe), 0);
         } else {
             csip = Memory.RealMake(loadseg + head.initCS, head.initIP);
             sssp = Memory.RealMake(loadseg + head.initSS, head.initSP);
+            Debug.listener.exe_loaded(path, loadseg, flags == LOADNGO);
             if (head.initSP < 4)
                 Log.log(LogTypes.LOG_EXEC, LogSeverities.LOG_ERROR, "stack underflow/wrap at EXEC");
         }

@@ -8,6 +8,47 @@ import jdos.cpu.CPU_Regs;
 import jdos.misc.setup.Section;
 
 public class Debug {
+    public static DebugListener listener = new DebugListener() {
+
+        @Override
+        public void execution_start(int eax, int ebx, int ecx, int edx, int esi, int edi, int ebp, int eip, int esp,
+            int cs, int ds, int es, int fs, int gs, int ss) {
+//            System.out.printf("%04X:%04X%n", cs, eip);
+        }
+
+        @Override
+        public void interrupt_start(int num, int type) {
+        }
+
+        @Override
+        public void interrupt_exit() {
+        }
+
+        @Override
+        public void com_loaded(String file, int loadsegment, boolean execute, int initCS, int initEIP) {
+        }
+
+        @Override
+        public void exe_loaded(String file, int loadsegment, boolean execute) {
+        }
+
+        @Override
+        public void overlay_loaded(String file, int loadsegment) {
+        }
+
+        @Override
+        public void file_seek(String file, long fileOffset) {
+        }
+
+        @Override
+        public void file_read(String file, int length, int targetSegment, int targetOffset) {
+        }
+
+        @Override
+        public void file_read(String file, long fileOffset, int lnegth, int targetSegment, int targetOffset) {
+        }
+    };
+
     public static final int INSTRUCTION = 1;
     public static final int FETCHB = 2;
     public static final int FETCHW = 3;

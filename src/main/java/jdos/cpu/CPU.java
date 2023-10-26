@@ -936,6 +936,7 @@ public class CPU extends Module_base {
     private static void CPU_Interrupt(/*Bitu*/int num, /*Bitu*/int type, /*Bitu*/int oldeip) {
         lastint = num;
         Flags.FillFlags();
+        Debug.listener.interrupt_start(num, type);
         if (Config.C_DEBUG) {
             switch (num) {
                 case 0xcd:
@@ -1197,6 +1198,7 @@ public class CPU extends Module_base {
 
     public static void CPU_IRET(boolean use32, /*Bitu*/int oldeip) {
         iret = true;
+        Debug.listener.interrupt_exit();
         if (!cpu.pmode) { /* RealMode IRET */
             if (use32) {
                 CPU_Regs.reg_eip = CPU_Pop32();

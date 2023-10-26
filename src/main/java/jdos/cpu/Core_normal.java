@@ -1,6 +1,7 @@
 package jdos.cpu;
 
 import jdos.cpu.core_normal.Prefix_66_0f;
+import jdos.debug.Debug;
 import jdos.hardware.Memory;
 import jdos.misc.Log;
 import jdos.misc.setup.Config;
@@ -28,6 +29,8 @@ public class Core_normal extends Prefix_66_0f {
             base_ds = CPU_Regs.reg_dsPhys.dword;
             base_ss = CPU_Regs.reg_ssPhys.dword;
             base_val_ds = ds;
+
+            Debug.listener.execution_start();
 
             int result;
             do {

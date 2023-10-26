@@ -3,6 +3,7 @@ package jdos.dos;
 import java.util.Random;
 
 import jdos.cpu.CPU_Regs;
+import jdos.debug.Debug;
 import jdos.dos.drives.Drive_virtual;
 import jdos.hardware.Memory;
 import jdos.ints.Bios;
@@ -1171,8 +1172,11 @@ public class Dos_files {
             while (i < rec_size.value)
                 Dos.dos_copybuf[i++] = 0;
         }
-        Memory.MEM_BlockWrite(Memory.Real2Phys(Dos.dos.dta()) + recno * rec_size.value, Dos.dos_copybuf,
-            rec_size.value);
+        int dta = Dos.dos.dta();
+        Debug.listener.file_read(fhandle.value, pos.value, toread.value, Memory.RealSeg(dta),
+            Memory.RealOff(dta) + recno * rec_size.value);
+        Memory.MEM_BlockWrite(Memory.Real2Phys(dta) + recno * rec_size.value, Dos.dos_copybuf, rec_size.value);
+
         if (++cur_rec.value > 127) {
             cur_block.value++;
             cur_rec.value = 0;
@@ -1503,7 +1507,8 @@ public class Dos_files {
     public static boolean DOS_GetFileDate(/*Bit16u*/int entry, /*Bit16u*/IntRef otime, /*Bit16u*/IntRef odate) {
         /*Bit32u*/
         int handle = Dos.RealHandle(entry);
-        if ((handle >= DOS_FILES) || Files[handle] == null || !Files[handle].IsOpen() || !Files[handle].UpdateDateTimeFromHost()) {
+        if ((handle >= DOS_FILES) || Files[handle] == null || !Files[handle].IsOpen()
+            || !Files[handle].UpdateDateTimeFromHost()) {
             Dos.DOS_SetError(Dos.DOSERR_INVALID_HANDLE);
             return false;
         }
