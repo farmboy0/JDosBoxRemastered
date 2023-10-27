@@ -1,7 +1,8 @@
 package jdos.win.system;
 
-import java.awt.event.KeyEvent;
 import java.util.BitSet;
+
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 
 import jdos.gui.Main;
 import jdos.misc.Log;
@@ -18,127 +19,127 @@ public class WinKeyboard {
         boolean extended = false;
 
         switch (key.getKeyCode()) {
-            case KeyEvent.VK_ESCAPE:
+            case NativeKeyEvent.VC_ESCAPE:
                 result = 0x1B;
                 break;
-            case KeyEvent.VK_NUMPAD1:
+            case NativeKeyEvent.VC_NUMPAD1:
                 result = 0x61;
                 break;
-            case KeyEvent.VK_1:
+            case NativeKeyEvent.VC_1:
                 result = 0x31;
                 break;
-            case KeyEvent.VK_NUMPAD2:
+            case NativeKeyEvent.VC_NUMPAD2:
                 result = 0x62;
                 break;
-            case KeyEvent.VK_2:
+            case NativeKeyEvent.VC_2:
                 result = 0x32;
                 break;
-            case KeyEvent.VK_NUMPAD3:
+            case NativeKeyEvent.VC_NUMPAD3:
                 result = 0x63;
                 break;
-            case KeyEvent.VK_3:
+            case NativeKeyEvent.VC_3:
                 result = 0x33;
                 break;
-            case KeyEvent.VK_NUMPAD4:
+            case NativeKeyEvent.VC_NUMPAD4:
                 result = 0x64;
                 break;
-            case KeyEvent.VK_4:
+            case NativeKeyEvent.VC_4:
                 result = 0x34;
                 break;
-            case KeyEvent.VK_NUMPAD5:
+            case NativeKeyEvent.VC_NUMPAD5:
                 result = 0x65;
                 break;
-            case KeyEvent.VK_5:
+            case NativeKeyEvent.VC_5:
                 result = 0x35;
                 break;
-            case KeyEvent.VK_NUMPAD6:
+            case NativeKeyEvent.VC_NUMPAD6:
                 result = 0x66;
                 break;
-            case KeyEvent.VK_6:
+            case NativeKeyEvent.VC_6:
                 result = 0x36;
                 break;
-            case KeyEvent.VK_NUMPAD7:
+            case NativeKeyEvent.VC_NUMPAD7:
                 result = 0x67;
                 break;
-            case KeyEvent.VK_7:
+            case NativeKeyEvent.VC_7:
                 result = 0x37;
                 break;
-            case KeyEvent.VK_NUMPAD8:
+            case NativeKeyEvent.VC_NUMPAD8:
                 result = 0x68;
                 break;
-            case KeyEvent.VK_8:
+            case NativeKeyEvent.VC_8:
                 result = 0x38;
                 break;
-            case KeyEvent.VK_NUMPAD9:
+            case NativeKeyEvent.VC_NUMPAD9:
                 result = 0x69;
                 break;
-            case KeyEvent.VK_9:
+            case NativeKeyEvent.VC_9:
                 result = 0x39;
                 break;
-            case KeyEvent.VK_NUMPAD0:
+            case NativeKeyEvent.VC_NUMPAD0:
                 result = 0x60;
                 break;
-            case KeyEvent.VK_0:
+            case NativeKeyEvent.VC_0:
                 result = 0x30;
                 break;
-            case KeyEvent.VK_SUBTRACT:
+            case NativeKeyEvent.VC_SUBTRACT:
                 result = 0x6D;
                 break;
-            case KeyEvent.VK_MINUS:
+            case NativeKeyEvent.VC_MINUS:
                 result = 0xBD;
                 break;
-            case KeyEvent.VK_EQUALS:
+            case NativeKeyEvent.VC_EQUALS:
                 result = 0xBB;
                 break;
-            case KeyEvent.VK_BACK_SPACE:
+            case NativeKeyEvent.VC_BACK_SPACE:
                 result = 0x08;
                 break;
-            case KeyEvent.VK_TAB:
+            case NativeKeyEvent.VC_TAB:
                 result = 0x09;
                 break;
 
-            case KeyEvent.VK_Q:
+            case NativeKeyEvent.VC_Q:
                 result = 0x51;
                 break;
-            case KeyEvent.VK_W:
+            case NativeKeyEvent.VC_W:
                 result = 0x57;
                 break;
-            case KeyEvent.VK_E:
+            case NativeKeyEvent.VC_E:
                 result = 0x45;
                 break;
-            case KeyEvent.VK_R:
+            case NativeKeyEvent.VC_R:
                 result = 0x52;
                 break;
-            case KeyEvent.VK_T:
+            case NativeKeyEvent.VC_T:
                 result = 0x54;
                 break;
-            case KeyEvent.VK_Y:
+            case NativeKeyEvent.VC_Y:
                 result = 0x59;
                 break;
-            case KeyEvent.VK_U:
+            case NativeKeyEvent.VC_U:
                 result = 0x55;
                 break;
-            case KeyEvent.VK_I:
+            case NativeKeyEvent.VC_I:
                 result = 0x49;
                 break;
-            case KeyEvent.VK_O:
+            case NativeKeyEvent.VC_O:
                 result = 0x4F;
                 break;
-            case KeyEvent.VK_P:
+            case NativeKeyEvent.VC_P:
                 result = 0x50;
                 break;
 
-            case KeyEvent.VK_OPEN_BRACKET:
+            case NativeKeyEvent.VC_OPEN_BRACKET:
                 result = 0xDB;
                 break;
-            case KeyEvent.VK_CLOSE_BRACKET:
+            case NativeKeyEvent.VC_CLOSE_BRACKET:
                 result = 0xDD;
                 break;
-            case KeyEvent.VK_ENTER:
+            case NativeKeyEvent.VC_ENTER:
                 result = 0x0D;
                 break;
-            case KeyEvent.VK_CONTROL:
-                if (key.getKeyLocation() == KeyEvent.KEY_LOCATION_LEFT) {
+            case NativeKeyEvent.VC_CONTROL:
+                if (key.getKeyLocation() == NativeKeyEvent.KEY_LOCATION_LEFT) {
                     additional = 0xA2;
                     extended = false;
                 } else {
@@ -147,45 +148,45 @@ public class WinKeyboard {
                 }
                 result = 0x11;
                 break;
-            case KeyEvent.VK_A:
+            case NativeKeyEvent.VC_A:
                 result = 0x41;
                 break;
-            case KeyEvent.VK_S:
+            case NativeKeyEvent.VC_S:
                 result = 0x53;
                 break;
-            case KeyEvent.VK_D:
+            case NativeKeyEvent.VC_D:
                 result = 0x44;
                 break;
-            case KeyEvent.VK_F:
+            case NativeKeyEvent.VC_F:
                 result = 0x46;
                 break;
-            case KeyEvent.VK_G:
+            case NativeKeyEvent.VC_G:
                 result = 0x47;
                 break;
-            case KeyEvent.VK_H:
+            case NativeKeyEvent.VC_H:
                 result = 0x48;
                 break;
-            case KeyEvent.VK_J:
+            case NativeKeyEvent.VC_J:
                 result = 0x4A;
                 break;
-            case KeyEvent.VK_K:
+            case NativeKeyEvent.VC_K:
                 result = 0x4B;
                 break;
-            case KeyEvent.VK_L:
+            case NativeKeyEvent.VC_L:
                 result = 0x4C;
                 break;
 
-            case KeyEvent.VK_SEMICOLON:
+            case NativeKeyEvent.VC_SEMICOLON:
                 result = 0xBA;
                 break;
-            case KeyEvent.VK_QUOTE:
+            case NativeKeyEvent.VC_QUOTE:
                 result = 0xDE;
                 break;
-            case KeyEvent.VK_BACK_QUOTE:
+            case NativeKeyEvent.VC_BACK_QUOTE:
                 result = 0xCE;
                 break;
-            case KeyEvent.VK_SHIFT:
-                if (key.getKeyLocation() == KeyEvent.KEY_LOCATION_LEFT) {
+            case NativeKeyEvent.VC_SHIFT:
+                if (key.getKeyLocation() == NativeKeyEvent.KEY_LOCATION_LEFT) {
                     extended = false;
                     additional = 0xA0;
                 } else {
@@ -194,48 +195,48 @@ public class WinKeyboard {
                 }
                 result = 0x10;
                 break;
-            case KeyEvent.VK_BACK_SLASH:
+            case NativeKeyEvent.VC_BACK_SLASH:
                 result = 0xDC;
                 break;
-            case KeyEvent.VK_Z:
+            case NativeKeyEvent.VC_Z:
                 result = 0x5A;
                 break;
-            case KeyEvent.VK_X:
+            case NativeKeyEvent.VC_X:
                 result = 0x58;
                 break;
-            case KeyEvent.VK_C:
+            case NativeKeyEvent.VC_C:
                 result = 0x43;
                 break;
-            case KeyEvent.VK_V:
+            case NativeKeyEvent.VC_V:
                 result = 0x56;
                 break;
-            case KeyEvent.VK_B:
+            case NativeKeyEvent.VC_B:
                 result = 0x42;
                 break;
-            case KeyEvent.VK_N:
+            case NativeKeyEvent.VC_N:
                 result = 0x4E;
                 break;
-            case KeyEvent.VK_M:
+            case NativeKeyEvent.VC_M:
                 result = 0x4D;
                 break;
 
-            case KeyEvent.VK_COMMA:
+            case NativeKeyEvent.VC_COMMA:
                 result = 0xBC;
                 break;
-            case KeyEvent.VK_PERIOD:
+            case NativeKeyEvent.VC_PERIOD:
                 result = 0xBE;
                 break;
-            case KeyEvent.VK_DECIMAL:
+            case NativeKeyEvent.VC_DECIMAL:
                 result = 0x6E;
                 break;
-            case KeyEvent.VK_SLASH:
+            case NativeKeyEvent.VC_SLASH:
                 result = 0xBF;
                 break;
-            case KeyEvent.VK_MULTIPLY:
+            case NativeKeyEvent.VC_MULTIPLY:
                 result = 0x6A;
                 break;
-            case KeyEvent.VK_ALT:
-                if (key.getKeyLocation() == KeyEvent.KEY_LOCATION_LEFT) {
+            case NativeKeyEvent.VC_ALT:
+                if (key.getKeyLocation() == NativeKeyEvent.KEY_LOCATION_LEFT) {
                     additional = 0xA4;
                     extended = false;
                 } else {
@@ -244,105 +245,105 @@ public class WinKeyboard {
                 }
                 result = 0x12;
                 break;
-            case KeyEvent.VK_SPACE:
+            case NativeKeyEvent.VC_SPACE:
                 result = 0x20;
                 break;
-            case KeyEvent.VK_CAPS_LOCK:
+            case NativeKeyEvent.VC_CAPS_LOCK:
                 result = 0x14;
                 break;
 
-            case KeyEvent.VK_F1:
+            case NativeKeyEvent.VC_F1:
                 result = 0x70;
                 break;
-            case KeyEvent.VK_F2:
+            case NativeKeyEvent.VC_F2:
                 result = 0x71;
                 break;
-            case KeyEvent.VK_F3:
+            case NativeKeyEvent.VC_F3:
                 result = 0x72;
                 break;
-            case KeyEvent.VK_F4:
+            case NativeKeyEvent.VC_F4:
                 result = 0x73;
                 break;
-            case KeyEvent.VK_F5:
+            case NativeKeyEvent.VC_F5:
                 result = 0x74;
                 break;
-            case KeyEvent.VK_F6:
+            case NativeKeyEvent.VC_F6:
                 result = 0x75;
                 break;
-            case KeyEvent.VK_F7:
+            case NativeKeyEvent.VC_F7:
                 result = 0x76;
                 break;
-            case KeyEvent.VK_F8:
+            case NativeKeyEvent.VC_F8:
                 result = 0x77;
                 break;
-            case KeyEvent.VK_F9:
+            case NativeKeyEvent.VC_F9:
                 result = 0x78;
                 break;
-            case KeyEvent.VK_F10:
+            case NativeKeyEvent.VC_F10:
                 result = 0x79;
                 break;
 
-            case KeyEvent.VK_NUM_LOCK:
+            case NativeKeyEvent.VC_NUM_LOCK:
                 result = 0x90;
                 break;
-            case KeyEvent.VK_SCROLL_LOCK:
+            case NativeKeyEvent.VC_SCROLL_LOCK:
                 result = 0x91;
                 break;
 
-            case KeyEvent.VK_PLUS:
+            case NativeKeyEvent.VC_PLUS:
                 break;
 
-            case KeyEvent.VK_LESS:
+            case NativeKeyEvent.VC_LESS:
                 break;
-            case KeyEvent.VK_F11:
+            case NativeKeyEvent.VC_F11:
                 result = 0x7A;
                 break;
-            case KeyEvent.VK_F12:
+            case NativeKeyEvent.VC_F12:
                 result = 0x7B;
                 break;
 
             //The Extended keys
 
-            case KeyEvent.VK_DIVIDE:
+            case NativeKeyEvent.VC_DIVIDE:
                 result = 0x6F;
                 break;
-            case KeyEvent.VK_ADD:
+            case NativeKeyEvent.VC_ADD:
                 result = 0x6B;
                 break;
-            case KeyEvent.VK_HOME:
+            case NativeKeyEvent.VC_HOME:
                 result = 0x24;
                 break;
-            case KeyEvent.VK_UP:
+            case NativeKeyEvent.VC_UP:
                 result = 0x26;
                 break;
-            case KeyEvent.VK_PAGE_UP:
+            case NativeKeyEvent.VC_PAGE_UP:
                 result = 0x21;
                 break;
-            case KeyEvent.VK_LEFT:
+            case NativeKeyEvent.VC_LEFT:
                 result = 0x25;
                 break;
-            case KeyEvent.VK_RIGHT:
+            case NativeKeyEvent.VC_RIGHT:
                 result = 0x27;
                 break;
-            case KeyEvent.VK_END:
+            case NativeKeyEvent.VC_END:
                 result = 0x23;
                 break;
-            case KeyEvent.VK_DOWN:
+            case NativeKeyEvent.VC_DOWN:
                 result = 0x28;
                 break;
-            case KeyEvent.VK_PAGE_DOWN:
+            case NativeKeyEvent.VC_PAGE_DOWN:
                 result = 0x22;
                 break;
-            case KeyEvent.VK_INSERT:
+            case NativeKeyEvent.VC_INSERT:
                 result = 0x2D;
                 break;
-            case KeyEvent.VK_DELETE:
+            case NativeKeyEvent.VC_DELETE:
                 result = 0x2E;
                 break;
-            case KeyEvent.VK_PAUSE:
+            case NativeKeyEvent.VC_PAUSE:
                 result = 0x13;
                 break;
-            case KeyEvent.VK_PRINTSCREEN:
+            case NativeKeyEvent.VC_PRINTSCREEN:
                 result = 0x2C;
                 break;
             default:
@@ -359,7 +360,7 @@ public class WinKeyboard {
             int transitionState = 0;
             int msg = 0;
 
-            if (key.getID() == KeyEvent.KEY_PRESSED) {
+            if (key.getID() == NativeKeyEvent.NATIVE_KEY_PRESSED) {
                 msg = WinAPI.WM_KEYDOWN;
                 transitionState = 0; // always 0
                 if (keyState.get(result))
@@ -367,7 +368,7 @@ public class WinKeyboard {
                 keyState.set(result);
                 if (additional != 0)
                     keyState.set(additional);
-            } else if (key.getID() == KeyEvent.KEY_RELEASED) {
+            } else if (key.getID() == NativeKeyEvent.NATIVE_KEY_RELEASED) {
                 msg = WinAPI.WM_KEYUP;
                 repeatCount = 1; // repeat count is always 1
                 previousState = 1; // always 1
@@ -377,210 +378,210 @@ public class WinKeyboard {
                     keyState.clear(additional);
             }
             if (msg != 0)
-                Input.addKeyboardMsg(msg, result, repeatCount | oem << 16 | (extended ? 1 << 24 : 0)
-                    | contextCode << 29 | previousState << 30 | transitionState << 31, (BitSet) keyState.clone());
+                Input.addKeyboardMsg(msg, result, repeatCount | oem << 16 | (extended ? 1 << 24 : 0) | contextCode << 29
+                    | previousState << 30 | transitionState << 31, (BitSet) keyState.clone());
         }
     };
 
     public static int win2java(int winVirtualKeyCode) {
         switch (winVirtualKeyCode) {
             case 0x1B:
-                return KeyEvent.VK_ESCAPE;
+                return NativeKeyEvent.VC_ESCAPE;
             case 0x61:
-                return KeyEvent.VK_NUMPAD1;
+                return NativeKeyEvent.VC_NUMPAD1;
             case 0x31:
-                return KeyEvent.VK_1;
+                return NativeKeyEvent.VC_1;
             case 0x62:
-                return KeyEvent.VK_NUMPAD2;
+                return NativeKeyEvent.VC_NUMPAD2;
             case 0x32:
-                return KeyEvent.VK_2;
+                return NativeKeyEvent.VC_2;
             case 0x63:
-                return KeyEvent.VK_NUMPAD3;
+                return NativeKeyEvent.VC_NUMPAD3;
             case 0x33:
-                return KeyEvent.VK_3;
+                return NativeKeyEvent.VC_3;
             case 0x64:
-                return KeyEvent.VK_NUMPAD4;
+                return NativeKeyEvent.VC_NUMPAD4;
             case 0x34:
-                return KeyEvent.VK_4;
+                return NativeKeyEvent.VC_4;
             case 0x65:
-                return KeyEvent.VK_NUMPAD5;
+                return NativeKeyEvent.VC_NUMPAD5;
             case 0x35:
-                return KeyEvent.VK_5;
+                return NativeKeyEvent.VC_5;
             case 0x66:
-                return KeyEvent.VK_NUMPAD6;
+                return NativeKeyEvent.VC_NUMPAD6;
             case 0x36:
-                return KeyEvent.VK_6;
+                return NativeKeyEvent.VC_6;
             case 0x67:
-                return KeyEvent.VK_NUMPAD7;
+                return NativeKeyEvent.VC_NUMPAD7;
             case 0x37:
-                return KeyEvent.VK_7;
+                return NativeKeyEvent.VC_7;
             case 0x68:
-                return KeyEvent.VK_NUMPAD8;
+                return NativeKeyEvent.VC_NUMPAD8;
             case 0x38:
-                return KeyEvent.VK_8;
+                return NativeKeyEvent.VC_8;
             case 0x69:
-                return KeyEvent.VK_NUMPAD9;
+                return NativeKeyEvent.VC_NUMPAD9;
             case 0x39:
-                return KeyEvent.VK_9;
+                return NativeKeyEvent.VC_9;
             case 0x60:
-                return KeyEvent.VK_NUMPAD0;
+                return NativeKeyEvent.VC_NUMPAD0;
             case 0x30:
-                return KeyEvent.VK_0;
+                return NativeKeyEvent.VC_0;
             case 0x6D:
-                return KeyEvent.VK_SUBTRACT;
-            //case KeyEvent.VK_MINUS:break;
-            //case KeyEvent.VK_EQUALS:break;
+                return NativeKeyEvent.VC_SUBTRACT;
+            //case NativeKeyEvent.VC_MINUS:break;
+            //case NativeKeyEvent.VC_EQUALS:break;
             case 0x08:
-                return KeyEvent.VK_BACK_SPACE;
+                return NativeKeyEvent.VC_BACK_SPACE;
             case 0x09:
-                return KeyEvent.VK_TAB;
+                return NativeKeyEvent.VC_TAB;
 
             case 0x51:
-                return KeyEvent.VK_Q;
+                return NativeKeyEvent.VC_Q;
             case 0x57:
-                return KeyEvent.VK_W;
+                return NativeKeyEvent.VC_W;
             case 0x45:
-                return KeyEvent.VK_E;
+                return NativeKeyEvent.VC_E;
             case 0x52:
-                return KeyEvent.VK_R;
+                return NativeKeyEvent.VC_R;
             case 0x54:
-                return KeyEvent.VK_T;
+                return NativeKeyEvent.VC_T;
             case 0x59:
-                return KeyEvent.VK_Y;
+                return NativeKeyEvent.VC_Y;
             case 0x55:
-                return KeyEvent.VK_U;
+                return NativeKeyEvent.VC_U;
             case 0x49:
-                return KeyEvent.VK_I;
+                return NativeKeyEvent.VC_I;
             case 0x4F:
-                return KeyEvent.VK_O;
+                return NativeKeyEvent.VC_O;
             case 0x50:
-                return KeyEvent.VK_P;
+                return NativeKeyEvent.VC_P;
 
-            //case KeyEvent.VK_OPEN_BRACKET:break;
-            //case KeyEvent.VK_CLOSE_BRACKET:break;
+            //case NativeKeyEvent.VC_OPEN_BRACKET:break;
+            //case NativeKeyEvent.VC_CLOSE_BRACKET:break;
             case 0x0D:
-                return KeyEvent.VK_ENTER;
+                return NativeKeyEvent.VC_ENTER;
             case 0x11:
-                return KeyEvent.VK_CONTROL;
+                return NativeKeyEvent.VC_CONTROL;
             case 0x41:
-                return KeyEvent.VK_A;
+                return NativeKeyEvent.VC_A;
             case 0x53:
-                return KeyEvent.VK_S;
+                return NativeKeyEvent.VC_S;
             case 0x44:
-                return KeyEvent.VK_D;
+                return NativeKeyEvent.VC_D;
             case 0x46:
-                return KeyEvent.VK_F;
+                return NativeKeyEvent.VC_F;
             case 0x47:
-                return KeyEvent.VK_G;
+                return NativeKeyEvent.VC_G;
             case 0x48:
-                return KeyEvent.VK_H;
+                return NativeKeyEvent.VC_H;
             case 0x4A:
-                return KeyEvent.VK_J;
+                return NativeKeyEvent.VC_J;
             case 0x4B:
-                return KeyEvent.VK_K;
+                return NativeKeyEvent.VC_K;
             case 0x4C:
-                return KeyEvent.VK_L;
+                return NativeKeyEvent.VC_L;
 
-            //case KeyEvent.VK_SEMICOLON:break;
-            //case KeyEvent.VK_QUOTE:break;
-            //case KeyEvent.VK_BACK_QUOTE:break;
+            //case NativeKeyEvent.VC_SEMICOLON:break;
+            //case NativeKeyEvent.VC_QUOTE:break;
+            //case NativeKeyEvent.VC_BACK_QUOTE:break;
             case 0x10:
-                return KeyEvent.VK_SHIFT;
+                return NativeKeyEvent.VC_SHIFT;
 
-            //case KeyEvent.VK_BACK_SLASH:break;
+            //case NativeKeyEvent.VC_BACK_SLASH:break;
             case 0x5A:
-                return KeyEvent.VK_Z;
+                return NativeKeyEvent.VC_Z;
             case 0x58:
-                return KeyEvent.VK_X;
+                return NativeKeyEvent.VC_X;
             case 0x43:
-                return KeyEvent.VK_C;
+                return NativeKeyEvent.VC_C;
             case 0x56:
-                return KeyEvent.VK_V;
+                return NativeKeyEvent.VC_V;
             case 0x42:
-                return KeyEvent.VK_B;
+                return NativeKeyEvent.VC_B;
             case 0x4E:
-                return KeyEvent.VK_N;
+                return NativeKeyEvent.VC_N;
             case 0x4D:
-                return KeyEvent.VK_M;
+                return NativeKeyEvent.VC_M;
 
-            //case KeyEvent.VK_COMMA:break;
-            //case KeyEvent.VK_PERIOD:break;
+            //case NativeKeyEvent.VC_COMMA:break;
+            //case NativeKeyEvent.VC_PERIOD:break;
             case 0x6E:
-                return KeyEvent.VK_DECIMAL;
-            //case KeyEvent.VK_SLASH:break;
+                return NativeKeyEvent.VC_DECIMAL;
+            //case NativeKeyEvent.VC_SLASH:break;
             case 0x6A:
-                return KeyEvent.VK_MULTIPLY;
+                return NativeKeyEvent.VC_MULTIPLY;
             case 0x12:
-                return KeyEvent.VK_ALT;
+                return NativeKeyEvent.VC_ALT;
             case 0x20:
-                return KeyEvent.VK_SPACE;
+                return NativeKeyEvent.VC_SPACE;
             case 0x14:
-                return KeyEvent.VK_CAPS_LOCK;
+                return NativeKeyEvent.VC_CAPS_LOCK;
 
             case 0x70:
-                return KeyEvent.VK_F1;
+                return NativeKeyEvent.VC_F1;
             case 0x71:
-                return KeyEvent.VK_F2;
+                return NativeKeyEvent.VC_F2;
             case 0x72:
-                return KeyEvent.VK_F3;
+                return NativeKeyEvent.VC_F3;
             case 0x73:
-                return KeyEvent.VK_F4;
+                return NativeKeyEvent.VC_F4;
             case 0x74:
-                return KeyEvent.VK_F5;
+                return NativeKeyEvent.VC_F5;
             case 0x75:
-                return KeyEvent.VK_F6;
+                return NativeKeyEvent.VC_F6;
             case 0x76:
-                return KeyEvent.VK_F7;
+                return NativeKeyEvent.VC_F7;
             case 0x77:
-                return KeyEvent.VK_F8;
+                return NativeKeyEvent.VC_F8;
             case 0x78:
-                return KeyEvent.VK_F9;
+                return NativeKeyEvent.VC_F9;
             case 0x79:
-                return KeyEvent.VK_F10;
+                return NativeKeyEvent.VC_F10;
 
             case 0x90:
-                return KeyEvent.VK_NUM_LOCK;
+                return NativeKeyEvent.VC_NUM_LOCK;
             case 0x91:
-                return KeyEvent.VK_SCROLL_LOCK;
+                return NativeKeyEvent.VC_SCROLL_LOCK;
 
-            // case KeyEvent.VK_PLUS:break;
+            // case NativeKeyEvent.VC_PLUS:break;
 
-            // case KeyEvent.VK_LESS:break;
+            // case NativeKeyEvent.VC_LESS:break;
             case 0x7A:
-                return KeyEvent.VK_F11;
+                return NativeKeyEvent.VC_F11;
             case 0x7B:
-                return KeyEvent.VK_F12;
+                return NativeKeyEvent.VC_F12;
 
             //The Extended keys
 
             case 0x6F:
-                return KeyEvent.VK_DIVIDE;
+                return NativeKeyEvent.VC_DIVIDE;
             case 0x6B:
-                return KeyEvent.VK_ADD;
+                return NativeKeyEvent.VC_ADD;
             case 0x24:
-                return KeyEvent.VK_HOME;
+                return NativeKeyEvent.VC_HOME;
             case 0x26:
-                return KeyEvent.VK_UP;
+                return NativeKeyEvent.VC_UP;
             case 0x21:
-                return KeyEvent.VK_PAGE_UP;
+                return NativeKeyEvent.VC_PAGE_UP;
             case 0x25:
-                return KeyEvent.VK_LEFT;
+                return NativeKeyEvent.VC_LEFT;
             case 0x27:
-                return KeyEvent.VK_RIGHT;
+                return NativeKeyEvent.VC_RIGHT;
             case 0x23:
-                return KeyEvent.VK_END;
+                return NativeKeyEvent.VC_END;
             case 0x28:
-                return KeyEvent.VK_DOWN;
+                return NativeKeyEvent.VC_DOWN;
             case 0x22:
-                return KeyEvent.VK_PAGE_DOWN;
+                return NativeKeyEvent.VC_PAGE_DOWN;
             case 0x2D:
-                return KeyEvent.VK_INSERT;
+                return NativeKeyEvent.VC_INSERT;
             case 0x2E:
-                return KeyEvent.VK_DELETE;
+                return NativeKeyEvent.VC_DELETE;
             case 0x13:
-                return KeyEvent.VK_PAUSE;
+                return NativeKeyEvent.VC_PAUSE;
             case 0x2C:
-                return KeyEvent.VK_PRINTSCREEN;
+                return NativeKeyEvent.VC_PRINTSCREEN;
         }
         return -1;
     }

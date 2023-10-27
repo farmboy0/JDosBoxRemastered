@@ -1,10 +1,11 @@
 package jdos.sdl;
 
-import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.util.Vector;
+
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 
 import jdos.gui.KeyboardKey;
 import jdos.gui.Mapper;
@@ -143,7 +144,7 @@ public class JavaMapper {
     }
 
     private static String SDL_GetKeyName(int keysym) {
-        return "";
+        return NativeKeyEvent.getKeyText(keysym);
     }
 
     private static void change_action_text(String text, int col) {
@@ -544,7 +545,7 @@ public class JavaMapper {
         return true;
     }
 
-    public static void MAPPER_CheckEvent(KeyEvent event) {
+    public static void MAPPER_CheckEvent(NativeKeyEvent event) {
         for (CBindGroup it : bindgroups) {
             if (it.CheckEvent(event))
                 return;
@@ -564,26 +565,6 @@ public class JavaMapper {
             CreateDefaultBinds();
         }
         MAPPER_SaveBinds();
-//        if (SDL_GetModState()& KMOD_CAPS) {
-//            for (CBindList_it bit=caps_lock_event->bindlist.begin();bit!=caps_lock_event->bindlist.end();bit++) {
-//    #if SDL_VERSION_ATLEAST(1, 2, 14)
-//                (*bit)->ActivateBind(32767,true,false);
-//                (*bit)->DeActivateBind(false);
-//    #else
-//                (*bit)->ActivateBind(32767,true,true); //Skip the action itself as bios_keyboard.cpp handles the startup state.
-//    #endif
-//            }
-//        }
-//        if (SDL_GetModState()&KMOD_NUM) {
-//            for (CBindList_it bit=num_lock_event->bindlist.begin();bit!=num_lock_event->bindlist.end();bit++) {
-//    #if SDL_VERSION_ATLEAST(1, 2, 14)
-//                (*bit)->ActivateBind(32767,true,false);
-//                (*bit)->DeActivateBind(false);
-//    #else
-//                (*bit)->ActivateBind(32767,true,true);
-//    #endif
-//            }
-//        }
     }
 
     private static final class CBindList extends Vector<CBind> {
@@ -625,12 +606,12 @@ public class JavaMapper {
     }
 
     private abstract static class CEvent {
-        CBindList bindlist = new CBindList();
-        /*Bitu*/ int activity;
-        String entry;
-        /*Bits*/ int current_value;
+        protected CBindList bindlist = new CBindList();
+        protected /*Bitu*/ int activity;
+        protected String entry;
+        protected /*Bits*/ int current_value;
 
-        public CEvent(String _entry) {
+        protected CEvent(String _entry) {
             entry = _entry;
             events.add(this);
             bindlist.clear();
@@ -674,28 +655,33 @@ public class JavaMapper {
     }
 
     private abstract static class CBindGroup {
-        public CBindGroup() {
+        protected CBindGroup() {
             bindgroups.add(this);
         }
 
         public void destroy() {
         }
 
-        void ActivateBindList(CBindList list, KeyEvent key, int value, boolean ev_trigger) {
+        void ActivateBindList(CBindList list, NativeKeyEvent evt, int value, boolean ev_trigger) {
             int validmod = 0;
-            for (CBind it : list) {
-                if ((it.mods & mapper.mods) == it.mods) {
-                    if (validmod < it.mods)
-                        validmod = it.mods;
+            for (CBind bind : list) {
+                if ((bind.mods & mapper.mods) == bind.mods && validmod < bind.mods) {
+                    validmod = bind.mods;
                 }
             }
-            for (CBind it : list) {
+            for (CBind bind : list) {
                 /*BUG:CRASH if keymapper key is removed*/
-                if (validmod == it.mods && !it.isLeft() && !it.isRight() && !it.isNumpad()
-                    || it.isLeft() && KeyboardKey.isLeft(key) || it.isRight() && KeyboardKey.isRight(key)
-                    || it.isNumpad() && KeyboardKey.isNumPad(key))
-                    it.ActivateBind(value, ev_trigger);
+                if (validmod == bind.mods && matches(evt, bind))
+                    bind.ActivateBind(value, ev_trigger);
             }
+        }
+
+        private static boolean matches(NativeKeyEvent evt, CBind bind) {
+            return !bind.isLeft() && !KeyboardKey.isLeft(evt) && !bind.isRight() && !KeyboardKey.isRight(evt)
+                && !bind.isNumpad() && !KeyboardKey.isNumPad(evt) //
+                || bind.isLeft() && KeyboardKey.isLeft(evt) //
+                || bind.isRight() && KeyboardKey.isRight(evt) //
+                || bind.isNumpad() && KeyboardKey.isNumPad(evt);
         }
 
         void DeactivateBindList(CBindList list, boolean ev_trigger) {
@@ -706,9 +692,9 @@ public class JavaMapper {
 
         public abstract CBind CreateConfigBind(StringRef buf);
 
-        public abstract CBind CreateEventBind(KeyEvent event);
+        public abstract CBind CreateEventBind(NativeKeyEvent event);
 
-        public abstract boolean CheckEvent(KeyEvent event);
+        public abstract boolean CheckEvent(NativeKeyEvent event);
 
         public abstract String ConfigStart();
 
@@ -716,7 +702,7 @@ public class JavaMapper {
     }
 
     private static class CKeyBind extends CBind {
-        public int key;
+        private final int key;
 
         public CKeyBind(CBindList _list, int _key) {
             super(_list);
@@ -735,9 +721,9 @@ public class JavaMapper {
     }
 
     private static class CKeyBindGroup extends CBindGroup {
-        protected CBindList[] lists;
-        protected int keys;
-        String configname;
+        private final CBindList[] lists;
+        private final int keys;
+        private final String configname;
 
         public CKeyBindGroup(int _keys) {
             lists = new CBindList[_keys];
@@ -763,19 +749,17 @@ public class JavaMapper {
         }
 
         @Override
-        public CBind CreateEventBind(KeyEvent event) {
+        public CBind CreateEventBind(NativeKeyEvent event) {
             if (!KeyboardKey.isPressed(event))
                 return null;
             return CreateKeyBind(GetKeyCode(KeyboardKey.getKeyCode(event)));
         }
 
         @Override
-        public boolean CheckEvent(KeyEvent event) {
+        public boolean CheckEvent(NativeKeyEvent event) {
             if (!KeyboardKey.isPressed(event) && !KeyboardKey.isReleased(event))
                 return false;
             int key = GetKeyCode(KeyboardKey.getKeyCode(event));
-//		LOG_MSG("key type %i is %x [%x %x]",event->type,key,event->key.keysym.sym,event->key.keysym.scancode);
-            //assert(Bitu(event->key.keysym.sym)<keys);
             if (KeyboardKey.isPressed(event))
                 ActivateBindList(lists[key], event, 0x7fff, true);
             else
@@ -784,7 +768,6 @@ public class JavaMapper {
         }
 
         public CBind CreateKeyBind(int _key) {
-            //if (!usescancodes) assert(_key<keys);
             return new CKeyBind(lists[_key], _key);
         }
 
@@ -800,11 +783,11 @@ public class JavaMapper {
     }
 
     private abstract static class CBind {
-        /*Bitu*/ int mods, flags;
-        /*Bit16s*/ int value;
-        CEvent event;
-        CBindList list;
-        boolean active, holding;
+        protected /*Bitu*/ int mods, flags;
+        protected /*Bit16s*/ int value;
+        protected CEvent event;
+        protected CBindList list;
+        protected boolean active, holding;
 
         public CBind(CBindList _list) {
             list = _list;
@@ -816,7 +799,6 @@ public class JavaMapper {
 
         public void destroy() {
             list.remove(this);
-            //		event->bindlist.remove(this);
         }
 
         public String AddFlags() {
@@ -866,6 +848,7 @@ public class JavaMapper {
         }
 
         void ActivateBind(/*Bits*/int _value, boolean ev_trigger, boolean skip_action) {
+            System.out.println("Triggered event: " + event.GetName());
             if (event.IsTrigger()) {
                 /* use value-boundary for on/off events */
                 if (_value > 25000) {
@@ -929,7 +912,7 @@ public class JavaMapper {
 
     /* class for events which can be ON/OFF only: key presses, joystick buttons, joystick hat */
     private abstract static class CTriggeredEvent extends CEvent {
-        public CTriggeredEvent(String _entry) {
+        protected CTriggeredEvent(String _entry) {
             super(_entry);
         }
 

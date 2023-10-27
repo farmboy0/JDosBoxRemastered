@@ -14,6 +14,9 @@ import java.awt.image.MemoryImageSource;
 
 import javax.swing.JFrame;
 
+import com.github.kwhat.jnativehook.GlobalScreen;
+import com.github.kwhat.jnativehook.dispatcher.SwingDispatchService;
+
 import jdos.Dosbox;
 import jdos.host.FowardPCapEthernet;
 import jdos.misc.Cross;
@@ -31,13 +34,16 @@ public final class MainFrame implements GUI {
     private final Cursor transparentCursor;
 
     public MainFrame() throws AWTException {
+        // Set the event dispatcher to a swing safe executor service.
+        GlobalScreen.setEventDispatcher(new SwingDispatchService());
+
         panel = new JDOSRenderPanel();
 
         frame = new JFrame();
         frame.setFocusTraversalKeysEnabled(false);
         frame.addFocusListener(new JDOSFocusAdapter());
-        frame.addKeyListener(new JDOSKeyAdapter());
-        frame.addWindowFocusListener(new JDOSWindowAdapter());
+        frame.addWindowFocusListener(new JDOSWindowFocusAdapter());
+        frame.addWindowListener(new JDOSWindowAdapter());
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -92,12 +98,14 @@ public final class MainFrame implements GUI {
         if (panel.isFullscreen()) {
             panel.setFullscreen(false);
 
+            frame.setAlwaysOnTop(false);
             frame.setUndecorated(false);
             frame.setResizable(true);
             frame.setExtendedState(Frame.NORMAL);
             setLocation();
             setSize(Main.screen_width, Main.screen_height);
         } else {
+            frame.setAlwaysOnTop(true);
             frame.setUndecorated(true);
             frame.setResizable(false);
             frame.setExtendedState(Frame.MAXIMIZED_BOTH);

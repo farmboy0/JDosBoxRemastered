@@ -4,7 +4,6 @@ import java.awt.Cursor;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Point;
-import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
@@ -12,6 +11,8 @@ import java.awt.image.DataBufferByte;
 import java.awt.image.DataBufferInt;
 import java.awt.image.DataBufferUShort;
 import java.awt.image.IndexColorModel;
+
+import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 
 import jdos.ints.Mouse;
 
@@ -64,12 +65,12 @@ public class Main extends MainBase {
             events.removeElementAt(0);
             if (event == null)
                 throw new ShutdownException();
-            if (event instanceof KeyEvent)
-                handle((KeyEvent) event);
-            else if (event instanceof FocusChangeEvent)
-                handle((FocusChangeEvent) event);
-            else if (event instanceof MouseEvent)
-                handle((MouseEvent) event);
+            if (event instanceof NativeKeyEvent keyEvent)
+                handle(keyEvent);
+            else if (event instanceof FocusChangeEvent focusEvent)
+                handle(focusEvent);
+            else if (event instanceof MouseEvent mouseEvent)
+                handle(mouseEvent);
         }
     }
 
@@ -117,12 +118,12 @@ public class Main extends MainBase {
         }
     }
 
-    public static void addKeyEvent(KeyEvent key) {
+    public static void addKeyEvent(NativeKeyEvent key) {
         if (defaultKeyboardHandler != null)
             defaultKeyboardHandler.handle(key);
         else {
             if (paused) {
-                if (key.getKeyCode() == KeyEvent.VK_PAUSE && key.getID() == KeyEvent.KEY_PRESSED) {
+                if (key.getKeyCode() == NativeKeyEvent.VC_PAUSE && key.getID() == NativeKeyEvent.NATIVE_KEY_PRESSED) {
                     synchronized (pauseMutex) {
                         try {
                             pauseMutex.notify();
@@ -144,7 +145,7 @@ public class Main extends MainBase {
             events.add(event);
     }
 
-    public static void handle(KeyEvent key) {
+    public static void handle(NativeKeyEvent key) {
         KeyboardKey.CheckEvent(key);
     }
 
@@ -291,7 +292,7 @@ public class Main extends MainBase {
     }
 
     public interface KeyboardHandler {
-        void handle(KeyEvent key);
+        void handle(NativeKeyEvent key);
     }
 
     public interface MouseHandler {
