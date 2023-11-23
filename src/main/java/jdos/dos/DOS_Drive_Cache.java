@@ -151,16 +151,12 @@ public class DOS_Drive_Cache {
     }
 
     public String GetExpandName(String path) {
-        if (!File.separator.equals("\\"))
-            path = StringHelper.replace(path, "\\", File.separator);
-
         StringRef work = new StringRef();
         String dir = path;
         int pos = path.lastIndexOf(File.separatorChar);
 
         if (pos >= 0)
             dir = dir.substring(0, pos + 1);
-
         CFileInfo dirInfo = FindDirInfo(dir, work);
 
         if (pos != 0) {
@@ -173,7 +169,7 @@ public class DOS_Drive_Cache {
 
         if (work.value.endsWith(File.separator) && !work.value.endsWith(":" + File.separator)
             && work.value.length() > 1) {
-            work.value = work.value;
+            work.value = work.value.substring(0, work.value.length() - 1); // Remove trailing slashes except when in root
         }
 
         return work.value;

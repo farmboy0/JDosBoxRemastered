@@ -1,5 +1,7 @@
 package jdos.shell;
 
+import static jdos.dos.drives.Drive_local.CROSS_FILENAME;
+
 import java.util.Calendar;
 import java.util.Vector;
 
@@ -1328,8 +1330,8 @@ public class Dos_shell extends Program {
                     buffer.append(
                         StringHelper.sprintf("%02d", new Object[] { Integer.valueOf(CPU_Regs.reg_edx.high()) }));
                 if (formatstring.charAt(i) == 'D')
-                    buffer.append(
-                        StringHelper.sprintf("%02d", new Object[] { Integer.valueOf(CPU_Regs.reg_edx.low()) }));
+                    buffer
+                        .append(StringHelper.sprintf("%02d", new Object[] { Integer.valueOf(CPU_Regs.reg_edx.low()) }));
                 if (formatstring.charAt(i) == 'Y')
                     buffer.append(
                         StringHelper.sprintf("%02d", new Object[] { Integer.valueOf(CPU_Regs.reg_ecx.word()) }));
@@ -1498,8 +1500,7 @@ public class Dos_shell extends Program {
                 /*Bit8u*/ShortRef sectors_cluster = new ShortRef();
                 /*Bit16u*/IntRef total_clusters = new IntRef(0);
                 /*Bit16u*/IntRef free_clusters = new IntRef(0);
-                Dos_files.Drives[drive].AllocationInfo(bytes_sector, sectors_cluster, total_clusters,
-                    free_clusters);
+                Dos_files.Drives[drive].AllocationInfo(bytes_sector, sectors_cluster, total_clusters, free_clusters);
                 free_space = bytes_sector.value * sectors_cluster.value * free_clusters.value;
             }
             numformat = FormatNumber(free_space);
@@ -1797,8 +1798,7 @@ public class Dos_shell extends Program {
 
         String word = "";
         // first word is until space or =
-        while (args.value.length() > 0 && !StringHelper.isspace(args.value.charAt(0))
-            && args.value.charAt(0) != '=') {
+        while (args.value.length() > 0 && !StringHelper.isspace(args.value.charAt(0)) && args.value.charAt(0) != '=') {
             word += args.value.substring(0, 1);
             args.value = args.value.substring(1);
         }
@@ -1817,8 +1817,7 @@ public class Dos_shell extends Program {
 
         String word2 = "";
         // second word is until space or =
-        while (args.value.length() > 0 && !StringHelper.isspace(args.value.charAt(0))
-            && args.value.charAt(0) != '=') {
+        while (args.value.length() > 0 && !StringHelper.isspace(args.value.charAt(0)) && args.value.charAt(0) != '=') {
             word2 += args.value.substring(0, 1);
             args.value = args.value.substring(1);
         }
@@ -1882,8 +1881,8 @@ public class Dos_shell extends Program {
             reg_ch= // hours
         */
         if (timeonly) {
-            WriteOut(StringHelper.sprintf("%2d:%02d\n", new Object[] { Integer.valueOf(CPU_Regs.reg_ecx.high()),
-                Integer.valueOf(CPU_Regs.reg_ecx.low()) }));
+            WriteOut(StringHelper.sprintf("%2d:%02d\n",
+                new Object[] { Integer.valueOf(CPU_Regs.reg_ecx.high()), Integer.valueOf(CPU_Regs.reg_ecx.low()) }));
         } else {
             WriteOut(Msg.get("SHELL_CMD_TIME_NOW"));
             WriteOut(StringHelper.sprintf("%2d:%02d:%02d,%02d\n",
@@ -2039,9 +2038,7 @@ public class Dos_shell extends Program {
             return;
         }
         Drive_local ldp = (Drive_local) Dos_files.Drives[drive.value];
-        StringRef newname = new StringRef(ldp.basedir);
-        newname.value += fulldir.value;
-        //CROSS_FILENAME(newname);
+        StringRef newname = new StringRef(CROSS_FILENAME(ldp.basedir + fulldir.value));
         ldp.dirCache.ExpandName(newname);
         mountstring += "\"";
         mountstring += newname.value;

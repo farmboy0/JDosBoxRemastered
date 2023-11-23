@@ -68,7 +68,7 @@ public class Drive_local extends Dos_Drive {
                 Dos.DOS_SetError(Dos.DOSERR_ACCESS_CODE_INVALID);
                 return null;
         }
-        StringRef newname = new StringRef(basedir + name);
+        StringRef newname = new StringRef(CROSS_FILENAME(basedir + name));
         dirCache.ExpandName(newname);
 
         //Flush the buffer of handles for the same file. (Betrayal in Antara)
@@ -107,7 +107,7 @@ public class Drive_local extends Dos_Drive {
     @Override
     public DOS_File FileCreate(String name, /*Bit16u*/int attributes) {
         //TODO Maybe care for attributes but not likely
-        String newname = basedir + name;
+        String newname = CROSS_FILENAME(basedir + name);
         String temp_name = dirCache.GetExpandName(newname); //Can only be used in till a new drive_cache action is preformed */
         /* Test if file exists (so we need to truncate it). don't add to dirCache then */
         boolean existing_file = new File(temp_name).exists();
@@ -129,7 +129,7 @@ public class Drive_local extends Dos_Drive {
 
     @Override
     public boolean FileUnlink(String name) {
-        String newname = basedir + name;
+        String newname = CROSS_FILENAME(basedir + name);
         String fullname = dirCache.GetExpandName(newname);
         File f = new File(fullname);
         if (!f.delete()) {
@@ -175,7 +175,7 @@ public class Drive_local extends Dos_Drive {
 
     @Override
     public boolean RemoveDir(String dir) {
-        String newdir = basedir + dir;
+        String newdir = CROSS_FILENAME(basedir + dir);
         File f = new File(dirCache.GetExpandName(newdir));
         boolean temp = f.isDirectory() && f.delete();
         if (temp)
@@ -185,7 +185,7 @@ public class Drive_local extends Dos_Drive {
 
     @Override
     public boolean MakeDir(String dir) {
-        String newdir = basedir + dir;
+        String newdir = CROSS_FILENAME(basedir + dir);
         File f = new File(dirCache.GetExpandName(newdir));
         boolean temp = !f.exists() && f.mkdir();
         if (temp)
@@ -196,7 +196,7 @@ public class Drive_local extends Dos_Drive {
 
     @Override
     public boolean TestDir(String dir) {
-        StringRef newdir = new StringRef(basedir + dir);
+        StringRef newdir = new StringRef(CROSS_FILENAME(basedir + dir));
         dirCache.ExpandName(newdir);
         // Skip directory test, if "\"
         File f = new File(newdir.value);
@@ -209,7 +209,7 @@ public class Drive_local extends Dos_Drive {
 
     @Override
     public boolean FindFirst(String dir, Dos_DTA dta, boolean fcb_findfirst/*=false*/) {
-        StringRef tempDir = new StringRef(basedir + dir);
+        StringRef tempDir = new StringRef(CROSS_FILENAME(basedir + dir));
 
         if (allocation.mediaid == 0xF0) {
             EmptyCache(); //rescan floppie-content on each findfirst
@@ -319,7 +319,7 @@ public class Drive_local extends Dos_Drive {
 
     @Override
     public boolean GetFileAttr(String name, /*Bit16u*/IntRef attr) {
-        StringRef newname = new StringRef(basedir + name);
+        StringRef newname = new StringRef(CROSS_FILENAME(basedir + name));
         dirCache.ExpandName(newname);
 
         File f = new File(newname.value);
@@ -335,10 +335,10 @@ public class Drive_local extends Dos_Drive {
 
     @Override
     public boolean Rename(String oldname, String newname) {
-        StringRef newold = new StringRef(basedir + oldname);
+        StringRef newold = new StringRef(CROSS_FILENAME(basedir + oldname));
         dirCache.ExpandName(newold);
 
-        StringRef newnew = new StringRef(basedir + newname);
+        StringRef newnew = new StringRef(CROSS_FILENAME(basedir + newname));
         dirCache.ExpandName(newnew);
 
         File fold = new File(newold.value);
@@ -362,7 +362,7 @@ public class Drive_local extends Dos_Drive {
 
     @Override
     public boolean FileExists(String name) {
-        StringRef newname = new StringRef(basedir + name);
+        StringRef newname = new StringRef(CROSS_FILENAME(basedir + name));
         dirCache.ExpandName(newname);
         try {
             FileIO raf = FileIOFactory.open(newname.value, FileIOFactory.MODE_READ);
@@ -375,7 +375,7 @@ public class Drive_local extends Dos_Drive {
 
     @Override
     public boolean FileStat(String name, FileStat_Block stat_block) {
-        StringRef newname = new StringRef(basedir + name);
+        StringRef newname = new StringRef(CROSS_FILENAME(basedir + name));
         dirCache.ExpandName(newname);
         File f = new File(newname.value);
         if (!f.exists())
@@ -408,7 +408,7 @@ public class Drive_local extends Dos_Drive {
     }
 
     public FileIO GetSystemFilePtr(String name, String type) {
-        StringRef newname = new StringRef(basedir + name);
+        StringRef newname = new StringRef(CROSS_FILENAME(basedir + name));
         dirCache.ExpandName(newname);
         int mode = FileIOFactory.MODE_READ;
         if (type.indexOf('+') >= 0)
@@ -421,7 +421,7 @@ public class Drive_local extends Dos_Drive {
     }
 
     public boolean GetSystemFilename(StringRef sysName, String dosName) {
-        sysName.value = basedir + dosName;
+        sysName.value = CROSS_FILENAME(basedir + dosName);
         dirCache.ExpandName(sysName);
         return true;
     }
@@ -583,5 +583,11 @@ public class Drive_local extends Dos_Drive {
         /*Bit16u*/ int total_clusters;
         /*Bit16u*/ int free_clusters;
         /*Bit8u*/ short mediaid;
+    }
+
+    public static final String CROSS_FILENAME(String path) {
+        if (File.separator.equals("\\"))
+            return path;
+        return StringHelper.replace(path, "\\", File.separator);
     }
 }
