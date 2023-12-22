@@ -52,7 +52,7 @@ public final class JDOSRenderPanel extends JPanel {
 
     @Override
     public void paint(Graphics g) {
-        if (Main.buffer2[Main.front] == null) {
+        if (!Render.running || Main.buffer2[Main.front] == null) {
             return;
         }
         synchronized (MainBase.paintMutex) {
