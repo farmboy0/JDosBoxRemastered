@@ -50,7 +50,6 @@ public final class MainFrame implements GUI {
                 } catch (InterruptedException ex) {
                 }
                 mainFrame.saveFramePosition();
-                System.exit(0);
             }
         });
         frame.add(panel, BorderLayout.PAGE_START);
