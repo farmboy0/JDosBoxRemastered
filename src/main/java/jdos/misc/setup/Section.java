@@ -1,16 +1,16 @@
 package jdos.misc.setup;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import java.util.List;
 import java.util.Vector;
 
 public abstract class Section {
     public static final String NO_SUCH_PROPERTY = "PROP_NOT_EXIST";
-    private final Vector initfunctions = new Vector();
-    private final Vector destroyfunction = new Vector();
+
+    private final List<Function_wrapper> initfunctions = new Vector<>();
+    private final List<Function_wrapper> destroyfunction = new Vector<>();
     private final String sectionname;
 
-    public Section(String _sectionname) {
+    protected Section(String _sectionname) {
         sectionname = _sectionname;
     }
 
@@ -37,7 +37,7 @@ public abstract class Section {
 
     public void ExecuteInit(boolean initall) {
         for (int i = 0; i < initfunctions.size(); i++) {
-            Function_wrapper f = (Function_wrapper) initfunctions.elementAt(i);
+            Function_wrapper f = initfunctions.get(i);
             if (initall || f.canchange)
                 f.function.call(this);
         }
@@ -49,7 +49,7 @@ public abstract class Section {
 
     public void ExecuteDestroy(boolean destroyall) {
         for (int i = 0; i < destroyfunction.size(); i++) {
-            Function_wrapper f = (Function_wrapper) destroyfunction.elementAt(i);
+            Function_wrapper f = destroyfunction.get(i);
             if (destroyall || f.canchange)
                 f.function.call(this);
         }
@@ -63,7 +63,7 @@ public abstract class Section {
 
     public abstract void HandleInputline(String _line);
 
-    public abstract void PrintData(OutputStream os) throws IOException;
+    public abstract void PrintData(StringBuilder sb);
 
     public interface SectionFunction {
         void call(Section section);

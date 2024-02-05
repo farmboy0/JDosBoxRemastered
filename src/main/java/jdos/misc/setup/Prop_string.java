@@ -23,7 +23,7 @@ public class Prop_string extends Property {
         if (suggested_values.isEmpty())
             return true;
         for (int i = 0; i < suggested_values.size(); i++) {
-            Value v = (Value) suggested_values.elementAt(i);
+            Value v = suggested_values.get(i);
             if (v.equals(in)) { //Match!
                 return true;
             }

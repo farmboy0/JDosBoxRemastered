@@ -1,6 +1,6 @@
 package jdos.misc.setup;
 
-import java.util.Vector;
+import java.util.List;
 
 public class Prop_multival extends Property {
     protected Section_prop section;
@@ -69,16 +69,16 @@ public class Prop_multival extends Property {
     }
 
     @Override
-    public Vector GetValues() {
+    public List<Value> GetValues() {
         if (section.Get_prop(0) == null)
             return suggested_values;
-        Vector result = new Vector();
+
         int i = 0;
         while (true) {
             Property p = section.Get_prop(i++);
             if (p == null)
                 return suggested_values;
-            Vector v = p.GetValues();
+            List<Value> v = p.GetValues();
             if (!v.isEmpty())
                 return v;
         }

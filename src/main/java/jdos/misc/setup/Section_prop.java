@@ -1,13 +1,12 @@
 package jdos.misc.setup;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import java.util.List;
 import java.util.Vector;
 
 import jdos.util.StringHelper;
 
 public class Section_prop extends Section {
-    private final Vector properties = new Vector();
+    private final List<Property> properties = new Vector<>();
 
     public Section_prop(String _sectionname) {
         super(_sectionname);
@@ -77,13 +76,13 @@ public class Section_prop extends Section {
 
     public Property Get_prop(int index) {
         if (index >= 0 && index < properties.size())
-            return (Property) properties.elementAt(index);
+            return properties.get(index);
         return null;
     }
 
     public Property byname(String name) {
         for (int i = 0; i < properties.size(); i++) {
-            Property p = (Property) properties.elementAt(i);
+            Property p = properties.get(i);
             if (p.propname.equals(name))
                 return p;
         }
@@ -127,28 +126,22 @@ public class Section_prop extends Section {
 
     public Prop_path Get_path(String _propname) {
         Property result = byname(_propname);
-        if (result != null) {
-            if (result instanceof Prop_path)
-                return (Prop_path) result;
-        }
+        if (result instanceof Prop_path path)
+            return path;
         return null;
     }
 
     public Prop_multival Get_multival(String _propname) {
         Property result = byname(_propname);
-        if (result != null) {
-            if (result instanceof Prop_multival)
-                return (Prop_multival) result;
-        }
+        if (result instanceof Prop_multival multi)
+            return multi;
         return null;
     }
 
     public Prop_multival_remain Get_multivalremain(String _propname) {
         Property result = byname(_propname);
-        if (result != null) {
-            if (result instanceof Prop_multival_remain)
-                return (Prop_multival_remain) result;
-        }
+        if (result instanceof Prop_multival_remain remain)
+            return remain;
         return null;
     }
 
@@ -163,11 +156,11 @@ public class Section_prop extends Section {
     }
 
     @Override
-    public void PrintData(OutputStream os) throws IOException {
+    public void PrintData(StringBuilder sb) {
         for (int i = 0; i < properties.size(); i++) {
-            Property p = (Property) properties.elementAt(i);
+            Property p = properties.get(i);
             String line = p.propname + "=" + p.GetValue().toString() + "\n";
-            Config.fputs(line, os);
+            Config.fputs(line, sb);
         }
     }
 

@@ -1,5 +1,6 @@
 package jdos.misc.setup;
 
+import java.util.List;
 import java.util.Vector;
 
 import jdos.misc.Log;
@@ -9,10 +10,10 @@ public abstract class Property {
     public final String propname;
     protected final int change;
     protected Value value = new Value();
-    protected Vector suggested_values = new Vector();
+    protected List<Value> suggested_values = new Vector<>();
     protected Value default_value = new Value();
 
-    public Property(String _propname, int when) {
+    protected Property(String _propname, int when) {
         propname = _propname;
         change = when;
     }
@@ -53,7 +54,7 @@ public abstract class Property {
         if (suggested_values.isEmpty())
             return true;
         for (int i = 0; i < suggested_values.size(); i++) {
-            Value v = (Value) suggested_values.elementAt(i);
+            Value v = suggested_values.get(i);
             if (in.equals(v))
                 return true;
         }
@@ -75,7 +76,7 @@ public abstract class Property {
             value = default_value;
     }
 
-    public Vector GetValues() {
+    public List<Value> GetValues() {
         return suggested_values;
     }
 

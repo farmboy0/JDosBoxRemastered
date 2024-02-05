@@ -3,9 +3,8 @@ package jdos.misc.setup;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.util.List;
 import java.util.Vector;
 
 import jdos.misc.Cross;
@@ -35,9 +34,9 @@ public class Config {
 
     static String current_config_dir; // Set by parseconfigfile so Prop_path can use it to construct the realpath
     private static boolean first_configfile = true;
-    public CommandLine cmdline;
+    public final CommandLine cmdline;
 
-    private final Vector sectionlist = new Vector();
+    private final List<Section> sectionlist = new Vector<>();
     private boolean secure_mode; //Sandbox mode
     private StartFunction _start_function;
 
@@ -46,11 +45,11 @@ public class Config {
         secure_mode = false;
     }
 
-    public static void fputs(String str, OutputStream outfile) throws IOException {
+    public static void fputs(String str, StringBuilder outfile) {
         if (Cross.isWindows()) {
             str = StringHelper.replace(str, "\n", "\r\n");
         }
-        outfile.write(str.getBytes());
+        outfile.append(str);
     }
 
     public Section_line AddSection_line(String _name, Section.SectionFunction _initfunction) {
@@ -73,13 +72,13 @@ public class Config {
 
     public Section GetSection(int index) {
         if (index >= 0 && index < sectionlist.size())
-            return (Section) sectionlist.elementAt(index);
+            return sectionlist.get(index);
         return null;
     }
 
     public Section GetSection(String _sectionname) {
         for (int i = 0; i < sectionlist.size(); i++) {
-            Section s = (Section) sectionlist.elementAt(i);
+            Section s = sectionlist.get(i);
             if (s.GetName().equalsIgnoreCase(_sectionname))
                 return s;
         }
@@ -88,7 +87,7 @@ public class Config {
 
     public Section GetSectionFromProperty(String prop) {
         for (int i = 0; i < sectionlist.size(); i++) {
-            Section s = (Section) sectionlist.elementAt(i);
+            Section s = sectionlist.get(i);
             if (!s.GetPropValue(prop).equals(Section.NO_SUCH_PROPERTY))
                 return s;
         }
@@ -101,14 +100,14 @@ public class Config {
 
     public void Init() {
         for (int i = 0; i < sectionlist.size(); i++) {
-            Section s = (Section) sectionlist.elementAt(i);
+            Section s = sectionlist.get(i);
             s.ExecuteInit();
         }
     }
 
     public void Destroy() {
         for (int i = sectionlist.size() - 1; i >= 0; i--) {
-            Section s = (Section) sectionlist.elementAt(i);
+            Section s = sectionlist.get(i);
             s.ExecuteDestroy(true);
         }
     }
@@ -117,7 +116,7 @@ public class Config {
         _start_function.call();
     }
 
-    private void fprintf(OutputStream outfile, String format, String args, int maxwidth) throws IOException {
+    private void fprintf(StringBuilder sb, String format, String args, int maxwidth) {
         format = StringHelper.replace(format, "%s", args);
         if (maxwidth > 0) {
             while (args.length() < maxwidth) {
@@ -125,82 +124,74 @@ public class Config {
             }
             format = StringHelper.replace(format, "%" + maxwidth + "s", args);
         }
-        fputs(format, outfile);
+        fputs(format, sb);
+    }
+
+    public String PrintConfig() {
+        final StringBuilder sb = new StringBuilder();
+        fprintf(sb, Msg.get("CONFIGFILE_INTRO") + "\n", VERSION, 0);
+        for (int k = 0; k < sectionlist.size(); k++) {
+            final Section section = sectionlist.get(k);
+            fputs("[" + section.GetName().toLowerCase() + "]", sb);
+
+            if (section instanceof Section_prop propSection) {
+                int maxwidth = 0;
+                int i = 0;
+                Property p;
+
+                while ((p = propSection.Get_prop(i++)) != null) {
+                    maxwidth = Math.max(maxwidth, p.propname.length());
+                }
+                String prefix = "\n# %" + (maxwidth > 0 ? String.valueOf(maxwidth) : "") + "s";
+                String prefix2 = "\n#   ";
+                for (int l = 0; l < maxwidth; l++) {
+                    prefix2 = prefix2 + " ";
+                }
+                i = 0;
+                while ((p = propSection.Get_prop(i++)) != null) {
+                    String help = p.Get_help();
+                    help = StringHelper.replace(help, "\n", prefix2);
+                    fprintf(sb, prefix + ": " + help, p.propname, maxwidth);
+                    List<Value> values = p.GetValues();
+                    if (!values.isEmpty()) {
+                        fputs(prefix2 + Msg.get("CONFIG_SUGGESTED_VALUES"), sb);
+                        for (int j = 0; j < values.size(); j++) {
+                            Value v = values.get(j);
+                            if (!v.toString().equals("%u")) {
+                                if (j != 0)
+                                    fputs(",", sb);
+                                fputs(" " + v.toString(), sb);
+                            }
+                        }
+                        fputs(".", sb);
+                    }
+                }
+                fputs("\n", sb);
+            } else {
+                String help = "# " + Msg.get(section.GetName().toUpperCase() + "_CONFIGFILE_HELP");
+                StringHelper.replace(help, "\n", "\n# ");
+                fputs(help, sb);
+            }
+            fputs("\n", sb);
+            section.PrintData(sb);
+            fputs("\n", sb); /* Always an empty line between sections */
+        }
+        return sb.toString();
     }
 
     public boolean PrintConfig(String configfilename) {
-        FileOutputStream outfile = null;
-        try {
-            outfile = new FileOutputStream(configfilename);
-            fprintf(outfile, Msg.get("CONFIGFILE_INTRO") + "\n", VERSION, 0);
-            for (int k = 0; k < sectionlist.size(); k++) {
-                Section tel = (Section) sectionlist.elementAt(k);
-                Section_prop sec = null;
-                if (tel instanceof Section_prop)
-                    sec = (Section_prop) tel;
-                fputs("[" + tel.GetName().toLowerCase() + "]", outfile);
-                if (sec != null) {
-                    int maxwidth = 0;
-                    int i = 0;
-                    Property p;
-
-                    while ((p = sec.Get_prop(i++)) != null) {
-                        maxwidth = Math.max(maxwidth, p.propname.length());
-                    }
-                    String prefix = "\n# %" + (maxwidth > 0 ? String.valueOf(maxwidth) : "") + "s";
-                    String prefix2 = "\n#   ";
-                    for (int l = 0; l < maxwidth; l++) {
-                        prefix2 = prefix2 + " ";
-                    }
-                    i = 0;
-                    while ((p = sec.Get_prop(i++)) != null) {
-                        String help = p.Get_help();
-                        help = StringHelper.replace(help, "\n", prefix2);
-                        fprintf(outfile, prefix + ": " + help, p.propname, maxwidth);
-                        Vector values = p.GetValues();
-                        if (!values.isEmpty()) {
-                            fputs(prefix2 + Msg.get("CONFIG_SUGGESTED_VALUES"), outfile);
-                            for (int j = 0; j < values.size(); j++) {
-                                Value v = (Value) values.elementAt(j);
-                                if (!v.toString().equals("%u")) {
-                                    if (j != 0)
-                                        fputs(",", outfile);
-                                    fputs(" " + v.toString(), outfile);
-                                }
-                            }
-                            fputs(".", outfile);
-                        }
-                    }
-                    fputs("\n", outfile);
-                } else {
-                    String help = "# " + Msg.get(tel.GetName().toUpperCase() + "_CONFIGFILE_HELP");
-                    StringHelper.replace(help, "\n", "\n# ");
-                    fputs(help, outfile);
-                }
-                fputs("\n", outfile);
-                tel.PrintData(outfile);
-                fputs("\n", outfile); /* Always an empty line between sections */
-            }
+        try (FileOutputStream outfile = new FileOutputStream(configfilename)) {
+            outfile.write(PrintConfig().getBytes());
             return true;
         } catch (FileNotFoundException e) {
-
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            if (outfile != null) {
-                try {
-                    outfile.close();
-                } catch (Exception e) {
-                }
-            }
         }
         return false;
     }
 
     public boolean ParseConfigFile(String configfilename) {
-        BufferedReader in = null;
-        try {
-            in = new BufferedReader(new InputStreamReader(FileIOFactory.openStream(configfilename)));
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(FileIOFactory.openStream(configfilename)))) {
             String settings_type = first_configfile ? "primary" : "additional";
             first_configfile = false;
             Log.log_msg("CONFIG:Loading " + settings_type + " settings from config file " + configfilename);
@@ -232,13 +223,6 @@ public class Config {
         } catch (FileNotFoundException e) {
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            if (in != null)
-                try {
-                    in.close();
-                } catch (Exception e) {
-                }
-
         }
         current_config_dir = ""; //So internal changes don't use the path information
         return false;

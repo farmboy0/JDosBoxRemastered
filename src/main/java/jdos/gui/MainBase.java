@@ -443,8 +443,7 @@ public class MainBase {
                 RasterizerCompilerCommon.saveClasses = true;
             }
 
-            Config myconf = new Config(com_line);
-            Dosbox.control = myconf;
+            Dosbox.control = new Config(com_line);
             Config_Add_SDL();
             Dosbox.Init();
             String captures;
@@ -552,7 +551,7 @@ public class MainBase {
             } catch (Dos_programs.RebootException e) {
                 System.out.println("Rebooting");
                 try {
-                    myconf.Destroy();
+                    Dosbox.control.Destroy();
                 } catch (Exception e1) {
                 }
                 continue;
@@ -562,7 +561,7 @@ public class MainBase {
                 }
                 System.out.println("Normal Shutdown");
                 try {
-                    myconf.Destroy();
+                    Dosbox.control.Destroy();
                 } catch (Exception e1) {
                 }
             } catch (KillException e) {

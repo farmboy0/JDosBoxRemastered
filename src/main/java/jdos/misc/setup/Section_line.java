@@ -1,8 +1,5 @@
 package jdos.misc.setup;
 
-import java.io.IOException;
-import java.io.OutputStream;
-
 public class Section_line extends Section {
     public String data = "";
 
@@ -17,8 +14,8 @@ public class Section_line extends Section {
     }
 
     @Override
-    public void PrintData(OutputStream os) throws IOException {
-        Config.fputs(data, os);
+    public void PrintData(StringBuilder sb) {
+        Config.fputs(data, sb);
     }
 
     @Override
