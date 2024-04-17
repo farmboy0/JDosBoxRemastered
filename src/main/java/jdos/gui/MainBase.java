@@ -15,10 +15,7 @@ import jdos.misc.Cross;
 import jdos.misc.Log;
 import jdos.misc.setup.CommandLine;
 import jdos.misc.setup.Config;
-import jdos.misc.setup.Prop_bool;
-import jdos.misc.setup.Prop_int;
 import jdos.misc.setup.Prop_multival;
-import jdos.misc.setup.Prop_string;
 import jdos.misc.setup.Property;
 import jdos.misc.setup.Section;
 import jdos.misc.setup.Section_prop;
@@ -81,7 +78,7 @@ public class MainBase {
     };
     private static int priority_focus;
     private static int priority_nofocus;
-    private static final Section.SectionFunction GUI_StartUp = sec -> {
+    public static final Section.SectionFunction GUI_StartUp = sec -> {
         sec.AddDestroyFunction(GUI_ShutDown);
         Section_prop section = (Section_prop) sec;
 
@@ -274,74 +271,6 @@ public class MainBase {
         }
     }
 
-    private static void Config_Add_SDL() {
-        Section_prop sdl_sec = Dosbox.control.AddSection_prop("sdl", GUI_StartUp);
-        sdl_sec.AddInitFunction(JavaMapper.MAPPER_StartUp);
-        Prop_bool Pbool;
-        Prop_string Pstring;
-        Prop_int Pint;
-        Prop_multival Pmulti;
-
-        Pbool = sdl_sec.Add_bool("fullscreen", Property.Changeable.Always, false);
-        Pbool.Set_help("Start dosbox directly in fullscreen. (Press ALT-Enter to go back)");
-
-        Pbool = sdl_sec.Add_bool("fulldouble", Property.Changeable.Always, false);
-        Pbool.Set_help(
-            "Use double buffering in fullscreen. It can reduce screen flickering, but it can also result in a slow DOSBox.");
-
-        Pstring = sdl_sec.Add_string("fullresolution", Property.Changeable.Always, "original");
-        Pstring.Set_help("What resolution to use for fullscreen: original or fixed size (e.g. 1024x768).\n"
-            + "  Using your monitor's native resolution with aspect=true might give the best results.\n"
-            + "  If you end up with small window on a large screen, try an output different from surface.");
-
-        Pstring = sdl_sec.Add_string("windowresolution", Property.Changeable.Always, "original");
-        Pstring.Set_help("Scale the window to this size IF the output device supports hardware scaling.\n"
-            + "  (output=surface does not!)");
-        String[] outputs = { "surface", "overlay", "opengl", "openglnb", "ddraw" };
-        Pstring = sdl_sec.Add_string("output", Property.Changeable.Always, "surface");
-        Pstring.Set_help("What video system to use for output.");
-        Pstring.Set_values(outputs);
-
-        Pbool = sdl_sec.Add_bool("autolock", Property.Changeable.Always, true);
-        Pbool.Set_help("Mouse will automatically lock, if you click on the screen. (Press CTRL-F10 to unlock)");
-
-        Pint = sdl_sec.Add_int("sensitivity", Property.Changeable.Always, 100);
-        Pint.SetMinMax(1, 1000);
-        Pint.Set_help("Mouse sensitivity.");
-
-        Pbool = sdl_sec.Add_bool("waitonerror", Property.Changeable.Always, true);
-        Pbool.Set_help("Wait before closing the console if dosbox has an error.");
-
-        Pmulti = sdl_sec.Add_multi("priority", Property.Changeable.Always, ",");
-        Pmulti.SetValue("higher,normal");
-        Pmulti.Set_help(
-            "Priority levels for dosbox. Second entry behind the comma is for when dosbox is not focused/minimized.\n"
-                + "  pause is only valid for the second entry.");
-
-        String[] actt = { "lowest", "lower", "normal", "higher", "highest", "pause" };
-        Pstring = Pmulti.GetSection().Add_string("active", Property.Changeable.Always, "higher");
-        Pstring.Set_values(actt);
-
-        String[] inactt = { "lowest", "lower", "normal", "higher", "highest", "pause" };
-        Pstring = Pmulti.GetSection().Add_string("inactive", Property.Changeable.Always, "normal");
-        Pstring.Set_values(inactt);
-
-        Pstring = sdl_sec.Add_path("mapperfile", Property.Changeable.Always, JavaMapper.mapperfile);
-        Pstring.Set_help(
-            "File used to load/save the key/event mappings from. Resetmapper only works with the defaul value.");
-
-        Pbool = sdl_sec.Add_bool("usescancodes", Property.Changeable.Always, true);
-        Pbool.Set_help("Avoid usage of symkeys, might not work on all operating systems.");
-
-        Pint = sdl_sec.Add_int("posx", Property.Changeable.Always, 50);
-        Pint.SetMinMax(1, 1000);
-        Pint.Set_help("Swing window position on screen.");
-
-        Pint = sdl_sec.Add_int("posy", Property.Changeable.Always, 50);
-        Pint.SetMinMax(1, 1000);
-        Pint.Set_help("Swing window position on screen.");
-    }
-
     static void launcheditor() {
         String path = Cross.CreatePlatformConfigDir() + Cross.GetPlatformConfigName();
         if (!Dosbox.control.PrintConfig(path)) {
@@ -429,6 +358,7 @@ public class MainBase {
 
     public static void main(GUI g, String[] args) {
         gui = g;
+
         while (true) {
             CPU.initialize();
             MainBase.GFX_SetTitle(-1, -1, false);
@@ -444,8 +374,8 @@ public class MainBase {
             }
 
             Dosbox.control = new Config(com_line);
-            Config_Add_SDL();
-            Dosbox.Init();
+            Dosbox.Init(Dosbox.control);
+
             String captures;
             if (Dosbox.control.cmdline.FindString("-editconf", false) != null)
                 launcheditor();
@@ -534,12 +464,15 @@ public class MainBase {
 
             Dosbox.control.ParseEnv();
             Dosbox.control.Init();
+
             gui.setLocation();
             Section_prop sdlSection = (Section_prop) Dosbox.control.GetSection("sdl");
             if (Dosbox.control.cmdline.FindExist("-fullscreen") || sdlSection.Get_bool("fullscreen")) {
                 gui.fullScreenToggle();
             }
+
             JavaMapper.MAPPER_Init();
+            JavaMapper.MAPPER_SaveBinds();
             while ((path = Dosbox.control.cmdline.FindString("-mapper", true)) != null) {
                 JavaMapper.MAPPER_LoadBinds(path);
             }

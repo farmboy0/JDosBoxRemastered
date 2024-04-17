@@ -514,19 +514,27 @@ public class JavaMapper {
         new CHandlerEvent("hand_" + eventname, handler, key, mods, buttonname);
     }
 
-    private static void MAPPER_SaveBinds() {
-        String fileName = JavaMapper.mapperfile;
-        try {
-            RandomAccessFile saveFile = new RandomAccessFile(fileName, "rw");
-            for (CEvent event : events) {
-                saveFile.write(event.GetName().getBytes());
-                for (CBind bind : event.bindlist) {
-                    String buf = " \"" + bind.ConfigName() + bind.AddFlags() + "\"";
-                    saveFile.write(buf.getBytes());
-                }
-                saveFile.writeByte((byte) '\n');
+    public static String MAPPER_Binds() {
+        StringBuilder sb = new StringBuilder();
+        for (CEvent event : events) {
+            sb.append(event.GetName());
+            for (CBind bind : event.bindlist) {
+                sb.append(' ');
+                sb.append('"');
+                sb.append(bind.ConfigName());
+                sb.append(bind.AddFlags());
+                sb.append('"');
             }
-            saveFile.close();
+            sb.append('\n');
+        }
+        return sb.toString();
+    }
+
+    public static void MAPPER_SaveBinds() {
+        String fileName = JavaMapper.mapperfile;
+        try (RandomAccessFile saveFile = new RandomAccessFile(fileName, "rw")) {
+            String binds = MAPPER_Binds();
+            saveFile.write(binds.getBytes());
             //change_action_text("Mapper file saved.",CLR_WHITE);
         } catch (Exception e) {
             Log.log_msg("Can't open " + fileName + " for saving the mappings");
@@ -579,7 +587,6 @@ public class JavaMapper {
         if (!MAPPER_LoadBinds(JavaMapper.mapperfile)) {
             CreateDefaultBinds();
         }
-//        MAPPER_SaveBinds();
 //        if (SDL_GetModState()& KMOD_CAPS) {
 //            for (CBindList_it bit=caps_lock_event->bindlist.begin();bit!=caps_lock_event->bindlist.end();bit++) {
 //    #if SDL_VERSION_ATLEAST(1, 2, 14)

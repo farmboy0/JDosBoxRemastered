@@ -1,5 +1,6 @@
 package jdos.misc.setup;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
@@ -9,15 +10,19 @@ public class CommandLine {
     private final List<String> cmds;
     private String file_name;
 
-    public CommandLine(String[] args) {
-        cmds = new Vector<>(args.length);
-        for (String arg : args)
-            cmds.add(arg);
+    public CommandLine() {
+        cmds = new Vector<>();
         // :TODO: file_name = ?
     }
 
+    public CommandLine(String[] args) {
+        this();
+        if (args != null)
+            cmds.addAll(Arrays.asList(args));
+    }
+
     public CommandLine(String name, String cmdline) {
-        cmds = new Vector<>();
+        this();
         file_name = name;
         /* Parse the cmds and put them in the list */
         boolean inword, inquote;

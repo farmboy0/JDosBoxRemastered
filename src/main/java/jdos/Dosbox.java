@@ -249,8 +249,7 @@ public class Dosbox {
         DOSBOX_SetLoop(Normal_Loop);
         Msg.init(section);
 
-        JavaMapper.MAPPER_AddHandler(DOSBOX_UnlockSpeed, Mapper.MapKeys.MK_f12, Mapper.MMOD2, "speedlock",
-            "Speedlock");
+        JavaMapper.MAPPER_AddHandler(DOSBOX_UnlockSpeed, Mapper.MapKeys.MK_f12, Mapper.MMOD2, "speedlock", "Speedlock");
         String cmd_machine;
         if ((cmd_machine = control.cmdline.FindString("-machine", true)) != null) {
             //update value in config (else no matching against suggested values
@@ -348,32 +347,98 @@ public class Dosbox {
         } while (ret == 0);
     }
 
-    public static void Init() {
+    private static final String[] outputs = { "surface", "overlay", "opengl", "openglnb", "ddraw" };
+    private static final String[] actt = { "lowest", "lower", "normal", "higher", "highest", "pause" };
+    private static final String[] inactt = { "lowest", "lower", "normal", "higher", "highest", "pause" };
+    // Some frequently used option sets
+    private static final String[] rates = { "44100", "48000", "32000", "22050", "16000", "11025", "8000", "49716" };
+    private static final String[] oplrates = { "44100", "49716", "48000", "32000", "22050", "16000", "11025", "8000" };
+    private static final String[] ios = { "220", "240", "260", "280", "2a0", "2c0", "2e0", "300" };
+    private static final String[] irqssb = { "7", "5", "3", "9", "10", "11", "12" };
+    private static final String[] dmassb = { "1", "5", "0", "3", "6", "7" };
+    private static final String[] iosgus = { "240", "220", "260", "280", "2a0", "2c0", "2e0", "300" };
+    private static final String[] irqsgus = { "5", "3", "7", "9", "10", "11", "12" };
+    private static final String[] dmasgus = { "3", "0", "1", "5", "6", "7" };
+    /* Setup all the different modules making up DOSBox */
+    private static final String[] machines = { "hercules", "cga", "tandy", "pcjr", "ega", "vgaonly", "svga_s3",
+        "svga_et3000", "svga_et4000", "svga_paradise", "vesa_nolfb", "vesa_oldvbe", "vgastd" };
+    private static final String[] serials = { "dummy", "disabled", "modem", "nullmodem", "directserial" };
+    private static final String[] cputype_values = { "auto", "386", "486", "pentium", "386_prefetch", "486_prefetch",
+        "p6" };
+    private static final String[] blocksizes = { "1024", "2048", "4096", "8192", "512", "256" };
+    private static final String[] force = { "", "forced" };
+
+    public static void Init(Config cfg) {
         Section_prop secprop;
-        Section_line secline;
+        Prop_bool Pbool;
+        Prop_string Pstring;
         Prop_int Pint;
         Prop_hex Phex;
-        Prop_string Pstring;
-        Prop_bool Pbool;
         Prop_multival Pmulti;
         Prop_multival_remain Pmulti_remain;
 
+        secprop = cfg.AddSection_prop("sdl", MainBase.GUI_StartUp);
+        secprop.AddInitFunction(JavaMapper.MAPPER_StartUp);
+
+        Pbool = secprop.Add_bool("fullscreen", Property.Changeable.Always, false);
+        Pbool.Set_help("Start dosbox directly in fullscreen. (Press ALT-Enter to go back)");
+
+        Pbool = secprop.Add_bool("fulldouble", Property.Changeable.Always, false);
+        Pbool.Set_help(
+            "Use double buffering in fullscreen. It can reduce screen flickering, but it can also result in a slow DOSBox.");
+
+        Pstring = secprop.Add_string("fullresolution", Property.Changeable.Always, "original");
+        Pstring.Set_help("What resolution to use for fullscreen: original or fixed size (e.g. 1024x768).\n"
+            + "  Using your monitor's native resolution with aspect=true might give the best results.\n"
+            + "  If you end up with small window on a large screen, try an output different from surface.");
+
+        Pstring = secprop.Add_string("windowresolution", Property.Changeable.Always, "original");
+        Pstring.Set_help("Scale the window to this size IF the output device supports hardware scaling.\n"
+            + "  (output=surface does not!)");
+        Pstring = secprop.Add_string("output", Property.Changeable.Always, "surface");
+        Pstring.Set_help("What video system to use for output.");
+        Pstring.Set_values(outputs);
+
+        Pbool = secprop.Add_bool("autolock", Property.Changeable.Always, true);
+        Pbool.Set_help("Mouse will automatically lock, if you click on the screen. (Press CTRL-F10 to unlock)");
+
+        Pint = secprop.Add_int("sensitivity", Property.Changeable.Always, 100);
+        Pint.SetMinMax(1, 1000);
+        Pint.Set_help("Mouse sensitivity.");
+
+        Pbool = secprop.Add_bool("waitonerror", Property.Changeable.Always, true);
+        Pbool.Set_help("Wait before closing the console if dosbox has an error.");
+
+        Pmulti = secprop.Add_multi("priority", Property.Changeable.Always, ",");
+        Pmulti.SetValue("higher,normal");
+        Pmulti.Set_help(
+            "Priority levels for dosbox. Second entry behind the comma is for when dosbox is not focused/minimized.\n"
+                + "  pause is only valid for the second entry.");
+
+        Pstring = Pmulti.GetSection().Add_string("active", Property.Changeable.Always, "higher");
+        Pstring.Set_values(actt);
+
+        Pstring = Pmulti.GetSection().Add_string("inactive", Property.Changeable.Always, "normal");
+        Pstring.Set_values(inactt);
+
+        Pstring = secprop.Add_path("mapperfile", Property.Changeable.Always, JavaMapper.mapperfile);
+        Pstring.Set_help(
+            "File used to load/save the key/event mappings from. Resetmapper only works with the defaul value.");
+
+        Pbool = secprop.Add_bool("usescancodes", Property.Changeable.Always, true);
+        Pbool.Set_help("Avoid usage of symkeys, might not work on all operating systems.");
+
+        Pint = secprop.Add_int("posx", Property.Changeable.Always, 50);
+        Pint.SetMinMax(1, 1000);
+        Pint.Set_help("Swing window position on screen.");
+
+        Pint = secprop.Add_int("posy", Property.Changeable.Always, 50);
+        Pint.SetMinMax(1, 1000);
+        Pint.Set_help("Swing window position on screen.");
+
         SDLNetInited = false;
 
-        // Some frequently used option sets
-        String[] rates = { "44100", "48000", "32000", "22050", "16000", "11025", "8000", "49716" };
-        String[] oplrates = { "44100", "49716", "48000", "32000", "22050", "16000", "11025", "8000" };
-        String[] ios = { "220", "240", "260", "280", "2a0", "2c0", "2e0", "300" };
-        String[] irqssb = { "7", "5", "3", "9", "10", "11", "12" };
-        String[] dmassb = { "1", "5", "0", "3", "6", "7" };
-        String[] iosgus = { "240", "220", "260", "280", "2a0", "2c0", "2e0", "300" };
-        String[] irqsgus = { "5", "3", "7", "9", "10", "11", "12" };
-        String[] dmasgus = { "3", "0", "1", "5", "6", "7" };
-
-        /* Setup all the different modules making up DOSBox */
-        String[] machines = { "hercules", "cga", "tandy", "pcjr", "ega", "vgaonly", "svga_s3", "svga_et3000",
-            "svga_et4000", "svga_paradise", "vesa_nolfb", "vesa_oldvbe", "vgastd" };
-        secprop = control.AddSection_prop("dosbox", DOSBOX_RealInit);
+        secprop = cfg.AddSection_prop("dosbox", DOSBOX_RealInit);
         Pstring = secprop.Add_path("language", Property.Changeable.Always, "");
         Pstring.Set_help("Select another language file.");
 
@@ -420,7 +485,7 @@ public class Dosbox {
         secprop.AddInitFunction(VGA.VGA_Init);
         secprop.AddInitFunction(jdos.hardware.qemu.VGA.QEMU_VGA_Init);
 
-        secprop = control.AddSection_prop("render", Render.RENDER_Init, true);
+        secprop = cfg.AddSection_prop("render", Render.RENDER_Init, true);
         Pint = secprop.Add_int("frameskip", Property.Changeable.Always, -1);
         Pint.SetMinMax(0, 10);
         Pint.Set_help("How many frames DOSBox skips before drawing one. Use -1 for auto");
@@ -448,21 +513,21 @@ public class Dosbox {
 
         Pstring.Set_values(scalers);
 
-        String[] force = { "", "forced" };
         Pstring = Pmulti.GetSection().Add_string("force", Property.Changeable.Always, "");
         Pstring.Set_values(force);
 
-        secprop = control.AddSection_prop("cpu", CPU.CPU_Init, true);//done
+        secprop = cfg.AddSection_prop("cpu", CPU.CPU_Init, true);//done
+
         String[] cores;
         if (Config.C_DYNAMIC || Config.C_DYNREC)
             cores = new String[] { "auto", "dynamic", "normal", "simple" };
         else
             cores = new String[] { "auto", "normal", "simple" };
+
         Pstring = secprop.Add_string("core", Property.Changeable.WhenIdle, "auto");
         Pstring.Set_values(cores);
         Pstring.Set_help("CPU Core used in emulation. auto will switch to dynamic if available and appropriate.");
 
-        String[] cputype_values = { "auto", "386", "486", "pentium", "386_prefetch", "486_prefetch", "p6" };
         Pstring = secprop.Add_string("cputype", Property.Changeable.Always, "auto");
         Pstring.Set_values(cputype_values);
         Pstring.Set_help("CPU Type used in emulation. auto emulates a 486 which tolerates Pentium instructions.");
@@ -498,7 +563,7 @@ public class Dosbox {
         }
 
         if (allPrivileges) {
-            secprop = control.AddSection_prop("compiler", Compiler.Compiler_Init, true);
+            secprop = cfg.AddSection_prop("compiler", Compiler.Compiler_Init, true);
             Pint = secprop.Add_int("threshold", Property.Changeable.Always, 1000);
             Pint.Set_help(
                 "How many times a block is seen before it is compiled.  0 turns off the compiler, 1 compiles everything (And will like cause problems with self modifying code).\nOnly used when dynamic_core is active. Values between 100-1000 yield the best results.");
@@ -511,11 +576,11 @@ public class Dosbox {
         secprop.AddInitFunction(DMA.DMA_Init);//done
 
         if (Config.PCI_FUNCTIONALITY_ENABLED) {
-            secprop = control.AddSection_prop("pci", PCI.PCI_Init, true); //PCI bus
+            secprop = cfg.AddSection_prop("pci", PCI.PCI_Init, true); //PCI bus
             Pbool = secprop.Add_bool("enabled", Property.Changeable.OnlyAtStart, false);
             Pbool.Set_help("PCI needs to be enabled if you want to use a Voodoo card.\n"
                 + "Enabling PCI will most likely break Bochs Bios support");
-            secprop = control.AddSection_prop("3dfx", VoodooCommon.Voodoo_Init, true); //PCI bus
+            secprop = cfg.AddSection_prop("3dfx", VoodooCommon.Voodoo_Init, true); //PCI bus
             String[] types = { "none", "voodoo1", "voodoo2" };
             Pstring = secprop.Add_string("type", Property.Changeable.OnlyAtStart, "voodoo1");
             Pstring.Set_values(types);
@@ -539,7 +604,7 @@ public class Dosbox {
             Pbool.Set_help("Voodoo 1 can have 1 or 2 TMUs.  2 is the default");
         }
 
-        secprop = control.AddSection_prop("keyboard", Keyboard.KEYBOARD_Init);
+        secprop = cfg.AddSection_prop("keyboard", Keyboard.KEYBOARD_Init);
         Pbool = secprop.Add_bool("aux", Property.Changeable.OnlyAtStart, true);
         Pbool.Set_help("Enable emulation of the 8042 auxiliary port. PS/2 mouse emulation requires this to be enabled");
 
@@ -548,7 +613,7 @@ public class Dosbox {
         Pstring.Set_values(auxdevices);
         Pstring.Set_help("Type of PS/2 mouse attached to the AUX port");
 
-        secprop = control.AddSection_prop("mixer", Mixer.MIXER_Init);
+        secprop = cfg.AddSection_prop("mixer", Mixer.MIXER_Init);
         Pbool = secprop.Add_bool("nosound", Property.Changeable.OnlyAtStart, false);
         Pbool.Set_help("Enable silent mode, sound is still emulated though.");
 
@@ -557,7 +622,6 @@ public class Dosbox {
         Pint.Set_help(
             "Mixer sample rate, setting any device's rate higher than this will probably lower their sound quality.");
 
-        String[] blocksizes = { "1024", "2048", "4096", "8192", "512", "256" };
         Pint = secprop.Add_int("blocksize", Property.Changeable.OnlyAtStart, 512);
         Pint.Set_values(blocksizes);
         Pint.Set_help(
@@ -572,7 +636,7 @@ public class Dosbox {
         Pint.Set_help(
             "Buffer parameter passed to Java's SourceDataLine.open call. At 44100Hz, 16-bit stereo a value of 8820 represents 50ms");
 
-        secprop = control.AddSection_prop("midi", Midi.MIDI_Init, true);//done
+        secprop = cfg.AddSection_prop("midi", Midi.MIDI_Init, true);//done
         secprop.AddInitFunction(MPU401.MPU401_Init, true);//done
 
         String[] mputypes = { "intelligent", "uart", "none" };
@@ -594,9 +658,9 @@ public class Dosbox {
                 + "  See the README/Manual for more details.");
 
         if (Config.C_DEBUG)
-            secprop = control.AddSection_prop("debug", Debug.DEBUG_Init);
+            secprop = cfg.AddSection_prop("debug", Debug.DEBUG_Init);
 
-        secprop = control.AddSection_prop("sblaster", SBlaster.SBLASTER_Init, true);//done
+        secprop = cfg.AddSection_prop("sblaster", SBlaster.SBLASTER_Init, true);//done
 
         String[] sbtypes = { "sb1", "sb2", "sbpro1", "sbpro2", "sb16", "gb", "none" };
         Pstring = secprop.Add_string("sbtype", Property.Changeable.WhenIdle, "sb16");
@@ -638,7 +702,7 @@ public class Dosbox {
         Pint.Set_help(
             "Sample rate of OPL music emulation. Use 49716 for highest quality (set the mixer rate accordingly).");
 
-        secprop = control.AddSection_prop("gus", Gus.GUS_Init, true); //done
+        secprop = cfg.AddSection_prop("gus", Gus.GUS_Init, true); //done
         Pbool = secprop.Add_bool("gus", Property.Changeable.WhenIdle, false);
         Pbool.Set_help("Enable the Gravis Ultrasound emulation.");
 
@@ -663,7 +727,7 @@ public class Dosbox {
             "Path to Ultrasound directory. In this directory\n" + "there should be a MIDI directory that contains\n"
                 + "the patch files for GUS playback. Patch sets used\n" + "with Timidity should work fine.");
 
-        secprop = control.AddSection_prop("speaker", PCSpeaker.PCSPEAKER_Init, true);//done
+        secprop = cfg.AddSection_prop("speaker", PCSpeaker.PCSPEAKER_Init, true);//done
         Pbool = secprop.Add_bool("pcspeaker", Property.Changeable.WhenIdle, true);
         Pbool.Set_help("Enable PC-Speaker emulation.");
 
@@ -687,7 +751,7 @@ public class Dosbox {
         Pbool = secprop.Add_bool("disney", Property.Changeable.WhenIdle, true);
         Pbool.Set_help("Enable Disney Sound Source emulation. (Covox Voice Master and Speech Thing compatible).");
 
-        secprop = control.AddSection_prop("joystick", Bios.BIOS_Init, false);//done
+        secprop = cfg.AddSection_prop("joystick", Bios.BIOS_Init, false);//done
         secprop.AddInitFunction(Int10.INT10_Init);
         secprop.AddInitFunction(Mouse.MOUSE_Init); //Must be after int10 as it uses CurMode
         secprop.AddInitFunction(Joystick.JOYSTICK_Init);
@@ -712,8 +776,7 @@ public class Dosbox {
         Pbool = secprop.Add_bool("buttonwrap", Property.Changeable.WhenIdle, false);
         Pbool.Set_help("enable button wrapping at the number of emulated buttons.");
 
-        secprop = control.AddSection_prop("serial", Serialports.SERIAL_Init, true);
-        String[] serials = { "dummy", "disabled", "modem", "nullmodem", "directserial" };
+        secprop = cfg.AddSection_prop("serial", Serialports.SERIAL_Init, true);
 
         Pmulti_remain = secprop.Add_multiremain("serial1", Property.Changeable.WhenIdle, " ");
         Pstring = Pmulti_remain.GetSection().Add_string("type", Property.Changeable.WhenIdle, "dummy");
@@ -752,7 +815,7 @@ public class Dosbox {
         Pmulti_remain.Set_help("see serial1");
 
         /* All the DOS Related stuff, which will eventually start up in the shell */
-        secprop = control.AddSection_prop("dos", Dos.DOS_Init, false);//done
+        secprop = cfg.AddSection_prop("dos", Dos.DOS_Init, false);//done
         secprop.AddInitFunction(XMS.XMS_Init, true);//done
         Pbool = secprop.Add_bool("xms", Property.Changeable.WhenIdle, true);
         Pbool.Set_help("Enable XMS support.");
@@ -777,13 +840,13 @@ public class Dosbox {
         secprop.AddInitFunction(Drives.DRIVES_Init);
         secprop.AddInitFunction(CDRomImage.CDROM_Image_Init);
         if (Config.C_IPX) {
-            secprop = control.AddSection_prop("ipx", IPX.IPX_Init, true);
+            secprop = cfg.AddSection_prop("ipx", IPX.IPX_Init, true);
             Pbool = secprop.Add_bool("ipx", Property.Changeable.WhenIdle, false);
             Pbool.Set_help("Enable ipx over UDP/IP emulation.");
         }
 
         /* IDE emulation options and setup */
-        secprop = control.AddSection_prop("ide", IDE.IDE_Init, false);
+        secprop = cfg.AddSection_prop("ide", IDE.IDE_Init, false);
         Pbool = secprop.Add_bool("primary", Property.Changeable.OnlyAtStart, true);
         Pbool.Set_help("Enable IDE interface for use with Bochs bios");
         Pbool = secprop.Add_bool("secondary", Property.Changeable.OnlyAtStart, true);
@@ -793,12 +856,12 @@ public class Dosbox {
         Pbool = secprop.Add_bool("quaternary", Property.Changeable.OnlyAtStart, false);
         Pbool.Set_help("Enable IDE interface for use with Bochs bios");
 
-        secprop = control.AddSection_prop("floppy", Floppy.Flopyy_Init, true);
+        secprop = cfg.AddSection_prop("floppy", Floppy.Flopyy_Init, true);
         Pbool = secprop.Add_bool("enable", Property.Changeable.OnlyAtStart, true);
         Pbool.Set_help("Enable Floppy controller for use with Bochs bios");
 
         if (Config.C_NE2000) {
-            secprop = control.AddSection_prop("ne2000", NE2000.NE2000_Init, true);
+            secprop = cfg.AddSection_prop("ne2000", NE2000.NE2000_Init, true);
             //Pstring = secprop.Add_string("ne2000",Property.Changeable.WhenIdle,"false");
             Msg.add("NE2000_CONFIGFILE_HELP",
                 "macaddr -- The physical address the emulator will use on your network.\n"
@@ -845,7 +908,7 @@ public class Dosbox {
         //	secprop.AddInitFunction(&CREDITS_Init);
 
         //TODO ?
-        secline = control.AddSection_line("autoexec", Shell.AUTOEXEC_Init);
+        Section_line secline = cfg.AddSection_line("autoexec", Shell.AUTOEXEC_Init);
         Msg.add("AUTOEXEC_CONFIGFILE_HELP",
             "\n#Lines in this section will be run at startup.\n" + "#You can put your MOUNT lines here.\n");
         Msg.add("CONFIGFILE_INTRO",
@@ -854,7 +917,7 @@ public class Dosbox {
                 + "# They are used to (briefly) document the effect of each option.\n");
         Msg.add("CONFIG_SUGGESTED_VALUES", "Possible values");
 
-        control.SetStartUp(Shell.SHELL_Init);
+        cfg.SetStartUp(Shell.SHELL_Init);
     }
 
     private interface LoopHandler {

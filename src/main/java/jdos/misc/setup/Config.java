@@ -40,6 +40,10 @@ public class Config {
     private boolean secure_mode; //Sandbox mode
     private StartFunction _start_function;
 
+    public Config() {
+        this(new CommandLine());
+    }
+
     public Config(CommandLine cmd) {
         cmdline = cmd;
         secure_mode = false;
