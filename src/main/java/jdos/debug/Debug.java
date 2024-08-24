@@ -37,7 +37,7 @@ public class Debug {
         }
 
         @Override
-        public void file_seek(String file, long fileOffset) {
+        public void file_seek(String file, long fileOffset, SeekType type) {
         }
 
         @Override

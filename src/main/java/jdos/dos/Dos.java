@@ -4,6 +4,7 @@ import jdos.cpu.CPU;
 import jdos.cpu.CPU_Regs;
 import jdos.cpu.Callback;
 import jdos.debug.Debug;
+import jdos.debug.DebugListener.SeekType;
 import jdos.hardware.IO;
 import jdos.hardware.Memory;
 import jdos.hardware.Timer;
@@ -1103,8 +1104,10 @@ public class Dos extends Module_base {
                     /*Bit32u*/
                     LongRef pos = new LongRef(
                         ((long) CPU_Regs.reg_ecx.word() << 16) + CPU_Regs.reg_edx.word() & 0xFFFFFFFFL);
-                    if (Dos_files.DOS_SeekFile(CPU_Regs.reg_ebx.word(), pos, CPU_Regs.reg_eax.low())) {
-                        Debug.listener.file_seek((short) CPU_Regs.reg_ebx.word(), pos.value);
+                    int fileHandle = CPU_Regs.reg_ebx.word();
+                    int seekType = CPU_Regs.reg_eax.low();
+                    if (Dos_files.DOS_SeekFile(fileHandle, pos, seekType)) {
+                        Debug.listener.file_seek((short) fileHandle, pos.value, SeekType.from(seekType));
                         CPU_Regs.reg_edx.word((/*Bit16u*/int) (pos.value >>> 16));
                         CPU_Regs.reg_eax.word((/*Bit16u*/int) (pos.value & 0xFFFF));
                         Callback.CALLBACK_SCF(false);

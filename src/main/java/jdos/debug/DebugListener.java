@@ -14,7 +14,7 @@ public interface DebugListener {
 
     void exe_loaded(String file, int loadsegment, boolean execute);
 
-    void file_seek(String file, long fileOffset);
+    void file_seek(String file, long fileOffset, SeekType type);
 
     void file_read(String file, int length, int targetSegment, int targetOffset);
 
@@ -29,8 +29,8 @@ public interface DebugListener {
         return dosfile.GetName();
     }
 
-    default void file_seek(short file, long fileOffset) {
-        file_seek(filename(file), fileOffset);
+    default void file_seek(short file, long fileOffset, SeekType type) {
+        file_seek(filename(file), fileOffset, type);
     }
 
     default void file_read(short file, int length, int targetSegment, int targetOffset) {
@@ -70,4 +70,12 @@ public interface DebugListener {
     void interrupt_start(int num, int type);
 
     void interrupt_exit();
+
+    public enum SeekType {
+        START, CURRENT, END;
+
+        public static SeekType from(int al) {
+            return al == 0 ? START : al == 1 ? CURRENT : END;
+        }
+    }
 }
